@@ -207,6 +207,14 @@ table.table {
 .table tr:last-child td {
   border-bottom: none;
 }
+.table th:first-child,
+.table td:first-child {
+  padding-left: 24px;
+}
+.table th:last-child,
+.table td:last-child {
+  padding-right: 24px;
+}
 .table td.actions {
   text-align: right;
   white-space: nowrap;
