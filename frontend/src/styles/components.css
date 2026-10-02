@@ -361,5 +361,5 @@ table.table {
   background: var(--danger);
 }
 .issue.warning .dot {
-  background: var(--warning);
+  background: var(--warning-dot);
 }

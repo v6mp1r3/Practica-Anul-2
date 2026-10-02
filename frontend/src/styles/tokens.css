@@ -1,91 +1,110 @@
+/* EduSchool brand palette (8 base colours, RGB values from the brand book) */
+:root {
+  --brand-orange: #e65d31; /* Pantone 166 */
+  --brand-red: #d5002f; /* Pantone 1795 */
+  --brand-plum: #940144; /* Pantone 221 */
+  --brand-pink: #b94676; /* Pantone 674 */
+  --brand-green: #34871d; /* Pantone 363 */
+  --brand-teal: #006c50; /* Pantone 342 */
+  --brand-blue: #1b7396; /* Pantone 633 */
+  --brand-black: #000000;
+  --logo-blue: #4499cc;
+}
+
 :root {
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  --bg: #f5f6fa;
+  --bg: #f5f7f8;
   --surface: #ffffff;
-  --surface-2: #f0f2f7;
-  --border: #e2e5ee;
-  --text: #1a1f36;
-  --text-2: #5b6380;
-  --text-3: #8a91a8;
+  --surface-2: #eff3f5;
+  --border: #dfe5e8;
+  --text: #0f1a1f;
+  --text-2: #4e5c63;
+  --text-3: #85929a;
 
-  --primary: #2f5bea;
-  --primary-hover: #2449c9;
-  --primary-soft: #e8eefe;
+  --primary: var(--brand-blue);
+  --primary-hover: #145a76;
+  --primary-soft: #e2eff5;
   --on-primary: #ffffff;
+  --accent: var(--brand-pink);
 
-  --danger: #d93a3a;
-  --danger-soft: #fdecec;
-  --warning: #b86e00;
-  --warning-soft: #fff4e0;
-  --success: #1e8a4c;
-  --success-soft: #e6f6ec;
+  --danger: var(--brand-red);
+  --danger-soft: #fce5ea;
+  --warning: #c2481f; /* orange 166, darkened for text contrast */
+  --warning-dot: var(--brand-orange);
+  --warning-soft: #fdece5;
+  --success: var(--brand-green);
+  --success-soft: #e7f3e3;
 
   /* Activity colours — used on lesson cards and legends */
-  --lecture: #2f5bea;
-  --lecture-soft: #e8eefe;
-  --seminar: #13866f;
-  --seminar-soft: #e2f5f0;
-  --lab: #b25e09;
-  --lab-soft: #fdf0e1;
+  --lecture: var(--brand-blue);
+  --lecture-soft: #e2eff5;
+  --seminar: var(--brand-teal);
+  --seminar-soft: #ddf0e9;
+  --lab: var(--brand-plum);
+  --lab-soft: #f6e4ec;
 
   --radius: 10px;
   --radius-sm: 6px;
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.08);
-  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.18);
+  --shadow: 0 1px 2px rgba(15, 26, 31, 0.05), 0 1px 3px rgba(15, 26, 31, 0.08);
+  --shadow-lg: 0 12px 32px rgba(15, 26, 31, 0.18);
   --sidebar-w: 240px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0f1220;
-    --surface: #171b2e;
-    --surface-2: #1f2439;
-    --border: #2b3150;
-    --text: #e8eaf3;
-    --text-2: #a6acc4;
-    --text-3: #747b98;
-    --primary: #6b8cff;
-    --primary-hover: #8aa3ff;
-    --primary-soft: #232c55;
-    --on-primary: #0f1220;
-    --danger: #ff6b6b;
-    --danger-soft: #3a1d24;
-    --warning: #f0a83a;
-    --warning-soft: #3a2b14;
-    --success: #4cc985;
-    --success-soft: #16301f;
-    --lecture: #7d99ff;
-    --lecture-soft: #222b52;
-    --seminar: #45c9a8;
-    --seminar-soft: #15322c;
-    --lab: #f0a352;
-    --lab-soft: #362716;
+    --bg: #0c1215;
+    --surface: #131c20;
+    --surface-2: #1a252a;
+    --border: #283439;
+    --text: #e9eff1;
+    --text-2: #a5b3b9;
+    --text-3: #6f7e85;
+    --primary: #5fb0d3;
+    --primary-hover: #82c3e0;
+    --primary-soft: #16303b;
+    --on-primary: #0c1215;
+    --accent: #e07ba5;
+    --danger: #ff5c78;
+    --danger-soft: #3a1820;
+    --warning: #f28a62;
+    --warning-dot: #f28a62;
+    --warning-soft: #3a2219;
+    --success: #72c552;
+    --success-soft: #18301a;
+    --lecture: #6fb7d8;
+    --lecture-soft: #15303b;
+    --seminar: #43c29a;
+    --seminar-soft: #11302a;
+    --lab: #e07ba5;
+    --lab-soft: #3a1b2a;
   }
 }
 
 :root[data-theme='dark'] {
-  --bg: #0f1220;
-  --surface: #171b2e;
-  --surface-2: #1f2439;
-  --border: #2b3150;
-  --text: #e8eaf3;
-  --text-2: #a6acc4;
-  --text-3: #747b98;
-  --primary: #6b8cff;
-  --primary-hover: #8aa3ff;
-  --primary-soft: #232c55;
-  --on-primary: #0f1220;
-  --danger: #ff6b6b;
-  --danger-soft: #3a1d24;
-  --warning: #f0a83a;
-  --warning-soft: #3a2b14;
-  --success: #4cc985;
-  --success-soft: #16301f;
-  --lecture: #7d99ff;
-  --lecture-soft: #222b52;
-  --seminar: #45c9a8;
-  --seminar-soft: #15322c;
-  --lab: #f0a352;
-  --lab-soft: #362716;
+  --bg: #0c1215;
+  --surface: #131c20;
+  --surface-2: #1a252a;
+  --border: #283439;
+  --text: #e9eff1;
+  --text-2: #a5b3b9;
+  --text-3: #6f7e85;
+  --primary: #5fb0d3;
+  --primary-hover: #82c3e0;
+  --primary-soft: #16303b;
+  --on-primary: #0c1215;
+  --accent: #e07ba5;
+  --danger: #ff5c78;
+  --danger-soft: #3a1820;
+  --warning: #f28a62;
+  --warning-dot: #f28a62;
+  --warning-soft: #3a2219;
+  --success: #72c552;
+  --success-soft: #18301a;
+  --lecture: #6fb7d8;
+  --lecture-soft: #15303b;
+  --seminar: #43c29a;
+  --seminar-soft: #11302a;
+  --lab: #e07ba5;
+  --lab-soft: #3a1b2a;
 }
