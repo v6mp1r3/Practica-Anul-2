@@ -1,7 +1,7 @@
-# EduSchool — frontend
+# EduSchedule — frontend
 
 React 18 + TypeScript + Vite. No UI framework; styles are plain CSS with design
-tokens in `src/styles/tokens.css` (EduSchool brand palette, light and dark themes).
+tokens in `src/styles/tokens.css` (EduSchedule brand palette, light and dark themes).
 Font: Inter.
 
 ## Run it
@@ -77,9 +77,9 @@ src/
 
 ## Logo
 
-`src/components/Logo.tsx` currently renders a text wordmark. When the final logo is
-ready, replace the two components in that file and `public/favicon.svg`; nothing
-else needs to change.
+`src/components/Logo.tsx` holds the EduSchedule logo as inline SVG ("Edu" follows the
+text colour, so it works in dark mode). Source files and PNG exports are in
+[`docs/brand/`](../docs/brand/).
 
 ## Deploying
 

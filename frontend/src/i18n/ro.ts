@@ -1,6 +1,6 @@
 // Romanian is the default interface language (report §1.4.4).
 export const ro = {
-  'app.name': 'EduSchool',
+  'app.name': 'EduSchedule',
   'app.tagline': 'Orarul universității, fără conflicte.',
 
   'common.save': 'Salvează',

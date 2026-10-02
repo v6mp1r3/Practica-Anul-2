@@ -8,7 +8,7 @@ import { useDataset } from '../../state/data';
 import { downloadFile } from '../../utils/download';
 import { timetableToIcs } from '../../utils/export';
 
-const SUBGROUP_KEY = 'eduschool:subgroup';
+const SUBGROUP_KEY = 'eduschedule:subgroup';
 
 function savedSubgroup(): number | null {
   try {

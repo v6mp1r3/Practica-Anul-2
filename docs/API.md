@@ -1,4 +1,4 @@
-# EduSchool REST API contract
+# EduSchedule REST API contract
 
 The frontend talks to the backend only through the endpoints below. The TypeScript
 source of truth is [`frontend/src/api/types.ts`](../frontend/src/api/types.ts) and
