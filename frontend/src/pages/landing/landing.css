@@ -427,3 +427,28 @@
     transform: none;
   }
 }
+
+/* Scroll-filled statement — each word goes from grey to ink in turn */
+.lp-scrolltext {
+  padding: clamp(96px, 12vw, 150px) 0;
+  border-top: 1px solid var(--border);
+}
+.st-reveal {
+  --p: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 4.4vw, 50px);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+.st-reveal span {
+  --t: clamp(0, calc((var(--p) * var(--n) - var(--i))), 1);
+  margin-right: 0.27em;
+  color: color-mix(in srgb, #1d1d1f calc(var(--t) * 100%), #cdcdd2);
+}
