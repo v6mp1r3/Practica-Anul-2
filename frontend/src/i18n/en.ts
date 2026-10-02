@@ -35,6 +35,7 @@ export const en: Record<MessageKey, string> = {
   'login.submit': 'Sign in',
   'login.invalid': 'Wrong username or password.',
   'login.demo': 'Demo accounts (password: demo)',
+  'login.kicker': 'Automated university timetabling',
   'login.feature1': 'Groups, streams, subgroups and odd/even weeks',
   'login.feature2': 'Several generated variants, you choose',
   'login.feature3': 'Conflicts are detected as you edit',

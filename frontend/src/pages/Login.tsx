@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { API_MODE } from '../api';
+import { Logo } from '../components/Logo';
 import { Field } from '../components/ui';
 import { seedUsers } from '../data/seed';
 import type { Role } from '../domain/types';
@@ -37,10 +38,7 @@ export default function Login() {
   return (
     <div className="login">
       <section className="login-hero">
-        <div className="brand" style={{ padding: 0 }}>
-          <img src="/favicon.svg" alt="" style={{ filter: 'brightness(10)' }} />
-          {t('app.name')}
-        </div>
+        <span className="hero-kicker">{t('login.kicker')}</span>
         <div className="stack">
           <h1>{t('app.tagline')}</h1>
           <ul>
@@ -56,7 +54,8 @@ export default function Login() {
 
       <section className="login-form">
         <form className="stack" onSubmit={submit}>
-          <h2>{t('login.title')}</h2>
+          <Logo height={44} />
+          <h2 style={{ marginTop: 12 }}>{t('login.title')}</h2>
           <Field label={t('login.username')}>
             <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required />
           </Field>

@@ -162,6 +162,13 @@
     var(--brand-black) 0 100%
   );
 }
+.hero-kicker {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
 .login-hero h1 {
   font-size: 34px;
   max-width: 420px;

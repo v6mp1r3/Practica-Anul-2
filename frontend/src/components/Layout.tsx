@@ -5,6 +5,7 @@ import { useI18n, type MessageKey } from '../i18n';
 import { useAuth } from '../state/auth';
 import { useData } from '../state/data';
 import { Icon, type IconName } from './Icon';
+import { Logo } from './Logo';
 import { initials } from './ui';
 
 interface NavItem {
@@ -100,8 +101,7 @@ export function Layout() {
     <div className="shell">
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="brand">
-          <img src="/favicon.svg" alt="" />
-          {t('app.name')}
+          <Logo height={26} />
         </div>
         <nav className="nav">
           {NAV[user.role].map((group, i) => (
@@ -150,7 +150,7 @@ export function Layout() {
           <button className="btn ghost icon" onClick={() => setOpen((o) => !o)} aria-label="Menu">
             <Icon name="menu" />
           </button>
-          <strong>{t('app.name')}</strong>
+          <Logo height={20} />
           <span className="spacer" />
           <NavLink to="/notifications" className="btn ghost icon" aria-label={t('nav.notifications')}>
             <Icon name="bell" />
