@@ -107,8 +107,17 @@ export const ro = {
   'setup.forms': 'Forme de învățământ',
   'setup.formsHint':
     'În ce zile poate avea perechi fiecare formă. Toate formele folosesc aceiași profesori și aceleași săli, deci nu se suprapun.',
-  'generate.byForm': 'După forma de învățământ',
 
+  'setup.formMaxPairs': 'Maxim perechi/zi',
+  'setup.sessions': 'Sesiuni pentru frecvență redusă',
+  'setup.sessionsHint': 'Grupele cu frecvență redusă au perechi doar în zilele din aceste sesiuni, după orarul generat pentru zilele lor.',
+  'setup.session': 'Sesiune',
+  'generate.form': 'Forma de învățământ',
+  'generate.allForms': 'Toate',
+  'student.sessions': 'Sesiunile tale',
+
+  'student.showGroups': 'Grupe afișate:',
+  'student.myGroup': 'Grupa mea',
   'tt.oddShort': 'I',
   'tt.evenShort': 'P',
   'tt.free': 'Fereastră',
@@ -182,7 +191,6 @@ export const ro = {
   'setup.parityHint':
     'Dacă da, fiecare pereche poate fi săptămânală, impară sau pară. Două perechi în același interval pe săptămâni diferite nu sunt conflict.',
   'setup.limits': 'Limite și reguli',
-  'setup.maxPairsGroup': 'Maxim perechi/zi pentru o grupă',
   'setup.minPairsGroup': 'Minim perechi/zi pentru o grupă',
   'setup.maxPairsTeacher': 'Maxim perechi/zi pentru un profesor',
   'setup.consultation': 'Oră de consultații obligatorie',

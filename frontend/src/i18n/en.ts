@@ -106,8 +106,18 @@ export const en: Record<MessageKey, string> = {
   'groups.studyForm': 'Form of study',
   'setup.forms': 'Forms of study',
   'setup.formsHint': 'Which days each form can have pairs on. All forms share the same teachers and rooms, so they never clash.',
-  'generate.byForm': 'By form of study',
 
+  'setup.formMaxPairs': 'Max pairs/day',
+  'setup.sessions': 'Reduced-attendance sessions',
+  'setup.sessionsHint':
+    'Reduced-attendance groups have pairs only on the days inside these sessions, following the timetable generated for their days.',
+  'setup.session': 'Session',
+  'generate.form': 'Form of study',
+  'generate.allForms': 'All',
+  'student.sessions': 'Your sessions',
+
+  'student.showGroups': 'Groups shown:',
+  'student.myGroup': 'My group',
   'tt.oddShort': 'O',
   'tt.evenShort': 'E',
   'tt.free': 'Gap',
@@ -181,7 +191,6 @@ export const en: Record<MessageKey, string> = {
   'setup.parityHint':
     'If yes, each pair can be weekly, odd-week or even-week. Two pairs in the same slot on different weeks are not a clash.',
   'setup.limits': 'Limits and rules',
-  'setup.maxPairsGroup': 'Max pairs/day for a group',
   'setup.minPairsGroup': 'Min pairs/day for a group',
   'setup.maxPairsTeacher': 'Max pairs/day for a teacher',
   'setup.consultation': 'Weekly consultation hour required',

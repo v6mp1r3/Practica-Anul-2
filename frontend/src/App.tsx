@@ -62,10 +62,10 @@ function AppRoutes() {
         <Route path="/browse" element={<Browse />} />
         <Route path="/teachers" element={<TeacherAvailability />} />
       </Route>
-      {/* Free rooms: read-only for teachers; only the administration changes rooms and the timetable */}
+      {/* Free rooms: read-only for students and teachers; only the administration changes rooms and the timetable */}
       <Route
         element={
-          <RequireRole roles={['teacher', 'admin']}>
+          <RequireRole roles={['student', 'teacher', 'admin']}>
             <Layout />
           </RequireRole>
         }

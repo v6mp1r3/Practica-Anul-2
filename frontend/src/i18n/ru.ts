@@ -108,8 +108,17 @@ export const ru: Record<MessageKey, string> = {
   'setup.forms': 'Формы обучения',
   'setup.formsHint':
     'В какие дни у каждой формы могут быть пары. Все формы используют одних и тех же преподавателей и аудитории, поэтому не пересекаются.',
-  'generate.byForm': 'По форме обучения',
 
+  'setup.formMaxPairs': 'Макс. пар в день',
+  'setup.sessions': 'Сессии заочной формы',
+  'setup.sessionsHint': 'У заочных групп пары проходят только в дни этих сессий, по расписанию, составленному для их дней.',
+  'setup.session': 'Сессия',
+  'generate.form': 'Форма обучения',
+  'generate.allForms': 'Все',
+  'student.sessions': 'Ваши сессии',
+
+  'student.showGroups': 'Показать группы:',
+  'student.myGroup': 'Моя группа',
   'tt.oddShort': 'Н',
   'tt.evenShort': 'Ч',
   'tt.free': 'Окно',
@@ -183,7 +192,6 @@ export const ru: Record<MessageKey, string> = {
   'setup.parityHint':
     'Если да, каждая пара может быть еженедельной, по нечётным или по чётным неделям. Две пары в одном интервале на разных неделях не считаются конфликтом.',
   'setup.limits': 'Ограничения и правила',
-  'setup.maxPairsGroup': 'Максимум пар в день для группы',
   'setup.minPairsGroup': 'Минимум пар в день для группы',
   'setup.maxPairsTeacher': 'Максимум пар в день для преподавателя',
   'setup.consultation': 'Обязательный час консультаций',

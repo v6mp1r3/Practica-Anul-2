@@ -2,52 +2,90 @@ import { useState } from 'react';
 import { ChangesCard } from '../../components/ChangesCard';
 import { MyTimetable } from '../../components/MyTimetable';
 import { Empty, PageHeader, Segmented } from '../../components/ui';
+import { parseDate } from '../../domain/changes';
+import type { Lesson } from '../../domain/types';
 import { filterLessons } from '../../domain/views';
-import { useI18n } from '../../i18n';
+import { dateLocale, useI18n } from '../../i18n';
 import { useAuth } from '../../state/auth';
 import { useDataset } from '../../state/data';
 import { downloadFile } from '../../utils/download';
 import { timetableToIcs } from '../../utils/export';
 
 const SUBGROUP_KEY = 'eduschedule:subgroup';
+const GROUPS_KEY = 'eduschedule:groups';
 
-function savedSubgroup(): number | null {
+function load<T>(key: string, fallback: T): T {
   try {
-    const v = Number(localStorage.getItem(SUBGROUP_KEY));
-    return v > 0 ? v : null;
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
-    return null;
+    return fallback;
+  }
+}
+
+function save(key: string, value: unknown) {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* ignore */
   }
 }
 
 export default function StudentHome() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { user } = useAuth();
   const { dataset, index, published } = useDataset();
   const group = user?.groupId ? index.groups.get(user.groupId) : undefined;
-  const [subgroup, setSubgroupState] = useState<number | null>(savedSubgroup);
+  const [subgroup, setSubgroupState] = useState<number | null>(() => load<number | null>(SUBGROUP_KEY, null));
+  // Groups shown in the grid: the student's own group by default, others on demand
+  const [shown, setShownState] = useState<string[]>(() => {
+    const saved = load<string[]>(GROUPS_KEY, []).filter((id) => index.groups.has(id));
+    return saved.length ? saved : group ? [group.id] : [];
+  });
+
+  if (!group) return <Empty />;
 
   const setSubgroup = (s: number | null) => {
     setSubgroupState(s);
-    try {
-      if (s) localStorage.setItem(SUBGROUP_KEY, String(s));
-      else localStorage.removeItem(SUBGROUP_KEY);
-    } catch {
-      /* ignore */
-    }
+    save(SUBGROUP_KEY, s);
   };
+  const setShown = (ids: string[]) => {
+    const next = ids.length ? ids : [group.id];
+    setShownState(next);
+    save(GROUPS_KEY, next);
+  };
+  const toggle = (id: string) => setShown(shown.includes(id) ? shown.filter((x) => x !== id) : [...shown, id]);
 
-  if (!group) return <Empty />;
-  const mine = published ? filterLessons(index, published.lessons, { kind: 'group', id: group.id, subgroup }) : [];
+  const onlyMine = shown.length === 1 && shown[0] === group.id;
+  const allIds = dataset.groups.map((g) => g.id);
+  const everything = allIds.every((id) => shown.includes(id));
+
+  const lessons: Lesson[] = [];
+  if (published) {
+    const seen = new Set<string>();
+    for (const id of shown) {
+      for (const l of filterLessons(index, published.lessons, { kind: 'group', id, subgroup: onlyMine ? subgroup : null })) {
+        if (!seen.has(l.id)) {
+          seen.add(l.id);
+          lessons.push(l);
+        }
+      }
+    }
+  }
+
+  const others = dataset.groups.filter((g) => g.id !== group.id).sort((a, b) => a.name.localeCompare(b.name));
+  const sessions = group.studyForm === 'reduced' ? dataset.settings.reducedSessions : [];
+  const fmt = (s: string) => parseDate(s).toLocaleDateString(dateLocale(lang), { day: '2-digit', month: 'short' });
 
   return (
     <div className="page">
       <PageHeader
         title={t('nav.myTimetable')}
-        subtitle={`${group.name} · ${group.program} · ${t('groups.year')} ${group.year}`}
+        subtitle={`${group.name} · ${group.program} · ${t(`form.${group.studyForm}`)} · ${t('groups.year')} ${group.year}`}
         actions={
           <>
-            {group.subgroups > 1 && (
+            {onlyMine && group.subgroups > 1 && (
               <Segmented
                 value={String(subgroup ?? 0)}
                 onChange={(v) => setSubgroup(Number(v) || null)}
@@ -60,10 +98,10 @@ export default function StudentHome() {
                 ]}
               />
             )}
-            {mine.length > 0 && (
+            {lessons.length > 0 && (
               <button
                 className="btn"
-                onClick={() => downloadFile(`orar-${group.name}.ics`, timetableToIcs(mine, index, dataset.settings), 'text/calendar')}
+                onClick={() => downloadFile(`orar-${group.name}.ics`, timetableToIcs(lessons, index, dataset.settings), 'text/calendar')}
               >
                 {t('my.addToCalendar')}
               </button>
@@ -71,14 +109,47 @@ export default function StudentHome() {
           </>
         }
       />
+
+      {/* Which groups to show: own group, any others, or all */}
+      <div className="row wrap" style={{ gap: 8, marginBottom: 18 }}>
+        <span className="small muted">{t('student.showGroups')}</span>
+        <div className="segmented" role="group" aria-label={t('student.showGroups')}>
+          <button type="button" aria-pressed={!everything && shown.includes(group.id)} onClick={() => setShown([group.id])}>
+            {t('student.myGroup')} · {group.name}
+          </button>
+          {others.map((g) => (
+            <button key={g.id} type="button" aria-pressed={!everything && shown.includes(g.id)} onClick={() => toggle(g.id)}>
+              {g.name}
+            </button>
+          ))}
+          <button type="button" aria-pressed={everything} onClick={() => setShown(everything ? [group.id] : allIds)}>
+            {t('common.all')}
+          </button>
+        </div>
+      </div>
+
       {!published ? (
         <div className="card">
           <Empty>{t('tt.notPublished')}</Empty>
         </div>
       ) : (
         <div className="stack">
+          {sessions.length > 0 && (
+            <section className="card">
+              <div className="card-header">
+                <h2>{t('student.sessions')}</h2>
+              </div>
+              <div className="card-body row wrap" style={{ gap: 10, paddingTop: 4 }}>
+                {sessions.map((s, i) => (
+                  <span key={i} className="badge primary" style={{ padding: '6px 12px', fontSize: 13 }}>
+                    {fmt(s.start)} – {fmt(s.end)}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
           <ChangesCard groupId={group.id} />
-          <MyTimetable settings={dataset.settings} index={index} lessons={mine} hide={['audience']} />
+          <MyTimetable settings={dataset.settings} index={index} lessons={lessons} hide={shown.length === 1 ? ['audience'] : []} />
         </div>
       )}
     </div>
