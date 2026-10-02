@@ -85,13 +85,16 @@ export function CrudPage<K extends CollectionName>(p: CrudProps<K>) {
       <div className="card">
         <div className="card-header">
           {p.embedded && <h2>{p.title}</h2>}
-          <input
-            className="input"
-            style={{ maxWidth: 280 }}
-            placeholder={t('common.search')}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+          <label className="search-line">
+            <Icon name="search" size={16} />
+            <input
+              type="search"
+              placeholder={t('common.search')}
+              aria-label={t('common.search')}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
           <span className="spacer" />
           <span className="small muted">{filtered.length}</span>
           {p.embedded && (
