@@ -1,7 +1,7 @@
-// A one-line statement whose middle word starts scattered and its letters
-// land in place when the line scrolls into view (same effect as the TAFI
-// Agent site). Only transforms move, so nothing reflows. With reduced motion,
-// or if the line is already on screen at load, it is shown whole at once.
+// A one-line statement whose middle word is scattered and whose letters land
+// in place whenever the line scrolls into view (the TAFI Agent effect, replayed
+// on every pass). Only transforms move, so nothing reflows. With reduced
+// motion the line is simply shown whole.
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 /** Deterministic 0..1 noise: the same letters land the same way every visit. */
@@ -22,50 +22,26 @@ function letterStyle(i: number, count: number): CSSProperties {
   };
 }
 
-type Phase = 'idle' | 'armed' | 'together' | 'instant';
-
 export function Statement({ before, word, after }: { before: string; word: string; after: string }) {
   const ref = useRef<HTMLHeadingElement>(null);
-  const [phase, setPhase] = useState<Phase>('idle');
+  const [reduced] = useState(() => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  const [together, setTogether] = useState(false);
 
+  // Land every time the line scrolls into view, scatter again once it has left,
+  // so the effect replays on each pass (down or back up).
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (reduced || el.getBoundingClientRect().top < window.innerHeight) {
-      setPhase('instant');
+    if (!el || reduced) return;
+    if (!('IntersectionObserver' in window)) {
+      setTogether(true);
       return;
     }
-    setPhase('armed');
-    let raf = 0;
-    const check = () => {
-      raf = 0;
-      if (el.getBoundingClientRect().top < window.innerHeight * 0.92) {
-        setPhase('together');
-        window.removeEventListener('scroll', onScroll);
-        window.removeEventListener('resize', onScroll);
-      }
-    };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(check);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
+    const io = new IntersectionObserver(([entry]) => setTogether(entry.isIntersecting), { rootMargin: '0px 0px -8% 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [reduced]);
 
-  const cls = [
-    'st-line',
-    phase === 'armed' || phase === 'together' ? 'is-armed' : '',
-    phase === 'together' ? 'is-together' : '',
-    phase === 'instant' ? 'st-instant' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const cls = ['st-line', reduced ? 'st-instant' : 'is-armed', together ? 'is-together' : ''].filter(Boolean).join(' ');
 
   return (
     <section className="statement">
