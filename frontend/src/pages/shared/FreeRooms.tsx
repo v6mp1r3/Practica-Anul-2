@@ -26,6 +26,9 @@ export default function FreeRooms() {
   return (
     <div className="page">
       <PageHeader title={t('nav.freeRooms')} subtitle={t('freeRooms.subtitle')} />
+      <p className="small muted" style={{ marginTop: -12, marginBottom: 18 }}>
+        {t('freeRooms.readOnly')}
+      </p>
       <div className="stack">
         <div className="card">
           <div className="card-body form-grid">

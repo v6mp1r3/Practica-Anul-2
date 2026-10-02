@@ -332,7 +332,8 @@ export const ro = {
   'availability.needConsultation': 'Alege o oră de consultații',
   'availability.note': 'Intervalele „Indisponibil” sunt respectate obligatoriu; cele „Preferat” sunt respectate când este posibil.',
 
-  'freeRooms.subtitle': 'Găsește o sală liberă pentru studiu, consultații sau o pereche recuperată.',
+  'freeRooms.subtitle': 'Săli care nu sunt ocupate în orarul publicat — pentru consultații sau o pereche recuperată.',
+  'freeRooms.readOnly': 'Calculat automat din orarul publicat. Doar administrația poate modifica sălile și orarul.',
   'freeRooms.minCapacity': 'Minim locuri',
   'freeRooms.result': '{count} săli libere',
   'freeRooms.none': 'Nicio sală liberă cu aceste criterii.',

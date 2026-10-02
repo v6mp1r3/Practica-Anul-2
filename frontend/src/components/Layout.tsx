@@ -56,7 +56,6 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
       items: [
         { to: '/student', label: 'nav.myTimetable', icon: 'calendar', end: true },
         { to: '/browse', label: 'nav.browse', icon: 'search' },
-        { to: '/rooms', label: 'nav.freeRooms', icon: 'door' },
         { to: '/teachers', label: 'nav.teacherAvailability', icon: 'users' },
       ],
     },

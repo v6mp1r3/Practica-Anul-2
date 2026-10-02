@@ -332,7 +332,9 @@ export const en: Record<MessageKey, string> = {
   'availability.needConsultation': 'Pick a consultation hour',
   'availability.note': '“Unavailable” slots are always respected; “Preferred” slots are respected when possible.',
 
-  'freeRooms.subtitle': 'Find an empty room for studying, consultations or a make-up class.',
+  'freeRooms.subtitle': 'Rooms that are not occupied in the published timetable — for consultations or a make-up class.',
+  'freeRooms.readOnly':
+    'Calculated automatically from the published timetable. Only the administration can change rooms and the timetable.',
   'freeRooms.minCapacity': 'Minimum seats',
   'freeRooms.result': '{count} free rooms',
   'freeRooms.none': 'No free room matches these filters.',
