@@ -3,8 +3,7 @@
 import { seedDataset, seedNotifications, seedUsers } from '../data/seed';
 import { generateTimetable } from '../domain/generator';
 import { scoreTimetable } from '../domain/score';
-import { DatasetIndex } from '../domain/indexes';
-import type { Dataset, Notification, Role, ScheduleChange, Timetable, User } from '../domain/types';
+import type { Dataset, Notification, NotificationKind, Role, ScheduleChange, Timetable, User } from '../domain/types';
 import { ApiError } from './http';
 import type { Api, CollectionName, Collections } from './types';
 
@@ -39,6 +38,17 @@ function load(): Store {
       const st = saved.dataset?.settings;
       if (st && !Array.isArray(st.faculties)) st.faculties = st.faculty ? [st.faculty] : [];
       if (!Array.isArray(saved.changes)) saved.changes = [];
+      // Notifications saved as Romanian text before they had a kind
+      for (const n of saved.notifications ?? []) {
+        if (n.kind) continue;
+        const name = /„(.+)”/.exec(n.body)?.[1] ?? '';
+        if (n.title === 'Bine ați venit în EduSchedule') n.kind = 'welcome';
+        else if (n.title === 'Orarul a fost publicat') Object.assign(n, { kind: 'published', params: { name } });
+        else if (n.title === 'Orarul a fost actualizat')
+          Object.assign(n, { kind: 'updated', params: { name, count: Number(/^(\d+)/.exec(n.body)?.[1] ?? 0) } });
+        else if (n.title === 'Disponibilitate actualizată')
+          Object.assign(n, { kind: 'availability', params: { name: n.body.replace(/ și-a actualizat.*$/, '') } });
+      }
       return saved;
     }
   } catch {
@@ -80,8 +90,9 @@ function requireRole(...roles: Role[]): User {
   return u;
 }
 
-function notify(title: string, body: string, roles: Role[] = []) {
-  store.notifications.unshift({ id: uid('n'), createdAt: new Date().toISOString(), title, body, roles });
+/** Store a notification by kind; the text is rendered in each viewer's language. */
+function notify(kind: NotificationKind, params: Record<string, string | number>, roles: Role[] = []) {
+  store.notifications.unshift({ id: uid('n'), createdAt: new Date().toISOString(), kind, params, title: '', body: '', roles });
 }
 
 function collection<K extends CollectionName>(name: K): Collections[K][] {
@@ -94,21 +105,6 @@ function countChanges(prev: Timetable | undefined, next: Timetable): number {
   const key = (l: Timetable['lessons'][number]) => `${l.assignmentId}|${l.day}|${l.slot}|${l.roomId}|${l.parity}`;
   const before = new Set(prev.lessons.map(key));
   return next.lessons.filter((l) => !before.has(key(l))).length;
-}
-
-/** Romanian description of a change, for the notification sent to everyone. */
-function describeChange(c: Omit<ScheduleChange, 'id' | 'createdAt'>): { title: string; body: string } {
-  const idx = new DatasetIndex(store.dataset);
-  const a = idx.assignments.get(c.assignmentId);
-  const type = { lecture: 'Curs', seminar: 'Seminar', lab: 'Laborator' }[a?.type ?? 'lecture'];
-  const what = a ? `${idx.subjects.get(a.subjectId)?.code} ${type} · ${idx.audienceLabel(a.audience)}` : '?';
-  const [y, m, d] = c.date.split('-');
-  const when = `${d}.${m}.${y}, perechea ${c.slot + 1}`;
-  const body =
-    c.kind === 'room'
-      ? `${what} — ${when}: sala ${idx.rooms.get(c.roomId ?? '')?.name} în loc de ${idx.rooms.get(c.fromRoomId)?.name}.`
-      : `${what} — ${when}: predă ${idx.teachers.get(c.teacherId ?? '')?.name} în loc de ${a ? idx.teachers.get(a.teacherId)?.name : '?'}.`;
-  return { title: c.kind === 'room' ? 'Schimbare de sală' : 'Profesor înlocuitor', body: c.note ? `${body} ${c.note}` : body };
 }
 
 export function createMockApi(): Api {
@@ -187,7 +183,7 @@ export function createMockApi(): Api {
       const t = store.dataset.teachers.find((x) => x.id === teacherId);
       if (!t) throw new ApiError(404, 'Not found');
       Object.assign(t, data);
-      if (u.role === 'teacher') notify('Disponibilitate actualizată', `${t.name} și-a actualizat disponibilitatea.`, ['admin']);
+      if (u.role === 'teacher') notify('availability', { name: t.name }, ['admin']);
       persist();
       return delay(t);
     },
@@ -231,10 +227,8 @@ export function createMockApi(): Api {
       if (prev) prev.status = 'draft';
       t.status = 'published';
       t.updatedAt = new Date().toISOString();
-      notify(
-        prev ? 'Orarul a fost actualizat' : 'Orarul a fost publicat',
-        prev ? `${changes} perechi au fost modificate în „${t.name}”.` : `„${t.name}” este acum disponibil.`,
-      );
+      if (prev) notify('updated', { name: t.name, count: changes });
+      else notify('published', { name: t.name });
       persist();
       return delay(t);
     },
@@ -282,8 +276,15 @@ export function createMockApi(): Api {
       requireRole('admin');
       const created: ScheduleChange = { ...change, id: uid('c'), createdAt: new Date().toISOString() };
       store.changes.push(created);
-      const { title, body } = describeChange(change);
-      notify(title, body);
+      notify(change.kind === 'room' ? 'room-change' : 'teacher-change', {
+        assignmentId: change.assignmentId,
+        date: change.date,
+        slot: change.slot,
+        fromRoomId: change.fromRoomId,
+        ...(change.roomId ? { roomId: change.roomId } : {}),
+        ...(change.teacherId ? { teacherId: change.teacherId } : {}),
+        ...(change.note ? { note: change.note } : {}),
+      });
       persist();
       return delay(created);
     },

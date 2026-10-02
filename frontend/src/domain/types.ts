@@ -211,9 +211,17 @@ export interface User {
   groupId?: string;
 }
 
+export type NotificationKind = 'welcome' | 'published' | 'updated' | 'availability' | 'room-change' | 'teacher-change';
+
 export interface Notification {
   id: string;
   createdAt: string;
+  /**
+   * What happened. The client builds the text in the viewer's language from
+   * `kind` + `params`; `title`/`body` are a fallback for free-text messages.
+   */
+  kind?: NotificationKind;
+  params?: Record<string, string | number>;
   title: string;
   body: string;
   /** Empty = everyone. */
