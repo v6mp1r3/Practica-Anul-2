@@ -9,6 +9,7 @@
   --brand-blue: #1b7396; /* Pantone 633 — primary */
   --brand-black: #000000;
   --brand-blue-lt: #4ea8cd;
+  --logo-blue: var(--brand-blue);
 }
 
 /* Apple-style system shared with the TAFI Agent / TAFI Contabil sites:
@@ -70,6 +71,7 @@
     --text-2: #a1a1a6;
     --text-3: #6e6e73;
     --primary: var(--brand-blue-lt);
+    --logo-blue: var(--brand-blue-lt);
     --primary-hover: #74bcdb;
     --primary-soft: rgba(78, 168, 205, 0.16);
     --on-primary: #000000;
@@ -101,6 +103,7 @@
   --text-2: #a1a1a6;
   --text-3: #6e6e73;
   --primary: var(--brand-blue-lt);
+  --logo-blue: var(--brand-blue-lt);
   --primary-hover: #74bcdb;
   --primary-soft: rgba(78, 168, 205, 0.16);
   --on-primary: #000000;
