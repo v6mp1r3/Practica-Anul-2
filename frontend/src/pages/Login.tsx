@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { API_MODE } from '../api';
+import { IntroVideo } from '../components/IntroVideo';
 import { Logo } from '../components/Logo';
 import { Field, LanguageSwitch } from '../components/ui';
 import { seedUsers } from '../data/seed';
@@ -18,17 +19,24 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // While signing in we show the intro video before entering the platform;
+  // `entering` keeps the already-signed-in redirect from skipping it.
+  const [entering, setEntering] = useState(false);
+  const [target, setTarget] = useState<string | null>(null);
 
-  if (user) return <Navigate to={homeFor(user.role)} replace />;
+  if (target) return <IntroVideo onDone={() => navigate(target, { replace: true })} />;
+  if (user && !entering) return <Navigate to={homeFor(user.role)} replace />;
 
   async function submit(e: FormEvent, u = username, p = password) {
     e.preventDefault();
     setBusy(true);
     setError('');
+    setEntering(true);
     try {
       const me = await login(u, p);
-      navigate(homeFor(me.role), { replace: true });
+      setTarget(homeFor(me.role));
     } catch {
+      setEntering(false);
       setError(t('login.invalid'));
     } finally {
       setBusy(false);

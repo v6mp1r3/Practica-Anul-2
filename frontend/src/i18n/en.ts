@@ -35,6 +35,7 @@ export const en: Record<MessageKey, string> = {
   'login.submit': 'Sign in',
   'login.invalid': 'Wrong username or password.',
   'login.demo': 'Demo accounts (password: demo)',
+  'intro.skip': 'Skip',
   'login.intro':
     'Works with groups, streams, subgroups and odd or even weeks. It generates several timetable variants and you choose the right one. Conflicts are detected as you go.',
 
