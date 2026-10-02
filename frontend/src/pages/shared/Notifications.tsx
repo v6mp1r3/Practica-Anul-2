@@ -1,6 +1,6 @@
 import { api } from '../../api';
 import { Empty, PageHeader } from '../../components/ui';
-import { useI18n } from '../../i18n';
+import { dateLocale, useI18n } from '../../i18n';
 import { useData } from '../../state/data';
 
 export default function Notifications() {
@@ -35,7 +35,7 @@ export default function Notifications() {
               {!n.read && <span className="badge primary">{t('notifications.new')}</span>}
               <span className="spacer" />
               <span className="small muted">
-                {new Date(n.createdAt).toLocaleString(lang === 'ro' ? 'ro-MD' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                {new Date(n.createdAt).toLocaleString(dateLocale(lang), { dateStyle: 'medium', timeStyle: 'short' })}
               </span>
             </div>
             <p className="muted" style={{ marginTop: 4 }}>

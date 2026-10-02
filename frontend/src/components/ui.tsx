@@ -1,6 +1,6 @@
 // Small presentational building blocks shared by every page.
 import { useEffect, type ReactNode } from 'react';
-import { useI18n } from '../i18n';
+import { LANGS, useI18n } from '../i18n';
 import { Icon } from './Icon';
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
@@ -105,4 +105,18 @@ export function initials(name: string) {
     .map((p) => p[0])
     .join('')
     .toUpperCase();
+}
+
+/** RO / EN / RU switch. */
+export function LanguageSwitch({ dark }: { dark?: boolean }) {
+  const { lang, setLang, t } = useI18n();
+  return (
+    <div className={`lang-switch ${dark ? 'dark' : ''}`} role="group" aria-label={t('nav.language')}>
+      {LANGS.map((l) => (
+        <button key={l} type="button" aria-pressed={l === lang} onClick={() => setLang(l)}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
 }

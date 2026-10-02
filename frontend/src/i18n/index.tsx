@@ -1,9 +1,14 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { en } from './en';
+import { ru } from './ru';
 import { ro, type MessageKey } from './ro';
 
-export type Lang = 'ro' | 'en';
-const dictionaries: Record<Lang, Record<MessageKey, string>> = { ro, en };
+export type Lang = 'ro' | 'en' | 'ru';
+export const LANGS: Lang[] = ['ro', 'en', 'ru'];
+const dictionaries: Record<Lang, Record<MessageKey, string>> = { ro, en, ru };
+
+/** Locale used for dates and numbers in each interface language. */
+export const dateLocale = (l: Lang) => ({ ro: 'ro-MD', en: 'en-GB', ru: 'ru-RU' })[l];
 const LANG_KEY = 'eduschedule:lang';
 
 type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string;
@@ -19,7 +24,7 @@ const I18nContext = createContext<I18n | null>(null);
 function initialLang(): Lang {
   try {
     const saved = localStorage.getItem(LANG_KEY);
-    if (saved === 'ro' || saved === 'en') return saved;
+    if (saved === 'ro' || saved === 'en' || saved === 'ru') return saved;
   } catch {
     /* ignore */
   }

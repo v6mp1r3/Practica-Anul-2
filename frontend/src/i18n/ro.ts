@@ -53,7 +53,7 @@ export const ro = {
   'nav.teacherAvailability': 'Profesori disponibili',
   'nav.notifications': 'Notificări',
   'nav.logout': 'Ieșire',
-  'nav.language': 'English',
+  'nav.language': 'Limba',
   'nav.theme': 'Temă',
 
   'notifications.title': 'Notificări',

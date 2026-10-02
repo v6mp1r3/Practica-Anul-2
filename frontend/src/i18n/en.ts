@@ -54,7 +54,7 @@ export const en: Record<MessageKey, string> = {
   'nav.teacherAvailability': 'Available teachers',
   'nav.notifications': 'Notifications',
   'nav.logout': 'Sign out',
-  'nav.language': 'Română',
+  'nav.language': 'Language',
   'nav.theme': 'Theme',
 
   'notifications.title': 'Notifications',

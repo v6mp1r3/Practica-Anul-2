@@ -6,7 +6,7 @@ import { useAuth } from '../state/auth';
 import { useData } from '../state/data';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './Logo';
-import { initials } from './ui';
+import { initials, LanguageSwitch } from './ui';
 
 interface NavItem {
   to: string;
@@ -87,7 +87,7 @@ function useTheme(): [Theme, () => void] {
 export function Layout() {
   const { user, logout } = useAuth();
   const { notifications } = useData();
-  const { t, lang, setLang } = useI18n();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [theme, cycleTheme] = useTheme();
   const location = useLocation();
@@ -131,10 +131,7 @@ export function Layout() {
             </div>
           </div>
           <div className="row">
-            <button className="btn ghost sm" onClick={() => setLang(lang === 'ro' ? 'en' : 'ro')}>
-              <Icon name="globe" size={15} />
-              {t('nav.language')}
-            </button>
+            <LanguageSwitch />
             <button className="btn ghost sm icon" onClick={cycleTheme} title={`${t('nav.theme')}: ${theme}`} aria-label={t('nav.theme')}>
               <Icon name="moon" size={15} />
             </button>

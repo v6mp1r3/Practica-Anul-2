@@ -4,7 +4,7 @@ import { api } from '../../api';
 import { Icon } from '../../components/Icon';
 import { Empty, Loading, PageHeader } from '../../components/ui';
 import type { Timetable } from '../../domain/types';
-import { useI18n } from '../../i18n';
+import { dateLocale, useI18n } from '../../i18n';
 import { useData } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { StatusBadge } from './Dashboard';
@@ -51,7 +51,7 @@ export default function Timetables() {
 
   if (!list) return <Loading />;
   const compared = list.filter((x) => selected.includes(x.id));
-  const fmt = (iso: string) => new Date(iso).toLocaleString(lang === 'ro' ? 'ro-MD' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' });
+  const fmt = (iso: string) => new Date(iso).toLocaleString(dateLocale(lang), { dateStyle: 'short', timeStyle: 'short' });
 
   return (
     <div className="page">

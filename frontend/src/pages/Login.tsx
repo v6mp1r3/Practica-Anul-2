@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { API_MODE } from '../api';
 import { Logo } from '../components/Logo';
-import { Field } from '../components/ui';
+import { Field, LanguageSwitch } from '../components/ui';
 import { seedUsers } from '../data/seed';
 import type { Role } from '../domain/types';
 import { useI18n } from '../i18n';
@@ -12,7 +12,7 @@ export const homeFor = (role: Role) => `/${role}`;
 
 export default function Login() {
   const { user, login } = useAuth();
-  const { t, lang, setLang } = useI18n();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -43,13 +43,9 @@ export default function Login() {
           <h1>{t('app.tagline')}</h1>
           <p className="hero-text">{t('login.intro')}</p>
         </div>
-        <button
-          className="btn ghost sm"
-          style={{ color: '#fff', alignSelf: 'flex-start' }}
-          onClick={() => setLang(lang === 'ro' ? 'en' : 'ro')}
-        >
-          {t('nav.language')}
-        </button>
+        <div style={{ alignSelf: 'flex-start' }}>
+          <LanguageSwitch dark />
+        </div>
       </section>
 
       <section className="login-form">
