@@ -54,7 +54,11 @@ export default function Setup() {
   async function save() {
     setSaving(true);
     try {
-      await api.saveSettings({ ...s, faculties: s.faculties.map((f) => f.trim()).filter(Boolean) });
+      await api.saveSettings({
+        ...s,
+        faculties: s.faculties.map((f) => f.trim()).filter(Boolean),
+        reducedSessions: s.reducedSessions.filter((x) => x.start && x.end && x.start <= x.end),
+      });
       await refresh();
       toast(t('common.saved'));
     } catch {
@@ -170,8 +174,79 @@ export default function Setup() {
                     </label>
                   ))}
                 </div>
+                <label className="row" style={{ gap: 8, marginLeft: 'auto' }}>
+                  <span className="small muted">{t('setup.formMaxPairs')}</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min={1}
+                    max={s.slots.length}
+                    style={{ width: 72 }}
+                    value={s.formMaxPairs[form]}
+                    onChange={(e) => set('formMaxPairs', { ...s.formMaxPairs, [form]: num(e.target.value, 1) })}
+                  />
+                </label>
               </div>
             ))}
+          </div>
+
+          {/* Reduced attendance meets only during its sessions */}
+          <div className="stack" style={{ gap: 8, marginTop: 8 }}>
+            <h3>{t('setup.sessions')}</h3>
+            <p className="small muted">{t('setup.sessionsHint')}</p>
+            {s.reducedSessions.map((sess, i) => (
+              <div key={i} className="row wrap">
+                <span className="small muted" style={{ minWidth: 70 }}>
+                  {t('setup.session')} {i + 1}
+                </span>
+                <input
+                  className="input"
+                  type="date"
+                  style={{ width: 170 }}
+                  value={sess.start}
+                  aria-label={`${t('setup.session')} ${i + 1} — ${t('setup.start')}`}
+                  onChange={(e) =>
+                    set(
+                      'reducedSessions',
+                      s.reducedSessions.map((x, j) => (j === i ? { ...x, start: e.target.value } : x)),
+                    )
+                  }
+                />
+                <span className="muted">–</span>
+                <input
+                  className="input"
+                  type="date"
+                  style={{ width: 170 }}
+                  value={sess.end}
+                  min={sess.start}
+                  aria-label={`${t('setup.session')} ${i + 1} — ${t('setup.end')}`}
+                  onChange={(e) =>
+                    set(
+                      'reducedSessions',
+                      s.reducedSessions.map((x, j) => (j === i ? { ...x, end: e.target.value } : x)),
+                    )
+                  }
+                />
+                <button
+                  className="btn ghost sm icon danger"
+                  onClick={() =>
+                    set(
+                      'reducedSessions',
+                      s.reducedSessions.filter((_, j) => j !== i),
+                    )
+                  }
+                  aria-label={t('common.delete')}
+                >
+                  <Icon name="trash" size={14} />
+                </button>
+              </div>
+            ))}
+            <div>
+              <button className="btn sm" onClick={() => set('reducedSessions', [...s.reducedSessions, { start: '', end: '' }])}>
+                <Icon name="plus" size={14} />
+                {t('setup.session')}
+              </button>
+            </div>
           </div>
         </Step>
 
@@ -296,15 +371,6 @@ export default function Setup() {
 
         <Step n={6} title={t('setup.limits')}>
           <div className="form-grid">
-            <Field label={t('setup.maxPairsGroup')} hint={t('setup.default', { value: 4 })}>
-              <input
-                className="input"
-                type="number"
-                min={1}
-                value={s.maxPairsPerDayGroup}
-                onChange={(e) => set('maxPairsPerDayGroup', num(e.target.value, 1))}
-              />
-            </Field>
             <Field label={t('setup.minPairsGroup')} hint={t('setup.default', { value: 2 })}>
               <input
                 className="input"

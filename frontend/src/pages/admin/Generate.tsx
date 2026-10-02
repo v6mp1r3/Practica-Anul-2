@@ -6,7 +6,7 @@ import { PrecheckList } from '../../components/PrecheckList';
 import { Field, PageHeader, Segmented } from '../../components/ui';
 import { precheck } from '../../domain/precheck';
 import { SOFT_WEIGHTS } from '../../domain/score';
-import { STUDY_FORMS, type ScoreBreakdown, type Timetable } from '../../domain/types';
+import { STUDY_FORMS, type ScoreBreakdown, type StudyForm, type Timetable } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
@@ -104,6 +104,7 @@ export default function Generate() {
   const toast = useToast();
   const navigate = useNavigate();
   const [groupIds, setGroupIds] = useState<string[]>(dataset.groups.map((g) => g.id));
+  const [form, setForm] = useState<'all' | StudyForm>('all');
   const [variants, setVariants] = useState(3);
   const [effort, setEffort] = useState<Effort>('normal');
   const [baseId, setBaseId] = useState('');
@@ -120,7 +121,8 @@ export default function Generate() {
 
   const issues = useMemo(() => precheck(dataset, index), [dataset, index]);
   const hard = issues.filter((i) => i.severity === 'hard');
-  const years = [...new Set(dataset.groups.map((g) => g.year))].sort();
+  const formGroups = dataset.groups.filter((g) => form === 'all' || g.studyForm === form);
+  const years = [...new Set(formGroups.map((g) => g.year))].sort();
   const running = progress !== null;
 
   async function run() {
@@ -155,30 +157,26 @@ export default function Generate() {
               <h2>{t('generate.settings')}</h2>
             </div>
             <div className="card-body stack">
+              <Field label={t('generate.form')}>
+                <Segmented
+                  value={form}
+                  onChange={(f) => {
+                    setForm(f);
+                    setGroupIds(dataset.groups.filter((g) => f === 'all' || g.studyForm === f).map((g) => g.id));
+                  }}
+                  options={[
+                    { value: 'all', label: t('generate.allForms') },
+                    ...STUDY_FORMS.filter((f) => dataset.groups.some((g) => g.studyForm === f)).map((f) => ({
+                      value: f,
+                      label: t(`form.${f}`),
+                    })),
+                  ]}
+                />
+              </Field>
               <Field label={t('generate.groups')} hint={t('generate.groupsHint')}>
                 <div className="stack" style={{ gap: 8 }}>
-                  {/* Select every group of one form of study at once, e.g. only reduced attendance */}
-                  <div className="row wrap" style={{ gap: 6 }}>
-                    <span className="small muted">{t('generate.byForm')}:</span>
-                    {STUDY_FORMS.filter((f) => dataset.groups.some((g) => g.studyForm === f)).map((f) => {
-                      const ids = dataset.groups.filter((g) => g.studyForm === f).map((g) => g.id);
-                      const on = ids.every((id) => groupIds.includes(id));
-                      return (
-                        <button
-                          key={f}
-                          type="button"
-                          className={`badge ${on ? 'primary' : ''}`}
-                          style={{ border: 'none', cursor: 'pointer' }}
-                          onClick={() => toggle(ids, !on)}
-                          aria-pressed={on}
-                        >
-                          {t(`form.${f}`)}
-                        </button>
-                      );
-                    })}
-                  </div>
                   {years.map((y) => {
-                    const ids = dataset.groups.filter((g) => g.year === y).map((g) => g.id);
+                    const ids = formGroups.filter((g) => g.year === y).map((g) => g.id);
                     const all = ids.every((id) => groupIds.includes(id));
                     return (
                       <div key={y} className="row wrap">
