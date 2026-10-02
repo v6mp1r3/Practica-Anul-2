@@ -254,6 +254,14 @@ export const ro = {
   'editor.dragHint': 'Trage o pereche pentru a o muta. Verde = fără conflicte.',
   'editor.movedWithConflicts': 'Mutată, dar creează {count} conflicte',
 
+  'editor.day': 'Ziua',
+  'editor.suitableRooms': 'Săli potrivite',
+  'editor.otherRooms': 'Alte săli (nepotrivite)',
+  'editor.busy': 'ocupată',
+  'editor.lock': 'Blochează perechea',
+  'editor.locked': 'Pereche blocată',
+  'editor.lockHint': 'Perechile blocate nu sunt mutate la regenerare.',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',

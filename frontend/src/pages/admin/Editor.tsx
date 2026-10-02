@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api';
 import { ConflictList } from '../../components/ConflictList';
 import { Icon } from '../../components/Icon';
+import { LessonPanel } from '../../components/LessonPanel';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { ViewPicker } from '../../components/ViewPicker';
 import { Loading, PageHeader } from '../../components/ui';
@@ -34,6 +35,7 @@ export default function Editor() {
   const [week, setWeek] = useState<Parity>('weekly');
   const [selectedConflict, setSelectedConflict] = useState<Conflict | null>(null);
   const [history, setHistory] = useState<Lesson[][]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -108,6 +110,12 @@ export default function Editor() {
 
   if (!tt) return <Loading />;
 
+  const selected = lessons.find((l) => l.id === selectedId) ?? null;
+
+  function patchLesson(lessonId: string, patch: Partial<Lesson>) {
+    commit(lessons.map((x) => (x.id === lessonId ? { ...x, ...patch } : x)));
+  }
+
   function move(lessonId: string, day: number, slot: number) {
     const l = lessons.find((x) => x.id === lessonId);
     if (!l || l.locked || (l.day === day && l.slot === slot)) return;
@@ -176,8 +184,9 @@ export default function Editor() {
             lessons={visible}
             hide={HIDE[view.kind]}
             conflictIds={conflictIds}
-            highlightIds={highlightIds}
+            highlightIds={selected ? new Set([selected.id]) : highlightIds}
             onMove={move}
+            onLessonClick={(l) => setSelectedId((cur) => (cur === l.id ? null : l.id))}
             canDrop={(id, day, slot) => conflictsIfMoved(id, day, slot).length === 0}
           />
           <div className="row wrap">
@@ -188,6 +197,16 @@ export default function Editor() {
         </div>
 
         <aside className="stack no-print">
+          {selected && (
+            <LessonPanel
+              lesson={selected}
+              lessons={lessons}
+              dataset={dataset}
+              index={index}
+              onChange={(patch) => patchLesson(selected.id, patch)}
+              onClose={() => setSelectedId(null)}
+            />
+          )}
           <div className="card">
             <div className="card-body">
               <div className="stats" style={{ gridTemplateColumns: '1fr 1fr' }}>

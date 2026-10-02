@@ -255,6 +255,14 @@ export const en: Record<MessageKey, string> = {
   'editor.dragHint': 'Drag a pair to move it. Green = no conflicts.',
   'editor.movedWithConflicts': 'Moved, but it creates {count} conflicts',
 
+  'editor.day': 'Day',
+  'editor.suitableRooms': 'Suitable rooms',
+  'editor.otherRooms': 'Other rooms (unsuitable)',
+  'editor.busy': 'busy',
+  'editor.lock': 'Lock this pair',
+  'editor.locked': 'Pair locked',
+  'editor.lockHint': 'Locked pairs are kept when regenerating.',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',
