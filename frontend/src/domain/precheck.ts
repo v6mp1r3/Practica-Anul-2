@@ -67,8 +67,9 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
       continue;
     }
 
-    // Compare against the study plan, per subject and activity type
-    for (const s of ds.subjects.filter((x) => x.year === g.year)) {
+    // Compare against the study plan, per subject and activity type. Reduced
+    // attendance has fewer contact hours by design, so it is not compared.
+    for (const s of g.studyForm === 'reduced' ? [] : ds.subjects.filter((x) => x.year === g.year)) {
       for (const type of ['lecture', 'seminar', 'lab'] as ActivityType[]) {
         const expected = s[pairsField[type]];
         const relevant = touching.filter((a) => a.subjectId === s.id && a.type === type);
@@ -96,7 +97,7 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
       const pairs = touching
         .filter((a) => sub === null || a.audience.kind !== 'subgroup' || a.audience.subgroup === sub)
         .reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
-      const cap = ds.settings.workingDays * ds.settings.maxPairsPerDayGroup;
+      const cap = idx.groupDays(g.id).length * ds.settings.maxPairsPerDayGroup;
       if (pairs > cap) {
         out.push({ kind: 'group-overloaded', severity: 'hard', subjectId: g.id, vars: { pairs, cap } });
         break;

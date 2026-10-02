@@ -10,11 +10,19 @@ export type Parity = 'weekly' | 'odd' | 'even';
 
 export type RoomType = 'lecture' | 'seminar' | 'lab';
 
-/** Day index 0 = Monday … 5 = Saturday. */
+/** Day index 0 = Monday … 6 = Sunday. */
 export type Day = number;
 
 /** Index into Settings.slots (pair number − 1). */
 export type SlotIndex = number;
+
+/**
+ * Form of study (Education Code, art. 76): full-time attendance, reduced
+ * attendance (lessons concentrated on a few days, usually the weekend) and dual
+ * (alternating university and company). All forms share teachers and rooms.
+ */
+export type StudyForm = 'full' | 'reduced' | 'dual';
+export const STUDY_FORMS: StudyForm[] = ['full', 'reduced', 'dual'];
 
 export interface TimeSlot {
   start: string; // "08:00"
@@ -26,7 +34,10 @@ export interface Settings {
   /** Faculties of the institution — as many as needed, none required. */
   faculties: string[];
   semester: string;
-  workingDays: number; // 5 or 6
+  /** Days shown in the week, from Monday: 7 = Monday–Sunday. */
+  workingDays: number;
+  /** Days each form of study may be scheduled on (subset of the working days). */
+  formDays: Record<StudyForm, Day[]>;
   lessonMinutes: number;
   slots: TimeSlot[];
   weekParity: boolean;
@@ -69,6 +80,8 @@ export interface Group {
   program: string;
   year: number;
   size: number;
+  /** Form of study; decides which days the group can have pairs on. */
+  studyForm: StudyForm;
   /** Faculty the group belongs to (one of Settings.faculties), optional. */
   faculty?: string;
   /** Number of subgroups used for labs (1 = not split). */
@@ -160,6 +173,7 @@ export type ConflictKind =
   | 'hours-missing'
   | 'hours-extra'
   | 'outside-hours'
+  | 'wrong-day'
   | 'teacher-overtime'
   | 'teacher-day-overload'
   | 'group-day-overload'

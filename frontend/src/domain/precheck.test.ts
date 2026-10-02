@@ -27,7 +27,7 @@ describe('precheck', () => {
   it('reports a group with nothing assigned', () => {
     const ds: Dataset = {
       ...seedDataset,
-      groups: [...seedDataset.groups, { id: 'gx', name: 'X-1', program: '', year: 1, size: 10, subgroups: 1 }],
+      groups: [...seedDataset.groups, { id: 'gx', name: 'X-1', program: '', studyForm: 'full', year: 1, size: 10, subgroups: 1 }],
     };
     expect(precheck(ds).some((i) => i.kind === 'group-empty' && i.subjectId === 'gx')).toBe(true);
   });

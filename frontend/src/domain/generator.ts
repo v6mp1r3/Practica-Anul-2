@@ -159,7 +159,7 @@ class Builder {
 
     let best: Lesson | null = null;
     let bestCost = Infinity;
-    for (const day of range(settings.workingDays)) {
+    for (const day of this.idx.allowedDays(a)) {
       for (const slot of range(settings.slots.length)) {
         if (teacher?.unavailable.includes(slotKey(day, slot))) continue;
         const cost = this.cost(a, day, slot);
@@ -185,7 +185,10 @@ class Builder {
     this.add({
       id: newLessonId(),
       assignmentId: a.id,
-      day: this.rng.int(this.ds.settings.workingDays),
+      day: (() => {
+        const days = this.idx.allowedDays(a);
+        return days.length ? this.rng.pick(days) : this.rng.int(this.ds.settings.workingDays);
+      })(),
       slot: this.rng.int(this.ds.settings.slots.length),
       roomId: room.id,
       parity: a.parity,

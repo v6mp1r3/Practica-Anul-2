@@ -60,12 +60,13 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
     if (pref.length) b.preferenceMisses += tl.filter((l) => !pref.includes(`${l.day}:${l.slot}`)).length * 0.5;
   }
 
-  // Students: gaps, overloaded days, unbalanced week
+  // Students: gaps, overloaded days, unbalanced week — over the group's own days
   for (const view of studentViews(ds)) {
     const vl = lessons.filter((l) => lessonHitsView(idx, l, view));
     if (!vl.length) continue;
+    const groupDays = idx.groupDays(view.groupId);
     for (const week of weeks) {
-      const perDay = days.map((d) => vl.filter((l) => l.day === d && inWeek(l, week)).map((l) => l.slot));
+      const perDay = groupDays.map((d) => vl.filter((l) => l.day === d && inWeek(l, week)).map((l) => l.slot));
       for (const slots of perDay) {
         b.groupGaps += weekShare * gapsInDay(slots);
         b.dayOverload += weekShare * Math.max(0, new Set(slots).size - ds.settings.maxPairsPerDayGroup);
@@ -120,7 +121,7 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
       return a && idx.audienceTouchesGroup(a.audience, g.id);
     });
     if (!all.length) continue;
-    for (const d of days) {
+    for (const d of idx.groupDays(g.id)) {
       const count = new Set(all.filter((l) => l.day === d).map((l) => l.slot)).size;
       const whole = new Set(gl.filter((l) => l.day === d).map((l) => l.slot)).size;
       if (whole > ds.settings.maxPairsPerDayGroup) {

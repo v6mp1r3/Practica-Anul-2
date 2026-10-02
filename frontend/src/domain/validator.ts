@@ -48,6 +48,9 @@ export function findHardConflicts(ds: Dataset, lessons: Lesson[], idx = new Data
     if (l.day < 0 || l.day >= settings.workingDays || l.slot < 0 || l.slot >= settings.slots.length) {
       out.push({ ...base, kind: 'outside-hours', subjectId: a.id });
     }
+    if (l.day < settings.workingDays && !idx.allowedDays(a).includes(l.day)) {
+      out.push({ ...base, kind: 'wrong-day', subjectId: a.id });
+    }
     const teacher = idx.teachers.get(a.teacherId);
     if (teacher?.unavailable.includes(slotKey(l.day, l.slot))) {
       out.push({ ...base, kind: 'teacher-unavailable', subjectId: teacher.id });

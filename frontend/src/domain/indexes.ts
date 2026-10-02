@@ -1,4 +1,4 @@
-import type { Assignment, Audience, Dataset, Group, Lesson, Room, Stream, Subject, Teacher } from './types';
+import type { Assignment, Audience, Dataset, Day, Group, Lesson, Room, Stream, Subject, Teacher } from './types';
 
 /** A slice of students: a whole group (subgroup = null) or one subgroup. */
 export interface Cohort {
@@ -62,6 +62,20 @@ export class DatasetIndex {
     return this.cohorts(a).some((x) =>
       cb.some((y) => x.groupId === y.groupId && (x.subgroup === null || y.subgroup === null || x.subgroup === y.subgroup)),
     );
+  }
+
+  /** Days a group may have pairs on, from its form of study. */
+  groupDays(groupId: string): Day[] {
+    const { settings } = this.ds;
+    const form = this.groups.get(groupId)?.studyForm ?? 'full';
+    return (settings.formDays?.[form] ?? []).filter((d) => d < settings.workingDays);
+  }
+
+  /** Days a pair may be placed on: allowed for every group in its audience. */
+  allowedDays(a: Assignment): Day[] {
+    const lists = this.cohorts(a.audience).map((c) => this.groupDays(c.groupId));
+    if (!lists.length) return [];
+    return lists.reduce((acc, l) => acc.filter((d) => l.includes(d)));
   }
 
   assignmentOf(lesson: Lesson): Assignment | undefined {
