@@ -37,6 +37,8 @@ export const ro = {
   'login.intro':
     'Lucrează cu grupe, torente, subgrupe și săptămâni pare sau impare. Generează mai multe variante de orar, iar tu o alegi pe cea potrivită. Conflictele sunt detectate pe loc.',
 
+  'nav.menu': 'Meniu principal',
+  'nav.account': 'Cont',
   'nav.dashboard': 'Panou',
   'nav.setup': 'Configurare',
   'nav.teachers': 'Profesori',

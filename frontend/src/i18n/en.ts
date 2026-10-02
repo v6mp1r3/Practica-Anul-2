@@ -38,6 +38,8 @@ export const en: Record<MessageKey, string> = {
   'login.intro':
     'Works with groups, streams, subgroups and odd or even weeks. It generates several timetable variants and you choose the right one. Conflicts are detected as you go.',
 
+  'nav.menu': 'Main menu',
+  'nav.account': 'Account',
   'nav.dashboard': 'Dashboard',
   'nav.setup': 'Setup',
   'nav.teachers': 'Teachers',

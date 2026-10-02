@@ -17,7 +17,7 @@ interface NavItem {
 
 const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
   admin: [
-    { items: [{ to: '/admin', label: 'nav.dashboard', icon: 'dashboard', end: true }] },
+    { section: 'nav.menu', items: [{ to: '/admin', label: 'nav.dashboard', icon: 'dashboard', end: true }] },
     {
       section: 'nav.setup',
       items: [
@@ -40,6 +40,7 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
   ],
   teacher: [
     {
+      section: 'nav.menu',
       items: [
         { to: '/teacher', label: 'nav.myTimetable', icon: 'calendar', end: true },
         { to: '/teacher/availability', label: 'nav.availability', icon: 'clock' },
@@ -50,6 +51,7 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
   ],
   student: [
     {
+      section: 'nav.menu',
       items: [
         { to: '/student', label: 'nav.myTimetable', icon: 'calendar', end: true },
         { to: '/browse', label: 'nav.browse', icon: 'search' },
@@ -59,6 +61,12 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
     },
   ],
 };
+
+/** Nav item for the current page (longest matching path), for the breadcrumb. */
+function currentItem(role: Role, pathname: string): NavItem | undefined {
+  const items = NAV[role].flatMap((g) => g.items).concat({ to: '/notifications', label: 'nav.notifications', icon: 'bell' });
+  return items.filter((i) => pathname === i.to || pathname.startsWith(i.to + '/')).sort((a, b) => b.to.length - a.to.length)[0];
+}
 
 export function Layout() {
   const { user, logout } = useAuth();
@@ -71,6 +79,7 @@ export function Layout() {
   if (!user) return null;
 
   const unread = notifications.filter((n) => !n.read).length;
+  const crumb = currentItem(user.role, location.pathname);
 
   return (
     <div className="shell">
@@ -98,6 +107,7 @@ export function Layout() {
           </NavLink>
         </nav>
         <div className="sidebar-footer">
+          <div className="nav-section">{t('nav.account')}</div>
           <div className="user-chip">
             <div className="avatar">{initials(user.name)}</div>
             <div style={{ minWidth: 0 }}>
@@ -125,7 +135,24 @@ export function Layout() {
             <Icon name="bell" />
           </NavLink>
         </header>
-        <Outlet />
+        <div className="panel">
+          <div className="panel-bar">
+            <span className="crumb muted">{user.name}</span>
+            <span className="crumb-sep muted">›</span>
+            {crumb && (
+              <span className="crumb">
+                <Icon name={crumb.icon} size={15} />
+                {t(crumb.label)}
+              </span>
+            )}
+            <span className="spacer" />
+            <NavLink to="/notifications" className="panel-icon" aria-label={t('nav.notifications')}>
+              <Icon name="bell" size={17} />
+              {unread > 0 && <span className="dot" />}
+            </NavLink>
+          </div>
+          <Outlet />
+        </div>
       </div>
     </div>
   );
