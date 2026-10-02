@@ -8,6 +8,7 @@ import Dashboard from './pages/admin/Dashboard';
 import Groups from './pages/admin/Groups';
 import Rooms from './pages/admin/Rooms';
 import Setup from './pages/admin/Setup';
+import Subjects from './pages/admin/Subjects';
 import Teachers from './pages/admin/Teachers';
 import Login, { homeFor } from './pages/Login';
 import Notifications from './pages/shared/Notifications';
@@ -59,6 +60,7 @@ function AppRoutes() {
         <Route path="teachers" element={<Teachers />} />
         <Route path="rooms" element={<Rooms />} />
         <Route path="groups" element={<Groups />} />
+        <Route path="subjects" element={<Subjects />} />
       </Route>
       <Route path="*" element={<Home />} />
     </Routes>

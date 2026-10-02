@@ -174,6 +174,18 @@ export const ro = {
   'groups.nameRequired': 'Denumirea este obligatorie.',
   'groups.sizeRequired': 'Numărul de studenți trebuie să fie cel puțin 1.',
 
+  'subjects.subtitle': 'Disciplinele din planul de studii și numărul de perechi pe săptămână.',
+  'subjects.code': 'Cod',
+  'subjects.year': 'Anul',
+  'subjects.template': 'Model CSV',
+  'subjects.import': 'Importă plan de studii',
+  'subjects.importCount': 'Importă {count} discipline',
+  'subjects.imported': '{count} discipline importate',
+  'subjects.importErrors': 'Rânduri ignorate (date invalide): {lines}',
+  'subjects.pairsPerWeek': 'Perechi pe săptămână',
+  'subjects.pairsHint': '0,5 înseamnă o pereche la două săptămâni (pară sau impară).',
+  'subjects.required': 'Codul și denumirea sunt obligatorii.',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',

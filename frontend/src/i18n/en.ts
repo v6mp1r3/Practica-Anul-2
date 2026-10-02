@@ -175,6 +175,18 @@ export const en: Record<MessageKey, string> = {
   'groups.nameRequired': 'Name is required.',
   'groups.sizeRequired': 'Student count must be at least 1.',
 
+  'subjects.subtitle': 'Subjects from the study plan and their pairs per week.',
+  'subjects.code': 'Code',
+  'subjects.year': 'Year',
+  'subjects.template': 'CSV template',
+  'subjects.import': 'Import study plan',
+  'subjects.importCount': 'Import {count} subjects',
+  'subjects.imported': '{count} subjects imported',
+  'subjects.importErrors': 'Skipped lines (invalid data): {lines}',
+  'subjects.pairsPerWeek': 'Pairs per week',
+  'subjects.pairsHint': '0.5 means one pair every other week (odd or even).',
+  'subjects.required': 'Code and name are required.',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',
