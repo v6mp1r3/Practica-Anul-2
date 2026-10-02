@@ -286,6 +286,16 @@ export const en: Record<MessageKey, string> = {
   'availability.needConsultation': 'Pick a consultation hour',
   'availability.note': '“Unavailable” slots are always respected; “Preferred” slots are respected when possible.',
 
+  'freeRooms.subtitle': 'Find an empty room for studying, consultations or a make-up class.',
+  'freeRooms.minCapacity': 'Minimum seats',
+  'freeRooms.result': '{count} free rooms',
+  'freeRooms.none': 'No free room matches these filters.',
+  'freeRooms.overview': 'Whole week',
+  'freeRooms.overviewHint': 'Number of free rooms in each slot. Click a slot for details.',
+  'teacherAvail.subtitle': 'See when a teacher is teaching, free, or holding consultations.',
+  'teacherAvail.teaching': 'Teaching',
+  'teacherAvail.freeNow': 'Free now (pair {pair})',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',

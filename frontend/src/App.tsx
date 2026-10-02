@@ -16,7 +16,9 @@ import Teachers from './pages/admin/Teachers';
 import Timetables from './pages/admin/Timetables';
 import Login, { homeFor } from './pages/Login';
 import Browse from './pages/shared/Browse';
+import FreeRooms from './pages/shared/FreeRooms';
 import Notifications from './pages/shared/Notifications';
+import TeacherAvailability from './pages/shared/TeacherAvailability';
 import StudentHome from './pages/student/StudentHome';
 import Availability from './pages/teacher/Availability';
 import TeacherHome from './pages/teacher/TeacherHome';
@@ -55,6 +57,8 @@ function AppRoutes() {
       >
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/browse" element={<Browse />} />
+        <Route path="/rooms" element={<FreeRooms />} />
+        <Route path="/teachers" element={<TeacherAvailability />} />
       </Route>
       <Route
         path="/admin"
