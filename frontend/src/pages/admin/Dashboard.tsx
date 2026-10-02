@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import { Icon } from '../../components/Icon';
 import { PrecheckList } from '../../components/PrecheckList';
+import { PageHeader } from '../../components/ui';
 import { scopeAssignments } from '../../domain/generator';
 import { precheck } from '../../domain/precheck';
 import { range } from '../../domain/slots';
@@ -120,6 +121,10 @@ export default function Dashboard() {
 
   return (
     <div className="page dash">
+      <PageHeader
+        title={t('nav.dashboard')}
+        subtitle={t('dashboard.subtitle', { faculty: dataset.settings.faculty, semester: dataset.settings.semester })}
+      />
       <div className="dash-grid">
         {/* Timetable status — the glass hero */}
         <section className="dash-hero">
