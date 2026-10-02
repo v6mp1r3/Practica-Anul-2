@@ -139,8 +139,11 @@
   justify-content: space-between;
   padding: 48px;
   position: relative;
-  background: linear-gradient(150deg, var(--brand-blue) 0%, #0f4a62 60%, var(--brand-teal) 100%);
-  color: #fff;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 50% at 20% 85%, rgba(27, 115, 150, 0.55), transparent 70%),
+    radial-gradient(40% 40% at 85% 15%, rgba(78, 168, 205, 0.25), transparent 70%), #1d1d1f;
+  color: #f5f5f7;
 }
 /* The eight brand colours as a stripe along the bottom of the hero */
 .login-hero::after {
@@ -163,14 +166,18 @@
   );
 }
 .login-hero h1 {
-  font-size: 34px;
-  max-width: 420px;
+  font-size: clamp(34px, 4.2vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  max-width: 560px;
 }
 .hero-text {
-  max-width: 440px;
-  font-size: 16px;
-  line-height: 1.6;
-  opacity: 0.9;
+  max-width: 460px;
+  margin-top: 8px;
+  font-size: 17px;
+  line-height: 1.55;
+  color: #a1a1a6;
 }
 .login-form {
   display: grid;
@@ -182,6 +189,7 @@
 }
 .demo-accounts button {
   width: 100%;
+  border-radius: var(--radius-md);
   justify-content: flex-start;
   height: auto;
   padding: 8px 12px;

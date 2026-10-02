@@ -18,7 +18,12 @@ body {
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
-  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--primary);
+  color: #fff;
 }
 
 /* Times, counts and scores line up in columns */
@@ -35,12 +40,16 @@ h2,
 h3,
 h4 {
   margin: 0;
-  line-height: 1.25;
-  font-weight: 650;
+  font-family: var(--font-display);
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 h1 {
-  font-size: 22px;
+  font-size: 30px;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
 }
 h2 {
   font-size: 17px;
