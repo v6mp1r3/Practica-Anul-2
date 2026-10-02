@@ -229,6 +229,18 @@ export const ro = {
   'generate.keep': 'Păstrează ca ciornă',
   'generate.kept': '„{name}” salvat ca ciornă',
 
+  'timetables.subtitle': 'Variantele generate, ciornele și orarul publicat.',
+  'timetables.empty': 'Niciun orar încă. Începe cu generarea.',
+  'timetables.status': 'Stare',
+  'timetables.updated': 'Actualizat',
+  'timetables.publish': 'Publică',
+  'timetables.duplicate': 'Duplică',
+  'timetables.copy': 'copie',
+  'timetables.compare': 'Compară',
+  'timetables.compareHint': 'Bifează două sau mai multe orare pentru a le compara.',
+  'timetables.publishWithConflicts': 'Orarul are {count} conflicte. Îl publici oricum?',
+  'timetables.publishedToast': '„{name}” a fost publicat. Profesorii și studenții au fost anunțați.',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',

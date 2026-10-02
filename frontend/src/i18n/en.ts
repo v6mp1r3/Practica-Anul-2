@@ -230,6 +230,18 @@ export const en: Record<MessageKey, string> = {
   'generate.keep': 'Keep as draft',
   'generate.kept': '“{name}” saved as a draft',
 
+  'timetables.subtitle': 'Generated variants, drafts and the published timetable.',
+  'timetables.empty': 'No timetables yet. Start by generating one.',
+  'timetables.status': 'Status',
+  'timetables.updated': 'Updated',
+  'timetables.publish': 'Publish',
+  'timetables.duplicate': 'Duplicate',
+  'timetables.copy': 'copy',
+  'timetables.compare': 'Compare',
+  'timetables.compareHint': 'Tick two or more timetables to compare them.',
+  'timetables.publishWithConflicts': 'The timetable has {count} conflicts. Publish anyway?',
+  'timetables.publishedToast': '“{name}” was published. Teachers and students have been notified.',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',

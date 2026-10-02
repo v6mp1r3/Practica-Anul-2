@@ -12,6 +12,7 @@ import Rooms from './pages/admin/Rooms';
 import Setup from './pages/admin/Setup';
 import Subjects from './pages/admin/Subjects';
 import Teachers from './pages/admin/Teachers';
+import Timetables from './pages/admin/Timetables';
 import Login, { homeFor } from './pages/Login';
 import Notifications from './pages/shared/Notifications';
 import { AuthProvider, useAuth } from './state/auth';
@@ -65,6 +66,7 @@ function AppRoutes() {
         <Route path="subjects" element={<Subjects />} />
         <Route path="assignments" element={<Assignments />} />
         <Route path="generate" element={<Generate />} />
+        <Route path="timetables" element={<Timetables />} />
       </Route>
       <Route path="*" element={<Home />} />
     </Routes>
