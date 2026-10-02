@@ -206,3 +206,28 @@
     display: none;
   }
 }
+
+/* Editor: grid on the left, validation panel on the right */
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+.editor-layout > aside {
+  position: sticky;
+  top: 16px;
+}
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+@media (max-width: 1100px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
+  .editor-layout > aside {
+    position: static;
+  }
+}

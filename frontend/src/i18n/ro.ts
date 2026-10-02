@@ -246,6 +246,8 @@ export const ro = {
   'view.room': 'Sală',
   'view.allSubgroups': 'Toate subgrupele',
 
+  'editor.unsaved': 'Modificări nesalvate',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',

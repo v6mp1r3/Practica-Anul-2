@@ -247,6 +247,8 @@ export const en: Record<MessageKey, string> = {
   'view.room': 'Room',
   'view.allSubgroups': 'All subgroups',
 
+  'editor.unsaved': 'Unsaved changes',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',
