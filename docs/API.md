@@ -202,11 +202,11 @@ substitute teacher takes it. The published timetable is not modified. Creating a
 change also creates a notification for everyone (`kind: "room-change"` or
 `"teacher-change"`).
 
-| Method | Path            | Role  | Body / response                          |
-| ------ | --------------- | ----- | ---------------------------------------- |
-| GET    | `/changes`      | any   | `ScheduleChange[]`                       |
+| Method | Path            | Role  | Body / response                           |
+| ------ | --------------- | ----- | ----------------------------------------- |
+| GET    | `/changes`      | any   | `ScheduleChange[]`                        |
 | POST   | `/changes`      | admin | change without `id`/`createdAt` → created |
-| DELETE | `/changes/{id}` | admin | `204`                                    |
+| DELETE | `/changes/{id}` | admin | `204`                                     |
 
 ```json
 // ScheduleChange — the pair is identified by assignmentId + slot on that date
@@ -221,20 +221,37 @@ already busy at that slot on that date (`422`).
 
 ## Notifications
 
-| Method | Path                  | Role | Body / response                                  |
-| ------ | --------------------- | ---- | ------------------------------------------------ |
-| GET    | `/notifications`      | any  | notifications for the caller's role, with `read` |
-| POST   | `/notifications/read` | any  | `{ ids: string[] }` → `204`                      |
+| Method | Path                  | Role | Body / response                                    |
+| ------ | --------------------- | ---- | -------------------------------------------------- |
+| GET    | `/notifications`      | any  | notifications that concern the caller, with `read` |
+| POST   | `/notifications/read` | any  | `{ ids: string[] }` → `204`                        |
 
 ```json
 {
-  "id": "n1",
-  "createdAt": "2026-09-28T09:00:00.000Z",
-  "title": "Orarul a fost publicat",
-  "body": "„Varianta A” este acum disponibil.",
+  "id": "n7",
+  "createdAt": "2026-10-02T14:00:00.000Z",
+  "kind": "room-change",
+  "params": {
+    "assignmentId": "a1",
+    "date": "2026-10-05",
+    "slot": 1,
+    "fromRoomId": "r1",
+    "roomId": "r2"
+  },
+  "title": "",
+  "body": "",
   "roles": [],
+  "groupIds": ["g1", "g2", "g3", "g4", "g8"],
+  "teacherIds": ["t3"],
   "read": false
 }
 ```
 
-`roles: []` means everyone.
+- **Text:** notifications carry a `kind` and `params`; the client writes the text
+  in the viewer's language (RO/RU/EN). Kinds: `welcome`, `published` (`name`),
+  `updated` (`name`, `count`), `availability` (`name`), `room-change` and
+  `teacher-change` (the change's fields). `title`/`body` are only used for
+  free-text messages without a `kind`.
+- **Who sees it:** `roles: []` means every role. A notification with `groupIds` /
+  `teacherIds` (schedule changes: the affected groups and both teachers) reaches
+  only those students and teachers; administrators always see everything.

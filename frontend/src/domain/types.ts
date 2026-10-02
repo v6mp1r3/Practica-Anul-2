@@ -240,6 +240,12 @@ export interface Notification {
   body: string;
   /** Empty = everyone. */
   roles: Role[];
+  /**
+   * Only for these groups / teachers (administrators always see it). Used for
+   * schedule changes, so students hear only about their own pairs.
+   */
+  groupIds?: string[];
+  teacherIds?: string[];
   read?: boolean;
 }
 

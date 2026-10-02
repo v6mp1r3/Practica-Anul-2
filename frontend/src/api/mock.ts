@@ -97,8 +97,21 @@ function requireRole(...roles: Role[]): User {
 }
 
 /** Store a notification by kind; the text is rendered in each viewer's language. */
-function notify(kind: NotificationKind, params: Record<string, string | number>, roles: Role[] = []) {
-  store.notifications.unshift({ id: uid('n'), createdAt: new Date().toISOString(), kind, params, title: '', body: '', roles });
+function notify(
+  kind: NotificationKind,
+  params: Record<string, string | number>,
+  roles: Role[] = [],
+  target?: { groupIds: string[]; teacherIds: string[] },
+) {
+  store.notifications.unshift({ id: uid('n'), createdAt: new Date().toISOString(), kind, params, title: '', body: '', roles, ...target });
+}
+
+/** Does a notification concern this user? Targeted ones reach only the groups/teachers involved. */
+function concerns(n: Notification, u: User): boolean {
+  if (n.roles.length && !n.roles.includes(u.role)) return false;
+  if (u.role === 'admin' || (!n.groupIds && !n.teacherIds)) return true;
+  if (u.role === 'student') return !!u.groupId && !!n.groupIds?.includes(u.groupId);
+  return !!u.teacherId && !!n.teacherIds?.includes(u.teacherId);
 }
 
 function collection<K extends CollectionName>(name: K): Collections[K][] {
@@ -282,15 +295,30 @@ export function createMockApi(): Api {
       requireRole('admin');
       const created: ScheduleChange = { ...change, id: uid('c'), createdAt: new Date().toISOString() };
       store.changes.push(created);
-      notify(change.kind === 'room' ? 'room-change' : 'teacher-change', {
-        assignmentId: change.assignmentId,
-        date: change.date,
-        slot: change.slot,
-        fromRoomId: change.fromRoomId,
-        ...(change.roomId ? { roomId: change.roomId } : {}),
-        ...(change.teacherId ? { teacherId: change.teacherId } : {}),
-        ...(change.note ? { note: change.note } : {}),
-      });
+      notify(
+        change.kind === 'room' ? 'room-change' : 'teacher-change',
+        {
+          assignmentId: change.assignmentId,
+          date: change.date,
+          slot: change.slot,
+          fromRoomId: change.fromRoomId,
+          ...(change.roomId ? { roomId: change.roomId } : {}),
+          ...(change.teacherId ? { teacherId: change.teacherId } : {}),
+          ...(change.note ? { note: change.note } : {}),
+        },
+        [],
+        // the affected groups (and every subgroup of them) and both teachers involved
+        (() => {
+          const a = store.dataset.assignments.find((x) => x.id === change.assignmentId);
+          const groupIds = !a
+            ? []
+            : a.audience.kind === 'stream'
+              ? (store.dataset.streams.find((x) => x.id === a.audience.id)?.groupIds ?? [])
+              : [a.audience.id];
+          const teacherIds = [a?.teacherId, change.teacherId].filter((x): x is string => !!x);
+          return { groupIds, teacherIds };
+        })(),
+      );
       persist();
       return delay(created);
     },
@@ -305,7 +333,7 @@ export function createMockApi(): Api {
       const u = currentUser();
       const read = new Set(store.readIds[u.id] ?? []);
       return delay(
-        store.notifications.filter((n) => n.roles.length === 0 || n.roles.includes(u.role)).map((n) => ({ ...n, read: read.has(n.id) })),
+        store.notifications.filter((n) => concerns(n, u)).map((n) => ({ ...n, read: read.has(n.id) })),
         0,
       );
     },
