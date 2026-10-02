@@ -140,7 +140,6 @@ export const en: Record<MessageKey, string> = {
   'dash.latest': 'Latest timetable',
   'dash.pairs': 'pairs',
   'dash.conflicts': 'conflicts',
-  'dash.penalty': 'penalty',
   'dash.week': 'Week at a glance',
   'dash.weekEmpty': 'Generate a timetable to see the week.',
   'dash.publishedSwitch': 'Published',

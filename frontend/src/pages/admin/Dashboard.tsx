@@ -7,6 +7,7 @@ import { api } from '../../api';
 import { Icon } from '../../components/Icon';
 import { PrecheckList } from '../../components/PrecheckList';
 import { PageHeader } from '../../components/ui';
+import { toDateString } from '../../domain/changes';
 import { scopeAssignments } from '../../domain/generator';
 import { precheck } from '../../domain/precheck';
 import { range } from '../../domain/slots';
@@ -83,7 +84,7 @@ function runsOfDay(lessons: Lesson[], day: number, typeOf: (l: Lesson) => Activi
 export default function Dashboard() {
   const { t, lang } = useI18n();
   const { dataset, index, published } = useDataset();
-  const { refresh } = useData();
+  const { refresh, changes } = useData();
   const toast = useToast();
   const [list, setList] = useState<Timetable[]>([]);
   const [groupId, setGroupId] = useState(dataset.groups[0]?.id ?? '');
@@ -109,6 +110,7 @@ export default function Dashboard() {
   const totalPairs = totals.lecture + totals.seminar + totals.lab;
 
   const now = new Date();
+  const upcoming = changes.filter((c) => c.date >= toDateString(now)).length;
   const week = weekParityOf(now);
 
   async function publish(tt: Timetable) {
@@ -130,24 +132,24 @@ export default function Dashboard() {
               <h2>{published ? t('dashboard.published') : t('dash.latest')}</h2>
               <p>{shown ? shown.name : t('dashboard.notPublished')}</p>
             </div>
-            <Link to="/admin/timetables" className="dash-glass-pill">
-              <Icon name="calendar" size={15} />
-              {t('nav.timetables')}
-            </Link>
           </div>
           <Ring value={placed} total={required} label={t('dash.pairs')} />
-          <div className="dash-hero-foot">
-            <div className="dash-hero-chips">
-              <span className="dash-chip-light">
-                <strong>{shown?.score?.hard ?? '—'}</strong> {t('dash.conflicts')}
-              </span>
-              <span className="dash-chip-glass">
-                <strong>{shown?.score?.soft ?? '—'}</strong> {t('dash.penalty')}
-              </span>
-            </div>
-            <Link to="/admin/generate" className="dash-fab" aria-label={t('dashboard.generate')}>
-              <span className="dash-fab-tip">{t('nav.generate')}</span>
+          <div className="dash-blocks">
+            <Link to="/admin/generate" className="dash-block">
               <Icon name="plus" size={22} />
+              <span>{t('dashboard.generate')}</span>
+            </Link>
+            <div className="dash-block">
+              <strong>{shown?.score?.hard ?? 0}</strong>
+              <span>{t('dash.conflicts')}</span>
+            </div>
+            <Link to="/admin/timetables" className="dash-block">
+              <strong>{list.length}</strong>
+              <span>{t('nav.timetables')}</span>
+            </Link>
+            <Link to="/admin/changes" className="dash-block">
+              <strong>{upcoming}</strong>
+              <span>{t('nav.changes')}</span>
             </Link>
           </div>
         </section>
@@ -274,9 +276,9 @@ export default function Dashboard() {
                   <strong>{tt.name}</strong>
                   <span className="muted small">{tt.algorithm}</span>
                 </Link>
-                <span className="dash-score">
+                <span className="dash-score" title={t('dash.conflicts')}>
                   <span className={tt.score?.hard ? 'bad' : 'good'}>{tt.score?.hard ?? 0}</span>
-                  {tt.score?.soft ?? '—'}
+                  {t('dash.conflicts')}
                 </span>
                 <label className="dash-switch">
                   <span className="muted small">{t('dash.publishedSwitch')}</span>

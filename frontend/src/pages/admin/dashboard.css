@@ -68,20 +68,6 @@
   font-size: 13px;
   opacity: 0.85;
 }
-.dash-glass-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-}
 .dash-ring {
   width: min(250px, 80%);
   margin: 6px auto 0;
@@ -98,65 +84,47 @@
   font-weight: 600;
   letter-spacing: 0.08em;
 }
-.dash-hero-foot {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+
+/* Four transparent glass blocks at the bottom of the hero */
+.dash-blocks {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
   margin-top: auto;
 }
-.dash-hero-chips {
+.dash-block {
   display: flex;
-  gap: 10px;
-}
-.dash-chip-light,
-.dash-chip-glass {
-  display: inline-flex;
   flex-direction: column;
-  justify-content: center;
-  min-width: 64px;
-  height: 64px;
-  padding: 0 14px;
-  border-radius: 16px;
-  font-size: 11.5px;
-}
-.dash-chip-light strong,
-.dash-chip-glass strong {
-  font-size: 20px;
-  line-height: 1.1;
-}
-.dash-chip-light {
-  background: #fff;
-  color: var(--text);
-}
-.dash-chip-glass {
-  background: rgba(255, 255, 255, 0.2);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-.dash-fab {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 18px;
-  background: #0f2a35;
+  background: rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   color: #fff;
-  transition: transform 0.25s var(--ease);
+  transition:
+    background 0.2s,
+    transform 0.25s var(--ease);
 }
-.dash-fab:hover {
+a.dash-block:hover {
+  background: rgba(255, 255, 255, 0.24);
   transform: translateY(-2px);
 }
-.dash-fab-tip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  padding: 4px 9px;
-  border-radius: 8px;
-  background: #fff;
-  color: var(--text);
-  font-size: 11px;
+.dash-block strong {
+  font-size: 26px;
   font-weight: 600;
-  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.dash-block span {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.25;
+  opacity: 0.92;
 }
 
 /* Group selector pill */
@@ -477,6 +445,9 @@
   }
 }
 @media (max-width: 600px) {
+  .dash-blocks {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .dash-recent-row {
     grid-template-columns: 70px minmax(0, 1fr) auto;
   }

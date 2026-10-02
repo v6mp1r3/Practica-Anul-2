@@ -141,7 +141,6 @@ export const ru: Record<MessageKey, string> = {
   'dash.latest': 'Последнее расписание',
   'dash.pairs': 'пары',
   'dash.conflicts': 'конфликты',
-  'dash.penalty': 'штраф',
   'dash.week': 'Загрузка недели',
   'dash.weekEmpty': 'Сгенерируйте расписание, чтобы увидеть неделю.',
   'dash.publishedSwitch': 'Опубликовано',

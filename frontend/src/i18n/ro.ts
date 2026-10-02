@@ -140,7 +140,6 @@ export const ro = {
   'dash.latest': 'Ultimul orar',
   'dash.pairs': 'perechi',
   'dash.conflicts': 'conflicte',
-  'dash.penalty': 'penalizare',
   'dash.week': 'Încărcarea săptămânii',
   'dash.weekEmpty': 'Generează un orar ca să vezi încărcarea săptămânii.',
   'dash.publishedSwitch': 'Publicat',
