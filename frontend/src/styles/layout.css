@@ -173,13 +173,36 @@
   grid-template-columns: 1fr;
 }
 .login-form {
-  background: var(--surface);
+  position: relative;
   display: grid;
   place-items: center;
+  min-height: 100vh;
   padding: 32px 16px;
+  isolation: isolate;
+  /* same soft colour canvas as the app shell */
+  background:
+    radial-gradient(38% 45% at 8% 12%, rgba(78, 168, 205, 0.28), transparent 70%),
+    radial-gradient(30% 40% at 4% 88%, rgba(52, 135, 29, 0.14), transparent 70%),
+    radial-gradient(40% 40% at 96% 6%, rgba(185, 70, 118, 0.1), transparent 70%),
+    radial-gradient(35% 45% at 92% 96%, rgba(27, 115, 150, 0.16), transparent 70%), #eceff2;
 }
+/* the form sits on a white card */
 .login-form form {
-  width: min(360px, 100%);
+  width: min(420px, 100%);
+  padding: 36px 32px 32px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 1px 2px rgba(15, 26, 31, 0.04),
+    0 30px 70px -36px rgba(15, 26, 31, 0.35);
+}
+@media (max-width: 480px) {
+  .login-form form {
+    padding: 28px 20px 24px;
+  }
 }
 .demo-accounts button {
   width: 100%;
