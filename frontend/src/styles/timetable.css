@@ -1,0 +1,231 @@
+.tt-scroll {
+  overflow-x: auto;
+}
+
+.tt {
+  display: grid;
+  grid-template-columns: 76px repeat(var(--days), minmax(150px, 1fr));
+  min-width: calc(76px + var(--days) * 150px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.tt-head,
+.tt-time,
+.tt-cell {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.tt > :nth-child(calc(var(--days) + 1)n) {
+  border-right: none;
+}
+
+.tt-head {
+  padding: 10px;
+  font-weight: 650;
+  font-size: 13px;
+  text-align: center;
+  background: var(--surface-2);
+}
+.tt-head.today {
+  color: var(--primary);
+}
+
+.tt-time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+  background: var(--surface-2);
+}
+.tt-time strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.tt-cell {
+  min-height: 78px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tt-cell.drop-ok {
+  background: var(--success-soft);
+}
+.tt-cell.drop-bad {
+  background: var(--danger-soft);
+}
+.tt-cell.blocked {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    var(--surface-2) 6px,
+    var(--surface-2) 12px
+  );
+}
+.tt-cell.preferred {
+  box-shadow: inset 0 0 0 2px var(--success-soft);
+}
+.tt-cell.selectable {
+  cursor: pointer;
+}
+
+.lesson {
+  position: relative;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--lecture);
+  background: var(--lecture-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.lesson.seminar {
+  border-left-color: var(--seminar);
+  background: var(--seminar-soft);
+}
+.lesson.lab {
+  border-left-color: var(--lab);
+  background: var(--lab-soft);
+}
+.lesson.parity {
+  border-left-style: dashed;
+}
+.lesson.conflict {
+  box-shadow: 0 0 0 2px var(--danger);
+}
+.lesson.highlight {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+.lesson.dim {
+  opacity: 0.35;
+}
+.lesson[draggable='true'] {
+  cursor: grab;
+}
+.lesson .title {
+  font-weight: 650;
+  color: var(--text);
+}
+.lesson .meta {
+  color: var(--text-2);
+}
+.lesson .tags {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  display: flex;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+
+/* Agenda (single day / phone) */
+.agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.agenda-item {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  align-items: stretch;
+}
+.agenda-item .when {
+  font-size: 12px;
+  color: var(--text-2);
+  text-align: right;
+  padding-top: 6px;
+}
+.agenda-item .when strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text);
+}
+.agenda-item .lesson {
+  font-size: 13px;
+  padding: 10px 12px;
+}
+.agenda-free {
+  padding: 8px 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+/* Availability picker */
+.avail .tt-cell {
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  user-select: none;
+}
+.avail .tt-cell.state-free {
+  color: var(--success);
+}
+.avail .tt-cell.state-preferred {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.avail .tt-cell.state-unavailable {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.avail .tt-cell.state-consultation {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+@media print {
+  .sidebar,
+  .topbar,
+  .no-print,
+  .toasts {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .page {
+    padding: 0;
+    max-width: none;
+  }
+  .tt {
+    min-width: 0;
+    border-radius: 0;
+  }
+  .tt-scroll {
+    overflow: visible;
+  }
+  .card {
+    box-shadow: none;
+    border: none;
+  }
+}
