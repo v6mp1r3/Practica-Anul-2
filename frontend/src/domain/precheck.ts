@@ -97,7 +97,7 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
       const pairs = touching
         .filter((a) => sub === null || a.audience.kind !== 'subgroup' || a.audience.subgroup === sub)
         .reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
-      const cap = idx.groupDays(g.id).length * ds.settings.maxPairsPerDayGroup;
+      const cap = idx.groupDays(g.id).length * idx.groupMaxPairs(g.id);
       if (pairs > cap) {
         out.push({ kind: 'group-overloaded', severity: 'hard', subjectId: g.id, vars: { pairs, cap } });
         break;

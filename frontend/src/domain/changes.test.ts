@@ -91,3 +91,23 @@ describe('upcomingChanges', () => {
     expect(upcomingChanges(idx, changes, parseDate('2026-10-05'), { teacherId: 't7' }).map((c) => c.id)).toEqual(['soon']);
   });
 });
+
+describe('reduced-attendance sessions', () => {
+  const reduced = seedDataset.assignments.find((a) => a.audience.kind === 'group' && a.audience.id === 'g8')!;
+  const satLesson: Lesson = { id: 'r', assignmentId: reduced.id, day: 5, slot: 2, roomId: 'r1', parity: 'weekly' };
+
+  it('happens only on dates inside a session', () => {
+    // seed sessions: 3–4 Oct, 7–8 Nov, 5–6 Dec 2026 (Saturday–Sunday)
+    expect(lessonsOnDate(seedDataset, [satLesson], '2026-10-03').map((l) => l.id)).toEqual(['r']);
+    expect(lessonsOnDate(seedDataset, [satLesson], '2026-10-10')).toEqual([]);
+  });
+
+  it('runs every week when no sessions are set', () => {
+    const ds = { ...seedDataset, settings: { ...seedDataset.settings, reducedSessions: [] } };
+    expect(lessonsOnDate(ds, [satLesson], '2026-10-10').map((l) => l.id)).toEqual(['r']);
+  });
+
+  it('does not affect full-time pairs', () => {
+    expect(lessonsOnDate(seedDataset, lessons, EVEN_MONDAY).map((l) => l.id)).toEqual(['x']);
+  });
+});

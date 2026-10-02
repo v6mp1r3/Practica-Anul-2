@@ -38,6 +38,13 @@ export interface Settings {
   workingDays: number;
   /** Days each form of study may be scheduled on (subset of the working days). */
   formDays: Record<StudyForm, Day[]>;
+  /** Most pairs a group of each form may have in one day (reduced: full session days). */
+  formMaxPairs: Record<StudyForm, number>;
+  /**
+   * Reduced attendance meets only in these sessions (local dates, inclusive);
+   * its weekly pattern applies to the session days. Empty = every week.
+   */
+  reducedSessions: { start: string; end: string }[];
   lessonMinutes: number;
   slots: TimeSlot[];
   weekParity: boolean;

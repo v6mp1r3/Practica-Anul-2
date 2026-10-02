@@ -136,7 +136,7 @@ class Builder {
         return this.idx.audienceTouchesGroup(o.audience, cohort.groupId);
       }, day);
       c += 4 * gapDelta(slots);
-      if (new Set(slots).size >= settings.maxPairsPerDayGroup) c += 6;
+      if (new Set(slots).size >= this.idx.groupMaxPairs(cohort.groupId)) c += 6;
       const sameSubject = this.lessons.some((l) => {
         const o = this.idx.assignmentOf(l)!;
         return l.day === day && o.subjectId === a.subjectId && this.idx.audienceTouchesGroup(o.audience, cohort.groupId);

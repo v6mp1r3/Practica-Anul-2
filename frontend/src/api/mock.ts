@@ -44,6 +44,8 @@ function load(): Store {
         st.formDays = structuredClone(seedDataset.settings.formDays);
       }
       for (const g of saved.dataset?.groups ?? []) if (!g.studyForm) g.studyForm = 'full';
+      if (st && !st.formMaxPairs) st.formMaxPairs = { full: st.maxPairsPerDayGroup, reduced: 6, dual: st.maxPairsPerDayGroup };
+      if (st && !st.reducedSessions) st.reducedSessions = structuredClone(seedDataset.settings.reducedSessions);
       // Notifications saved as Romanian text before they had a kind
       for (const n of saved.notifications ?? []) {
         if (n.kind) continue;

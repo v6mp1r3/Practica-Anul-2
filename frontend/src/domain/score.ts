@@ -69,7 +69,7 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
       const perDay = groupDays.map((d) => vl.filter((l) => l.day === d && inWeek(l, week)).map((l) => l.slot));
       for (const slots of perDay) {
         b.groupGaps += weekShare * gapsInDay(slots);
-        b.dayOverload += weekShare * Math.max(0, new Set(slots).size - ds.settings.maxPairsPerDayGroup);
+        b.dayOverload += weekShare * Math.max(0, new Set(slots).size - idx.groupMaxPairs(view.groupId));
       }
       const loads = perDay.map((s) => new Set(s).size);
       const avg = loads.reduce((x, y) => x + y, 0) / loads.length;
@@ -124,7 +124,7 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
     for (const d of idx.groupDays(g.id)) {
       const count = new Set(all.filter((l) => l.day === d).map((l) => l.slot)).size;
       const whole = new Set(gl.filter((l) => l.day === d).map((l) => l.slot)).size;
-      if (whole > ds.settings.maxPairsPerDayGroup) {
+      if (whole > idx.groupMaxPairs(g.id)) {
         out.push({
           kind: 'group-day-overload',
           severity: 'warning',

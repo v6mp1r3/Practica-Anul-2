@@ -28,6 +28,12 @@ export const seedSettings: Settings = {
     reduced: [5, 6],
     dual: [0, 1, 2, 3, 4],
   },
+  formMaxPairs: { full: 4, reduced: 6, dual: 4 },
+  reducedSessions: [
+    { start: '2026-10-03', end: '2026-10-04' },
+    { start: '2026-11-07', end: '2026-11-08' },
+    { start: '2026-12-05', end: '2026-12-06' },
+  ],
   lessonMinutes: 90,
   slots: [
     { start: '08:00', end: '09:30' },

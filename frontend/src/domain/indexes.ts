@@ -71,6 +71,12 @@ export class DatasetIndex {
     return (settings.formDays?.[form] ?? []).filter((d) => d < settings.workingDays);
   }
 
+  /** Most pairs per day for a group, from its form of study. */
+  groupMaxPairs(groupId: string): number {
+    const form = this.groups.get(groupId)?.studyForm ?? 'full';
+    return this.ds.settings.formMaxPairs?.[form] ?? this.ds.settings.maxPairsPerDayGroup;
+  }
+
   /** Days a pair may be placed on: allowed for every group in its audience. */
   allowedDays(a: Assignment): Day[] {
     const lists = this.cohorts(a.audience).map((c) => this.groupDays(c.groupId));

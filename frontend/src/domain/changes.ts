@@ -1,6 +1,6 @@
 // One-off schedule changes ("Modificări în orar"): which pairs happen on a
 // given date, which rooms are free for a move, which teachers can substitute.
-import type { DatasetIndex } from './indexes';
+import { DatasetIndex } from './indexes';
 import { paritiesOverlap, slotKey } from './slots';
 import type { Dataset, Lesson, Room, ScheduleChange, Teacher } from './types';
 import { dayIndexOf, inWeek, weekParityOf } from './views';
@@ -15,13 +15,28 @@ export function toDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** Pairs that take place on a date: right weekday and, with parity on, the right week. */
-export function lessonsOnDate(ds: Dataset, lessons: Lesson[], date: string): Lesson[] {
+/** Is the date inside one of the reduced-attendance sessions (or are there none)? */
+export function inReducedSession(ds: Dataset, date: string): boolean {
+  const sessions = ds.settings.reducedSessions ?? [];
+  return sessions.length === 0 || sessions.some((s) => s.start <= date && date <= s.end);
+}
+
+/**
+ * Pairs that take place on a date: right weekday, right week (with parity on),
+ * and for reduced-attendance groups only inside one of their sessions.
+ */
+export function lessonsOnDate(ds: Dataset, lessons: Lesson[], date: string, idx = new DatasetIndex(ds)): Lesson[] {
   const d = parseDate(date);
   const day = dayIndexOf(d);
   if (day >= ds.settings.workingDays) return [];
   const week = ds.settings.weekParity ? weekParityOf(d) : 'weekly';
-  return lessons.filter((l) => l.day === day && inWeek(l, week));
+  const sessionDay = inReducedSession(ds, date);
+  return lessons.filter((l) => {
+    if (l.day !== day || !inWeek(l, week)) return false;
+    if (sessionDay) return true;
+    const a = idx.assignmentOf(l);
+    return !a || !idx.cohorts(a.audience).some((c) => idx.groups.get(c.groupId)?.studyForm === 'reduced');
+  });
 }
 
 /** The lesson a change refers to, on that date. */
