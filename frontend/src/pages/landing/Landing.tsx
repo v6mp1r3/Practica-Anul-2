@@ -16,6 +16,7 @@ import { useI18n } from '../../i18n';
 import { useAuth } from '../../state/auth';
 import { homeFor } from '../Login';
 import { copy } from './copy';
+import { Statement } from './Statement';
 import './landing.css';
 
 const FEATURE_ICONS: IconName[] = ['layers', 'calendar', 'copy', 'alert', 'edit', 'upload'];
@@ -99,7 +100,6 @@ export default function Landing() {
       <main id="top">
         <section className="lp-hero">
           <div className="lp-container">
-            <p className="lp-eyebrow">{c.hero.eyebrow}</p>
             <h1 className="lp-display">{c.hero.title}</h1>
             <p className="lp-lead">{c.hero.text}</p>
             <div className="lp-actions">
@@ -130,6 +130,8 @@ export default function Landing() {
             <p className="lp-stats-note">{c.statsNote}</p>
           </div>
         </section>
+
+        <Statement key={lang} {...c.statement} />
 
         <section id="how" className="lp-section">
           <div className="lp-container">

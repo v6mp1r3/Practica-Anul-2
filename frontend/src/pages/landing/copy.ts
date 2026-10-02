@@ -4,9 +4,10 @@ import type { Lang } from '../../i18n';
 
 export interface LandingCopy {
   nav: { features: string; how: string; roles: string; compare: string; login: string; open: string };
-  hero: { eyebrow: string; title: string; text: string; cta: string; secondary: string; preview: string };
+  hero: { title: string; text: string; cta: string; secondary: string; preview: string };
   stats: { value: string; label: string }[];
   statsNote: string;
+  statement: { before: string; word: string; after: string };
   how: { title: string; text: string; steps: { title: string; text: string }[] };
   features: { title: string; text: string; items: { title: string; text: string }[] };
   roles: { title: string; text: string; items: { role: string; title: string; text: string }[] };
@@ -31,7 +32,6 @@ export const copy: Record<Lang, LandingCopy> = {
       open: 'Deschide aplicația',
     },
     hero: {
-      eyebrow: 'Orar universitar automat',
       title: 'Orarul universității, fără conflicte.',
       text: 'EduSchedule construiește orarul pentru grupe, torente și subgrupe, ține cont de săptămânile pare și impare și îți propune mai multe variante. Tu alegi una, o ajustezi și o publici.',
       cta: 'Încearcă demo-ul',
@@ -44,6 +44,7 @@ export const copy: Record<Lang, LandingCopy> = {
       { value: 'NP-dificil', label: 'construirea orarului universitar, demonstrat matematic' },
     ],
     statsNote: 'Fiecare instituție construiește un orar nou la începutul fiecărui semestru, de cele mai multe ori manual.',
+    statement: { before: 'EduSchedule te ajută să le ', word: 'gestionezi', after: ' pe toate' },
     how: {
       title: 'Trei pași, de la date la orar publicat.',
       text: 'Datele de bază se introduc o singură dată. La fiecare semestru doar generezi, alegi și publici.',
@@ -153,7 +154,6 @@ export const copy: Record<Lang, LandingCopy> = {
       open: 'Open the app',
     },
     hero: {
-      eyebrow: 'Automated university timetabling',
       title: 'Your university timetable, conflict-free.',
       text: 'EduSchedule builds the timetable for groups, streams and subgroups, handles odd and even weeks, and offers you several variants. You pick one, adjust it and publish it.',
       cta: 'Try the demo',
@@ -166,6 +166,7 @@ export const copy: Record<Lang, LandingCopy> = {
       { value: 'NP-hard', label: 'university timetabling, mathematically proven' },
     ],
     statsNote: 'Every institution builds a new timetable at the start of each semester, mostly by hand.',
+    statement: { before: 'EduSchedule helps you ', word: 'manage', after: ' them all' },
     how: {
       title: 'Three steps, from data to a published timetable.',
       text: 'Base data is entered once. Each semester you just generate, choose and publish.',
@@ -266,7 +267,6 @@ export const copy: Record<Lang, LandingCopy> = {
       open: 'Открыть приложение',
     },
     hero: {
-      eyebrow: 'Автоматическое университетское расписание',
       title: 'Расписание университета без конфликтов.',
       text: 'EduSchedule составляет расписание для групп, потоков и подгрупп, учитывает чётные и нечётные недели и предлагает несколько вариантов. Вы выбираете один, дорабатываете и публикуете.',
       cta: 'Попробовать демо',
@@ -279,6 +279,7 @@ export const copy: Record<Lang, LandingCopy> = {
       { value: 'NP-трудная', label: 'задача составления расписания, доказано математически' },
     ],
     statsNote: 'Каждое учреждение составляет новое расписание в начале каждого семестра, чаще всего вручную.',
+    statement: { before: 'EduSchedule помогает вам ', word: 'управлять', after: ' всем этим' },
     how: {
       title: 'Три шага от данных до опубликованного расписания.',
       text: 'Основные данные вводятся один раз. Каждый семестр вы только генерируете, выбираете и публикуете.',
