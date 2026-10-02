@@ -19,6 +19,7 @@ import Landing from './pages/landing/Landing';
 import Login, { homeFor } from './pages/Login';
 import Browse from './pages/shared/Browse';
 import FreeRooms from './pages/shared/FreeRooms';
+import Account from './pages/shared/Account';
 import Notifications from './pages/shared/Notifications';
 import TeacherAvailability from './pages/shared/TeacherAvailability';
 import StudentHome from './pages/student/StudentHome';
@@ -59,6 +60,7 @@ function AppRoutes() {
         }
       >
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/browse" element={<Browse />} />
         <Route path="/teachers" element={<TeacherAvailability />} />
       </Route>

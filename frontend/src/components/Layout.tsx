@@ -6,7 +6,8 @@ import { useAuth } from '../state/auth';
 import { useData } from '../state/data';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './Logo';
-import { initials, LanguageSwitch } from './ui';
+import { Avatar } from '../pages/shared/Account';
+import { LanguageSwitch } from './ui';
 
 interface NavItem {
   to: string;
@@ -100,13 +101,14 @@ export function Layout() {
         </nav>
         <div className="sidebar-footer">
           <div className="nav-section">{t('nav.account')}</div>
-          <div className="user-chip">
-            <div className="avatar">{initials(user.name)}</div>
+          <NavLink to="/account" className="user-chip" title={t('account.title')}>
+            <Avatar name={user.name} src={user.avatar} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600 }}>{user.name}</div>
               <div className="small muted">{t(`role.${user.role}`)}</div>
             </div>
-          </div>
+            <Icon name="settings" size={15} />
+          </NavLink>
           <div className="row">
             <LanguageSwitch />
             <span className="spacer" />

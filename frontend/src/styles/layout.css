@@ -104,7 +104,40 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 10px 10px;
+  margin: 0 0 6px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  color: var(--text);
+  transition: background 0.15s;
+}
+.user-chip > svg {
+  margin-left: auto;
+  color: var(--text-3);
+}
+.user-chip:hover,
+.user-chip.active {
+  background: rgba(255, 255, 255, 0.7);
+}
+.user-chip.active {
+  box-shadow:
+    0 1px 2px rgba(15, 26, 31, 0.06),
+    0 6px 16px -8px rgba(15, 26, 31, 0.18);
+}
+img.avatar {
+  display: block;
+}
+.account-details {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 10px 16px;
+  margin: 0;
+}
+.account-details dt {
+  color: var(--text-2);
+}
+.account-details dd {
+  margin: 0;
+  font-weight: 500;
 }
 .avatar {
   display: grid;
