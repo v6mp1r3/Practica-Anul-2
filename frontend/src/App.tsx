@@ -5,6 +5,7 @@ import { Loading } from './components/ui';
 import type { Role } from './domain/types';
 import { I18nProvider } from './i18n';
 import Dashboard from './pages/admin/Dashboard';
+import Groups from './pages/admin/Groups';
 import Rooms from './pages/admin/Rooms';
 import Setup from './pages/admin/Setup';
 import Teachers from './pages/admin/Teachers';
@@ -57,6 +58,7 @@ function AppRoutes() {
         <Route path="setup" element={<Setup />} />
         <Route path="teachers" element={<Teachers />} />
         <Route path="rooms" element={<Rooms />} />
+        <Route path="groups" element={<Groups />} />
       </Route>
       <Route path="*" element={<Home />} />
     </Routes>
