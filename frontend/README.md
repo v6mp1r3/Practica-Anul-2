@@ -21,6 +21,8 @@ Demo accounts (password `demo` for all), shown on the login page in mock mode:
 | `daniel.rusu`   | teacher           |
 | `alex.marin`    | student (FAF-251) |
 
+The public landing page is at `/`; the app starts at `/login`.
+
 Suggested first run: log in as Elena → **Generare** → _Generează_ → keep a variant →
 **Publică**. Then log in as Daniel or Alex to see the published timetable.
 
@@ -63,15 +65,16 @@ src/
     teacher/    personal timetable + workload, availability
     student/    personal timetable
     shared/     institution timetable, free rooms, teacher availability, notifications
-  i18n/         ro.ts (default) and en.ts — every visible string lives here
+    landing/    public one-page site (copy.ts holds the RO/EN/RU text)
+  i18n/         ro.ts (default), en.ts, ru.ts — every visible string lives here
   state/        auth, cached server data, toasts
   styles/       tokens, base, components, layout, timetable
 ```
 
 ## Conventions
 
-- Every visible string goes through `t('key')`; add the key to **both** `ro.ts` and
-  `en.ts` (TypeScript fails the build if `en.ts` is missing a key).
+- Every visible string goes through `t('key')`; add the key to `ro.ts`, `en.ts` and
+  `ru.ts` (TypeScript fails the build if a translation is missing a key).
 - Domain logic stays in `src/domain` without React, with a `*.test.ts` next to it.
 - Run `npm run format` before committing.
 

@@ -14,6 +14,7 @@ import Setup from './pages/admin/Setup';
 import Subjects from './pages/admin/Subjects';
 import Teachers from './pages/admin/Teachers';
 import Timetables from './pages/admin/Timetables';
+import Landing from './pages/landing/Landing';
 import Login, { homeFor } from './pages/Login';
 import Browse from './pages/shared/Browse';
 import FreeRooms from './pages/shared/FreeRooms';
@@ -47,6 +48,7 @@ function Home() {
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route
         element={

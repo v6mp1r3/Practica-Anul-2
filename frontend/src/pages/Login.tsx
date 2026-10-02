@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { API_MODE } from '../api';
 import { Logo } from '../components/Logo';
 import { Field, LanguageSwitch } from '../components/ui';
@@ -50,7 +50,9 @@ export default function Login() {
 
       <section className="login-form">
         <form className="stack" onSubmit={submit}>
-          <Logo height={44} />
+          <Link to="/" aria-label="EduSchedule" style={{ color: 'var(--text)', alignSelf: 'flex-start' }}>
+            <Logo height={40} />
+          </Link>
           <h2 style={{ marginTop: 12 }}>{t('login.title')}</h2>
           <Field label={t('login.username')}>
             <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required />
