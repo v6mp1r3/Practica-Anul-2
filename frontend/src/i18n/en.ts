@@ -250,6 +250,10 @@ export const en: Record<MessageKey, string> = {
 
   'editor.unsaved': 'Unsaved changes',
 
+  'editor.undo': 'Undo',
+  'editor.dragHint': 'Drag a pair to move it. Green = no conflicts.',
+  'editor.movedWithConflicts': 'Moved, but it creates {count} conflicts',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',

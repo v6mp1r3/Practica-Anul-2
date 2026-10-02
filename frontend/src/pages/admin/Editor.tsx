@@ -1,6 +1,6 @@
 // Timetable editor: view by group / teacher / room, live validation, manual
 // changes, then save as draft or publish.
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api';
 import { ConflictList } from '../../components/ConflictList';
@@ -33,6 +33,7 @@ export default function Editor() {
   const [view, setView] = useState<ViewFilter>({ kind: 'group', id: dataset.groups[0]?.id ?? '' });
   const [week, setWeek] = useState<Parity>('weekly');
   const [selectedConflict, setSelectedConflict] = useState<Conflict | null>(null);
+  const [history, setHistory] = useState<Lesson[][]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -56,7 +57,62 @@ export default function Editor() {
   const score = useMemo(() => scoreTimetable(scoped, lessons, index), [scoped, lessons, index]);
   const conflictIds = useMemo(() => new Set(hard.flatMap((c) => c.lessonIds)), [hard]);
 
+  /** Replace the lessons, remembering the previous state for undo. */
+  const commit = useCallback(
+    (next: Lesson[]) => {
+      setHistory((h) => [...h.slice(-49), lessons]);
+      setLessons(next);
+      setDirty(true);
+    },
+    [lessons],
+  );
+
+  const undo = useCallback(() => {
+    setHistory((h) => {
+      if (!h.length) return h;
+      setLessons(h[h.length - 1]);
+      setDirty(true);
+      return h.slice(0, -1);
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !(e.target instanceof HTMLInputElement)) {
+        e.preventDefault();
+        undo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [undo]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    if (!dirty) return;
+    const onUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', onUnload);
+    return () => window.removeEventListener('beforeunload', onUnload);
+  }, [dirty]);
+
+  /** Hard conflicts that involve one specific lesson, if it were at (day, slot). */
+  const conflictsIfMoved = useCallback(
+    (lessonId: string, day: number, slot: number) => {
+      const moved = lessons.map((l) => (l.id === lessonId ? { ...l, day, slot } : l));
+      return findHardConflicts(scoped, moved, index).filter((c) => c.kind !== 'hours-missing' && c.kind !== 'hours-extra' && c.lessonIds.includes(lessonId));
+    },
+    [lessons, scoped, index],
+  );
+
   if (!tt) return <Loading />;
+
+  function move(lessonId: string, day: number, slot: number) {
+    const l = lessons.find((x) => x.id === lessonId);
+    if (!l || l.locked || (l.day === day && l.slot === slot)) return;
+    const clashes = conflictsIfMoved(lessonId, day, slot);
+    commit(lessons.map((x) => (x.id === lessonId ? { ...x, day, slot } : x)));
+    if (clashes.length) toast(t('editor.movedWithConflicts', { count: clashes.length }), 'error');
+  }
 
   const visible = filterLessons(index, lessons, view).filter((l) => inWeek(l, week));
   const highlightIds = selectedConflict ? new Set(selectedConflict.lessonIds) : undefined;
@@ -95,10 +151,15 @@ export default function Editor() {
           </span>
         }
         actions={
+          <>
+          <button className="btn" onClick={undo} disabled={!history.length} title="Ctrl/⌘ + Z">
+            {t('editor.undo')}
+          </button>
           <button className="btn primary" onClick={save} disabled={!dirty && tt.status !== 'variant'}>
             <Icon name="check" />
             {tt.status === 'variant' ? t('generate.keep') : t('common.save')}
           </button>
+          </>
         }
       />
 
@@ -114,8 +175,14 @@ export default function Editor() {
             hide={HIDE[view.kind]}
             conflictIds={conflictIds}
             highlightIds={highlightIds}
+            onMove={move}
+            canDrop={(id, day, slot) => conflictsIfMoved(id, day, slot).length === 0}
           />
-          <Legend />
+          <div className="row wrap">
+            <Legend />
+            <span className="spacer" />
+            <span className="small muted no-print">{t('editor.dragHint')}</span>
+          </div>
         </div>
 
         <aside className="stack no-print">

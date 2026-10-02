@@ -249,6 +249,10 @@ export const ro = {
 
   'editor.unsaved': 'Modificări nesalvate',
 
+  'editor.undo': 'Anulează pasul',
+  'editor.dragHint': 'Trage o pereche pentru a o muta. Verde = fără conflicte.',
+  'editor.movedWithConflicts': 'Mutată, dar creează {count} conflicte',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',
