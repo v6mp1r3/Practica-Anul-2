@@ -272,6 +272,13 @@ export const en: Record<MessageKey, string> = {
   'my.day': 'Day',
   'my.currentWeek': 'Now: {week}',
 
+  'my.addToCalendar': 'Add to calendar',
+  'teacher.load': 'Pairs per week / planned',
+  'teacher.groups': 'Groups',
+  'teacher.rooms': 'Rooms',
+  'teacher.setConsultation': 'Pick your consultation hour',
+  'teacher.overtime': 'You have {extra} pairs over your planned load.',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',

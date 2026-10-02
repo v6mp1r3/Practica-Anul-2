@@ -16,6 +16,7 @@ import Teachers from './pages/admin/Teachers';
 import Timetables from './pages/admin/Timetables';
 import Login, { homeFor } from './pages/Login';
 import Notifications from './pages/shared/Notifications';
+import TeacherHome from './pages/teacher/TeacherHome';
 import { AuthProvider, useAuth } from './state/auth';
 import { DataProvider, useData } from './state/data';
 import { ToastProvider } from './state/toast';
@@ -69,6 +70,16 @@ function AppRoutes() {
         <Route path="generate" element={<Generate />} />
         <Route path="timetables" element={<Timetables />} />
         <Route path="timetables/:id" element={<Editor />} />
+      </Route>
+      <Route
+        path="/teacher"
+        element={
+          <RequireRole roles={['teacher']}>
+            <Layout />
+          </RequireRole>
+        }
+      >
+        <Route index element={<TeacherHome />} />
       </Route>
       <Route path="*" element={<Home />} />
     </Routes>

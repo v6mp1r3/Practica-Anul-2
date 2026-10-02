@@ -271,6 +271,13 @@ export const ro = {
   'my.day': 'Zi',
   'my.currentWeek': 'Acum: {week}',
 
+  'my.addToCalendar': 'Adaugă în calendar',
+  'teacher.load': 'Perechi pe săptămână / planificat',
+  'teacher.groups': 'Grupe',
+  'teacher.rooms': 'Săli',
+  'teacher.setConsultation': 'Alege ora de consultații',
+  'teacher.overtime': 'Ai {extra} perechi peste sarcina planificată.',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',
