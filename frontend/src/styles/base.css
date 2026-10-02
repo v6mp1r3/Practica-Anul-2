@@ -18,6 +18,17 @@ body {
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  font-optical-sizing: auto;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* Times, counts and scores line up in columns */
+.tt-time,
+.table td,
+.stat .value,
+.stat-value,
+.agenda-item .when {
+  font-variant-numeric: tabular-nums;
 }
 
 h1,
