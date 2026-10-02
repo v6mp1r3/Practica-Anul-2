@@ -6,6 +6,7 @@ import type {
   Group,
   Notification,
   Room,
+  ScheduleChange,
   Score,
   Settings,
   SlotKey,
@@ -79,6 +80,11 @@ export interface Api {
   getPublished(): Promise<Timetable | null>;
 
   generate(req: GenerateRequest, onProgress?: (p: GenerateProgress) => void): Promise<Timetable[]>;
+
+  /** One-off changes (room move or substitute teacher) for specific dates. */
+  listChanges(): Promise<ScheduleChange[]>;
+  createChange(change: Omit<ScheduleChange, 'id' | 'createdAt'>): Promise<ScheduleChange>;
+  deleteChange(id: string): Promise<void>;
 
   listNotifications(): Promise<Notification[]>;
   markNotificationsRead(ids: string[]): Promise<void>;

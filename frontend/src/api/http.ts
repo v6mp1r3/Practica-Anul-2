@@ -97,6 +97,10 @@ export function createHttpApi(baseUrl: string): Api {
       }
     },
 
+    listChanges: () => request('GET', '/changes'),
+    createChange: (change) => request('POST', '/changes', change),
+    deleteChange: (id) => request('DELETE', `/changes/${id}`),
+
     listNotifications: () => request('GET', '/notifications'),
     markNotificationsRead: (ids) => request('POST', '/notifications/read', { ids }),
   };

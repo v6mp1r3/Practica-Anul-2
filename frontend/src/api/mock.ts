@@ -3,7 +3,8 @@
 import { seedDataset, seedNotifications, seedUsers } from '../data/seed';
 import { generateTimetable } from '../domain/generator';
 import { scoreTimetable } from '../domain/score';
-import type { Dataset, Notification, Role, Timetable, User } from '../domain/types';
+import { DatasetIndex } from '../domain/indexes';
+import type { Dataset, Notification, Role, ScheduleChange, Timetable, User } from '../domain/types';
 import { ApiError } from './http';
 import type { Api, CollectionName, Collections } from './types';
 
@@ -14,6 +15,7 @@ interface Store {
   users: User[];
   timetables: Timetable[];
   notifications: Notification[];
+  changes: ScheduleChange[];
   readIds: Record<string, string[]>; // userId -> notification ids
   sessionUserId: string | null;
 }
@@ -23,6 +25,7 @@ const fresh = (): Store => ({
   users: structuredClone(seedUsers),
   timetables: [],
   notifications: structuredClone(seedNotifications),
+  changes: [],
   readIds: {},
   sessionUserId: null,
 });
@@ -35,6 +38,7 @@ function load(): Store {
       // Stores saved before multi-faculty support had a single `faculty` string
       const st = saved.dataset?.settings;
       if (st && !Array.isArray(st.faculties)) st.faculties = st.faculty ? [st.faculty] : [];
+      if (!Array.isArray(saved.changes)) saved.changes = [];
       return saved;
     }
   } catch {
@@ -90,6 +94,21 @@ function countChanges(prev: Timetable | undefined, next: Timetable): number {
   const key = (l: Timetable['lessons'][number]) => `${l.assignmentId}|${l.day}|${l.slot}|${l.roomId}|${l.parity}`;
   const before = new Set(prev.lessons.map(key));
   return next.lessons.filter((l) => !before.has(key(l))).length;
+}
+
+/** Romanian description of a change, for the notification sent to everyone. */
+function describeChange(c: Omit<ScheduleChange, 'id' | 'createdAt'>): { title: string; body: string } {
+  const idx = new DatasetIndex(store.dataset);
+  const a = idx.assignments.get(c.assignmentId);
+  const type = { lecture: 'Curs', seminar: 'Seminar', lab: 'Laborator' }[a?.type ?? 'lecture'];
+  const what = a ? `${idx.subjects.get(a.subjectId)?.code} ${type} · ${idx.audienceLabel(a.audience)}` : '?';
+  const [y, m, d] = c.date.split('-');
+  const when = `${d}.${m}.${y}, perechea ${c.slot + 1}`;
+  const body =
+    c.kind === 'room'
+      ? `${what} — ${when}: sala ${idx.rooms.get(c.roomId ?? '')?.name} în loc de ${idx.rooms.get(c.fromRoomId)?.name}.`
+      : `${what} — ${when}: predă ${idx.teachers.get(c.teacherId ?? '')?.name} în loc de ${a ? idx.teachers.get(a.teacherId)?.name : '?'}.`;
+  return { title: c.kind === 'room' ? 'Schimbare de sală' : 'Profesor înlocuitor', body: c.note ? `${body} ${c.note}` : body };
 }
 
 export function createMockApi(): Api {
@@ -253,6 +272,26 @@ export function createMockApi(): Api {
       store.timetables = [...out, ...store.timetables.filter((t) => t.status !== 'variant')];
       persist();
       return delay(out, 0);
+    },
+
+    async listChanges() {
+      currentUser();
+      return delay(store.changes, 0);
+    },
+    async createChange(change) {
+      requireRole('admin');
+      const created: ScheduleChange = { ...change, id: uid('c'), createdAt: new Date().toISOString() };
+      store.changes.push(created);
+      const { title, body } = describeChange(change);
+      notify(title, body);
+      persist();
+      return delay(created);
+    },
+    async deleteChange(id) {
+      requireRole('admin');
+      store.changes = store.changes.filter((c) => c.id !== id);
+      persist();
+      return delay(undefined);
     },
 
     async listNotifications() {

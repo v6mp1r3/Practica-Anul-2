@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../api';
 import { DatasetIndex } from '../domain/indexes';
-import type { Dataset, Notification, Timetable } from '../domain/types';
+import type { Dataset, Notification, ScheduleChange, Timetable } from '../domain/types';
 import { useAuth } from './auth';
 
 interface Data {
@@ -11,6 +11,7 @@ interface Data {
   index: DatasetIndex | null;
   published: Timetable | null;
   notifications: Notification[];
+  changes: ScheduleChange[];
   loading: boolean;
   refresh: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
@@ -23,6 +24,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [published, setPublished] = useState<Timetable | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [changes, setChanges] = useState<ScheduleChange[]>([]);
   const [loading, setLoading] = useState(false);
 
   const refreshNotifications = useCallback(async () => {
@@ -32,9 +34,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [ds, pub] = await Promise.all([api.getDataset(), api.getPublished()]);
+      const [ds, pub, ch] = await Promise.all([api.getDataset(), api.getPublished(), api.listChanges()]);
       setDataset(ds);
       setPublished(pub);
+      setChanges(ch);
       await refreshNotifications();
     } finally {
       setLoading(false);
@@ -47,14 +50,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setDataset(null);
       setPublished(null);
       setNotifications([]);
+      setChanges([]);
     }
   }, [user, refresh]);
 
   const index = useMemo(() => (dataset ? new DatasetIndex(dataset) : null), [dataset]);
 
   const value = useMemo(
-    () => ({ dataset, index, published, notifications, loading, refresh, refreshNotifications }),
-    [dataset, index, published, notifications, loading, refresh, refreshNotifications],
+    () => ({ dataset, index, published, notifications, changes, loading, refresh, refreshNotifications }),
+    [dataset, index, published, notifications, changes, loading, refresh, refreshNotifications],
   );
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
