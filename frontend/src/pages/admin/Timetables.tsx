@@ -78,7 +78,6 @@ export default function Timetables() {
                     <th>{t('common.name')}</th>
                     <th>{t('timetables.status')}</th>
                     <th>{t('score.hard')}</th>
-                    <th>{t('score.soft')}</th>
                     <th>{t('timetables.updated')}</th>
                     <th />
                   </tr>
@@ -108,7 +107,6 @@ export default function Timetables() {
                       <td>
                         <span className={`badge ${tt.score?.hard ? 'danger' : 'success'}`}>{tt.score?.hard ?? '—'}</span>
                       </td>
-                      <td>{tt.score?.soft ?? '—'}</td>
                       <td className="small muted">{fmt(tt.updatedAt)}</td>
                       <td className="actions">
                         {tt.status !== 'published' && (

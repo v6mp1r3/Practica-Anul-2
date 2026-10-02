@@ -286,8 +286,9 @@ export const ro = {
   'generate.running': 'Varianta {variant} · {percent}%',
   'generate.hardWarning': '{count} probleme în date',
   'generate.compare': 'Compară variantele',
-  'generate.compareHint': 'Toate variantele respectă constrângerile obligatorii. Penalizarea mai mică înseamnă un orar mai comod.',
-  'generate.best': 'Cea mai bună',
+  'generate.compareHint':
+    'Toate variantele respectă regulile obligatorii. Compară-le după ferestre, perechi la 08:00 și zile încărcate: cu cât mai puține, cu atât orarul e mai comod.',
+  'generate.best': 'Cea mai comodă',
   'generate.algorithm': 'Algoritm',
   'generate.open': 'Deschide',
   'generate.keep': 'Păstrează ca ciornă',
@@ -404,7 +405,6 @@ export const ro = {
   'conflict.none': 'Niciun conflict. Orarul este valid.',
 
   'score.hard': 'Conflicte',
-  'score.soft': 'Penalizare',
   'score.teacherGaps': 'Ferestre profesori',
   'score.groupGaps': 'Ferestre grupe',
   'score.earlyStarts': 'Perechi la 08:00',

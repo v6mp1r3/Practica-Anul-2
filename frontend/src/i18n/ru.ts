@@ -287,8 +287,9 @@ export const ru: Record<MessageKey, string> = {
   'generate.running': 'Вариант {variant} · {percent}%',
   'generate.hardWarning': 'Проблем в данных: {count}',
   'generate.compare': 'Сравнение вариантов',
-  'generate.compareHint': 'Все варианты соблюдают обязательные ограничения. Меньший штраф означает более удобное расписание.',
-  'generate.best': 'Лучший',
+  'generate.compareHint':
+    'Все варианты соблюдают обязательные правила. Сравнивайте их по окнам, парам в 08:00 и перегруженным дням: чем меньше, тем удобнее расписание.',
+  'generate.best': 'Самый удобный',
   'generate.algorithm': 'Алгоритм',
   'generate.open': 'Открыть',
   'generate.keep': 'Сохранить как черновик',
@@ -406,7 +407,6 @@ export const ru: Record<MessageKey, string> = {
   'conflict.none': 'Конфликтов нет. Расписание корректно.',
 
   'score.hard': 'Конфликты',
-  'score.soft': 'Штраф',
   'score.teacherGaps': 'Окна преподавателей',
   'score.groupGaps': 'Окна групп',
   'score.earlyStarts': 'Пары в 08:00',

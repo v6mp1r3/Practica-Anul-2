@@ -286,8 +286,9 @@ export const en: Record<MessageKey, string> = {
   'generate.running': 'Variant {variant} · {percent}%',
   'generate.hardWarning': '{count} data problems',
   'generate.compare': 'Compare variants',
-  'generate.compareHint': 'All variants respect the hard constraints. A lower penalty means a more comfortable timetable.',
-  'generate.best': 'Best',
+  'generate.compareHint':
+    'All variants respect the hard rules. Compare them by gaps, 08:00 pairs and overloaded days: the fewer, the more comfortable the timetable.',
+  'generate.best': 'Most comfortable',
   'generate.algorithm': 'Algorithm',
   'generate.open': 'Open',
   'generate.keep': 'Keep as draft',
@@ -405,7 +406,6 @@ export const en: Record<MessageKey, string> = {
   'conflict.none': 'No conflicts. The timetable is valid.',
 
   'score.hard': 'Conflicts',
-  'score.soft': 'Penalty',
   'score.teacherGaps': 'Teacher gaps',
   'score.groupGaps': 'Group gaps',
   'score.earlyStarts': '08:00 pairs',

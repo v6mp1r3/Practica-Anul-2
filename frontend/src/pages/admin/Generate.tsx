@@ -42,23 +42,11 @@ export function VariantComparison({ variants, onKeep }: { variants: Timetable[];
               </td>
             ))}
           </tr>
-          <tr>
-            <td>
-              <strong>{t('score.soft')}</strong>
-            </td>
-            {variants.map((v) => (
-              <td key={v.id}>
-                <strong>{v.score?.soft}</strong>
-              </td>
-            ))}
-          </tr>
           {keys.map((k) => {
             const b = best((v) => v.score?.breakdown[k] ?? Infinity);
             return (
               <tr key={k}>
-                <td className="muted">
-                  {t(`score.${k}`)} <span className="small">×{SOFT_WEIGHTS[k]}</span>
-                </td>
+                <td className="muted">{t(`score.${k}`)}</td>
                 {variants.map((v) => (
                   <td key={v.id} style={{ fontWeight: v.score?.breakdown[k] === b ? 650 : 400 }}>
                     {v.score?.breakdown[k]}
@@ -251,7 +239,7 @@ export default function Generate() {
                       variant: String.fromCharCode(65 + progress.variant),
                       percent: Math.round(progress.progress * 100),
                     })}
-                    {progress.best && ` · ${t('score.hard')}: ${progress.best.hard} · ${t('score.soft')}: ${progress.best.soft}`}
+                    {progress.best && ` · ${t('score.hard')}: ${progress.best.hard}`}
                   </div>
                 </div>
               )}

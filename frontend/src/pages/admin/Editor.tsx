@@ -274,18 +274,10 @@ export default function Editor() {
           )}
           <div className="card">
             <div className="card-body">
-              <div className="stats" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                <div>
-                  <div className="stat-value" style={{ color: score.hard ? 'var(--danger)' : 'var(--success)' }}>
-                    {score.hard}
-                  </div>
-                  <div className="small muted">{t('score.hard')}</div>
-                </div>
-                <div>
-                  <div className="stat-value">{score.soft}</div>
-                  <div className="small muted">{t('score.soft')}</div>
-                </div>
+              <div className="stat-value" style={{ color: score.hard ? 'var(--danger)' : 'var(--success)' }}>
+                {score.hard}
               </div>
+              <div className="small muted">{t('score.hard')}</div>
             </div>
           </div>
           <div className="card">
