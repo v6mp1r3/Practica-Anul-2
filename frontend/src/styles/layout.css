@@ -145,26 +145,6 @@
     radial-gradient(40% 40% at 85% 15%, rgba(78, 168, 205, 0.25), transparent 70%), #1d1d1f;
   color: #f5f5f7;
 }
-/* The eight brand colours as a stripe along the bottom of the hero */
-.login-hero::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 6px;
-  background: linear-gradient(
-    90deg,
-    var(--brand-orange) 0 12.5%,
-    var(--brand-red) 0 25%,
-    var(--brand-plum) 0 37.5%,
-    var(--brand-pink) 0 50%,
-    var(--brand-green) 0 62.5%,
-    var(--brand-teal) 0 75%,
-    var(--brand-blue) 0 87.5%,
-    var(--brand-black) 0 100%
-  );
-}
 .login-hero h1 {
   font-size: clamp(34px, 4.2vw, 56px);
   line-height: 1.05;
