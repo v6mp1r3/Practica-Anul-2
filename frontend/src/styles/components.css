@@ -113,19 +113,32 @@
   font-size: 12px;
   color: var(--text-3);
 }
+/* Form fields: just an underline, like the search — no box */
 .input,
 .select,
 .textarea {
   height: 38px;
-  padding: 0 12px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
+  padding: 0 2px;
+  border: none;
+  border-bottom: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: transparent;
   width: 100%;
+  transition: border-color 0.15s;
+}
+.select {
+  padding-right: 22px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236e6e73' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 4px center;
+  text-overflow: ellipsis;
+  cursor: pointer;
 }
 .textarea {
   height: auto;
-  padding: 8px 10px;
+  padding: 8px 2px;
   min-height: 90px;
   resize: vertical;
 }
@@ -133,8 +146,13 @@
 .select:focus,
 .textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-soft);
+  border-bottom-color: var(--primary);
+  box-shadow: 0 1px 0 0 var(--primary);
+}
+.input:disabled,
+.select:disabled {
+  color: var(--text-3);
+  cursor: not-allowed;
 }
 .form-grid {
   display: grid;
@@ -461,11 +479,14 @@ table.table {
 }
 
 /* Pill-shaped select, same height as the buttons beside it */
+.select.pill:focus {
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
 .select.pill {
   height: 36px;
   padding: 0 34px 0 16px;
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
-  border-color: var(--border-strong);
   font-weight: 600;
   font-size: 13.5px;
   appearance: none;
@@ -475,4 +496,74 @@ table.table {
     no-repeat right 14px center;
   text-overflow: ellipsis;
   cursor: pointer;
+}
+
+/* Custom select: the trigger keeps the .select / .select.pill look */
+.select-btn {
+  display: inline-flex;
+  align-items: center;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+}
+.select-btn > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.select-btn:disabled {
+  color: var(--text-3);
+}
+.select-menu {
+  position: fixed;
+  z-index: 200;
+  max-height: min(320px, 60vh);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow:
+    0 2px 6px rgba(15, 26, 31, 0.06),
+    0 24px 48px -20px rgba(15, 26, 31, 0.3);
+  font-size: 14px;
+  color: var(--text);
+  animation: select-in 0.12s ease-out;
+}
+.select-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  line-height: 1.35;
+}
+.select-option > span {
+  flex: 1;
+}
+.select-option.active {
+  background: var(--surface-2);
+}
+.select-option.chosen {
+  color: var(--primary);
+  font-weight: 600;
+}
+.select-option[aria-disabled='true'] {
+  color: var(--text-3);
+  cursor: default;
+}
+.select-group {
+  padding: 8px 10px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+@keyframes select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
 }
