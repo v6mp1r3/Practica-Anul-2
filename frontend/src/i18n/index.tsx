@@ -4,7 +4,7 @@ import { ru } from './ru';
 import { ro, type MessageKey } from './ro';
 
 export type Lang = 'ro' | 'en' | 'ru';
-export const LANGS: Lang[] = ['ro', 'en', 'ru'];
+export const LANGS: Lang[] = ['ro', 'ru', 'en'];
 const dictionaries: Record<Lang, Record<MessageKey, string>> = { ro, en, ru };
 
 /** Locale used for dates and numbers in each interface language. */
