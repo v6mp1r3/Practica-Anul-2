@@ -10,7 +10,9 @@ const TYPES: RoomType[] = ['lecture', 'seminar', 'lab'];
 export default function Rooms() {
   const { t } = useI18n();
   const { dataset } = useDataset();
-  const knownEquipment = [...new Set(dataset.rooms.flatMap((r) => r.equipment).concat(dataset.assignments.flatMap((a) => a.equipment)))].sort();
+  const knownEquipment = [
+    ...new Set(dataset.rooms.flatMap((r) => r.equipment).concat(dataset.assignments.flatMap((a) => a.equipment))),
+  ].sort();
 
   return (
     <CrudPage
@@ -48,7 +50,13 @@ export default function Rooms() {
               </select>
             </Field>
             <Field label={t('rooms.capacity')}>
-              <input className="input" type="number" min={1} value={d.capacity} onChange={(e) => set({ capacity: Number(e.target.value) || 0 })} />
+              <input
+                className="input"
+                type="number"
+                min={1}
+                value={d.capacity}
+                onChange={(e) => set({ capacity: Number(e.target.value) || 0 })}
+              />
             </Field>
           </div>
           <Field label={t('rooms.equipment')} hint={t('rooms.equipmentHint')}>

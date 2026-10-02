@@ -47,7 +47,11 @@ export default function Login() {
             <li>{t('login.feature3')}</li>
           </ul>
         </div>
-        <button className="btn ghost sm" style={{ color: '#fff', alignSelf: 'flex-start' }} onClick={() => setLang(lang === 'ro' ? 'en' : 'ro')}>
+        <button
+          className="btn ghost sm"
+          style={{ color: '#fff', alignSelf: 'flex-start' }}
+          onClick={() => setLang(lang === 'ro' ? 'en' : 'ro')}
+        >
           {t('nav.language')}
         </button>
       </section>

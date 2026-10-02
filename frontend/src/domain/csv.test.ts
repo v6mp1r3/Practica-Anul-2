@@ -13,7 +13,15 @@ describe('parseStudyPlan', () => {
     const r = parseStudyPlan(STUDY_PLAN_TEMPLATE);
     expect(r.errors).toEqual([]);
     expect(r.subjects).toHaveLength(2);
-    expect(r.subjects[0]).toEqual({ code: 'AM', name: 'Analiză matematică', credits: 6, year: 1, lecturePairs: 2, seminarPairs: 1, labPairs: 0 });
+    expect(r.subjects[0]).toEqual({
+      code: 'AM',
+      name: 'Analiză matematică',
+      credits: 6,
+      year: 1,
+      lecturePairs: 2,
+      seminarPairs: 1,
+      labPairs: 0,
+    });
   });
 
   it('accepts semicolons and decimal commas', () => {

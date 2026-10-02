@@ -7,7 +7,17 @@ const ds: Dataset = {
   ...seedDataset,
   settings: { ...seedDataset.settings, weekParity: false },
   assignments: [
-    { id: 'x', subjectId: 'sub1', type: 'seminar', teacherId: 't4', audience: { kind: 'group', id: 'g1' }, pairsPerWeek: 2, parity: 'weekly', roomType: 'seminar', equipment: [] },
+    {
+      id: 'x',
+      subjectId: 'sub1',
+      type: 'seminar',
+      teacherId: 't4',
+      audience: { kind: 'group', id: 'g1' },
+      pairsPerWeek: 2,
+      parity: 'weekly',
+      roomType: 'seminar',
+      equipment: [],
+    },
   ],
 };
 
@@ -26,15 +36,35 @@ describe('scoreTimetable', () => {
     slots.map(([day, slot], i) => ({ id: `l${i}`, assignmentId: 'x', day, slot, roomId: 'r4', parity: 'weekly' }));
 
   it('prefers back-to-back pairs over a gap', () => {
-    const compact = scoreTimetable(ds, at([[0, 1], [0, 2]]));
-    const gappy = scoreTimetable(ds, at([[0, 1], [0, 4]]));
+    const compact = scoreTimetable(
+      ds,
+      at([
+        [0, 1],
+        [0, 2],
+      ]),
+    );
+    const gappy = scoreTimetable(
+      ds,
+      at([
+        [0, 1],
+        [0, 4],
+      ]),
+    );
     expect(compact.hard).toBe(0);
     expect(gappy.breakdown.teacherGaps).toBe(2);
     expect(gappy.soft).toBeGreaterThan(compact.soft);
   });
 
   it('penalises 08:00 starts', () => {
-    expect(scoreTimetable(ds, at([[0, 0], [1, 1]])).breakdown.earlyStarts).toBe(1);
+    expect(
+      scoreTimetable(
+        ds,
+        at([
+          [0, 0],
+          [1, 1],
+        ]),
+      ).breakdown.earlyStarts,
+    ).toBe(1);
   });
 });
 

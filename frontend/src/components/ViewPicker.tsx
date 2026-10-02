@@ -36,7 +36,13 @@ export function ViewPicker({
           options={kinds.map((k) => ({ value: k, label: t(`view.${k}`) }))}
         />
       )}
-      <select className="select" style={{ width: 220 }} value={view.id} onChange={(e) => onView({ ...view, id: e.target.value, subgroup: null })} aria-label={t(`view.${view.kind}`)}>
+      <select
+        className="select"
+        style={{ width: 220 }}
+        value={view.id}
+        onChange={(e) => onView({ ...view, id: e.target.value, subgroup: null })}
+        aria-label={t(`view.${view.kind}`)}
+      >
         {options[view.kind].map((o) => (
           <option key={o.id} value={o.id}>
             {o.name}

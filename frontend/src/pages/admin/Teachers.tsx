@@ -87,7 +87,13 @@ export default function Teachers() {
               <input className="input" type="email" value={d.email} onChange={(e) => set({ email: e.target.value })} />
             </Field>
             <Field label={t('teachers.maxPairs')} hint={t('teachers.maxPairsHint')}>
-              <input className="input" type="number" min={1} value={d.maxPairsPerWeek} onChange={(e) => set({ maxPairsPerWeek: Number(e.target.value) || 0 })} />
+              <input
+                className="input"
+                type="number"
+                min={1}
+                value={d.maxPairsPerWeek}
+                onChange={(e) => set({ maxPairsPerWeek: Number(e.target.value) || 0 })}
+              />
             </Field>
           </div>
           <Field label={t('teachers.types')}>

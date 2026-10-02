@@ -99,7 +99,9 @@ export default function Editor() {
   const conflictsIfMoved = useCallback(
     (lessonId: string, day: number, slot: number) => {
       const moved = lessons.map((l) => (l.id === lessonId ? { ...l, day, slot } : l));
-      return findHardConflicts(scoped, moved, index).filter((c) => c.kind !== 'hours-missing' && c.kind !== 'hours-extra' && c.lessonIds.includes(lessonId));
+      return findHardConflicts(scoped, moved, index).filter(
+        (c) => c.kind !== 'hours-missing' && c.kind !== 'hours-extra' && c.lessonIds.includes(lessonId),
+      );
     },
     [lessons, scoped, index],
   );
@@ -152,13 +154,13 @@ export default function Editor() {
         }
         actions={
           <>
-          <button className="btn" onClick={undo} disabled={!history.length} title="Ctrl/⌘ + Z">
-            {t('editor.undo')}
-          </button>
-          <button className="btn primary" onClick={save} disabled={!dirty && tt.status !== 'variant'}>
-            <Icon name="check" />
-            {tt.status === 'variant' ? t('generate.keep') : t('common.save')}
-          </button>
+            <button className="btn" onClick={undo} disabled={!history.length} title="Ctrl/⌘ + Z">
+              {t('editor.undo')}
+            </button>
+            <button className="btn primary" onClick={save} disabled={!dirty && tt.status !== 'variant'}>
+              <Icon name="check" />
+              {tt.status === 'variant' ? t('generate.keep') : t('common.save')}
+            </button>
           </>
         }
       />

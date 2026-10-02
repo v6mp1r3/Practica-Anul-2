@@ -24,26 +24,55 @@ export default function Groups() {
             { label: t('groups.program'), render: (x) => x.program },
             { label: t('groups.year'), render: (x) => x.year },
             { label: t('groups.size'), render: (x) => x.size },
-            { label: t('groups.subgroups'), render: (x) => (x.subgroups > 1 ? `${x.subgroups} × ${Math.ceil(x.size / x.subgroups)}` : '—') },
+            {
+              label: t('groups.subgroups'),
+              render: (x) => (x.subgroups > 1 ? `${x.subgroups} × ${Math.ceil(x.size / x.subgroups)}` : '—'),
+            },
           ]}
           newItem={(): Omit<Group, 'id'> => ({ name: '', program: '', year: 1, size: 25, subgroups: 2 })}
           validate={(d) => (!d.name.trim() ? t('groups.nameRequired') : d.size < 1 ? t('groups.sizeRequired') : null)}
           renderForm={(d, set) => (
             <div className="form-grid">
               <Field label={t('groups.name')}>
-                <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value.toUpperCase() })} placeholder="FAF-251" autoFocus />
+                <input
+                  className="input"
+                  value={d.name}
+                  onChange={(e) => set({ name: e.target.value.toUpperCase() })}
+                  placeholder="FAF-251"
+                  autoFocus
+                />
               </Field>
               <Field label={t('groups.program')}>
                 <input className="input" value={d.program} onChange={(e) => set({ program: e.target.value })} />
               </Field>
               <Field label={t('groups.year')}>
-                <input className="input" type="number" min={1} max={6} value={d.year} onChange={(e) => set({ year: Number(e.target.value) || 1 })} />
+                <input
+                  className="input"
+                  type="number"
+                  min={1}
+                  max={6}
+                  value={d.year}
+                  onChange={(e) => set({ year: Number(e.target.value) || 1 })}
+                />
               </Field>
               <Field label={t('groups.size')}>
-                <input className="input" type="number" min={1} value={d.size} onChange={(e) => set({ size: Number(e.target.value) || 0 })} />
+                <input
+                  className="input"
+                  type="number"
+                  min={1}
+                  value={d.size}
+                  onChange={(e) => set({ size: Number(e.target.value) || 0 })}
+                />
               </Field>
               <Field label={t('groups.subgroups')} hint={t('groups.subgroupsHint')}>
-                <input className="input" type="number" min={1} max={4} value={d.subgroups} onChange={(e) => set({ subgroups: Math.max(1, Number(e.target.value) || 1) })} />
+                <input
+                  className="input"
+                  type="number"
+                  min={1}
+                  max={4}
+                  value={d.subgroups}
+                  onChange={(e) => set({ subgroups: Math.max(1, Number(e.target.value) || 1) })}
+                />
               </Field>
             </div>
           )}

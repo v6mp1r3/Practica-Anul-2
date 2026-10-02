@@ -91,10 +91,7 @@ export interface Subject {
   labPairs: number;
 }
 
-export type Audience =
-  | { kind: 'stream'; id: string }
-  | { kind: 'group'; id: string }
-  | { kind: 'subgroup'; id: string; subgroup: number };
+export type Audience = { kind: 'stream'; id: string } | { kind: 'group'; id: string } | { kind: 'subgroup'; id: string; subgroup: number };
 
 /** One teaching load: who teaches what to whom, how often. */
 export interface Assignment {

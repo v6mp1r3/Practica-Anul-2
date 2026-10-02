@@ -49,7 +49,13 @@ const icsText = (s: string) => s.replace(/[\\;,]/g, (m) => `\\${m}`).replace(/\n
  * Weekly recurring events for one person's view. Odd/even pairs repeat every
  * two weeks, starting in the first odd (or even) week of the semester.
  */
-export function timetableToIcs(lessons: Lesson[], idx: DatasetIndex, settings: Settings, semesterStart = defaultSemesterStart(), weeks = 16): string {
+export function timetableToIcs(
+  lessons: Lesson[],
+  idx: DatasetIndex,
+  settings: Settings,
+  semesterStart = defaultSemesterStart(),
+  weeks = 16,
+): string {
   const monday = new Date(semesterStart);
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//EduSchool//RO', 'CALSCALE:GREGORIAN'];

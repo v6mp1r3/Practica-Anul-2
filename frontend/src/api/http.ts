@@ -84,10 +84,12 @@ export function createHttpApi(baseUrl: string): Api {
     async generate(req, onProgress) {
       const { jobId } = await request<{ jobId: string }>('POST', '/generate', req);
       for (;;) {
-        const job = await request<{ status: 'running' | 'done' | 'failed'; progress: GenerateProgress; timetableIds?: string[]; error?: string }>(
-          'GET',
-          `/generate/${jobId}`,
-        );
+        const job = await request<{
+          status: 'running' | 'done' | 'failed';
+          progress: GenerateProgress;
+          timetableIds?: string[];
+          error?: string;
+        }>('GET', `/generate/${jobId}`);
         onProgress?.(job.progress);
         if (job.status === 'failed') throw new ApiError(500, job.error ?? 'Generation failed');
         if (job.status === 'done') return Promise.all((job.timetableIds ?? []).map((id) => request<never>('GET', `/timetables/${id}`)));

@@ -46,7 +46,10 @@ class Occupancy {
   }
 
   private static drop(m: Busy, k: string, l: Lesson) {
-    m.set(k, (m.get(k) ?? []).filter((x) => x.id !== l.id));
+    m.set(
+      k,
+      (m.get(k) ?? []).filter((x) => x.id !== l.id),
+    );
   }
 
   add(l: Lesson) {
@@ -229,7 +232,12 @@ function lnsStep(ds: Dataset, idx: DatasetIndex, current: Lesson[], currentScore
     const g = idx.cohorts(seedA.audience)[0]?.groupId;
     pool = movable.filter((l) => idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, g));
   }
-  const destroyed = new Set(rng.shuffle(pool).slice(0, k).map((l) => l.id));
+  const destroyed = new Set(
+    rng
+      .shuffle(pool)
+      .slice(0, k)
+      .map((l) => l.id),
+  );
 
   const b = new Builder(ds, idx, rng);
   current.filter((l) => !destroyed.has(l.id)).forEach((l) => b.add(l));

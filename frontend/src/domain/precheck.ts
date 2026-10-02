@@ -48,10 +48,12 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
     }
     const wrong = [...new Set(mine.filter((a) => !t.activityTypes.includes(a.type)).map((a) => a.type))];
     if (wrong.length) out.push({ kind: 'teacher-wrong-type', severity: 'warning', subjectId: t.id, vars: { types: wrong.join(', ') } });
-    const available = totalSlots - t.unavailable.filter((k) => {
-      const [d, s] = k.split(':').map(Number);
-      return d < ds.settings.workingDays && s < ds.settings.slots.length;
-    }).length;
+    const available =
+      totalSlots -
+      t.unavailable.filter((k) => {
+        const [d, s] = k.split(':').map(Number);
+        return d < ds.settings.workingDays && s < ds.settings.slots.length;
+      }).length;
     const lessons = mine.reduce((n, a) => n + a.pairsPerWeek, 0);
     if (available < lessons) {
       out.push({ kind: 'teacher-too-unavailable', severity: 'hard', subjectId: t.id, vars: { available, needed: lessons } });
@@ -107,6 +109,7 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
 /** Number of free slots a teacher has (used in the availability editor). */
 export function freeSlotCount(ds: Dataset, unavailable: string[]): number {
   let n = 0;
-  for (const d of range(ds.settings.workingDays)) for (const s of range(ds.settings.slots.length)) if (!unavailable.includes(slotKey(d, s))) n++;
+  for (const d of range(ds.settings.workingDays))
+    for (const s of range(ds.settings.slots.length)) if (!unavailable.includes(slotKey(d, s))) n++;
   return n;
 }

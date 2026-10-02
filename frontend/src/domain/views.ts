@@ -30,7 +30,10 @@ export function lessonsAt(lessons: Lesson[], day: Day, slot: SlotIndex): Lesson[
 }
 
 /** Odd/even week of a date, counted from the semester start (1 Sept by default). */
-export function weekParityOf(date: Date, semesterStart = new Date(date.getFullYear() - (date.getMonth() < 8 ? 1 : 0), 8, 1)): 'odd' | 'even' {
+export function weekParityOf(
+  date: Date,
+  semesterStart = new Date(date.getFullYear() - (date.getMonth() < 8 ? 1 : 0), 8, 1),
+): 'odd' | 'even' {
   const monday = (d: Date) => {
     const x = new Date(d);
     x.setHours(0, 0, 0, 0);
@@ -46,7 +49,5 @@ export const dayIndexOf = (date: Date) => (date.getDay() + 6) % 7;
 
 /** Teacher load in pairs per week (biweekly pairs count as half). */
 export function teacherLoad(idx: DatasetIndex, lessons: Lesson[], teacherId: string): number {
-  return lessons
-    .filter((l) => idx.assignmentOf(l)?.teacherId === teacherId)
-    .reduce((n, l) => n + (l.parity === 'weekly' ? 1 : 0.5), 0);
+  return lessons.filter((l) => idx.assignmentOf(l)?.teacherId === teacherId).reduce((n, l) => n + (l.parity === 'weekly' ? 1 : 0.5), 0);
 }

@@ -24,7 +24,14 @@ export default function Timetables() {
 
   async function duplicate(tt: Timetable) {
     const now = new Date().toISOString();
-    await api.saveTimetable({ ...tt, id: `tt${Date.now().toString(36)}`, name: `${tt.name} (${t('timetables.copy')})`, status: 'draft', createdAt: now, updatedAt: now });
+    await api.saveTimetable({
+      ...tt,
+      id: `tt${Date.now().toString(36)}`,
+      name: `${tt.name} (${t('timetables.copy')})`,
+      status: 'draft',
+      createdAt: now,
+      updatedAt: now,
+    });
     await load();
   }
 
@@ -91,7 +98,9 @@ export default function Timetables() {
                         <Link to={`/admin/timetables/${tt.id}`}>
                           <strong>{tt.name}</strong>
                         </Link>
-                        <div className="small muted">{tt.lessons.length} · {tt.algorithm}</div>
+                        <div className="small muted">
+                          {tt.lessons.length} · {tt.algorithm}
+                        </div>
                       </td>
                       <td>
                         <StatusBadge status={tt.status} />
@@ -107,7 +116,12 @@ export default function Timetables() {
                             {t('timetables.publish')}
                           </button>
                         )}
-                        <button className="btn ghost sm icon" onClick={() => duplicate(tt)} title={t('timetables.duplicate')} aria-label={t('timetables.duplicate')}>
+                        <button
+                          className="btn ghost sm icon"
+                          onClick={() => duplicate(tt)}
+                          title={t('timetables.duplicate')}
+                          aria-label={t('timetables.duplicate')}
+                        >
                           <Icon name="copy" size={15} />
                         </button>
                         <button className="btn ghost sm icon danger" onClick={() => remove(tt)} aria-label={t('common.delete')}>

@@ -33,7 +33,11 @@ export function PrecheckList({ issues, index, limit = 12 }: { issues: PrecheckIs
           </span>
         </div>
       ))}
-      {sorted.length > limit && <div className="small muted" style={{ padding: 8 }}>+{sorted.length - limit}</div>}
+      {sorted.length > limit && (
+        <div className="small muted" style={{ padding: 8 }}>
+          +{sorted.length - limit}
+        </div>
+      )}
     </div>
   );
 }

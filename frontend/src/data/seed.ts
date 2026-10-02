@@ -50,9 +50,7 @@ const t = (
   name,
   title,
   department,
-  email: `${name.split(' ')[0].toLowerCase()}.${name.split(' ')[1].toLowerCase()}@fcim.example.md`
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, ''),
+  email: `${name.split(' ')[0].toLowerCase()}.${name.split(' ')[1].toLowerCase()}@fcim.example.md`.normalize('NFD').replace(/[̀-ͯ]/g, ''),
   maxPairsPerWeek,
   activityTypes,
   unavailable,
@@ -60,7 +58,16 @@ const t = (
 });
 
 export const seedTeachers: Teacher[] = [
-  t('t1', 'Daniel Rusu', 'lect. univ.', 'Ingineria Software', 12, ['lecture', 'seminar', 'lab'], ['4:4', '4:5', '4:6'], ['1:1', '1:2', '3:1', '3:2']),
+  t(
+    't1',
+    'Daniel Rusu',
+    'lect. univ.',
+    'Ingineria Software',
+    12,
+    ['lecture', 'seminar', 'lab'],
+    ['4:4', '4:5', '4:6'],
+    ['1:1', '1:2', '3:1', '3:2'],
+  ),
   t('t2', 'Maria Ciobanu', 'conf. univ., dr.', 'Matematică', 10, ['lecture', 'seminar'], ['0:0', '2:0']),
   t('t3', 'Ion Botnaru', 'prof. univ., dr.', 'Matematică', 8, ['lecture'], ['4:0', '4:1', '4:2', '4:3', '4:4', '4:5', '4:6']),
   t('t4', 'Natalia Cojocaru', 'lect. univ.', 'Matematică', 12, ['seminar']),
@@ -116,7 +123,16 @@ export const seedSubjects: Subject[] = [
   { id: 'sub6', code: 'LE', name: 'Limba engleză', credits: 2, year: 1, lecturePairs: 0, seminarPairs: 1, labPairs: 0 },
   { id: 'sub7', code: 'SDA', name: 'Structuri de date și algoritmi', credits: 6, year: 2, lecturePairs: 1, seminarPairs: 0, labPairs: 1 },
   { id: 'sub8', code: 'BD', name: 'Baze de date', credits: 5, year: 2, lecturePairs: 1, seminarPairs: 0, labPairs: 1 },
-  { id: 'sub9', code: 'POO', name: 'Programare orientată pe obiecte', credits: 5, year: 2, lecturePairs: 1, seminarPairs: 0, labPairs: 0.5 },
+  {
+    id: 'sub9',
+    code: 'POO',
+    name: 'Programare orientată pe obiecte',
+    credits: 5,
+    year: 2,
+    lecturePairs: 1,
+    seminarPairs: 0,
+    labPairs: 0.5,
+  },
   { id: 'sub10', code: 'PS', name: 'Probabilități și statistică', credits: 4, year: 2, lecturePairs: 1, seminarPairs: 1, labPairs: 0 },
   { id: 'sub11', code: 'RC', name: 'Rețele de calculatoare', credits: 4, year: 2, lecturePairs: 1, seminarPairs: 0, labPairs: 1 },
 ];

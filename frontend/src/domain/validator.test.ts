@@ -7,17 +7,55 @@ import { findHardConflicts } from './validator';
 const ds: Dataset = {
   ...seedDataset,
   assignments: [
-    { id: 'lec', subjectId: 'sub1', type: 'lecture', teacherId: 't3', audience: { kind: 'stream', id: 's1' }, pairsPerWeek: 1, parity: 'weekly', roomType: 'lecture', equipment: [] },
-    { id: 'lab1', subjectId: 'sub3', type: 'lab', teacherId: 't1', audience: { kind: 'subgroup', id: 'g1', subgroup: 1 }, pairsPerWeek: 1, parity: 'odd', roomType: 'lab', equipment: ['calculatoare'] },
-    { id: 'lab2', subjectId: 'sub3', type: 'lab', teacherId: 't6', audience: { kind: 'subgroup', id: 'g1', subgroup: 2 }, pairsPerWeek: 1, parity: 'weekly', roomType: 'lab', equipment: ['calculatoare'] },
+    {
+      id: 'lec',
+      subjectId: 'sub1',
+      type: 'lecture',
+      teacherId: 't3',
+      audience: { kind: 'stream', id: 's1' },
+      pairsPerWeek: 1,
+      parity: 'weekly',
+      roomType: 'lecture',
+      equipment: [],
+    },
+    {
+      id: 'lab1',
+      subjectId: 'sub3',
+      type: 'lab',
+      teacherId: 't1',
+      audience: { kind: 'subgroup', id: 'g1', subgroup: 1 },
+      pairsPerWeek: 1,
+      parity: 'odd',
+      roomType: 'lab',
+      equipment: ['calculatoare'],
+    },
+    {
+      id: 'lab2',
+      subjectId: 'sub3',
+      type: 'lab',
+      teacherId: 't6',
+      audience: { kind: 'subgroup', id: 'g1', subgroup: 2 },
+      pairsPerWeek: 1,
+      parity: 'weekly',
+      roomType: 'lab',
+      equipment: ['calculatoare'],
+    },
   ],
 };
 
 const L = (id: string, assignmentId: string, day: number, slot: number, roomId: string, parity: Lesson['parity'] = 'weekly'): Lesson => ({
-  id, assignmentId, day, slot, roomId, parity,
+  id,
+  assignmentId,
+  day,
+  slot,
+  roomId,
+  parity,
 });
 
-const kinds = (lessons: Lesson[]) => findHardConflicts(ds, lessons).map((c) => c.kind).sort();
+const kinds = (lessons: Lesson[]) =>
+  findHardConflicts(ds, lessons)
+    .map((c) => c.kind)
+    .sort();
 
 describe('findHardConflicts', () => {
   it('accepts a valid timetable', () => {
@@ -55,6 +93,9 @@ describe('findHardConflicts', () => {
   });
 
   it('flags missing and extra hours', () => {
-    expect(kinds([L('1', 'lec', 0, 1, 'r2'), L('1b', 'lec', 1, 1, 'r2'), L('3', 'lab2', 0, 2, 'r9')])).toEqual(['hours-extra', 'hours-missing']);
+    expect(kinds([L('1', 'lec', 0, 1, 'r2'), L('1b', 'lec', 1, 1, 'r2'), L('3', 'lab2', 0, 2, 'r9')])).toEqual([
+      'hours-extra',
+      'hours-missing',
+    ]);
   });
 });

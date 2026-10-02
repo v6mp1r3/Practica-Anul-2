@@ -124,7 +124,8 @@ export const en: Record<MessageKey, string> = {
   'setup.end': 'End',
   'setup.parity': 'Week parity',
   'setup.parityQuestion': 'Does week parity matter?',
-  'setup.parityHint': 'If yes, each pair can be weekly, odd-week or even-week. Two pairs in the same slot on different weeks are not a clash.',
+  'setup.parityHint':
+    'If yes, each pair can be weekly, odd-week or even-week. Two pairs in the same slot on different weeks are not a clash.',
   'setup.limits': 'Limits and rules',
   'setup.maxPairsGroup': 'Max pairs/day for a group',
   'setup.minPairsGroup': 'Min pairs/day for a group',

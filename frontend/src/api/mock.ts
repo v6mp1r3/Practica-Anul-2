@@ -55,7 +55,7 @@ export function resetMockData() {
   persist();
 }
 
-const delay = <T,>(value: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(value)), ms));
+const delay = <T>(value: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(value)), ms));
 const uid = (prefix: string) => `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 function currentUser(): User {
@@ -253,9 +253,7 @@ export function createMockApi(): Api {
       const u = currentUser();
       const read = new Set(store.readIds[u.id] ?? []);
       return delay(
-        store.notifications
-          .filter((n) => n.roles.length === 0 || n.roles.includes(u.role))
-          .map((n) => ({ ...n, read: read.has(n.id) })),
+        store.notifications.filter((n) => n.roles.length === 0 || n.roles.includes(u.role)).map((n) => ({ ...n, read: read.has(n.id) })),
         0,
       );
     },

@@ -68,4 +68,5 @@ export function parseStudyPlan(text: string): CsvResult {
   return result;
 }
 
-export const STUDY_PLAN_TEMPLATE = 'code,name,credits,year,lecture,seminar,lab\nAM,Analiză matematică,6,1,2,1,0\nPC,Programarea calculatoarelor,6,1,1,0,2\n';
+export const STUDY_PLAN_TEMPLATE =
+  'code,name,credits,year,lecture,seminar,lab\nAM,Analiză matematică,6,1,2,1,0\nPC,Programarea calculatoarelor,6,1,1,0,2\n';

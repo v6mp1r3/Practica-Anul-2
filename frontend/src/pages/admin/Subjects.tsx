@@ -51,7 +51,13 @@ export default function Subjects() {
               <Icon name="upload" />
               {t('subjects.import')}
             </button>
-            <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
+              hidden
+              onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+            />
           </>
         }
         columns={[
@@ -75,10 +81,23 @@ export default function Subjects() {
                 <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} />
               </Field>
               <Field label={t('subjects.year')}>
-                <input className="input" type="number" min={1} max={6} value={d.year} onChange={(e) => set({ year: Number(e.target.value) || 1 })} />
+                <input
+                  className="input"
+                  type="number"
+                  min={1}
+                  max={6}
+                  value={d.year}
+                  onChange={(e) => set({ year: Number(e.target.value) || 1 })}
+                />
               </Field>
               <Field label="ECTS">
-                <input className="input" type="number" min={0} value={d.credits} onChange={(e) => set({ credits: Number(e.target.value) || 0 })} />
+                <input
+                  className="input"
+                  type="number"
+                  min={0}
+                  value={d.credits}
+                  onChange={(e) => set({ credits: Number(e.target.value) || 0 })}
+                />
               </Field>
             </div>
             <div>
@@ -89,7 +108,14 @@ export default function Subjects() {
               <div className="form-grid">
                 {(['lecturePairs', 'seminarPairs', 'labPairs'] as const).map((k, i) => (
                   <Field key={k} label={t((['activity.lecture', 'activity.seminar', 'activity.lab'] as const)[i])}>
-                    <input className="input" type="number" min={0} step={0.5} value={d[k]} onChange={(e) => set({ [k]: Number(e.target.value) || 0 })} />
+                    <input
+                      className="input"
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      value={d[k]}
+                      onChange={(e) => set({ [k]: Number(e.target.value) || 0 })}
+                    />
                   </Field>
                 ))}
               </div>

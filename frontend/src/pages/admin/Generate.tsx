@@ -146,7 +146,8 @@ export default function Generate() {
     navigate(`/admin/timetables/${saved.id}`);
   }
 
-  const toggle = (ids: string[], on: boolean) => setGroupIds((cur) => (on ? [...new Set([...cur, ...ids])] : cur.filter((x) => !ids.includes(x))));
+  const toggle = (ids: string[], on: boolean) =>
+    setGroupIds((cur) => (on ? [...new Set([...cur, ...ids])] : cur.filter((x) => !ids.includes(x))));
 
   return (
     <div className="page">
@@ -232,7 +233,10 @@ export default function Generate() {
                     <div style={{ width: `${Math.round(progress.progress * 100)}%` }} />
                   </div>
                   <div className="small muted">
-                    {t('generate.running', { variant: String.fromCharCode(65 + progress.variant), percent: Math.round(progress.progress * 100) })}
+                    {t('generate.running', {
+                      variant: String.fromCharCode(65 + progress.variant),
+                      percent: Math.round(progress.progress * 100),
+                    })}
                     {progress.best && ` · ${t('score.hard')}: ${progress.best.hard} · ${t('score.soft')}: ${progress.best.soft}`}
                   </div>
                 </div>

@@ -28,7 +28,13 @@ export default function Assignments() {
         `${index.subjects.get(x.subjectId)?.code} ${index.subjects.get(x.subjectId)?.name} ${index.teachers.get(x.teacherId)?.name} ${index.audienceLabel(x.audience)}`
       }
       headerActions={
-        <select className="select" style={{ width: 180 }} value={groupFilter} onChange={(e) => setGroupFilter(e.target.value)} aria-label={t('assignments.filterGroup')}>
+        <select
+          className="select"
+          style={{ width: 180 }}
+          value={groupFilter}
+          onChange={(e) => setGroupFilter(e.target.value)}
+          aria-label={t('assignments.filterGroup')}
+        >
           <option value="">{t('assignments.allGroups')}</option>
           {dataset.groups.map((g) => (
             <option key={g.id} value={g.id}>
@@ -74,7 +80,10 @@ export default function Assignments() {
           ),
         },
         { label: t('assignments.pairs'), render: (x) => x.pairsPerWeek },
-        { label: t('assignments.parity'), render: (x) => (x.parity === 'weekly' ? '—' : <span className="badge">{t(`parity.${x.parity}`)}</span>) },
+        {
+          label: t('assignments.parity'),
+          render: (x) => (x.parity === 'weekly' ? '—' : <span className="badge">{t(`parity.${x.parity}`)}</span>),
+        },
       ]}
       newItem={(): Omit<Assignment, 'id'> => ({
         subjectId: dataset.subjects[0]?.id ?? '',
@@ -86,7 +95,9 @@ export default function Assignments() {
         roomType: 'lecture',
         equipment: [],
       })}
-      validate={(d) => (!d.subjectId || !d.teacherId || !d.audience.id ? t('assignments.required') : d.pairsPerWeek < 1 ? t('assignments.pairsMin') : null)}
+      validate={(d) =>
+        !d.subjectId || !d.teacherId || !d.audience.id ? t('assignments.required') : d.pairsPerWeek < 1 ? t('assignments.pairsMin') : null
+      }
       renderForm={(d, set) => {
         const teacher = index.teachers.get(d.teacherId);
         const setAudience = (aud: Audience) => set({ audience: aud });
@@ -109,7 +120,11 @@ export default function Assignments() {
                   value={d.type}
                   onChange={(e) => {
                     const type = e.target.value as ActivityType;
-                    set({ type, roomType: type as RoomType, equipment: type === 'lab' && !d.equipment.length ? ['calculatoare'] : d.equipment });
+                    set({
+                      type,
+                      roomType: type as RoomType,
+                      equipment: type === 'lab' && !d.equipment.length ? ['calculatoare'] : d.equipment,
+                    });
                   }}
                 >
                   {TYPES.map((type) => (
@@ -119,10 +134,16 @@ export default function Assignments() {
                   ))}
                 </select>
               </Field>
-              <Field label={t('assignments.teacher')} hint={teacher && !teacher.activityTypes.includes(d.type) ? t('assignments.teacherTypeWarning') : undefined}>
+              <Field
+                label={t('assignments.teacher')}
+                hint={teacher && !teacher.activityTypes.includes(d.type) ? t('assignments.teacherTypeWarning') : undefined}
+              >
                 <select className="select" value={d.teacherId} onChange={(e) => set({ teacherId: e.target.value })}>
                   {[...dataset.teachers]
-                    .sort((a, b) => Number(b.activityTypes.includes(d.type)) - Number(a.activityTypes.includes(d.type)) || a.name.localeCompare(b.name))
+                    .sort(
+                      (a, b) =>
+                        Number(b.activityTypes.includes(d.type)) - Number(a.activityTypes.includes(d.type)) || a.name.localeCompare(b.name),
+                    )
                     .map((x) => (
                       <option key={x.id} value={x.id}>
                         {x.name}
@@ -186,7 +207,14 @@ export default function Assignments() {
 
             <div className="form-grid">
               <Field label={t('assignments.pairs')}>
-                <input className="input" type="number" min={1} max={10} value={d.pairsPerWeek} onChange={(e) => set({ pairsPerWeek: Number(e.target.value) || 0 })} />
+                <input
+                  className="input"
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={d.pairsPerWeek}
+                  onChange={(e) => set({ pairsPerWeek: Number(e.target.value) || 0 })}
+                />
               </Field>
               {dataset.settings.weekParity && (
                 <Field label={t('assignments.parity')}>

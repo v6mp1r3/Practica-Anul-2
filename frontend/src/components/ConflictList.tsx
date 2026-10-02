@@ -36,7 +36,9 @@ export function ConflictList({
     );
   }
   const where = (c: Conflict) =>
-    c.day !== undefined && c.slot !== undefined ? ` — ${t(`dayShort.${c.day}` as 'dayShort.0')}, ${t('tt.pair').toLowerCase()} ${c.slot + 1}` : '';
+    c.day !== undefined && c.slot !== undefined
+      ? ` — ${t(`dayShort.${c.day}` as 'dayShort.0')}, ${t('tt.pair').toLowerCase()} ${c.slot + 1}`
+      : '';
 
   return (
     <div>
@@ -54,7 +56,11 @@ export function ConflictList({
           </span>
         </div>
       ))}
-      {conflicts.length > limit && <div className="small muted" style={{ padding: 8 }}>+{conflicts.length - limit}</div>}
+      {conflicts.length > limit && (
+        <div className="small muted" style={{ padding: 8 }}>
+          +{conflicts.length - limit}
+        </div>
+      )}
     </div>
   );
 }

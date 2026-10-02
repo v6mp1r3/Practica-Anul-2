@@ -123,7 +123,8 @@ export const ro = {
   'setup.end': 'Sfârșit',
   'setup.parity': 'Paritatea săptămânii',
   'setup.parityQuestion': 'Contează paritatea săptămânii?',
-  'setup.parityHint': 'Dacă da, fiecare pereche poate fi săptămânală, impară sau pară. Două perechi în același interval pe săptămâni diferite nu sunt conflict.',
+  'setup.parityHint':
+    'Dacă da, fiecare pereche poate fi săptămânală, impară sau pară. Două perechi în același interval pe săptămâni diferite nu sunt conflict.',
   'setup.limits': 'Limite și reguli',
   'setup.maxPairsGroup': 'Maxim perechi/zi pentru o grupă',
   'setup.minPairsGroup': 'Minim perechi/zi pentru o grupă',

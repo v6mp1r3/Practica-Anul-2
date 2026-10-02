@@ -31,7 +31,13 @@ export function AvailabilityPicker({
   const [brush, setBrush] = useState<Brush>('unavailable');
 
   const stateOf = (k: SlotKey): Brush =>
-    value.consultation === k ? 'consultation' : value.unavailable.includes(k) ? 'unavailable' : value.preferred.includes(k) ? 'preferred' : 'free';
+    value.consultation === k
+      ? 'consultation'
+      : value.unavailable.includes(k)
+        ? 'unavailable'
+        : value.preferred.includes(k)
+          ? 'preferred'
+          : 'free';
 
   function paint(day: number, slot: number) {
     const k = slotKey(day, slot);

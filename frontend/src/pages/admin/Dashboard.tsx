@@ -62,8 +62,12 @@ export default function Dashboard() {
             <div className="card-header">
               <h2>{t('precheck.title')}</h2>
               <span className="spacer" />
-              {issues.some((i) => i.severity === 'hard') && <span className="badge danger">{issues.filter((i) => i.severity === 'hard').length}</span>}
-              {issues.some((i) => i.severity === 'warning') && <span className="badge warning">{issues.filter((i) => i.severity === 'warning').length}</span>}
+              {issues.some((i) => i.severity === 'hard') && (
+                <span className="badge danger">{issues.filter((i) => i.severity === 'hard').length}</span>
+              )}
+              {issues.some((i) => i.severity === 'warning') && (
+                <span className="badge warning">{issues.filter((i) => i.severity === 'warning').length}</span>
+              )}
             </div>
             <div className="card-body">
               <p className="small muted" style={{ marginBottom: 8 }}>

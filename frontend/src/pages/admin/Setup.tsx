@@ -115,12 +115,22 @@ export default function Setup() {
           <div className="form-grid">
             <Field label={t('setup.workingDays')} hint={t('setup.default', { value: 5 })}>
               <select className="select" value={s.workingDays} onChange={(e) => set('workingDays', Number(e.target.value))}>
-                <option value={5}>5 ({t('day.0')}–{t('day.4')})</option>
-                <option value={6}>6 ({t('day.0')}–{t('day.5')})</option>
+                <option value={5}>
+                  5 ({t('day.0')}–{t('day.4')})
+                </option>
+                <option value={6}>
+                  6 ({t('day.0')}–{t('day.5')})
+                </option>
               </select>
             </Field>
             <Field label={t('setup.lessonMinutes')} hint={t('setup.default', { value: 90 })}>
-              <input className="input" type="number" min={30} value={s.lessonMinutes} onChange={(e) => set('lessonMinutes', num(e.target.value, 30))} />
+              <input
+                className="input"
+                type="number"
+                min={30}
+                value={s.lessonMinutes}
+                onChange={(e) => set('lessonMinutes', num(e.target.value, 30))}
+              />
             </Field>
             <Field label={t('setup.breakMinutes')} hint={t('setup.default', { value: 15 })}>
               <input className="input" type="number" min={0} value={breakMin} onChange={(e) => setBreakMin(num(e.target.value))} />
@@ -131,7 +141,10 @@ export default function Setup() {
             <div className="row" style={{ marginBottom: 8 }}>
               <h3>{t('setup.slots')}</h3>
               <span className="spacer" />
-              <button className="btn sm" onClick={() => set('slots', buildSlots(s.slots[0]?.start ?? '08:00', s.lessonMinutes, breakMin, s.slots.length || 7))}>
+              <button
+                className="btn sm"
+                onClick={() => set('slots', buildSlots(s.slots[0]?.start ?? '08:00', s.lessonMinutes, breakMin, s.slots.length || 7))}
+              >
                 {t('setup.rebuildSlots')}
               </button>
               <button
@@ -165,7 +178,12 @@ export default function Setup() {
                           className="input"
                           type="time"
                           value={slot.start}
-                          onChange={(e) => set('slots', s.slots.map((x, j) => (j === i ? { ...x, start: e.target.value } : x)))}
+                          onChange={(e) =>
+                            set(
+                              'slots',
+                              s.slots.map((x, j) => (j === i ? { ...x, start: e.target.value } : x)),
+                            )
+                          }
                         />
                       </td>
                       <td>
@@ -173,11 +191,25 @@ export default function Setup() {
                           className="input"
                           type="time"
                           value={slot.end}
-                          onChange={(e) => set('slots', s.slots.map((x, j) => (j === i ? { ...x, end: e.target.value } : x)))}
+                          onChange={(e) =>
+                            set(
+                              'slots',
+                              s.slots.map((x, j) => (j === i ? { ...x, end: e.target.value } : x)),
+                            )
+                          }
                         />
                       </td>
                       <td className="actions">
-                        <button className="btn ghost sm danger" onClick={() => set('slots', s.slots.filter((_, j) => j !== i))} aria-label={t('common.delete')}>
+                        <button
+                          className="btn ghost sm danger"
+                          onClick={() =>
+                            set(
+                              'slots',
+                              s.slots.filter((_, j) => j !== i),
+                            )
+                          }
+                          aria-label={t('common.delete')}
+                        >
                           <Icon name="trash" size={14} />
                         </button>
                       </td>
@@ -202,13 +234,31 @@ export default function Setup() {
         <Step n={4} title={t('setup.limits')}>
           <div className="form-grid">
             <Field label={t('setup.maxPairsGroup')} hint={t('setup.default', { value: 4 })}>
-              <input className="input" type="number" min={1} value={s.maxPairsPerDayGroup} onChange={(e) => set('maxPairsPerDayGroup', num(e.target.value, 1))} />
+              <input
+                className="input"
+                type="number"
+                min={1}
+                value={s.maxPairsPerDayGroup}
+                onChange={(e) => set('maxPairsPerDayGroup', num(e.target.value, 1))}
+              />
             </Field>
             <Field label={t('setup.minPairsGroup')} hint={t('setup.default', { value: 2 })}>
-              <input className="input" type="number" min={0} value={s.minPairsPerDayGroup} onChange={(e) => set('minPairsPerDayGroup', num(e.target.value))} />
+              <input
+                className="input"
+                type="number"
+                min={0}
+                value={s.minPairsPerDayGroup}
+                onChange={(e) => set('minPairsPerDayGroup', num(e.target.value))}
+              />
             </Field>
             <Field label={t('setup.maxPairsTeacher')} hint={t('setup.default', { value: 5 })}>
-              <input className="input" type="number" min={1} value={s.maxPairsPerDayTeacher} onChange={(e) => set('maxPairsPerDayTeacher', num(e.target.value, 1))} />
+              <input
+                className="input"
+                type="number"
+                min={1}
+                value={s.maxPairsPerDayTeacher}
+                onChange={(e) => set('maxPairsPerDayTeacher', num(e.target.value, 1))}
+              />
             </Field>
           </div>
           <div className="row">

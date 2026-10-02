@@ -94,7 +94,8 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
     const tl = lessons.filter((l) => idx.assignmentOf(l)?.teacherId === t.id);
     if (!tl.length) continue;
     const load = tl.reduce((n, l) => n + parityWeight(l.parity), 0);
-    if (load > t.maxPairsPerWeek) out.push({ kind: 'teacher-overtime', severity: 'warning', lessonIds: tl.map((l) => l.id), subjectId: t.id });
+    if (load > t.maxPairsPerWeek)
+      out.push({ kind: 'teacher-overtime', severity: 'warning', lessonIds: tl.map((l) => l.id), subjectId: t.id });
     for (const d of days) {
       for (const week of weeks) {
         const dl = tl.filter((l) => l.day === d && inWeek(l, week));
@@ -123,10 +124,22 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
       const count = new Set(all.filter((l) => l.day === d).map((l) => l.slot)).size;
       const whole = new Set(gl.filter((l) => l.day === d).map((l) => l.slot)).size;
       if (whole > ds.settings.maxPairsPerDayGroup) {
-        out.push({ kind: 'group-day-overload', severity: 'warning', lessonIds: gl.filter((l) => l.day === d).map((l) => l.id), subjectId: g.id, day: d });
+        out.push({
+          kind: 'group-day-overload',
+          severity: 'warning',
+          lessonIds: gl.filter((l) => l.day === d).map((l) => l.id),
+          subjectId: g.id,
+          day: d,
+        });
       }
       if (count > 0 && count < ds.settings.minPairsPerDayGroup) {
-        out.push({ kind: 'group-day-underload', severity: 'warning', lessonIds: all.filter((l) => l.day === d).map((l) => l.id), subjectId: g.id, day: d });
+        out.push({
+          kind: 'group-day-underload',
+          severity: 'warning',
+          lessonIds: all.filter((l) => l.day === d).map((l) => l.id),
+          subjectId: g.id,
+          day: d,
+        });
       }
     }
   }

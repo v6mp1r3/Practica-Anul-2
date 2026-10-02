@@ -11,8 +11,8 @@ export function createRng(seed: number) {
   return {
     next,
     int: (n: number) => Math.floor(next() * n),
-    pick: <T,>(items: T[]): T => items[Math.floor(next() * items.length)],
-    shuffle: <T,>(items: T[]): T[] => {
+    pick: <T>(items: T[]): T => items[Math.floor(next() * items.length)],
+    shuffle: <T>(items: T[]): T[] => {
       const a = [...items];
       for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(next() * (i + 1));
