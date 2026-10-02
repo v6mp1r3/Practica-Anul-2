@@ -278,6 +278,13 @@ export const ro = {
   'teacher.setConsultation': 'Alege ora de consultații',
   'teacher.overtime': 'Ai {extra} perechi peste sarcina planificată.',
 
+  'availability.subtitle': 'Marchează când nu poți preda și când preferi să predai. Administrația vede modificările imediat.',
+  'availability.send': 'Trimite',
+  'availability.sent': 'Disponibilitatea a fost trimisă administrației.',
+  'availability.freeCount': '{free} intervale libere pentru {needed} perechi',
+  'availability.needConsultation': 'Alege o oră de consultații',
+  'availability.note': 'Intervalele „Indisponibil” sunt respectate obligatoriu; cele „Preferat” sunt respectate când este posibil.',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',

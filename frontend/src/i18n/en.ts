@@ -279,6 +279,13 @@ export const en: Record<MessageKey, string> = {
   'teacher.setConsultation': 'Pick your consultation hour',
   'teacher.overtime': 'You have {extra} pairs over your planned load.',
 
+  'availability.subtitle': 'Mark when you cannot teach and when you prefer to. The administration sees changes immediately.',
+  'availability.send': 'Submit',
+  'availability.sent': 'Your availability was sent to the administration.',
+  'availability.freeCount': '{free} free slots for {needed} pairs',
+  'availability.needConsultation': 'Pick a consultation hour',
+  'availability.note': '“Unavailable” slots are always respected; “Preferred” slots are respected when possible.',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',

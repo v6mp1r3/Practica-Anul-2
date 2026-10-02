@@ -16,6 +16,7 @@ import Teachers from './pages/admin/Teachers';
 import Timetables from './pages/admin/Timetables';
 import Login, { homeFor } from './pages/Login';
 import Notifications from './pages/shared/Notifications';
+import Availability from './pages/teacher/Availability';
 import TeacherHome from './pages/teacher/TeacherHome';
 import { AuthProvider, useAuth } from './state/auth';
 import { DataProvider, useData } from './state/data';
@@ -80,6 +81,7 @@ function AppRoutes() {
         }
       >
         <Route index element={<TeacherHome />} />
+        <Route path="availability" element={<Availability />} />
       </Route>
       <Route path="*" element={<Home />} />
     </Routes>
