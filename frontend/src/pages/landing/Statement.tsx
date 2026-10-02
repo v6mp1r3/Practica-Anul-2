@@ -1,6 +1,6 @@
 // A one-line statement whose middle word is scattered and whose letters land
-// in place whenever the line scrolls into view (the TAFI Agent effect, replayed
-// on every pass). Only transforms move, so nothing reflows. With reduced
+// in place when the line reaches the middle of the screen (the TAFI Agent
+// effect, replayed on every pass). Only transforms move, so nothing reflows. With reduced
 // motion the line is simply shown whole.
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
@@ -27,18 +27,39 @@ export function Statement({ before, word, after }: { before: string; word: strin
   const [reduced] = useState(() => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
   const [together, setTogether] = useState(false);
 
-  // Land every time the line scrolls into view, scatter again once it has left,
-  // so the effect replays on each pass (down or back up).
+  // The letters come together when the line reaches the middle of the screen
+  // (from either direction) and scatter again once it has left the screen, so
+  // the effect replays on every pass.
   useEffect(() => {
     const el = ref.current;
     if (!el || reduced) return;
-    if (!('IntersectionObserver' in window)) {
-      setTogether(true);
-      return;
-    }
-    const io = new IntersectionObserver(([entry]) => setTogether(entry.isIntersecting), { rootMargin: '0px 0px -8% 0px' });
-    io.observe(el);
-    return () => io.disconnect();
+    let from: 'below' | 'above' = 'below';
+    let isTogether = false;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const vh = window.innerHeight;
+      const r = el.getBoundingClientRect();
+      const center = r.top + r.height / 2;
+      if (r.top >= vh || r.bottom <= 0) {
+        from = r.top >= vh ? 'below' : 'above';
+        if (isTogether) setTogether((isTogether = false));
+        return;
+      }
+      const reached = from === 'below' ? center <= vh / 2 : center >= vh / 2;
+      if (reached && !isTogether) setTogether((isTogether = true));
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, [reduced]);
 
   const cls = ['st-line', reduced ? 'st-instant' : 'is-armed', together ? 'is-together' : ''].filter(Boolean).join(' ');
