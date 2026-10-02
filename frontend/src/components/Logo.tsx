@@ -1,4 +1,4 @@
-// EduSchedule logo: "Edu" in ink (currentColor, follows the theme), "Schedule" in
+// EduSchedule logo: "Edu" in ink (currentColor), "Schedule" in
 // the brand blue, and the l drawn as a pencil that has just underlined the word.
 // Source artwork and exports: docs/brand/.
 const BLUE = 'var(--logo-blue)';

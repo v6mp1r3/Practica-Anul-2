@@ -108,10 +108,10 @@ export function initials(name: string) {
 }
 
 /** RO / EN / RU switch. */
-export function LanguageSwitch({ dark }: { dark?: boolean }) {
+export function LanguageSwitch() {
   const { lang, setLang, t } = useI18n();
   return (
-    <div className={`lang-switch ${dark ? 'dark' : ''}`} role="group" aria-label={t('nav.language')}>
+    <div className="lang-switch" role="group" aria-label={t('nav.language')}>
       {LANGS.map((l) => (
         <button key={l} type="button" aria-pressed={l === lang} onClick={() => setLang(l)}>
           {l.toUpperCase()}

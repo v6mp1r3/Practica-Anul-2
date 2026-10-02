@@ -217,7 +217,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="lp-section lp-dark">
+        <section className="lp-section lp-tint">
           <div className="lp-container">
             <h2 className="lp-h2">{c.engine.title}</h2>
             <p className="lp-sub">{c.engine.text}</p>

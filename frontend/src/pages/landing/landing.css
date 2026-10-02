@@ -1,5 +1,5 @@
 /* Landing page — Apple-style, like the TAFI Agent / TAFI Contabil sites:
-   big semibold display type, white and #f5f5f7 bands, one dark band, blue accent. */
+   big semibold display type, white, #f5f5f7 and soft-blue bands, blue accent. */
 
 .lp {
   background: var(--surface);
@@ -210,13 +210,8 @@
 .lp-ash {
   background: var(--bg);
 }
-.lp-dark {
-  background: #1d1d1f;
-  color: #f5f5f7;
-}
-.lp-dark .lp-sub,
-.lp-dark p {
-  color: #a1a1a6;
+.lp-tint {
+  background: #eef5f8;
 }
 
 /* Steps */
@@ -353,7 +348,7 @@
 }
 .lp-engine > div {
   padding-top: 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  border-top: 2px solid var(--primary);
 }
 
 /* CTA */

@@ -394,13 +394,3 @@ table.table {
   color: var(--text);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
-.lang-switch.dark {
-  background: rgba(255, 255, 255, 0.1);
-}
-.lang-switch.dark button {
-  color: rgba(255, 255, 255, 0.7);
-}
-.lang-switch.dark button[aria-pressed='true'] {
-  background: rgba(255, 255, 255, 0.92);
-  color: #1d1d1f;
-}

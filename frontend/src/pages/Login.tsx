@@ -44,7 +44,7 @@ export default function Login() {
           <p className="hero-text">{t('login.intro')}</p>
         </div>
         <div style={{ alignSelf: 'flex-start' }}>
-          <LanguageSwitch dark />
+          <LanguageSwitch />
         </div>
       </section>
 
