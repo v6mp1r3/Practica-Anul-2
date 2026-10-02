@@ -88,19 +88,6 @@
   letter-spacing: -0.02em;
 }
 
-.lp-btn-lg {
-  height: 46px;
-  padding: 0 26px;
-  font-size: 15px;
-}
-.lp-actions {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 34px;
-}
-
 /* Hero */
 .lp-hero {
   padding: clamp(64px, 10vw, 120px) 0 clamp(48px, 7vw, 88px);
@@ -163,6 +150,144 @@
   }
 }
 
+/* Kicker above a centred section title */
+.lp-kicker {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Stacking cards — each card pins and the next slides over it */
+.lp-stack {
+  padding-top: clamp(72px, 9vw, 112px);
+}
+.lp-stack-intro {
+  text-align: center;
+}
+.lp-stack-intro .lp-h2 {
+  max-width: 22ch;
+  margin: 0 auto;
+}
+.lp-stack-slot {
+  position: sticky;
+  top: 60px; /* below the sticky nav */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 60px);
+  padding: 0 24px;
+}
+.lp-stack-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  max-width: 1040px;
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: 32px;
+  color: #fff;
+  box-shadow: var(--shadow-lg);
+  transform-origin: top center;
+  will-change: transform;
+}
+.lp-stack-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: clamp(32px, 4vw, 48px);
+}
+.lp-stack-num {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+}
+.lp-stack-text h3 {
+  font-size: clamp(28px, 3vw, 38px);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+.lp-stack-text p {
+  max-width: 420px;
+  margin-top: 16px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 17px;
+  line-height: 1.6;
+}
+.lp-stack-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+  padding: 11px 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.lp-stack-btn:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+.lp-stack-btn svg {
+  transition: transform 0.25s var(--ease);
+}
+.lp-stack-btn:hover svg {
+  transform: translateX(3px);
+}
+.lp-stack-media {
+  position: relative;
+  min-height: 260px;
+  overflow: hidden;
+}
+.lp-stack-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  mix-blend-mode: luminosity;
+  opacity: 0.9;
+}
+.lp-stack-media > div {
+  position: absolute;
+  inset: 0;
+  opacity: 0.28;
+}
+
+/* Feature list — coloured icon, title and text, two columns, no boxes */
+.lp-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 44px 64px;
+  margin-top: 56px;
+}
+.lp-feature {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 18px;
+}
+.lp-feature-icon {
+  padding-top: 2px;
+}
+.lp-feature h3 {
+  font-size: 19px;
+  letter-spacing: -0.015em;
+}
+.lp-feature p {
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
 /* Sections */
 .lp-section {
   padding: clamp(72px, 10vw, 128px) 0;
@@ -170,159 +295,6 @@
 .lp-ash {
   background: var(--surface);
   border-top: 1px solid var(--border);
-}
-.lp-tint {
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-}
-
-/* Steps */
-.lp-steps {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 40px;
-  margin: 56px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.lp-steps li {
-  padding-top: 22px;
-  border-top: 2px solid var(--text);
-}
-.lp-step-num {
-  display: block;
-  margin-bottom: 18px;
-  color: var(--primary);
-  font-size: 14px;
-  font-weight: 700;
-}
-.lp-steps p,
-.lp-card p,
-.lp-role p,
-.lp-engine p {
-  margin-top: 10px;
-  color: var(--text-2);
-  font-size: 15.5px;
-  line-height: 1.55;
-}
-
-/* Feature cards */
-.lp-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  margin-top: 56px;
-}
-.lp-card {
-  padding: 28px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  transition: transform 0.4s var(--ease);
-}
-.lp-card:hover {
-  transform: translateY(-3px);
-}
-.lp-icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  margin-bottom: 20px;
-  border-radius: 12px;
-  background: var(--primary-soft);
-  color: var(--primary);
-}
-
-/* Roles */
-.lp-roles {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  margin-top: 56px;
-}
-.lp-role {
-  padding: 30px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-}
-.lp-role-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 22px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-/* Comparison */
-.lp-table-wrap {
-  overflow-x: auto;
-  margin-top: 48px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-.lp-table {
-  width: 100%;
-  min-width: 760px;
-  border-collapse: collapse;
-  font-size: 14.5px;
-}
-.lp-table th,
-.lp-table td {
-  padding: 16px 18px;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-.lp-table thead th {
-  font-size: 15px;
-  font-weight: 600;
-}
-.lp-table tbody th {
-  color: var(--text-2);
-  font-weight: 500;
-}
-.lp-table tr:last-child th,
-.lp-table tr:last-child td {
-  border-bottom: none;
-}
-.lp-table td {
-  color: var(--text-2);
-}
-.lp-table .lp-us {
-  color: var(--primary);
-  font-weight: 600;
-}
-
-/* Engine */
-.lp-engine {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 40px;
-  margin-top: 56px;
-}
-.lp-engine > div {
-  padding-top: 22px;
-  border-top: 2px solid var(--primary);
-}
-
-/* CTA */
-.lp-cta {
-  text-align: center;
-}
-.lp-cta .lp-sub {
-  margin: 18px auto 32px;
-}
-.lp-cta-title {
-  font-size: clamp(38px, 6vw, 72px);
 }
 
 /* Footer */
@@ -351,15 +323,21 @@
   .lp-nav-actions {
     margin-left: auto;
   }
-  .lp-steps,
-  .lp-cards,
-  .lp-roles,
-  .lp-engine {
+  .lp-features {
     grid-template-columns: 1fr;
   }
-  .lp-cards,
-  .lp-roles {
-    gap: 14px;
+}
+
+@media (max-width: 760px) {
+  .lp-stack-card {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .lp-stack-media {
+    min-height: 200px;
+  }
+  .lp-stack-slot {
+    padding: 0 16px;
   }
 }
 

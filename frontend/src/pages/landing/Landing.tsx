@@ -17,12 +17,13 @@ import { useAuth } from '../../state/auth';
 import { homeFor } from '../Login';
 import { copy } from './copy';
 import { ScrollText } from './ScrollText';
+import { StackingCards } from './StackingCards';
 import { Statement } from './Statement';
 import './landing.css';
 
 const FEATURE_ICONS: IconName[] = ['layers', 'calendar', 'copy', 'alert', 'edit', 'upload'];
-const ROLE_ICONS: IconName[] = ['settings', 'user', 'users'];
-const TOOLS = ['FET', 'aSc', 'Untis', 'UniTime', 'EduSchedule'];
+// One brand colour per feature, as on the TAFI Agent site
+const FEATURE_COLORS = ['#1b7396', '#e65d31', '#006c50', '#d5002f', '#940144', '#34871d'];
 
 function Preview() {
   const { t } = useI18n();
@@ -86,8 +87,6 @@ export default function Landing() {
           <nav className="lp-links">
             <a href="#how">{c.nav.how}</a>
             <a href="#features">{c.nav.features}</a>
-            <a href="#roles">{c.nav.roles}</a>
-            <a href="#compare">{c.nav.compare}</a>
           </nav>
           <div className="lp-nav-actions">
             <LanguageSwitch />
@@ -103,14 +102,6 @@ export default function Landing() {
           <div className="lp-container">
             <h1 className="lp-display">{c.hero.title}</h1>
             <p className="lp-lead">{c.hero.text}</p>
-            <div className="lp-actions">
-              <Link to={appLink} className="btn primary lp-btn-lg">
-                {c.hero.cta}
-              </Link>
-              <a href="#how" className="btn lp-btn-lg">
-                {c.hero.secondary}
-              </a>
-            </div>
           </div>
           <div className="lp-container lp-preview">
             <Preview />
@@ -118,118 +109,29 @@ export default function Landing() {
           </div>
         </section>
 
-        <Statement key={lang} {...c.statement} />
+        <Statement key={`statement-${lang}`} {...c.statement} />
 
-        <section id="how" className="lp-section">
-          <div className="lp-container">
-            <h2 className="lp-h2">{c.how.title}</h2>
-            <p className="lp-sub">{c.how.text}</p>
-            <ol className="lp-steps">
-              {c.how.steps.map((s, i) => (
-                <li key={s.title}>
-                  <span className="lp-step-num">{i + 1}</span>
-                  <h3>{s.title}</h3>
-                  <p>{s.text}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
+        <StackingCards kicker={c.how.kicker} title={c.how.title} cards={c.how.steps} button={c.how.button} to={appLink} />
 
-        <ScrollText key={lang} text={c.reveal} />
+        <ScrollText key={`reveal-${lang}`} text={c.reveal} />
 
         <section id="features" className="lp-section lp-ash">
           <div className="lp-container">
             <h2 className="lp-h2">{c.features.title}</h2>
             <p className="lp-sub">{c.features.text}</p>
-            <div className="lp-cards">
+            <div className="lp-features">
               {c.features.items.map((f, i) => (
-                <article key={f.title} className="lp-card">
-                  <span className="lp-icon">
-                    <Icon name={FEATURE_ICONS[i]} size={20} />
+                <article key={f.title} className="lp-feature">
+                  <span className="lp-feature-icon" style={{ color: FEATURE_COLORS[i % FEATURE_COLORS.length] }}>
+                    <Icon name={FEATURE_ICONS[i]} size={22} />
                   </span>
-                  <h3>{f.title}</h3>
-                  <p>{f.text}</p>
+                  <div>
+                    <h3>{f.title}</h3>
+                    <p>{f.text}</p>
+                  </div>
                 </article>
               ))}
             </div>
-          </div>
-        </section>
-
-        <section id="roles" className="lp-section">
-          <div className="lp-container">
-            <h2 className="lp-h2">{c.roles.title}</h2>
-            <p className="lp-sub">{c.roles.text}</p>
-            <div className="lp-roles">
-              {c.roles.items.map((r, i) => (
-                <article key={r.role} className="lp-role">
-                  <span className="lp-role-tag">
-                    <Icon name={ROLE_ICONS[i]} size={15} />
-                    {r.role}
-                  </span>
-                  <h3>{r.title}</h3>
-                  <p>{r.text}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="compare" className="lp-section lp-ash">
-          <div className="lp-container">
-            <h2 className="lp-h2">{c.compare.title}</h2>
-            <p className="lp-sub">{c.compare.text}</p>
-            <div className="lp-table-wrap">
-              <table className="lp-table">
-                <thead>
-                  <tr>
-                    <th />
-                    {TOOLS.map((tool) => (
-                      <th key={tool} className={tool === 'EduSchedule' ? 'lp-us' : undefined}>
-                        {tool}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {c.compare.rows.map((row) => (
-                    <tr key={row.label}>
-                      <th scope="row">{row.label}</th>
-                      {row.values.map((v, i) => (
-                        <td key={i} className={i === 4 ? 'lp-us' : undefined}>
-                          {v}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <section className="lp-section lp-tint">
-          <div className="lp-container">
-            <h2 className="lp-h2">{c.engine.title}</h2>
-            <p className="lp-sub">{c.engine.text}</p>
-            <div className="lp-engine">
-              {c.engine.points.map((p) => (
-                <div key={p.title}>
-                  <h3>{p.title}</h3>
-                  <p>{p.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="lp-section lp-cta">
-          <div className="lp-container">
-            <h2 className="lp-display lp-cta-title">{c.cta.title}</h2>
-            <p className="lp-sub">{c.cta.text}</p>
-            <Link to={appLink} className="btn primary lp-btn-lg">
-              {c.cta.button}
-            </Link>
           </div>
         </section>
       </main>

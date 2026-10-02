@@ -3,20 +3,12 @@
 import type { Lang } from '../../i18n';
 
 export interface LandingCopy {
-  nav: { features: string; how: string; roles: string; compare: string; login: string; open: string };
-  hero: { title: string; text: string; cta: string; secondary: string; preview: string };
+  nav: { features: string; how: string; login: string; open: string };
+  hero: { title: string; text: string; preview: string };
   statement: { before: string; word: string; after: string };
   reveal: string;
-  how: { title: string; text: string; steps: { title: string; text: string }[] };
+  how: { kicker: string; title: string; button: string; steps: { title: string; text: string }[] };
   features: { title: string; text: string; items: { title: string; text: string }[] };
-  roles: { title: string; text: string; items: { role: string; title: string; text: string }[] };
-  compare: {
-    title: string;
-    text: string;
-    rows: { label: string; values: [string, string, string, string, string] }[];
-  };
-  engine: { title: string; text: string; points: { title: string; text: string }[] };
-  cta: { title: string; text: string; button: string };
   footer: { project: string; team: string };
 }
 
@@ -25,24 +17,21 @@ export const copy: Record<Lang, LandingCopy> = {
     nav: {
       features: 'Funcții',
       how: 'Cum funcționează',
-      roles: 'Pentru cine',
-      compare: 'Comparație',
       login: 'Intră',
       open: 'Deschide aplicația',
     },
     hero: {
       title: 'Orarul universității, fără conflicte.',
       text: 'EduSchedule construiește orarul pentru grupe, torente și subgrupe, ține cont de săptămânile pare și impare și îți propune mai multe variante. Tu alegi una, o ajustezi și o publici.',
-      cta: 'Încearcă demo-ul',
-      secondary: 'Cum funcționează',
       preview: 'Orarul grupei FAF-251, generat chiar acum în browser',
     },
     statement: { before: 'EduSchedule te ajută să le ', word: 'gestionezi', after: ' pe toate' },
     reveal:
       'Un orar nu e greu din cauza orelor, ci din cauza conflictelor: o mutare mică strică trei grupe. EduSchedule le vede pe toate înaintea ta.',
     how: {
+      kicker: 'Cum funcționează',
       title: 'Trei pași, de la date la orar publicat.',
-      text: 'Datele de bază se introduc o singură dată. La fiecare semestru doar generezi, alegi și publici.',
+      button: 'Vezi în aplicație',
       steps: [
         {
           title: 'Configurezi',
@@ -88,54 +77,6 @@ export const copy: Record<Lang, LandingCopy> = {
         },
       ],
     },
-    roles: {
-      title: 'Trei roluri, un singur orar.',
-      text: 'Fiecare vede exact ce îi trebuie.',
-      items: [
-        {
-          role: 'Administrator',
-          title: 'Creează și publică orarul',
-          text: 'Introduce datele, verifică problemele, generează variante, alege una, o ajustează și o publică.',
-        },
-        {
-          role: 'Profesor',
-          title: 'Își vede orarul și sarcina',
-          text: 'Câte perechi are, unde și cu cine, indică online când nu poate preda și își alege ora de consultații.',
-        },
-        {
-          role: 'Student',
-          title: 'Știe unde are pereche',
-          text: 'Orarul grupei pe telefon, următoarea pereche, săli libere și profesori disponibili acum.',
-        },
-      ],
-    },
-    compare: {
-      title: 'Cum se compară.',
-      text: 'Soluțiile existente sunt fie făcute pentru școli, fie prea mari pentru o singură facultate.',
-      rows: [
-        { label: 'Cost', values: ['Gratuit', 'Licență + mentenanță', 'Plătit, pe module', 'Gratuit', 'Gratuit (planificat)'] },
-        { label: 'Platformă', values: ['Desktop', 'Desktop și online', 'Desktop + WebUntis', 'Web, server propriu', 'Web'] },
-        { label: 'Pentru', values: ['Școli și universități', 'Școli', 'Școli', 'Universități mari', 'Facultăți'] },
-        {
-          label: 'Instalare',
-          values: ['Program desktop', 'Program sau cont online', 'Program desktop', 'Server Java și bază de date', 'Doar browser'],
-        },
-        {
-          label: 'Săptămâni pare/impare',
-          values: ['Cu artificii', 'Setare separată', 'Modul plătit', 'Șabloane de date', 'O singură întrebare'],
-        },
-      ],
-    },
-    engine: {
-      title: 'Matematică solidă în spate.',
-      text: 'Orarul universitar este o problemă NP-dificilă: nu poți verifica toate combinațiile. EduSchedule folosește metode recunoscute în cercetare.',
-      points: [
-        { title: 'CP-SAT', text: 'Programare cu constrângeri (Google OR-Tools): regulile obligatorii sunt respectate mereu.' },
-        { title: 'Large Neighborhood Search', text: 'Îmbunătățește orarul pas cu pas, păstrând perechile fixate manual.' },
-        { title: 'Penalizare transparentă', text: 'Fiecare variantă primește un scor din ferestre, perechi devreme și zile încărcate.' },
-      ],
-    },
-    cta: { title: 'Vezi cum arată.', text: 'Intră cu un cont demo de administrator, profesor sau student.', button: 'Încearcă demo-ul' },
     footer: { project: 'Proiect de practică, Universitatea Tehnică a Moldovei', team: 'Echipa 1 · FAF-251' },
   },
 
@@ -143,24 +84,21 @@ export const copy: Record<Lang, LandingCopy> = {
     nav: {
       features: 'Features',
       how: 'How it works',
-      roles: 'Who it’s for',
-      compare: 'Comparison',
       login: 'Sign in',
       open: 'Open the app',
     },
     hero: {
       title: 'Your university timetable, conflict-free.',
       text: 'EduSchedule builds the timetable for groups, streams and subgroups, handles odd and even weeks, and offers you several variants. You pick one, adjust it and publish it.',
-      cta: 'Try the demo',
-      secondary: 'How it works',
       preview: 'Group FAF-251’s timetable, generated right now in your browser',
     },
     statement: { before: 'EduSchedule helps you ', word: 'manage', after: ' them all' },
     reveal:
       'A timetable isn’t hard because of the hours — it’s hard because of the conflicts: one small move breaks three groups. EduSchedule sees them all before you do.',
     how: {
+      kicker: 'How it works',
       title: 'Three steps, from data to a published timetable.',
-      text: 'Base data is entered once. Each semester you just generate, choose and publish.',
+      button: 'See it in the app',
       steps: [
         {
           title: 'Set up',
@@ -200,51 +138,6 @@ export const copy: Record<Lang, LandingCopy> = {
         },
       ],
     },
-    roles: {
-      title: 'Three roles, one timetable.',
-      text: 'Everyone sees exactly what they need.',
-      items: [
-        {
-          role: 'Administrator',
-          title: 'Builds and publishes the timetable',
-          text: 'Enters the data, checks for problems, generates variants, picks one, adjusts it and publishes it.',
-        },
-        {
-          role: 'Teacher',
-          title: 'Sees their timetable and load',
-          text: 'How many pairs, where and with whom; submits unavailable times online and picks a consultation hour.',
-        },
-        {
-          role: 'Student',
-          title: 'Knows where the next class is',
-          text: 'The group timetable on a phone, the next pair, free rooms and teachers available right now.',
-        },
-      ],
-    },
-    compare: {
-      title: 'How it compares.',
-      text: 'Existing tools are either built for schools or too big for a single faculty.',
-      rows: [
-        { label: 'Cost', values: ['Free', 'Licence + maintenance', 'Paid, modular', 'Free', 'Free (planned)'] },
-        { label: 'Platform', values: ['Desktop', 'Desktop and online', 'Desktop + WebUntis', 'Web, own server', 'Web'] },
-        { label: 'Built for', values: ['Schools and universities', 'Schools', 'Schools', 'Large universities', 'Faculties'] },
-        {
-          label: 'Installation',
-          values: ['Desktop program', 'Program or online account', 'Desktop program', 'Java server and database', 'Browser only'],
-        },
-        { label: 'Odd/even weeks', values: ['Workaround', 'Separate setting', 'Paid add-on', 'Date patterns', 'One question'] },
-      ],
-    },
-    engine: {
-      title: 'Solid maths underneath.',
-      text: 'University timetabling is NP-hard: you cannot check every combination. EduSchedule uses methods established in research.',
-      points: [
-        { title: 'CP-SAT', text: 'Constraint programming (Google OR-Tools): hard rules are always respected.' },
-        { title: 'Large Neighborhood Search', text: 'Improves the timetable step by step, keeping pairs locked by hand.' },
-        { title: 'Transparent penalty', text: 'Each variant gets a score from gaps, early pairs and overloaded days.' },
-      ],
-    },
-    cta: { title: 'See it for yourself.', text: 'Sign in with a demo administrator, teacher or student account.', button: 'Try the demo' },
     footer: { project: 'Internship project, Technical University of Moldova', team: 'Team 1 · FAF-251' },
   },
 
@@ -252,24 +145,21 @@ export const copy: Record<Lang, LandingCopy> = {
     nav: {
       features: 'Возможности',
       how: 'Как это работает',
-      roles: 'Для кого',
-      compare: 'Сравнение',
       login: 'Войти',
       open: 'Открыть приложение',
     },
     hero: {
       title: 'Расписание университета без конфликтов.',
       text: 'EduSchedule составляет расписание для групп, потоков и подгрупп, учитывает чётные и нечётные недели и предлагает несколько вариантов. Вы выбираете один, дорабатываете и публикуете.',
-      cta: 'Попробовать демо',
-      secondary: 'Как это работает',
       preview: 'Расписание группы FAF-251, созданное прямо сейчас в браузере',
     },
     statement: { before: 'EduSchedule помогает вам ', word: 'управлять', after: ' всем этим' },
     reveal:
       'Расписание сложно не из-за часов, а из-за конфликтов: одна небольшая перестановка ломает три группы. EduSchedule видит их все раньше вас.',
     how: {
+      kicker: 'Как это работает',
       title: 'Три шага от данных до опубликованного расписания.',
-      text: 'Основные данные вводятся один раз. Каждый семестр вы только генерируете, выбираете и публикуете.',
+      button: 'Посмотреть в приложении',
       steps: [
         {
           title: 'Настройка',
@@ -311,58 +201,6 @@ export const copy: Record<Lang, LandingCopy> = {
           text: 'Загрузите учебный план из CSV, экспортируйте расписание в CSV, распечатайте или добавьте в календарь телефона.',
         },
       ],
-    },
-    roles: {
-      title: 'Три роли, одно расписание.',
-      text: 'Каждый видит ровно то, что ему нужно.',
-      items: [
-        {
-          role: 'Администратор',
-          title: 'Составляет и публикует расписание',
-          text: 'Вводит данные, проверяет проблемы, генерирует варианты, выбирает один, дорабатывает и публикует.',
-        },
-        {
-          role: 'Преподаватель',
-          title: 'Видит своё расписание и нагрузку',
-          text: 'Сколько пар, где и с кем; онлайн отмечает, когда не может вести занятия, и выбирает час консультаций.',
-        },
-        {
-          role: 'Студент',
-          title: 'Знает, где следующая пара',
-          text: 'Расписание группы на телефоне, следующая пара, свободные аудитории и преподаватели, свободные сейчас.',
-        },
-      ],
-    },
-    compare: {
-      title: 'Сравнение.',
-      text: 'Существующие решения либо сделаны для школ, либо слишком велики для одного факультета.',
-      rows: [
-        { label: 'Стоимость', values: ['Бесплатно', 'Лицензия + поддержка', 'Платно, по модулям', 'Бесплатно', 'Бесплатно (планируется)'] },
-        { label: 'Платформа', values: ['Десктоп', 'Десктоп и онлайн', 'Десктоп + WebUntis', 'Веб, свой сервер', 'Веб'] },
-        { label: 'Для кого', values: ['Школы и вузы', 'Школы', 'Школы', 'Крупные вузы', 'Факультеты'] },
-        {
-          label: 'Установка',
-          values: ['Десктоп-программа', 'Программа или онлайн-аккаунт', 'Десктоп-программа', 'Java-сервер и база данных', 'Только браузер'],
-        },
-        {
-          label: 'Чётные/нечётные недели',
-          values: ['Обходным путём', 'Отдельная настройка', 'Платный модуль', 'Шаблоны дат', 'Один вопрос'],
-        },
-      ],
-    },
-    engine: {
-      title: 'Надёжная математика внутри.',
-      text: 'Составление университетского расписания — NP-трудная задача: перебрать все комбинации невозможно. EduSchedule использует признанные в науке методы.',
-      points: [
-        { title: 'CP-SAT', text: 'Программирование в ограничениях (Google OR-Tools): обязательные правила соблюдаются всегда.' },
-        { title: 'Large Neighborhood Search', text: 'Улучшает расписание шаг за шагом, сохраняя закреплённые вручную пары.' },
-        { title: 'Прозрачный штраф', text: 'Каждый вариант получает оценку по окнам, ранним парам и перегруженным дням.' },
-      ],
-    },
-    cta: {
-      title: 'Посмотрите сами.',
-      text: 'Войдите с демо-аккаунтом администратора, преподавателя или студента.',
-      button: 'Попробовать демо',
     },
     footer: { project: 'Проект практики, Технический университет Молдовы', team: 'Команда 1 · FAF-251' },
   },
