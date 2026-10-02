@@ -59,19 +59,27 @@
 /* Cards */
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-.card-body {
-  padding: 18px;
+  border: 1px solid rgba(15, 26, 31, 0.06);
+  border-radius: 24px;
+  box-shadow:
+    0 1px 2px rgba(15, 26, 31, 0.04),
+    0 14px 36px -24px rgba(15, 26, 31, 0.28);
 }
 .card-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
+  padding: 18px 22px 12px;
+}
+.card-header h2,
+.card-header h3 {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.card-body {
+  padding: 18px 22px;
 }
 
 /* Stat tiles */
@@ -260,6 +268,7 @@ table.table {
   background: rgba(10, 14, 30, 0.45);
 }
 .modal {
+  border-radius: 24px;
   width: min(560px, 100%);
   max-height: calc(100vh - 32px);
   overflow: auto;
@@ -269,6 +278,15 @@ table.table {
 }
 .modal.wide {
   width: min(860px, 100%);
+}
+.modal .card-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.modal .card-header h2 {
+  font-size: 17px;
+  text-transform: none;
+  letter-spacing: -0.01em;
 }
 .modal-footer {
   display: flex;
@@ -304,25 +322,24 @@ table.table {
 /* Tabs / segmented control */
 .segmented {
   display: inline-flex;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-}
-.segmented button {
-  height: 30px;
-  padding: 0 14px;
-  border: none;
+  gap: 4px;
+  padding: 0;
   border-radius: 999px;
   background: transparent;
+}
+.segmented button {
+  height: 32px;
+  padding: 0 15px;
+  border: none;
+  border-radius: 999px;
+  background: var(--surface-2);
   cursor: pointer;
   font-weight: 550;
   color: var(--text-2);
 }
 .segmented button[aria-pressed='true'] {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--shadow);
+  background: var(--ink);
+  color: #fff;
 }
 
 /* Empty state */
