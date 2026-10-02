@@ -7,6 +7,8 @@ interface Auth {
   ready: boolean;
   login: (username: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
+  /** Replace the cached user after a profile change. */
+  setUser: (u: User) => void;
 }
 
 const AuthContext = createContext<Auth | null>(null);
@@ -34,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const value = useMemo(() => ({ user, ready, login, logout }), [user, ready, login, logout]);
+  const value = useMemo(() => ({ user, ready, login, logout, setUser }), [user, ready, login, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

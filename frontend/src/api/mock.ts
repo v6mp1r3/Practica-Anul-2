@@ -17,6 +17,8 @@ interface Store {
   timetables: Timetable[];
   notifications: Notification[];
   changes: ScheduleChange[];
+  /** userId -> password; users not listed still use the demo password. */
+  passwords?: Record<string, string>;
   readIds: Record<string, string[]>; // userId -> notification ids
   sessionUserId: string | null;
   seedVersion?: number;
@@ -175,10 +177,32 @@ export function createMockApi(): Api {
   return {
     async login(username, password) {
       const user = store.users.find((u) => u.username === username.trim().toLowerCase());
-      if (!user || password !== 'demo') throw new ApiError(401, 'Invalid credentials');
+      if (!user || password !== (store.passwords?.[user.id] ?? 'demo')) throw new ApiError(401, 'Invalid credentials');
       store.sessionUserId = user.id;
       persist();
       return delay({ token: `mock-${user.id}`, user });
+    },
+    async updateProfile(update) {
+      const u = currentUser();
+      const name = update.name.trim();
+      if (!name) throw new ApiError(422, 'Name is required');
+      Object.assign(u, {
+        name,
+        email: update.email?.trim() || undefined,
+        phone: update.phone?.trim() || undefined,
+        emailNotifications: !!update.emailNotifications,
+      });
+      if (update.avatar !== undefined) u.avatar = update.avatar ?? undefined;
+      persist();
+      return delay(u);
+    },
+    async changePassword(current, next) {
+      const u = currentUser();
+      if (current !== (store.passwords?.[u.id] ?? 'demo')) throw new ApiError(400, 'Wrong password');
+      if (next.length < 8) throw new ApiError(422, 'Password too short');
+      store.passwords = { ...store.passwords, [u.id]: next };
+      persist();
+      return delay(undefined);
     },
     async me() {
       return delay(currentUser(), 0);

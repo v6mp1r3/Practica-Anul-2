@@ -62,6 +62,9 @@ export function createHttpApi(baseUrl: string): Api {
       setToken(null);
     },
 
+    updateProfile: (update) => request('PUT', '/auth/me', update),
+    changePassword: (current, next) => request('POST', '/auth/password', { current, next }),
+
     getDataset: () => request('GET', '/dataset'),
     saveSettings: (s) => request('PUT', '/settings', s),
 

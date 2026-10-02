@@ -232,6 +232,21 @@ export interface User {
   teacherId?: string;
   /** For students: their Group id. */
   groupId?: string;
+  email?: string;
+  phone?: string;
+  /** Profile picture as a small data URL (or an URL from the server). */
+  avatar?: string;
+  /** Also send schedule-change notifications by email. */
+  emailNotifications?: boolean;
+}
+
+/** Fields a user may change about themselves. */
+export interface ProfileUpdate {
+  name: string;
+  email?: string;
+  phone?: string;
+  avatar?: string | null;
+  emailNotifications?: boolean;
 }
 
 export type NotificationKind = 'welcome' | 'published' | 'updated' | 'availability' | 'room-change' | 'teacher-change';
