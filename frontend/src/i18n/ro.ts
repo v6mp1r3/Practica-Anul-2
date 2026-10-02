@@ -54,7 +54,6 @@ export const ro = {
   'nav.notifications': 'Notificări',
   'nav.logout': 'Ieșire',
   'nav.language': 'Limba',
-  'nav.theme': 'Temă',
 
   'notifications.title': 'Notificări',
   'notifications.subtitle': 'Modificări de orar și mesaje de la administrație.',

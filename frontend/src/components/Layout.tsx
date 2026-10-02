@@ -60,36 +60,11 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
   ],
 };
 
-type Theme = 'auto' | 'light' | 'dark';
-const THEME_KEY = 'eduschedule:theme';
-
-function useTheme(): [Theme, () => void] {
-  const [theme, setTheme] = useState<Theme>(() => {
-    try {
-      return (localStorage.getItem(THEME_KEY) as Theme) || 'auto';
-    } catch {
-      return 'auto';
-    }
-  });
-  useEffect(() => {
-    if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', theme);
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch {
-      /* ignore */
-    }
-  }, [theme]);
-  const cycle = () => setTheme((t) => (t === 'auto' ? 'dark' : t === 'dark' ? 'light' : 'auto'));
-  return [theme, cycle];
-}
-
 export function Layout() {
   const { user, logout } = useAuth();
   const { notifications } = useData();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [theme, cycleTheme] = useTheme();
   const location = useLocation();
 
   useEffect(() => setOpen(false), [location.pathname]);
@@ -132,9 +107,6 @@ export function Layout() {
           </div>
           <div className="row">
             <LanguageSwitch />
-            <button className="btn ghost sm icon" onClick={cycleTheme} title={`${t('nav.theme')}: ${theme}`} aria-label={t('nav.theme')}>
-              <Icon name="moon" size={15} />
-            </button>
             <span className="spacer" />
             <button className="btn ghost sm icon" onClick={logout} title={t('nav.logout')} aria-label={t('nav.logout')}>
               <Icon name="logout" size={15} />

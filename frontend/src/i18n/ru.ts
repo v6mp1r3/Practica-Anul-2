@@ -55,7 +55,6 @@ export const ru: Record<MessageKey, string> = {
   'nav.notifications': 'Уведомления',
   'nav.logout': 'Выйти',
   'nav.language': 'Язык',
-  'nav.theme': 'Тема',
 
   'notifications.title': 'Уведомления',
   'notifications.subtitle': 'Изменения расписания и сообщения администрации.',

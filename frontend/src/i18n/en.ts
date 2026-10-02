@@ -55,7 +55,6 @@ export const en: Record<MessageKey, string> = {
   'nav.notifications': 'Notifications',
   'nav.logout': 'Sign out',
   'nav.language': 'Language',
-  'nav.theme': 'Theme',
 
   'notifications.title': 'Notifications',
   'notifications.subtitle': 'Timetable changes and messages from the administration.',

@@ -8,7 +8,6 @@
   --brand-teal: #006c50; /* Pantone 342 */
   --brand-blue: #1b7396; /* Pantone 633 — primary */
   --brand-black: #000000;
-  --brand-blue-lt: #4ea8cd;
   --logo-blue: var(--brand-blue);
 }
 
@@ -16,6 +15,7 @@
    white and #f5f5f7 surfaces, #1d1d1f ink, hairline borders, SF Pro with
    Inter as the cross-platform fallback. Blue is the single accent. */
 :root {
+  color-scheme: light;
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -58,68 +58,4 @@
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 18px 50px -28px rgba(0, 0, 0, 0.22);
   --shadow-lg: 0 30px 70px -38px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.06);
   --sidebar-w: 248px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #000000;
-    --surface: #1c1c1e;
-    --surface-2: #2c2c2e;
-    --border: rgba(255, 255, 255, 0.12);
-    --border-strong: rgba(255, 255, 255, 0.2);
-    --text: #f5f5f7;
-    --text-2: #a1a1a6;
-    --text-3: #6e6e73;
-    --primary: var(--brand-blue-lt);
-    --logo-blue: var(--brand-blue-lt);
-    --primary-hover: #74bcdb;
-    --primary-soft: rgba(78, 168, 205, 0.16);
-    --on-primary: #000000;
-    --accent: #e07ba5;
-    --danger: #ff5c78;
-    --danger-soft: rgba(255, 92, 120, 0.14);
-    --warning: #f28a62;
-    --warning-dot: #f28a62;
-    --warning-soft: rgba(242, 138, 98, 0.14);
-    --success: #6ec24e;
-    --success-soft: rgba(110, 194, 78, 0.14);
-    --lecture: var(--brand-blue-lt);
-    --lecture-soft: rgba(78, 168, 205, 0.16);
-    --seminar: #3fbf95;
-    --seminar-soft: rgba(63, 191, 149, 0.15);
-    --lab: #e07ba5;
-    --lab-soft: rgba(224, 123, 165, 0.15);
-    --shadow: none;
-  }
-}
-
-:root[data-theme='dark'] {
-  --bg: #000000;
-  --surface: #1c1c1e;
-  --surface-2: #2c2c2e;
-  --border: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.2);
-  --text: #f5f5f7;
-  --text-2: #a1a1a6;
-  --text-3: #6e6e73;
-  --primary: var(--brand-blue-lt);
-  --logo-blue: var(--brand-blue-lt);
-  --primary-hover: #74bcdb;
-  --primary-soft: rgba(78, 168, 205, 0.16);
-  --on-primary: #000000;
-  --accent: #e07ba5;
-  --danger: #ff5c78;
-  --danger-soft: rgba(255, 92, 120, 0.14);
-  --warning: #f28a62;
-  --warning-dot: #f28a62;
-  --warning-soft: rgba(242, 138, 98, 0.14);
-  --success: #6ec24e;
-  --success-soft: rgba(110, 194, 78, 0.14);
-  --lecture: var(--brand-blue-lt);
-  --lecture-soft: rgba(78, 168, 205, 0.16);
-  --seminar: #3fbf95;
-  --seminar-soft: rgba(63, 191, 149, 0.15);
-  --lab: #e07ba5;
-  --lab-soft: rgba(224, 123, 165, 0.15);
-  --shadow: none;
 }
