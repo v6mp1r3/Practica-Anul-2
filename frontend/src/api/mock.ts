@@ -8,6 +8,8 @@ import { ApiError } from './http';
 import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
+/** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
+const SEED_VERSION = 2;
 
 interface Store {
   dataset: Dataset;
@@ -17,6 +19,7 @@ interface Store {
   changes: ScheduleChange[];
   readIds: Record<string, string[]>; // userId -> notification ids
   sessionUserId: string | null;
+  seedVersion?: number;
 }
 
 const fresh = (): Store => ({
@@ -27,7 +30,43 @@ const fresh = (): Store => ({
   changes: [],
   readIds: {},
   sessionUserId: null,
+  seedVersion: SEED_VERSION,
 });
+
+/**
+ * Add demo records introduced after this store was saved (e.g. a new faculty),
+ * without touching anything the user created, edited or deleted earlier.
+ */
+function mergeSeed(saved: Store) {
+  const ds = saved.dataset;
+  const add = <T extends { id: string }>(list: T[], seed: T[]) => {
+    const have = new Set(list.map((x) => x.id));
+    for (const item of seed) if (!have.has(item.id)) list.push(structuredClone(item));
+  };
+  for (const f of seedDataset.settings.faculties) if (!ds.settings.faculties.includes(f)) ds.settings.faculties.push(f);
+  add(ds.teachers, seedDataset.teachers);
+  add(ds.rooms, seedDataset.rooms);
+  add(ds.groups, seedDataset.groups);
+  add(ds.streams, seedDataset.streams);
+  add(ds.subjects, seedDataset.subjects);
+  // only teaching loads whose teacher, subject and audience exist in the store
+  const ok = (id: string, list: { id: string }[]) => list.some((x) => x.id === id);
+  add(
+    ds.assignments,
+    seedDataset.assignments.filter(
+      (a) =>
+        ok(a.teacherId, ds.teachers) &&
+        ok(a.subjectId, ds.subjects) &&
+        ok(a.audience.id, a.audience.kind === 'stream' ? ds.streams : ds.groups),
+    ),
+  );
+  // new groups that belong to an existing demo stream (e.g. a dual group joining "Anul II")
+  for (const st of seedDataset.streams) {
+    const mine = ds.streams.find((x) => x.id === st.id);
+    if (mine) for (const g of st.groupIds) if (!mine.groupIds.includes(g) && ok(g, ds.groups)) mine.groupIds.push(g);
+  }
+  saved.seedVersion = SEED_VERSION;
+}
 
 function load(): Store {
   try {
@@ -56,6 +95,10 @@ function load(): Store {
           Object.assign(n, { kind: 'updated', params: { name, count: Number(/^(\d+)/.exec(n.body)?.[1] ?? 0) } });
         else if (n.title === 'Disponibilitate actualizată')
           Object.assign(n, { kind: 'availability', params: { name: n.body.replace(/ și-a actualizat.*$/, '') } });
+      }
+      if ((saved.seedVersion ?? 1) < SEED_VERSION) {
+        mergeSeed(saved);
+        localStorage.setItem(STORE_KEY, JSON.stringify(saved));
       }
       return saved;
     }
