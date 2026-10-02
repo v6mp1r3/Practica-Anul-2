@@ -121,10 +121,7 @@ export default function Dashboard() {
 
   return (
     <div className="page dash">
-      <PageHeader
-        title={t('nav.dashboard')}
-        subtitle={t('dashboard.subtitle', { faculty: dataset.settings.faculty, semester: dataset.settings.semester })}
-      />
+      <PageHeader title={t('nav.dashboard')} />
       <div className="dash-grid">
         {/* Timetable status — the glass hero */}
         <section className="dash-hero">
@@ -224,7 +221,7 @@ export default function Dashboard() {
             <div className="dash-date-info">
               <span className="dash-date-badge">{t(week === 'odd' ? 'tt.weekOdd' : 'tt.weekEven')}</span>
               <strong>{dataset.settings.semester}</strong>
-              <span className="muted small">{dataset.settings.faculty}</span>
+              <span className="muted small">{dataset.settings.institutionName}</span>
             </div>
           </section>
 
