@@ -108,6 +108,8 @@ export interface Subject {
   name: string;
   credits: number;
   year: number;
+  /** Faculty whose study plan includes it; empty = shared by all faculties. */
+  faculty?: string;
   /** Pairs per week by activity type, from the study plan (0.5 = every other week). */
   lecturePairs: number;
   seminarPairs: number;
