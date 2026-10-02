@@ -1,4 +1,4 @@
-import { useState, type DragEvent, type ReactNode } from 'react';
+import { useEffect, useState, type DragEvent, type ReactNode } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
 import { range } from '../domain/slots';
 import type { Day, Lesson, Settings, SlotIndex } from '../domain/types';
@@ -104,6 +104,8 @@ export function TimetableGrid({
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const days = range(settings.workingDays);
+  const now = useNow(today !== undefined);
+  const nowAt = today !== undefined && now ? nowPosition(settings, now) : null;
 
   return (
     <div className="tt-scroll">
@@ -151,6 +153,11 @@ export function TimetableGrid({
                       : undefined
                   }
                 >
+                  {nowAt && day === today && slot === nowAt.slot && (
+                    <div className="tt-now" style={{ top: `${nowAt.frac * 100}%` }}>
+                      <span>{nowAt.label}</span>
+                    </div>
+                  )}
                   {renderCell?.(day, slot)}
                   {lessonsAt(lessons, day, slot).map((l) => (
                     <LessonCard
@@ -178,6 +185,28 @@ export function TimetableGrid({
       </div>
     </div>
   );
+}
+
+/** Current time, refreshed every minute (only when the grid shows today). */
+function useNow(enabled: boolean): Date | null {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!enabled) return;
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, [enabled]);
+  return enabled ? now : null;
+}
+
+/** Which pair row the current time falls in, and how far through it. */
+function nowPosition(settings: Settings, now: Date): { slot: number; frac: number; label: string } | null {
+  const m = now.getHours() * 60 + now.getMinutes();
+  const toMin = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+  const slot = settings.slots.findIndex((s) => m >= toMin(s.start) && m < toMin(s.end));
+  if (slot < 0) return null;
+  const s = settings.slots[slot];
+  const label = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+  return { slot, frac: (m - toMin(s.start)) / (toMin(s.end) - toMin(s.start)), label };
 }
 
 export function Legend() {

@@ -2,12 +2,13 @@
   overflow-x: auto;
 }
 
+/* Timetable grid — white sheet, hairline rules, pastel lesson cards */
 .tt {
   display: grid;
   grid-template-columns: 72px repeat(var(--days), minmax(128px, 1fr));
   min-width: calc(72px + var(--days) * 128px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid rgba(15, 26, 31, 0.07);
+  border-radius: 20px;
   background: var(--surface);
   overflow: hidden;
 }
@@ -15,45 +16,48 @@
 .tt-head,
 .tt-time,
 .tt-cell {
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-right: 1px solid rgba(15, 26, 31, 0.06);
+  border-bottom: 1px solid rgba(15, 26, 31, 0.06);
 }
 .tt > :nth-child(calc(var(--days) + 1)n) {
   border-right: none;
 }
 
 .tt-head {
-  padding: 10px;
-  font-weight: 650;
+  padding: 11px 10px;
+  font-weight: 500;
   font-size: 13px;
   text-align: center;
-  background: var(--surface-2);
+  color: var(--text-2);
 }
 .tt-head.today {
-  color: var(--primary);
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
 }
 
 .tt-time {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 10px 12px;
   font-size: 12px;
-  color: var(--text-2);
-  background: var(--surface-2);
+  color: var(--text-3);
 }
 .tt-time strong {
   color: var(--text);
   font-size: 13px;
+  font-weight: 600;
 }
 
 .tt-cell {
-  min-height: 78px;
-  padding: 4px;
+  position: relative;
+  min-height: 82px;
+  padding: 5px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 .tt-cell.drop-ok {
   background: var(--success-soft);
@@ -71,25 +75,47 @@
   cursor: pointer;
 }
 
+/* "Now" line across today's column */
+.tt-now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 2px;
+  background: var(--ink);
+  pointer-events: none;
+}
+.tt-now span {
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  transform: translate(-60%, -50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .lesson {
   position: relative;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  border-left: 3px solid var(--lecture);
-  background: var(--lecture-soft);
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(78, 168, 205, 0.16);
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 .lesson.seminar {
-  border-left-color: var(--seminar);
-  background: var(--seminar-soft);
+  background: rgba(110, 194, 78, 0.18);
 }
 .lesson.lab {
-  border-left-color: var(--lab);
-  background: var(--lab-soft);
+  background: rgba(224, 123, 165, 0.18);
 }
 .lesson.parity {
-  border-left-style: dashed;
+  outline: 1.5px dashed rgba(15, 26, 31, 0.18);
+  outline-offset: -1.5px;
 }
 .lesson.conflict {
   box-shadow: 0 0 0 2px var(--danger);
@@ -104,7 +130,7 @@
   cursor: grab;
 }
 .lesson .title {
-  font-weight: 650;
+  font-weight: 600;
   color: var(--text);
 }
 .lesson .meta {
@@ -112,8 +138,8 @@
 }
 .lesson .tags {
   position: absolute;
-  top: 4px;
-  right: 6px;
+  top: 6px;
+  right: 8px;
   display: flex;
   gap: 3px;
   font-size: 10px;
