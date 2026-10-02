@@ -64,6 +64,7 @@ export default function Subjects() {
           { label: t('subjects.code'), render: (x) => <strong>{x.code}</strong>, width: 90 },
           { label: t('common.name'), render: (x) => x.name },
           { label: t('subjects.year'), render: (x) => x.year },
+          { label: t('groups.faculty'), render: (x) => <span className="small muted">{x.faculty || '—'}</span> },
           { label: 'ECTS', render: (x) => x.credits },
           { label: t('activity.lecture'), render: (x) => pairs(x.lecturePairs) },
           { label: t('activity.seminar'), render: (x) => pairs(x.seminarPairs) },
@@ -79,6 +80,16 @@ export default function Subjects() {
               </Field>
               <Field label={t('common.name')}>
                 <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} />
+              </Field>
+              <Field label={t('groups.faculty')}>
+                <select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
+                  <option value="">—</option>
+                  {dataset.settings.faculties.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </select>
               </Field>
               <Field label={t('subjects.year')}>
                 <input

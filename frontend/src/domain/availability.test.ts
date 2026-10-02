@@ -14,8 +14,12 @@ describe('freeRooms', () => {
   it('excludes busy rooms and respects filters', () => {
     const free = freeRooms(seedDataset.rooms, lessons, 0, 1, 'odd', { minCapacity: 100 });
     expect(free).toEqual([]);
-    expect(freeRooms(seedDataset.rooms, lessons, 0, 2, 'even', { minCapacity: 70 }).map((r) => r.name)).toEqual(['3-101', '3-114']);
-    expect(freeRooms(seedDataset.rooms, lessons, 0, 2, 'odd', { minCapacity: 70 }).map((r) => r.name)).toEqual(['3-114']);
+    expect(freeRooms(seedDataset.rooms, lessons, 0, 2, 'even', { minCapacity: 70 }).map((r) => r.name)).toEqual([
+      '3-101',
+      '9-101',
+      '3-114',
+    ]);
+    expect(freeRooms(seedDataset.rooms, lessons, 0, 2, 'odd', { minCapacity: 70 }).map((r) => r.name)).toEqual(['9-101', '3-114']);
     expect(freeRooms(seedDataset.rooms, [], 0, 0, 'weekly', { type: 'lab' }).every((r) => r.type === 'lab')).toBe(true);
   });
 });

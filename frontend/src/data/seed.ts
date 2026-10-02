@@ -14,6 +14,9 @@ import type {
   User,
 } from '../domain/types';
 
+const FCIM = 'Facultatea Calculatoare, Informatică și Microelectronică';
+const FET = 'Facultatea Electronică și Telecomunicații';
+
 export const seedSettings: Settings = {
   institutionName: 'Universitatea Tehnică a Moldovei',
   faculties: [
@@ -96,6 +99,12 @@ export const seedTeachers: Teacher[] = [
   t('t12', 'Vasile Ursu', 'prof. univ., dr.', 'Calculatoare', 8, ['lecture'], ['2:0', '2:1', '2:2', '2:3', '2:4', '2:5', '2:6']),
   t('t13', 'Cristina Moraru', 'asist. univ.', 'Calculatoare', 14, ['lab', 'seminar']),
   t('t14', 'Alexandru Gaina', 'lect. univ.', 'Matematică', 12, ['seminar', 'lecture']),
+  // FET
+  t('t15', 'Valeriu Ceban', 'conf. univ., dr.', 'Electronică', 10, ['lecture', 'seminar']),
+  t('t16', 'Petru Cazac', 'lect. univ.', 'Fizică', 12, ['lecture', 'lab']),
+  t('t17', 'Galina Melnic', 'conf. univ., dr.', 'Matematică', 8, ['lecture'], ['3:0', '3:1']),
+  t('t18', 'Svetlana Ungureanu', 'lect. univ.', 'Matematică', 12, ['seminar']),
+  t('t19', 'Dumitru Vrabie', 'asist. univ.', 'Telecomunicații', 14, ['lab']),
 ];
 
 export const seedRooms: Room[] = [
@@ -110,9 +119,12 @@ export const seedRooms: Room[] = [
   { id: 'r9', name: '3-405', building: 'Blocul 3', capacity: 16, type: 'lab', equipment: ['calculatoare'] },
   { id: 'r10', name: '3-406', building: 'Blocul 3', capacity: 16, type: 'lab', equipment: ['calculatoare', 'echipament rețea'] },
   { id: 'r11', name: '3-505', building: 'Blocul 3', capacity: 14, type: 'lab', equipment: ['calculatoare', 'electronică'] },
+  // FET building
+  { id: 'r12', name: '9-101', building: 'Blocul 9', capacity: 90, type: 'lecture', equipment: ['proiector'] },
+  { id: 'r13', name: '9-205', building: 'Blocul 9', capacity: 30, type: 'seminar', equipment: ['tablă'] },
+  { id: 'r14', name: '9-310', building: 'Blocul 9', capacity: 16, type: 'lab', equipment: ['electronică'] },
+  { id: 'r15', name: '9-311', building: 'Blocul 9', capacity: 14, type: 'lab', equipment: ['laborator fizică'] },
 ];
-
-const FCIM = 'Facultatea Calculatoare, Informatică și Microelectronică';
 
 export const seedGroups: Group[] = [
   { id: 'g1', name: 'FAF-251', program: 'Ingineria Software', faculty: FCIM, studyForm: 'full', year: 1, size: 24, subgroups: 2 },
@@ -125,6 +137,10 @@ export const seedGroups: Group[] = [
   // Reduced attendance: weekend sessions, fewer contact hours
   { id: 'g8', name: 'TI-251FR', program: 'Tehnologia Informației', faculty: FCIM, studyForm: 'reduced', year: 1, size: 16, subgroups: 1 },
   // Dual: attends the year-2 lectures with the full-time groups
+  // FET (Electronică și Telecomunicații) — group codes are illustrative
+  { id: 'g10', name: 'TLC-251', program: 'Telecomunicații', faculty: FET, studyForm: 'full', year: 1, size: 22, subgroups: 2 },
+  { id: 'g11', name: 'TLC-252', program: 'Telecomunicații', faculty: FET, studyForm: 'full', year: 1, size: 20, subgroups: 2 },
+  { id: 'g12', name: 'ELE-251', program: 'Electronică', faculty: FET, studyForm: 'full', year: 1, size: 18, subgroups: 2 },
   { id: 'g9', name: 'FAF-241D', program: 'Ingineria Software', faculty: FCIM, studyForm: 'dual', year: 2, size: 15, subgroups: 1 },
 ];
 
@@ -133,17 +149,58 @@ export const seedStreams: Stream[] = [
   { id: 's2', name: 'TI-25', groupIds: ['g3', 'g4'] },
   { id: 's3', name: 'Anul I', groupIds: ['g1', 'g2', 'g3', 'g4'] },
   { id: 's4', name: 'Anul II', groupIds: ['g5', 'g6', 'g7', 'g9'] },
+  { id: 's5', name: 'FET Anul I', groupIds: ['g10', 'g11', 'g12'] },
 ];
 
 export const seedSubjects: Subject[] = [
-  { id: 'sub1', code: 'AM', name: 'Analiză matematică', credits: 6, year: 1, lecturePairs: 2, seminarPairs: 1, labPairs: 0 },
-  { id: 'sub2', code: 'AL', name: 'Algebră liniară', credits: 5, year: 1, lecturePairs: 1, seminarPairs: 1, labPairs: 0 },
-  { id: 'sub3', code: 'PC', name: 'Programarea calculatoarelor', credits: 6, year: 1, lecturePairs: 1, seminarPairs: 0, labPairs: 2 },
-  { id: 'sub4', code: 'MD', name: 'Matematică discretă', credits: 5, year: 1, lecturePairs: 1, seminarPairs: 0.5, labPairs: 0 },
-  { id: 'sub5', code: 'AC', name: 'Arhitectura calculatoarelor', credits: 4, year: 1, lecturePairs: 0.5, seminarPairs: 0, labPairs: 0.5 },
-  { id: 'sub6', code: 'LE', name: 'Limba engleză', credits: 2, year: 1, lecturePairs: 0, seminarPairs: 1, labPairs: 0 },
-  { id: 'sub7', code: 'SDA', name: 'Structuri de date și algoritmi', credits: 6, year: 2, lecturePairs: 1, seminarPairs: 0, labPairs: 1 },
-  { id: 'sub8', code: 'BD', name: 'Baze de date', credits: 5, year: 2, lecturePairs: 1, seminarPairs: 0, labPairs: 1 },
+  { id: 'sub1', code: 'AM', name: 'Analiză matematică', credits: 6, year: 1, faculty: FCIM, lecturePairs: 2, seminarPairs: 1, labPairs: 0 },
+  { id: 'sub2', code: 'AL', name: 'Algebră liniară', credits: 5, year: 1, faculty: FCIM, lecturePairs: 1, seminarPairs: 1, labPairs: 0 },
+  {
+    id: 'sub3',
+    code: 'PC',
+    name: 'Programarea calculatoarelor',
+    credits: 6,
+    year: 1,
+    faculty: FCIM,
+    lecturePairs: 1,
+    seminarPairs: 0,
+    labPairs: 2,
+  },
+  {
+    id: 'sub4',
+    code: 'MD',
+    name: 'Matematică discretă',
+    credits: 5,
+    year: 1,
+    faculty: FCIM,
+    lecturePairs: 1,
+    seminarPairs: 0.5,
+    labPairs: 0,
+  },
+  {
+    id: 'sub5',
+    code: 'AC',
+    name: 'Arhitectura calculatoarelor',
+    credits: 4,
+    year: 1,
+    faculty: FCIM,
+    lecturePairs: 0.5,
+    seminarPairs: 0,
+    labPairs: 0.5,
+  },
+  { id: 'sub6', code: 'LE', name: 'Limba engleză', credits: 2, year: 1, faculty: FCIM, lecturePairs: 0, seminarPairs: 1, labPairs: 0 },
+  {
+    id: 'sub7',
+    code: 'SDA',
+    name: 'Structuri de date și algoritmi',
+    credits: 6,
+    year: 2,
+    faculty: FCIM,
+    lecturePairs: 1,
+    seminarPairs: 0,
+    labPairs: 1,
+  },
+  { id: 'sub8', code: 'BD', name: 'Baze de date', credits: 5, year: 2, faculty: FCIM, lecturePairs: 1, seminarPairs: 0, labPairs: 1 },
   {
     id: 'sub9',
     code: 'POO',
@@ -154,8 +211,51 @@ export const seedSubjects: Subject[] = [
     seminarPairs: 0,
     labPairs: 0.5,
   },
-  { id: 'sub10', code: 'PS', name: 'Probabilități și statistică', credits: 4, year: 2, lecturePairs: 1, seminarPairs: 1, labPairs: 0 },
-  { id: 'sub11', code: 'RC', name: 'Rețele de calculatoare', credits: 4, year: 2, lecturePairs: 1, seminarPairs: 0, labPairs: 1 },
+  {
+    id: 'sub10',
+    code: 'PS',
+    name: 'Probabilități și statistică',
+    credits: 4,
+    year: 2,
+    faculty: FCIM,
+    lecturePairs: 1,
+    seminarPairs: 1,
+    labPairs: 0,
+  },
+  {
+    id: 'sub12',
+    code: 'MI',
+    name: 'Matematică pentru ingineri',
+    credits: 6,
+    year: 1,
+    faculty: FET,
+    lecturePairs: 2,
+    seminarPairs: 1,
+    labPairs: 0,
+  },
+  { id: 'sub13', code: 'FIZ', name: 'Fizică', credits: 5, year: 1, faculty: FET, lecturePairs: 1, seminarPairs: 0, labPairs: 1 },
+  {
+    id: 'sub14',
+    code: 'BE',
+    name: 'Bazele electrotehnicii',
+    credits: 6,
+    year: 1,
+    faculty: FET,
+    lecturePairs: 1,
+    seminarPairs: 1,
+    labPairs: 1,
+  },
+  {
+    id: 'sub11',
+    code: 'RC',
+    name: 'Rețele de calculatoare',
+    credits: 4,
+    year: 2,
+    faculty: FCIM,
+    lecturePairs: 1,
+    seminarPairs: 0,
+    labPairs: 1,
+  },
 ];
 
 let nextAssignment = 1;
@@ -231,6 +331,18 @@ export const seedAssignments: Assignment[] = [
     a('sub9', 'lab', 't13', sub(g, 2), 1, 'even'),
     a('sub11', 'lab', 't8', sub(g, 1), 1, 'weekly', ['calculatoare', 'echipament rețea']),
     a('sub11', 'lab', 't8', sub(g, 2), 1, 'weekly', ['calculatoare', 'echipament rețea']),
+  ]),
+  // FET year 1 — shared lectures, seminars per group, labs per subgroup
+  a('sub12', 'lecture', 't17', stream('s5'), 2),
+  a('sub13', 'lecture', 't16', stream('s5')),
+  a('sub14', 'lecture', 't15', stream('s5')),
+  ...['g10', 'g11', 'g12'].flatMap((g) => [
+    a('sub12', 'seminar', 't18', group(g)),
+    a('sub14', 'seminar', 't15', group(g)),
+    a('sub13', 'lab', 't16', sub(g, 1), 1, 'weekly', ['laborator fizică']),
+    a('sub13', 'lab', 't16', sub(g, 2), 1, 'weekly', ['laborator fizică']),
+    a('sub14', 'lab', 't19', sub(g, 1), 1, 'weekly', ['electronică']),
+    a('sub14', 'lab', 't19', sub(g, 2), 1, 'weekly', ['electronică']),
   ]),
   // Reduced attendance (TI-251FR) — Saturday/Sunday
   a('sub1', 'lecture', 't2', group('g8')),
