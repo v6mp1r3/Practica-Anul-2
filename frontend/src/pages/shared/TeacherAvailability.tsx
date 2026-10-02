@@ -6,6 +6,7 @@ import type { Parity } from '../../domain/types';
 import { dayIndexOf, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
+import { Select } from '../../components/Select';
 
 const CELL: Record<TeacherSlotState, string> = {
   free: 'state-free',
@@ -67,7 +68,7 @@ export default function TeacherAvailability() {
         )}
 
         <div className="row wrap">
-          <select
+          <Select
             className="select"
             style={{ width: 260 }}
             value={teacherId}
@@ -79,7 +80,7 @@ export default function TeacherAvailability() {
                 {x.name}
               </option>
             ))}
-          </select>
+          </Select>
           {dataset.settings.weekParity && (
             <Segmented
               value={week}

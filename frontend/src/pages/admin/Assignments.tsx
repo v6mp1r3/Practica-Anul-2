@@ -5,6 +5,7 @@ import { Field, Segmented } from '../../components/ui';
 import type { ActivityType, Assignment, Audience, Parity, RoomType } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
+import { Select } from '../../components/Select';
 
 const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab'];
 const PARITIES: Parity[] = ['weekly', 'odd', 'even'];
@@ -28,7 +29,7 @@ export default function Assignments() {
         `${index.subjects.get(x.subjectId)?.code} ${index.subjects.get(x.subjectId)?.name} ${index.teachers.get(x.teacherId)?.name} ${index.audienceLabel(x.audience)}`
       }
       headerActions={
-        <select
+        <Select
           className="select pill"
           style={{ width: 180 }}
           value={groupFilter}
@@ -41,7 +42,7 @@ export default function Assignments() {
               {g.name}
             </option>
           ))}
-        </select>
+        </Select>
       }
       wideForm
       columns={[
@@ -106,16 +107,16 @@ export default function Assignments() {
           <div className="stack">
             <div className="form-grid">
               <Field label={t('assignments.subject')}>
-                <select className="select" value={d.subjectId} onChange={(e) => set({ subjectId: e.target.value })}>
+                <Select className="select" value={d.subjectId} onChange={(e) => set({ subjectId: e.target.value })}>
                   {dataset.subjects.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.code} — {s.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
               <Field label={t('assignments.type')}>
-                <select
+                <Select
                   className="select"
                   value={d.type}
                   onChange={(e) => {
@@ -132,13 +133,13 @@ export default function Assignments() {
                       {t(`activity.${type}`)}
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
               <Field
                 label={t('assignments.teacher')}
                 hint={teacher && !teacher.activityTypes.includes(d.type) ? t('assignments.teacherTypeWarning') : undefined}
               >
-                <select className="select" value={d.teacherId} onChange={(e) => set({ teacherId: e.target.value })}>
+                <Select className="select" value={d.teacherId} onChange={(e) => set({ teacherId: e.target.value })}>
                   {[...dataset.teachers]
                     .sort(
                       (a, b) =>
@@ -150,7 +151,7 @@ export default function Assignments() {
                         {x.activityTypes.includes(d.type) ? '' : ' *'}
                       </option>
                     ))}
-                </select>
+                </Select>
               </Field>
             </div>
 
@@ -173,7 +174,7 @@ export default function Assignments() {
                     { value: 'subgroup', label: t('assignments.kind.subgroup') },
                   ]}
                 />
-                <select
+                <Select
                   className="select"
                   style={{ width: 180 }}
                   value={d.audience.id}
@@ -184,9 +185,9 @@ export default function Assignments() {
                       {x.name}
                     </option>
                   ))}
-                </select>
+                </Select>
                 {d.audience.kind === 'subgroup' && (
-                  <select
+                  <Select
                     className="select"
                     style={{ width: 90 }}
                     value={d.audience.subgroup}
@@ -197,7 +198,7 @@ export default function Assignments() {
                         /{i + 1}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 )}
                 <span className="small muted">
                   {index.audienceSize(d.audience)} {t('groups.size').toLowerCase()}
@@ -218,23 +219,23 @@ export default function Assignments() {
               </Field>
               {dataset.settings.weekParity && (
                 <Field label={t('assignments.parity')}>
-                  <select className="select" value={d.parity} onChange={(e) => set({ parity: e.target.value as Parity })}>
+                  <Select className="select" value={d.parity} onChange={(e) => set({ parity: e.target.value as Parity })}>
                     {PARITIES.map((p) => (
                       <option key={p} value={p}>
                         {t(`parity.${p}`)}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
               )}
               <Field label={t('assignments.roomType')}>
-                <select className="select" value={d.roomType} onChange={(e) => set({ roomType: e.target.value as RoomType })}>
+                <Select className="select" value={d.roomType} onChange={(e) => set({ roomType: e.target.value as RoomType })}>
                   {TYPES.map((type) => (
                     <option key={type} value={type}>
                       {t(`roomType.${type}`)}
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
             </div>
             <Field label={t('assignments.equipment')}>

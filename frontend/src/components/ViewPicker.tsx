@@ -2,6 +2,7 @@ import type { Dataset, Parity } from '../domain/types';
 import type { ViewFilter, ViewKind } from '../domain/views';
 import { useI18n } from '../i18n';
 import { Segmented } from './ui';
+import { Select } from './Select';
 
 /** Group / teacher / room selector + odd/even week switch, shared by every timetable view. */
 export function ViewPicker({
@@ -38,7 +39,7 @@ export function ViewPicker({
           options={kinds.map((k) => ({ value: k, label: t(`view.${k}`) }))}
         />
       )}
-      <select
+      <Select
         className="select"
         style={{ width: 220 }}
         value={view.id}
@@ -50,9 +51,9 @@ export function ViewPicker({
             {o.name}
           </option>
         ))}
-      </select>
+      </Select>
       {group && group.subgroups > 1 && (
-        <select
+        <Select
           className="select"
           style={{ width: 150 }}
           value={view.subgroup ?? ''}
@@ -65,7 +66,7 @@ export function ViewPicker({
               {t('assignments.kind.subgroup')} {i + 1}
             </option>
           ))}
-        </select>
+        </Select>
       )}
       {showWeek && dataset.settings.weekParity && (
         <Segmented

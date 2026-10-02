@@ -5,6 +5,7 @@ import { Field } from '../../components/ui';
 import type { Room, RoomType } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
+import { Select } from '../../components/Select';
 
 const TYPES: RoomType[] = ['lecture', 'seminar', 'lab'];
 
@@ -48,26 +49,26 @@ export default function Rooms() {
               <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} placeholder="3-114" autoFocus />
             </Field>
             <Field label={t('groups.faculty')}>
-              <select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
+              <Select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
                 <option value="">—</option>
                 {dataset.settings.faculties.map((f) => (
                   <option key={f} value={f}>
                     {f}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label={t('rooms.building')}>
               <input className="input" value={d.building} onChange={(e) => set({ building: e.target.value })} />
             </Field>
             <Field label={t('rooms.type')}>
-              <select className="select" value={d.type} onChange={(e) => set({ type: e.target.value as RoomType })}>
+              <Select className="select" value={d.type} onChange={(e) => set({ type: e.target.value as RoomType })}>
                 {TYPES.map((type) => (
                   <option key={type} value={type}>
                     {t(`roomType.${type}`)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label={t('rooms.capacity')}>
               <input

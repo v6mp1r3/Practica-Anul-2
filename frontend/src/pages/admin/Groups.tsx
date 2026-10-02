@@ -4,6 +4,7 @@ import { Field, PageHeader } from '../../components/ui';
 import { STUDY_FORMS, type Group, type Stream, type StudyForm } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
+import { Select } from '../../components/Select';
 
 export default function Groups() {
   const { t } = useI18n();
@@ -58,26 +59,26 @@ export default function Groups() {
                 />
               </Field>
               <Field label={t('groups.studyForm')}>
-                <select className="select" value={d.studyForm} onChange={(e) => set({ studyForm: e.target.value as StudyForm })}>
+                <Select className="select" value={d.studyForm} onChange={(e) => set({ studyForm: e.target.value as StudyForm })}>
                   {STUDY_FORMS.map((f) => (
                     <option key={f} value={f}>
                       {t(`form.${f}`)}
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
               <Field label={t('groups.program')}>
                 <input className="input" value={d.program} onChange={(e) => set({ program: e.target.value })} />
               </Field>
               <Field label={t('groups.faculty')}>
-                <select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
+                <Select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
                   <option value="">—</option>
                   {dataset.settings.faculties.map((f) => (
                     <option key={f} value={f}>
                       {f}
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
               <Field label={t('groups.year')}>
                 <input

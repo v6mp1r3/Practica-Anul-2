@@ -10,6 +10,7 @@ import { STUDY_FORMS, type ScoreBreakdown, type StudyForm, type Timetable } from
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
+import { Select } from '../../components/Select';
 
 const EFFORT = { quick: 80, normal: 250, thorough: 700 } as const;
 type Effort = keyof typeof EFFORT;
@@ -190,13 +191,13 @@ export default function Generate() {
               </Field>
               <div className="form-grid">
                 <Field label={t('generate.variants')}>
-                  <select className="select" value={variants} onChange={(e) => setVariants(Number(e.target.value))}>
+                  <Select className="select" value={variants} onChange={(e) => setVariants(Number(e.target.value))}>
                     {[1, 2, 3, 4, 5].map((n) => (
                       <option key={n} value={n}>
                         {n}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
               </div>
               <Field label={t('generate.effort')}>
@@ -212,14 +213,14 @@ export default function Generate() {
               </Field>
               {drafts.length > 0 && (
                 <Field label={t('generate.base')} hint={t('generate.baseHint')}>
-                  <select className="select" value={baseId} onChange={(e) => setBaseId(e.target.value)}>
+                  <Select className="select" value={baseId} onChange={(e) => setBaseId(e.target.value)}>
                     <option value="">—</option>
                     {drafts.map((d) => (
                       <option key={d.id} value={d.id}>
                         {d.name} ({t('generate.lockedCount', { count: d.lessons.filter((l) => l.locked).length })})
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
               )}
               <div className="row">

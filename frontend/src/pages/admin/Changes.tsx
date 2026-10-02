@@ -10,6 +10,7 @@ import { filterLessons } from '../../domain/views';
 import { dateLocale, useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
+import { Select } from '../../components/Select';
 
 /** Next working day (today if it is one). */
 function nextWorkingDay(workingDays: number): string {
@@ -223,7 +224,7 @@ function ChangeForm({
             />
           </Field>
           <Field label={t('changes.group')}>
-            <select
+            <Select
               className="select"
               value={groupId}
               onChange={(e) => {
@@ -238,7 +239,7 @@ function ChangeForm({
                   {g.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
         </div>
 
@@ -246,7 +247,7 @@ function ChangeForm({
           {dayLessons.length === 0 ? (
             <span className="muted">{t('changes.noLessons')}</span>
           ) : (
-            <select
+            <Select
               className="select"
               value={lessonId}
               onChange={(e) => {
@@ -260,7 +261,7 @@ function ChangeForm({
                   {label(l)}
                 </option>
               ))}
-            </select>
+            </Select>
           )}
         </Field>
 
@@ -285,14 +286,14 @@ function ChangeForm({
                 {rooms.length === 0 ? (
                   <span className="muted">{t('changes.noRooms')}</span>
                 ) : (
-                  <select className="select" value={target} onChange={(e) => setTarget(e.target.value)}>
+                  <Select className="select" value={target} onChange={(e) => setTarget(e.target.value)}>
                     <option value="">—</option>
                     {rooms.map((r) => (
                       <option key={r.id} value={r.id}>
                         {r.name} · {r.capacity} · {t(`roomType.${r.type}`)}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 )}
               </Field>
             ) : (
@@ -300,7 +301,7 @@ function ChangeForm({
                 {teachers.length === 0 ? (
                   <span className="muted">{t('changes.noTeachers')}</span>
                 ) : (
-                  <select className="select" value={target} onChange={(e) => setTarget(e.target.value)}>
+                  <Select className="select" value={target} onChange={(e) => setTarget(e.target.value)}>
                     <option value="">—</option>
                     {teachers.map((x) => (
                       <option key={x.id} value={x.id}>
@@ -308,7 +309,7 @@ function ChangeForm({
                         {assignment && !x.activityTypes.includes(assignment.type) ? ' *' : ''}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 )}
               </Field>
             )}

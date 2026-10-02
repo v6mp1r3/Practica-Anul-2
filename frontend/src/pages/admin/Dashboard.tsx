@@ -17,6 +17,7 @@ import { dateLocale, useI18n } from '../../i18n';
 import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import './dashboard.css';
+import { Select } from '../../components/Select';
 
 export function StatusBadge({ status }: { status: Timetable['status'] }) {
   const { t } = useI18n();
@@ -161,13 +162,13 @@ export default function Dashboard() {
             <span className="spacer" />
             <label className="dash-select">
               <Icon name="layers" size={15} />
-              <select value={groupId} onChange={(e) => setGroupId(e.target.value)} aria-label={t('view.group')}>
+              <Select className="select-bare" value={groupId} onChange={(e) => setGroupId(e.target.value)} aria-label={t('view.group')}>
                 {dataset.groups.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           </div>
           <div className="card-body">

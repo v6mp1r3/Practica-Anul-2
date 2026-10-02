@@ -10,6 +10,7 @@ import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { downloadFile } from '../../utils/download';
+import { Select } from '../../components/Select';
 
 export default function Subjects() {
   const { t } = useI18n();
@@ -85,14 +86,14 @@ export default function Subjects() {
                 <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} />
               </Field>
               <Field label={t('groups.faculty')}>
-                <select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
+                <Select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
                   <option value="">—</option>
                   {dataset.settings.faculties.map((f) => (
                     <option key={f} value={f}>
                       {f}
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
               <Field label={t('subjects.year')}>
                 <input

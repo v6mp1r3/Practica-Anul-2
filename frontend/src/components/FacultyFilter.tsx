@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Dataset } from '../domain/types';
 import { useI18n } from '../i18n';
+import { Select } from './Select';
 
 const KEY = 'eduschedule:faculty';
 
@@ -33,7 +34,7 @@ export function FacultySelect({ dataset, value, onChange }: { dataset: Dataset; 
   const { t } = useI18n();
   if (dataset.settings.faculties.length < 2) return null;
   return (
-    <select
+    <Select
       className="select pill"
       style={{ maxWidth: 280 }}
       value={value}
@@ -46,6 +47,6 @@ export function FacultySelect({ dataset, value, onChange }: { dataset: Dataset; 
           {f}
         </option>
       ))}
-    </select>
+    </Select>
   );
 }

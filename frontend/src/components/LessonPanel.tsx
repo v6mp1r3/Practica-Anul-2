@@ -4,6 +4,7 @@ import type { Dataset, Lesson, Parity } from '../domain/types';
 import { useI18n } from '../i18n';
 import { Icon } from './Icon';
 import { Field } from './ui';
+import { Select } from './Select';
 
 /** Details of the selected lesson, with manual room / time / lock changes. */
 export function LessonPanel({
@@ -65,7 +66,7 @@ export function LessonPanel({
 
         <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
           <Field label={t('editor.day')}>
-            <select
+            <Select
               className="select"
               value={lesson.day}
               disabled={lesson.locked}
@@ -76,10 +77,10 @@ export function LessonPanel({
                   {t(`day.${d}` as 'day.0')}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label={t('tt.pair')}>
-            <select
+            <Select
               className="select"
               value={lesson.slot}
               disabled={lesson.locked}
@@ -90,12 +91,12 @@ export function LessonPanel({
                   {i + 1} · {s.start}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
         </div>
 
         <Field label={t('rooms.name')}>
-          <select className="select" value={lesson.roomId} disabled={lesson.locked} onChange={(e) => onChange({ roomId: e.target.value })}>
+          <Select className="select" value={lesson.roomId} disabled={lesson.locked} onChange={(e) => onChange({ roomId: e.target.value })}>
             <optgroup label={t('editor.suitableRooms')}>
               {suitable.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -112,12 +113,12 @@ export function LessonPanel({
                 ))}
               </optgroup>
             )}
-          </select>
+          </Select>
         </Field>
 
         {dataset.settings.weekParity && (
           <Field label={t('assignments.parity')}>
-            <select
+            <Select
               className="select"
               value={lesson.parity}
               disabled={lesson.locked}
@@ -128,7 +129,7 @@ export function LessonPanel({
                   {t(`parity.${p}`)}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
         )}
 

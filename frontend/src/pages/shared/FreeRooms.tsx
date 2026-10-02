@@ -7,6 +7,7 @@ import type { Parity, RoomType } from '../../domain/types';
 import { dayIndexOf, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
+import { Select } from '../../components/Select';
 
 /** Find an empty room for studying, a consultation or a make-up class. */
 export default function FreeRooms() {
@@ -33,22 +34,22 @@ export default function FreeRooms() {
         <div className="card">
           <div className="card-body form-grid">
             <Field label={t('editor.day')}>
-              <select className="select" value={day} onChange={(e) => setDay(Number(e.target.value))}>
+              <Select className="select" value={day} onChange={(e) => setDay(Number(e.target.value))}>
                 {range(dataset.settings.workingDays).map((d) => (
                   <option key={d} value={d}>
                     {t(`day.${d}` as 'day.0')}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label={t('tt.pair')}>
-              <select className="select" value={slot} onChange={(e) => setSlot(Number(e.target.value))}>
+              <Select className="select" value={slot} onChange={(e) => setSlot(Number(e.target.value))}>
                 {dataset.settings.slots.map((s, i) => (
                   <option key={i} value={i}>
                     {i + 1} · {s.start}–{s.end}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label={t('freeRooms.minCapacity')}>
               <input
@@ -60,14 +61,14 @@ export default function FreeRooms() {
               />
             </Field>
             <Field label={t('rooms.type')}>
-              <select className="select" value={type} onChange={(e) => setType(e.target.value as RoomType | '')}>
+              <Select className="select" value={type} onChange={(e) => setType(e.target.value as RoomType | '')}>
                 <option value="">{t('common.all')}</option>
                 {(['lecture', 'seminar', 'lab'] as RoomType[]).map((r) => (
                   <option key={r} value={r}>
                     {t(`roomType.${r}`)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
           </div>
           {dataset.settings.weekParity && (

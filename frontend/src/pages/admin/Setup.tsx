@@ -10,6 +10,7 @@ import { STUDY_FORMS, type Settings, type TimeSlot } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
+import { Select } from '../../components/Select';
 
 const toMin = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -253,13 +254,13 @@ export default function Setup() {
         <Step n={4} title={t('setup.week')} required>
           <div className="form-grid">
             <Field label={t('setup.workingDays')} hint={t('setup.default', { value: 7 })}>
-              <select className="select" value={s.workingDays} onChange={(e) => set('workingDays', Number(e.target.value))}>
+              <Select className="select" value={s.workingDays} onChange={(e) => set('workingDays', Number(e.target.value))}>
                 {[5, 6, 7].map((n) => (
                   <option key={n} value={n}>
                     {n} ({t('day.0')}–{t(`day.${n - 1}` as 'day.0')})
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label={t('setup.lessonMinutes')} hint={t('setup.default', { value: 90 })}>
               <input

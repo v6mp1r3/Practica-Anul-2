@@ -6,6 +6,7 @@ import { parityWeight } from '../../domain/slots';
 import type { ActivityType, Teacher } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
+import { Select } from '../../components/Select';
 
 const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab'];
 
@@ -85,14 +86,14 @@ export default function Teachers() {
               <input className="input" value={d.title} onChange={(e) => set({ title: e.target.value })} />
             </Field>
             <Field label={t('groups.faculty')}>
-              <select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
+              <Select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
                 <option value="">—</option>
                 {dataset.settings.faculties.map((f) => (
                   <option key={f} value={f}>
                     {f}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label={t('teachers.department')}>
               <input className="input" value={d.department} onChange={(e) => set({ department: e.target.value })} />
