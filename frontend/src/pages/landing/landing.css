@@ -220,28 +220,6 @@
   font-size: 17px;
   line-height: 1.6;
 }
-.lp-stack-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 28px;
-  padding: 11px 20px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background 0.2s;
-}
-.lp-stack-btn:hover {
-  background: rgba(255, 255, 255, 0.26);
-}
-.lp-stack-btn svg {
-  transition: transform 0.25s var(--ease);
-}
-.lp-stack-btn:hover svg {
-  transform: translateX(3px);
-}
 .lp-stack-media {
   position: relative;
   min-height: 260px;

@@ -3,8 +3,6 @@
 // back into a stack. One scroll listener sets a progress value; each card's
 // scale is derived from it.
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Icon } from '../../components/Icon';
 
 export interface StackCard {
   title: string;
@@ -17,19 +15,7 @@ const META = [
   { color: '#940144', img: '/img/landing/publish.jpg' }, // plum (Pantone 221)
 ];
 
-export function StackingCards({
-  kicker,
-  title,
-  cards,
-  button,
-  to,
-}: {
-  kicker: string;
-  title: string;
-  cards: StackCard[];
-  button: string;
-  to: string;
-}) {
+export function StackingCards({ kicker, title, cards }: { kicker: string; title: string; cards: StackCard[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
 
@@ -81,10 +67,6 @@ export function StackingCards({
                   <div>
                     <h3>{card.title}</h3>
                     <p>{card.text}</p>
-                    <Link to={to} className="lp-stack-btn">
-                      {button}
-                      <Icon name="arrow" size={16} />
-                    </Link>
                   </div>
                 </div>
                 <div className="lp-stack-media">
