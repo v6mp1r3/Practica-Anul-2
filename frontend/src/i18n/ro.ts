@@ -50,6 +50,7 @@ export const ro = {
   'nav.generate': 'Generare',
   'nav.timetables': 'Orare',
   'nav.changes': 'Modificări în orar',
+  'nav.timetable': 'Orar',
   'nav.myTimetable': 'Orarul meu',
   'nav.availability': 'Disponibilitate',
   'nav.browse': 'Orarul instituției',

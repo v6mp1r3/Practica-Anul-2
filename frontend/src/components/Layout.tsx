@@ -43,9 +43,8 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
     {
       section: 'nav.menu',
       items: [
-        { to: '/teacher', label: 'nav.myTimetable', icon: 'calendar', end: true },
+        { to: '/teacher', label: 'nav.timetable', icon: 'calendar', end: true },
         { to: '/teacher/availability', label: 'nav.availability', icon: 'clock' },
-        { to: '/browse', label: 'nav.browse', icon: 'search' },
         { to: '/rooms', label: 'nav.freeRooms', icon: 'door' },
       ],
     },
@@ -54,8 +53,7 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
     {
       section: 'nav.menu',
       items: [
-        { to: '/student', label: 'nav.myTimetable', icon: 'calendar', end: true },
-        { to: '/browse', label: 'nav.browse', icon: 'search' },
+        { to: '/student', label: 'nav.timetable', icon: 'calendar', end: true },
         { to: '/rooms', label: 'nav.freeRooms', icon: 'door' },
         { to: '/teachers', label: 'nav.teacherAvailability', icon: 'users' },
       ],

@@ -81,7 +81,7 @@ export default function StudentHome() {
   return (
     <div className="page">
       <PageHeader
-        title={t('nav.myTimetable')}
+        title={t('nav.timetable')}
         subtitle={`${group.name} · ${group.program} · ${t(`form.${group.studyForm}`)} · ${t('groups.year')} ${group.year}`}
         actions={
           <>

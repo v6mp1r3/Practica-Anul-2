@@ -51,6 +51,7 @@ export const en: Record<MessageKey, string> = {
   'nav.generate': 'Generate',
   'nav.timetables': 'Timetables',
   'nav.changes': 'Schedule changes',
+  'nav.timetable': 'Timetable',
   'nav.myTimetable': 'My timetable',
   'nav.availability': 'Availability',
   'nav.browse': 'Institution timetable',

@@ -51,6 +51,7 @@ export const ru: Record<MessageKey, string> = {
   'nav.generate': 'Генерация',
   'nav.timetables': 'Расписания',
   'nav.changes': 'Изменения в расписании',
+  'nav.timetable': 'Расписание',
   'nav.myTimetable': 'Моё расписание',
   'nav.availability': 'Доступность',
   'nav.browse': 'Расписание учреждения',

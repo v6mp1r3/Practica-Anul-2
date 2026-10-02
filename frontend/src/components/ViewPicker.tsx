@@ -11,6 +11,7 @@ export function ViewPicker({
   week,
   onWeek,
   kinds = ['group', 'teacher', 'room'],
+  showWeek = true,
 }: {
   dataset: Dataset;
   view: ViewFilter;
@@ -18,6 +19,7 @@ export function ViewPicker({
   week: Parity;
   onWeek: (w: Parity) => void;
   kinds?: ViewKind[];
+  showWeek?: boolean;
 }) {
   const { t } = useI18n();
   const options = {
@@ -65,7 +67,7 @@ export function ViewPicker({
           ))}
         </select>
       )}
-      {dataset.settings.weekParity && (
+      {showWeek && dataset.settings.weekParity && (
         <Segmented
           value={week}
           onChange={onWeek}
