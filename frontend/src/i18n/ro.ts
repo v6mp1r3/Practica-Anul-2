@@ -132,6 +132,12 @@ export const ro = {
   'setup.reset': 'Resetează datele demo',
   'setup.resetConfirm': 'Toate datele locale vor fi înlocuite cu datele demo. Continui?',
 
+  'availability.free': 'Liber',
+  'availability.unavailable': 'Indisponibil',
+  'availability.preferred': 'Preferat',
+  'availability.consultation': 'Consultații',
+  'availability.brush': 'Marchează ca:',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',

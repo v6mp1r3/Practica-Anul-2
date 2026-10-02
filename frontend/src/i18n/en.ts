@@ -133,6 +133,12 @@ export const en: Record<MessageKey, string> = {
   'setup.reset': 'Reset demo data',
   'setup.resetConfirm': 'All local data will be replaced with the demo data. Continue?',
 
+  'availability.free': 'Free',
+  'availability.unavailable': 'Unavailable',
+  'availability.preferred': 'Preferred',
+  'availability.consultation': 'Consultation',
+  'availability.brush': 'Mark as:',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',
