@@ -150,16 +150,6 @@
   }
 }
 
-/* Kicker above a centred section title */
-.lp-kicker {
-  display: block;
-  margin-bottom: 12px;
-  color: var(--primary);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
 /* Stacking cards — each card pins and the next slides over it */
 .lp-stack {
   padding-top: clamp(72px, 9vw, 112px);

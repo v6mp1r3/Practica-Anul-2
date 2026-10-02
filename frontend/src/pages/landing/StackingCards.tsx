@@ -15,7 +15,7 @@ const META = [
   { color: '#940144', img: '/img/landing/publish.jpg' }, // plum (Pantone 221)
 ];
 
-export function StackingCards({ kicker, title, cards }: { kicker: string; title: string; cards: StackCard[] }) {
+export function StackingCards({ title, cards }: { title: string; cards: StackCard[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
 
@@ -47,7 +47,6 @@ export function StackingCards({ kicker, title, cards }: { kicker: string; title:
   return (
     <section id="how" className="lp-stack">
       <div className="lp-container lp-stack-intro">
-        <span className="lp-kicker">{kicker}</span>
         <h2 className="lp-h2">{title}</h2>
       </div>
 

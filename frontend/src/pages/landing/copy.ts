@@ -7,7 +7,7 @@ export interface LandingCopy {
   hero: { title: string; text: string; preview: string };
   statement: { before: string; word: string; after: string };
   reveal: string;
-  how: { kicker: string; title: string; steps: { title: string; text: string }[] };
+  how: { title: string; steps: { title: string; text: string }[] };
   features: { title: string; text: string; items: { title: string; text: string }[] };
   footer: { project: string; team: string };
 }
@@ -29,7 +29,6 @@ export const copy: Record<Lang, LandingCopy> = {
     reveal:
       'Un orar nu e greu din cauza orelor, ci din cauza conflictelor: o mutare mică strică trei grupe. EduSchedule le vede pe toate înaintea ta.',
     how: {
-      kicker: 'Cum funcționează',
       title: 'Trei pași, de la date la orar publicat.',
       steps: [
         {
@@ -95,7 +94,6 @@ export const copy: Record<Lang, LandingCopy> = {
     reveal:
       'A timetable isn’t hard because of the hours — it’s hard because of the conflicts: one small move breaks three groups. EduSchedule sees them all before you do.',
     how: {
-      kicker: 'How it works',
       title: 'Three steps, from data to a published timetable.',
       steps: [
         {
@@ -155,7 +153,6 @@ export const copy: Record<Lang, LandingCopy> = {
     reveal:
       'Расписание сложно не из-за часов, а из-за конфликтов: одна небольшая перестановка ломает три группы. EduSchedule видит их все раньше вас.',
     how: {
-      kicker: 'Как это работает',
       title: 'Три шага от данных до опубликованного расписания.',
       steps: [
         {
