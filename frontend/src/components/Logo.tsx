@@ -6,7 +6,14 @@ export function Logo({ height = 28, title = 'EduSchool' }: { height?: number; ti
     <span
       role="img"
       aria-label={title}
-      style={{ display: 'block', fontSize: height * 0.78, lineHeight: `${height}px`, fontWeight: 650, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}
+      style={{
+        display: 'block',
+        fontSize: height * 0.78,
+        lineHeight: `${height}px`,
+        fontWeight: 650,
+        letterSpacing: '-0.02em',
+        whiteSpace: 'nowrap',
+      }}
     >
       Edu<span style={{ color: 'var(--primary)' }}>School</span>
     </span>
