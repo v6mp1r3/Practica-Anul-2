@@ -100,6 +100,10 @@ export const ro = {
   'dashboard.step4': 'Generează variante și alege una',
   'dashboard.step5': 'Ajustează manual și publică',
 
+  'timetables.status.draft': 'Ciornă',
+  'timetables.status.published': 'Publicat',
+  'timetables.status.variant': 'Variantă',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',

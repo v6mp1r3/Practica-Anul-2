@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Loading } from './components/ui';
 import type { Role } from './domain/types';
 import { I18nProvider } from './i18n';
+import Dashboard from './pages/admin/Dashboard';
 import Login, { homeFor } from './pages/Login';
 import Notifications from './pages/shared/Notifications';
 import { AuthProvider, useAuth } from './state/auth';
@@ -40,6 +41,16 @@ function AppRoutes() {
         }
       >
         <Route path="/notifications" element={<Notifications />} />
+      </Route>
+      <Route
+        path="/admin"
+        element={
+          <RequireRole roles={['admin']}>
+            <Layout />
+          </RequireRole>
+        }
+      >
+        <Route index element={<Dashboard />} />
       </Route>
       <Route path="*" element={<Home />} />
     </Routes>

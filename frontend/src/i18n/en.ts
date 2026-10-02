@@ -101,6 +101,10 @@ export const en: Record<MessageKey, string> = {
   'dashboard.step4': 'Generate variants and pick one',
   'dashboard.step5': 'Adjust by hand and publish',
 
+  'timetables.status.draft': 'Draft',
+  'timetables.status.published': 'Published',
+  'timetables.status.variant': 'Variant',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',
