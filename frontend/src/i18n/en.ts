@@ -267,6 +267,11 @@ export const en: Record<MessageKey, string> = {
   'editor.renamePrompt': 'Timetable name',
   'editor.icsHint': 'Add the timetable shown to your phone calendar',
 
+  'my.now': 'Now',
+  'my.next': 'Next today',
+  'my.day': 'Day',
+  'my.currentWeek': 'Now: {week}',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',

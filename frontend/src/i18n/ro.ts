@@ -266,6 +266,11 @@ export const ro = {
   'editor.renamePrompt': 'Numele orarului',
   'editor.icsHint': 'Adaugă orarul afișat în calendarul telefonului',
 
+  'my.now': 'Acum',
+  'my.next': 'Urmează azi',
+  'my.day': 'Zi',
+  'my.currentWeek': 'Acum: {week}',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',
