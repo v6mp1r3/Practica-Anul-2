@@ -2,7 +2,6 @@ import type { MessageKey } from './ro';
 
 export const ru: Record<MessageKey, string> = {
   'app.name': 'EduSchedule',
-  'app.tagline': 'Расписание университета, составленное автоматически.',
 
   'common.save': 'Сохранить',
   'common.cancel': 'Отмена',
@@ -36,8 +35,6 @@ export const ru: Record<MessageKey, string> = {
   'login.invalid': 'Неверное имя пользователя или пароль.',
   'login.demo': 'Демо-аккаунты (пароль: demo)',
   'intro.skip': 'Пропустить',
-  'login.intro':
-    'Работает с группами, потоками, подгруппами и чётными или нечётными неделями. Создаёт несколько вариантов расписания, а вы выбираете подходящий. Конфликты обнаруживаются сразу.',
 
   'nav.menu': 'Главное меню',
   'nav.account': 'Аккаунт',

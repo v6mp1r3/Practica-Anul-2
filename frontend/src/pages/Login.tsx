@@ -45,24 +45,12 @@ export default function Login() {
 
   return (
     <div className="login">
-      <section className="login-hero">
-        <img className="doodle doodle-calendar" src="/img/doodles/calendar.png" alt="" aria-hidden="true" />
-        <span />
-        <div className="stack">
-          <h1>{t('app.tagline')}</h1>
-          <p className="hero-text">{t('login.intro')}</p>
-        </div>
-        <div style={{ alignSelf: 'flex-start' }}>
-          <LanguageSwitch />
-        </div>
-      </section>
-
       <section className="login-form">
         <form className="stack" onSubmit={submit}>
-          <Link to="/" aria-label="EduSchedule" style={{ color: 'var(--text)', alignSelf: 'flex-start' }}>
+          <Link to="/" aria-label="EduSchedule" style={{ color: 'var(--text)', alignSelf: 'center' }}>
             <Logo height={40} />
           </Link>
-          <h2 style={{ marginTop: 12 }}>{t('login.title')}</h2>
+          <h2 style={{ marginTop: 12, textAlign: 'center' }}>{t('login.title')}</h2>
           <Field label={t('login.username')}>
             <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required />
           </Field>
@@ -80,6 +68,9 @@ export default function Login() {
           <button className="btn primary" type="submit" disabled={busy}>
             {t('login.submit')}
           </button>
+          <div style={{ alignSelf: 'center' }}>
+            <LanguageSwitch />
+          </div>
 
           {API_MODE === 'mock' && (
             <div className="stack demo-accounts" style={{ gap: 6, marginTop: 12 }}>

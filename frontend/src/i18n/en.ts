@@ -2,7 +2,6 @@ import type { MessageKey } from './ro';
 
 export const en: Record<MessageKey, string> = {
   'app.name': 'EduSchedule',
-  'app.tagline': 'Your university timetable, built automatically.',
 
   'common.save': 'Save',
   'common.cancel': 'Cancel',
@@ -36,8 +35,6 @@ export const en: Record<MessageKey, string> = {
   'login.invalid': 'Wrong username or password.',
   'login.demo': 'Demo accounts (password: demo)',
   'intro.skip': 'Skip',
-  'login.intro':
-    'Works with groups, streams, subgroups and odd or even weeks. It generates several timetable variants and you choose the right one. Conflicts are detected as you go.',
 
   'nav.menu': 'Main menu',
   'nav.account': 'Account',

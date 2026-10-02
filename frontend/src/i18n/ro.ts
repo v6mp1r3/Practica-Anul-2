@@ -1,7 +1,6 @@
 // Romanian is the default interface language (report §1.4.4).
 export const ro = {
   'app.name': 'EduSchedule',
-  'app.tagline': 'Orarul universității, construit automat.',
 
   'common.save': 'Salvează',
   'common.cancel': 'Anulează',
@@ -35,8 +34,6 @@ export const ro = {
   'login.invalid': 'Utilizator sau parolă greșită.',
   'login.demo': 'Conturi demo (parola: demo)',
   'intro.skip': 'Sari peste',
-  'login.intro':
-    'Lucrează cu grupe, torente, subgrupe și săptămâni pare sau impare. Generează mai multe variante de orar, iar tu o alegi pe cea potrivită. Conflictele sunt detectate pe loc.',
 
   'nav.menu': 'Meniu principal',
   'nav.account': 'Cont',
