@@ -6,105 +6,117 @@
   --brand-pink: #b94676; /* Pantone 674 */
   --brand-green: #34871d; /* Pantone 363 */
   --brand-teal: #006c50; /* Pantone 342 */
-  --brand-blue: #1b7396; /* Pantone 633 */
+  --brand-blue: #1b7396; /* Pantone 633 — primary */
   --brand-black: #000000;
-  --logo-blue: #4499cc;
+  --brand-blue-lt: #4ea8cd;
 }
 
+/* Apple-style system shared with the TAFI Agent / TAFI Contabil sites:
+   white and #f5f5f7 surfaces, #1d1d1f ink, hairline borders, SF Pro with
+   Inter as the cross-platform fallback. Blue is the single accent. */
 :root {
-  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --bg: #f5f7f8;
+  --bg: #f5f5f7;
   --surface: #ffffff;
-  --surface-2: #eff3f5;
-  --border: #dfe5e8;
-  --text: #0f1a1f;
-  --text-2: #4e5c63;
-  --text-3: #85929a;
+  --surface-2: #f5f5f7;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --text: #1d1d1f;
+  --text-2: #6e6e73;
+  --text-3: #86868b;
+  --ink: #1d1d1f;
 
   --primary: var(--brand-blue);
-  --primary-hover: #145a76;
-  --primary-soft: #e2eff5;
+  --primary-hover: #155c78;
+  --primary-soft: rgba(27, 115, 150, 0.1);
   --on-primary: #ffffff;
   --accent: var(--brand-pink);
 
   --danger: var(--brand-red);
-  --danger-soft: #fce5ea;
+  --danger-soft: rgba(213, 0, 47, 0.08);
   --warning: #c2481f; /* orange 166, darkened for text contrast */
   --warning-dot: var(--brand-orange);
-  --warning-soft: #fdece5;
+  --warning-soft: rgba(230, 93, 49, 0.1);
   --success: var(--brand-green);
-  --success-soft: #e7f3e3;
+  --success-soft: rgba(52, 135, 29, 0.1);
 
   /* Activity colours — used on lesson cards and legends */
   --lecture: var(--brand-blue);
-  --lecture-soft: #e2eff5;
+  --lecture-soft: rgba(27, 115, 150, 0.1);
   --seminar: var(--brand-teal);
-  --seminar-soft: #ddf0e9;
+  --seminar-soft: rgba(0, 108, 80, 0.1);
   --lab: var(--brand-plum);
-  --lab-soft: #f6e4ec;
+  --lab-soft: rgba(148, 1, 68, 0.08);
 
-  --radius: 10px;
-  --radius-sm: 6px;
-  --shadow: 0 1px 2px rgba(15, 26, 31, 0.05), 0 1px 3px rgba(15, 26, 31, 0.08);
-  --shadow-lg: 0 12px 32px rgba(15, 26, 31, 0.18);
-  --sidebar-w: 240px;
+  --radius: 18px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 18px 50px -28px rgba(0, 0, 0, 0.22);
+  --shadow-lg: 0 30px 70px -38px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --sidebar-w: 248px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0c1215;
-    --surface: #131c20;
-    --surface-2: #1a252a;
-    --border: #283439;
-    --text: #e9eff1;
-    --text-2: #a5b3b9;
-    --text-3: #6f7e85;
-    --primary: #5fb0d3;
-    --primary-hover: #82c3e0;
-    --primary-soft: #16303b;
-    --on-primary: #0c1215;
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --border: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.2);
+    --text: #f5f5f7;
+    --text-2: #a1a1a6;
+    --text-3: #6e6e73;
+    --primary: var(--brand-blue-lt);
+    --primary-hover: #74bcdb;
+    --primary-soft: rgba(78, 168, 205, 0.16);
+    --on-primary: #000000;
     --accent: #e07ba5;
     --danger: #ff5c78;
-    --danger-soft: #3a1820;
+    --danger-soft: rgba(255, 92, 120, 0.14);
     --warning: #f28a62;
     --warning-dot: #f28a62;
-    --warning-soft: #3a2219;
-    --success: #72c552;
-    --success-soft: #18301a;
-    --lecture: #6fb7d8;
-    --lecture-soft: #15303b;
-    --seminar: #43c29a;
-    --seminar-soft: #11302a;
+    --warning-soft: rgba(242, 138, 98, 0.14);
+    --success: #6ec24e;
+    --success-soft: rgba(110, 194, 78, 0.14);
+    --lecture: var(--brand-blue-lt);
+    --lecture-soft: rgba(78, 168, 205, 0.16);
+    --seminar: #3fbf95;
+    --seminar-soft: rgba(63, 191, 149, 0.15);
     --lab: #e07ba5;
-    --lab-soft: #3a1b2a;
+    --lab-soft: rgba(224, 123, 165, 0.15);
+    --shadow: none;
   }
 }
 
 :root[data-theme='dark'] {
-  --bg: #0c1215;
-  --surface: #131c20;
-  --surface-2: #1a252a;
-  --border: #283439;
-  --text: #e9eff1;
-  --text-2: #a5b3b9;
-  --text-3: #6f7e85;
-  --primary: #5fb0d3;
-  --primary-hover: #82c3e0;
-  --primary-soft: #16303b;
-  --on-primary: #0c1215;
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --text: #f5f5f7;
+  --text-2: #a1a1a6;
+  --text-3: #6e6e73;
+  --primary: var(--brand-blue-lt);
+  --primary-hover: #74bcdb;
+  --primary-soft: rgba(78, 168, 205, 0.16);
+  --on-primary: #000000;
   --accent: #e07ba5;
   --danger: #ff5c78;
-  --danger-soft: #3a1820;
+  --danger-soft: rgba(255, 92, 120, 0.14);
   --warning: #f28a62;
   --warning-dot: #f28a62;
-  --warning-soft: #3a2219;
-  --success: #72c552;
-  --success-soft: #18301a;
-  --lecture: #6fb7d8;
-  --lecture-soft: #15303b;
-  --seminar: #43c29a;
-  --seminar-soft: #11302a;
+  --warning-soft: rgba(242, 138, 98, 0.14);
+  --success: #6ec24e;
+  --success-soft: rgba(110, 194, 78, 0.14);
+  --lecture: var(--brand-blue-lt);
+  --lecture-soft: rgba(78, 168, 205, 0.16);
+  --seminar: #3fbf95;
+  --seminar-soft: rgba(63, 191, 149, 0.15);
   --lab: #e07ba5;
-  --lab-soft: #3a1b2a;
+  --lab-soft: rgba(224, 123, 165, 0.15);
+  --shadow: none;
 }
