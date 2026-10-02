@@ -150,6 +150,16 @@ export const ro = {
   'teachers.nameRequired': 'Numele este obligatoriu.',
   'teachers.typeRequired': 'Alege cel puțin un tip de activitate.',
 
+  'rooms.subtitle': 'Sălile de studiu, capacitatea și echipamentul lor.',
+  'rooms.name': 'Sala',
+  'rooms.building': 'Blocul',
+  'rooms.type': 'Tip',
+  'rooms.capacity': 'Locuri',
+  'rooms.equipment': 'Echipament',
+  'rooms.equipmentHint': 'Scrie și apasă Enter. Laboratoarele cer echipamentul potrivit.',
+  'rooms.nameRequired': 'Denumirea sălii este obligatorie.',
+  'rooms.capacityRequired': 'Capacitatea trebuie să fie cel puțin 1.',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',

@@ -151,6 +151,16 @@ export const en: Record<MessageKey, string> = {
   'teachers.nameRequired': 'Name is required.',
   'teachers.typeRequired': 'Pick at least one activity type.',
 
+  'rooms.subtitle': 'Teaching rooms, their capacity and equipment.',
+  'rooms.name': 'Room',
+  'rooms.building': 'Building',
+  'rooms.type': 'Type',
+  'rooms.capacity': 'Seats',
+  'rooms.equipment': 'Equipment',
+  'rooms.equipmentHint': 'Type and press Enter. Labs require matching equipment.',
+  'rooms.nameRequired': 'Room name is required.',
+  'rooms.capacityRequired': 'Capacity must be at least 1.',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',
