@@ -28,8 +28,8 @@ export default function Notifications() {
       />
       <div className="card">
         {notifications.length === 0 && <Empty />}
-        {notifications.map((n) => (
-          <div key={n.id} className="card-body" style={{ borderBottom: '1px solid var(--border)' }}>
+        {notifications.map((n, i) => (
+          <div key={n.id} className="card-body" style={i > 0 ? { borderTop: '1px solid var(--border)' } : undefined}>
             <div className="row">
               <strong>{n.title}</strong>
               {!n.read && <span className="badge primary">{t('notifications.new')}</span>}
