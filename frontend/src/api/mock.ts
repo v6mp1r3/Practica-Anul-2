@@ -30,7 +30,13 @@ const fresh = (): Store => ({
 function load(): Store {
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      // Stores saved before multi-faculty support had a single `faculty` string
+      const st = saved.dataset?.settings;
+      if (st && !Array.isArray(st.faculties)) st.faculties = st.faculty ? [st.faculty] : [];
+      return saved;
+    }
   } catch {
     /* fall through to a fresh store */
   }

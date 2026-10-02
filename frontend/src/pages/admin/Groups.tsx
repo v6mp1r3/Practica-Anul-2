@@ -18,10 +18,11 @@ export default function Groups() {
           title={t('groups.groups')}
           items={dataset.groups}
           itemLabel={(x) => x.name}
-          searchText={(x) => `${x.name} ${x.program}`}
+          searchText={(x) => `${x.name} ${x.program} ${x.faculty ?? ''}`}
           columns={[
             { label: t('groups.name'), render: (x) => <strong>{x.name}</strong> },
             { label: t('groups.program'), render: (x) => x.program },
+            { label: t('groups.faculty'), render: (x) => <span className="small muted">{x.faculty || '—'}</span> },
             { label: t('groups.year'), render: (x) => x.year },
             { label: t('groups.size'), render: (x) => x.size },
             {
@@ -44,6 +45,16 @@ export default function Groups() {
               </Field>
               <Field label={t('groups.program')}>
                 <input className="input" value={d.program} onChange={(e) => set({ program: e.target.value })} />
+              </Field>
+              <Field label={t('groups.faculty')}>
+                <select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
+                  <option value="">—</option>
+                  {dataset.settings.faculties.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </select>
               </Field>
               <Field label={t('groups.year')}>
                 <input

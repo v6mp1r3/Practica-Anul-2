@@ -18,23 +18,29 @@ reference behaviour when something here is unclear.
 
 ## Roles
 
-| Role      | Can do                                                                 |
-|-----------|------------------------------------------------------------------------|
-| `admin`   | Everything: data management, generation, editing, publishing           |
-| `teacher` | Read published timetable and dataset; update **own** availability       |
-| `student` | Read published timetable and dataset                                   |
+| Role      | Can do                                                            |
+| --------- | ----------------------------------------------------------------- |
+| `admin`   | Everything: data management, generation, editing, publishing      |
+| `teacher` | Read published timetable and dataset; update **own** availability |
+| `student` | Read published timetable and dataset                              |
 
 ## Auth
 
-| Method | Path           | Body                       | Response              |
-|--------|----------------|----------------------------|-----------------------|
-| POST   | `/auth/login`  | `{ username, password }`   | `{ token, user }`     |
-| GET    | `/auth/me`     | —                          | `User`                |
-| POST   | `/auth/logout` | —                          | `204`                 |
+| Method | Path           | Body                     | Response          |
+| ------ | -------------- | ------------------------ | ----------------- |
+| POST   | `/auth/login`  | `{ username, password }` | `{ token, user }` |
+| GET    | `/auth/me`     | —                        | `User`            |
+| POST   | `/auth/logout` | —                        | `204`             |
 
 ```json
 // User
-{ "id": "u2", "username": "daniel.rusu", "name": "Daniel Rusu", "role": "teacher", "teacherId": "t1" }
+{
+  "id": "u2",
+  "username": "daniel.rusu",
+  "name": "Daniel Rusu",
+  "role": "teacher",
+  "teacherId": "t1"
+}
 ```
 
 `teacherId` is set for teachers, `groupId` for students.
@@ -42,7 +48,7 @@ reference behaviour when something here is unclear.
 ## Dataset and settings
 
 | Method | Path        | Role  | Response / body                                     |
-|--------|-------------|-------|-----------------------------------------------------|
+| ------ | ----------- | ----- | --------------------------------------------------- |
 | GET    | `/dataset`  | any   | `Dataset` — everything the solver needs in one call |
 | PUT    | `/settings` | admin | body and response: `Settings`                       |
 
@@ -53,7 +59,7 @@ reference behaviour when something here is unclear.
 // Settings
 {
   "institutionName": "Universitatea Tehnică a Moldovei",
-  "faculty": "Facultatea Calculatoare, Informatică și Microelectronică",
+  "faculties": ["Facultatea Calculatoare, Informatică și Microelectronică", "Facultatea Electronică și Telecomunicații"],
   "semester": "Toamna 2026/2027",
   "workingDays": 5,
   "lessonMinutes": 90,
@@ -70,12 +76,12 @@ reference behaviour when something here is unclear.
 
 Same shape for `teachers`, `rooms`, `groups`, `streams`, `subjects`, `assignments`:
 
-| Method | Path                 | Role  | Body / response                 |
-|--------|----------------------|-------|---------------------------------|
-| GET    | `/{collection}`      | any   | array of items                  |
+| Method | Path                 | Role  | Body / response                  |
+| ------ | -------------------- | ----- | -------------------------------- |
+| GET    | `/{collection}`      | any   | array of items                   |
 | POST   | `/{collection}`      | admin | item without `id` → created item |
-| PUT    | `/{collection}/{id}` | admin | full item → saved item          |
-| DELETE | `/{collection}/{id}` | admin | `204`                           |
+| PUT    | `/{collection}/{id}` | admin | full item → saved item           |
+| DELETE | `/{collection}/{id}` | admin | `204`                            |
 
 Deleting a teacher, subject, group or stream also deletes the assignments that
 reference it.
@@ -91,7 +97,7 @@ reference it.
 { "id": "r8", "name": "3-404", "building": "Blocul 3", "capacity": 16, "type": "lab", "equipment": ["calculatoare"] }
 
 // Group
-{ "id": "g1", "name": "FAF-251", "program": "Ingineria Software", "year": 1, "size": 24, "subgroups": 2 }
+{ "id": "g1", "name": "FAF-251", "program": "Ingineria Software", "faculty": "Facultatea Calculatoare, Informatică și Microelectronică", "year": 1, "size": 24, "subgroups": 2 }
 
 // Stream (groups that attend a lecture together)
 { "id": "s1", "name": "FAF-25", "groupIds": ["g1", "g2"] }
@@ -108,30 +114,56 @@ reference it.
 
 Extra endpoints:
 
-| Method | Path                            | Role            | Body                                   |
-|--------|---------------------------------|-----------------|----------------------------------------|
-| POST   | `/subjects/import`              | admin           | `{ subjects: Subject[] without id }` → created subjects |
-| PUT    | `/teachers/{id}/availability`   | admin, that teacher | `{ unavailable, preferred, consultation? }` → `Teacher` |
+| Method | Path                          | Role                | Body                                                    |
+| ------ | ----------------------------- | ------------------- | ------------------------------------------------------- |
+| POST   | `/subjects/import`            | admin               | `{ subjects: Subject[] without id }` → created subjects |
+| PUT    | `/teachers/{id}/availability` | admin, that teacher | `{ unavailable, preferred, consultation? }` → `Teacher` |
 
 ## Timetables
 
-| Method | Path                        | Role  | Notes                                             |
-|--------|-----------------------------|-------|---------------------------------------------------|
-| GET    | `/timetables`               | admin | all drafts, variants and the published one        |
-| GET    | `/timetables/published`     | any   | the published timetable, or `null`                |
-| GET    | `/timetables/{id}`          | any   |                                                   |
-| PUT    | `/timetables/{id}`          | admin | create or update; a `variant` becomes a `draft`; server recomputes `score` |
-| DELETE | `/timetables/{id}`          | admin |                                                   |
-| POST   | `/timetables/{id}/publish`  | admin | previous published one becomes `draft`; creates a notification for everyone |
+| Method | Path                       | Role  | Notes                                                                       |
+| ------ | -------------------------- | ----- | --------------------------------------------------------------------------- |
+| GET    | `/timetables`              | admin | all drafts, variants and the published one                                  |
+| GET    | `/timetables/published`    | any   | the published timetable, or `null`                                          |
+| GET    | `/timetables/{id}`         | any   |                                                                             |
+| PUT    | `/timetables/{id}`         | admin | create or update; a `variant` becomes a `draft`; server recomputes `score`  |
+| DELETE | `/timetables/{id}`         | admin |                                                                             |
+| POST   | `/timetables/{id}/publish` | admin | previous published one becomes `draft`; creates a notification for everyone |
 
 ```json
 // Timetable
-{ "id": "tt1", "name": "Varianta A", "status": "draft",
-  "createdAt": "2026-10-02T10:00:00.000Z", "updatedAt": "2026-10-02T10:05:00.000Z",
-  "algorithm": "CP-SAT + LNS (seed 42, 60 s)", "groupIds": ["g1", "g2"],
-  "lessons": [{ "id": "L1", "assignmentId": "a1", "day": 0, "slot": 1, "roomId": "r1", "parity": "weekly", "locked": false }],
-  "score": { "hard": 0, "soft": 42.4,
-             "breakdown": { "teacherGaps": 0.5, "groupGaps": 0.5, "earlyStarts": 0, "dayOverload": 0, "unevenDays": 34.4, "preferenceMisses": 4.5 } } }
+{
+  "id": "tt1",
+  "name": "Varianta A",
+  "status": "draft",
+  "createdAt": "2026-10-02T10:00:00.000Z",
+  "updatedAt": "2026-10-02T10:05:00.000Z",
+  "algorithm": "CP-SAT + LNS (seed 42, 60 s)",
+  "groupIds": ["g1", "g2"],
+  "lessons": [
+    {
+      "id": "L1",
+      "assignmentId": "a1",
+      "day": 0,
+      "slot": 1,
+      "roomId": "r1",
+      "parity": "weekly",
+      "locked": false
+    }
+  ],
+  "score": {
+    "hard": 0,
+    "soft": 42.4,
+    "breakdown": {
+      "teacherGaps": 0.5,
+      "groupGaps": 0.5,
+      "earlyStarts": 0,
+      "dayOverload": 0,
+      "unevenDays": 34.4,
+      "preferenceMisses": 4.5
+    }
+  }
+}
 ```
 
 `status` is `variant` (fresh from the generator), `draft` or `published`.
@@ -165,14 +197,20 @@ validator agrees with.
 
 ## Notifications
 
-| Method | Path                   | Role | Body / response                                  |
-|--------|------------------------|------|--------------------------------------------------|
-| GET    | `/notifications`       | any  | notifications for the caller's role, with `read` |
-| POST   | `/notifications/read`  | any  | `{ ids: string[] }` → `204`                      |
+| Method | Path                  | Role | Body / response                                  |
+| ------ | --------------------- | ---- | ------------------------------------------------ |
+| GET    | `/notifications`      | any  | notifications for the caller's role, with `read` |
+| POST   | `/notifications/read` | any  | `{ ids: string[] }` → `204`                      |
 
 ```json
-{ "id": "n1", "createdAt": "2026-09-28T09:00:00.000Z", "title": "Orarul a fost publicat",
-  "body": "„Varianta A” este acum disponibil.", "roles": [], "read": false }
+{
+  "id": "n1",
+  "createdAt": "2026-09-28T09:00:00.000Z",
+  "title": "Orarul a fost publicat",
+  "body": "„Varianta A” este acum disponibil.",
+  "roles": [],
+  "read": false
+}
 ```
 
 `roles: []` means everyone.

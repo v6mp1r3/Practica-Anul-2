@@ -16,7 +16,11 @@ import type {
 
 export const seedSettings: Settings = {
   institutionName: 'Universitatea Tehnică a Moldovei',
-  faculty: 'Facultatea Calculatoare, Informatică și Microelectronică',
+  faculties: [
+    'Facultatea Calculatoare, Informatică și Microelectronică',
+    'Facultatea Electronică și Telecomunicații',
+    'Facultatea Inginerie Mecanică, Industrială și Transporturi',
+  ],
   semester: 'Toamna 2026/2027',
   workingDays: 5,
   lessonMinutes: 90,
@@ -97,14 +101,16 @@ export const seedRooms: Room[] = [
   { id: 'r11', name: '3-505', building: 'Blocul 3', capacity: 14, type: 'lab', equipment: ['calculatoare', 'electronică'] },
 ];
 
+const FCIM = 'Facultatea Calculatoare, Informatică și Microelectronică';
+
 export const seedGroups: Group[] = [
-  { id: 'g1', name: 'FAF-251', program: 'Ingineria Software', year: 1, size: 24, subgroups: 2 },
-  { id: 'g2', name: 'FAF-252', program: 'Ingineria Software', year: 1, size: 22, subgroups: 2 },
-  { id: 'g3', name: 'TI-251', program: 'Tehnologia Informației', year: 1, size: 28, subgroups: 2 },
-  { id: 'g4', name: 'TI-252', program: 'Tehnologia Informației', year: 1, size: 26, subgroups: 2 },
-  { id: 'g5', name: 'FAF-241', program: 'Ingineria Software', year: 2, size: 25, subgroups: 2 },
-  { id: 'g6', name: 'FAF-242', program: 'Ingineria Software', year: 2, size: 23, subgroups: 2 },
-  { id: 'g7', name: 'CR-241', program: 'Calculatoare și Rețele', year: 2, size: 20, subgroups: 2 },
+  { id: 'g1', name: 'FAF-251', program: 'Ingineria Software', faculty: FCIM, year: 1, size: 24, subgroups: 2 },
+  { id: 'g2', name: 'FAF-252', program: 'Ingineria Software', faculty: FCIM, year: 1, size: 22, subgroups: 2 },
+  { id: 'g3', name: 'TI-251', program: 'Tehnologia Informației', faculty: FCIM, year: 1, size: 28, subgroups: 2 },
+  { id: 'g4', name: 'TI-252', program: 'Tehnologia Informației', faculty: FCIM, year: 1, size: 26, subgroups: 2 },
+  { id: 'g5', name: 'FAF-241', program: 'Ingineria Software', faculty: FCIM, year: 2, size: 25, subgroups: 2 },
+  { id: 'g6', name: 'FAF-242', program: 'Ingineria Software', faculty: FCIM, year: 2, size: 23, subgroups: 2 },
+  { id: 'g7', name: 'CR-241', program: 'Calculatoare și Rețele', faculty: FCIM, year: 2, size: 20, subgroups: 2 },
 ];
 
 export const seedStreams: Stream[] = [

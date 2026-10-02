@@ -23,7 +23,8 @@ export interface TimeSlot {
 
 export interface Settings {
   institutionName: string;
-  faculty: string;
+  /** Faculties of the institution — as many as needed, none required. */
+  faculties: string[];
   semester: string;
   workingDays: number; // 5 or 6
   lessonMinutes: number;
@@ -68,6 +69,8 @@ export interface Group {
   program: string;
   year: number;
   size: number;
+  /** Faculty the group belongs to (one of Settings.faculties), optional. */
+  faculty?: string;
   /** Number of subgroups used for labs (1 = not split). */
   subgroups: number;
 }

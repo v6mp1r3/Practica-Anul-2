@@ -32,9 +32,7 @@ function Step({ n, title, required, children }: { n: number; title: string; requ
   return (
     <div className="card">
       <div className="card-header">
-        <span className="avatar" style={{ width: 26, height: 26, fontSize: 12 }}>
-          {n}
-        </span>
+        <span className="step-num">{n}</span>
         <h2>{title}</h2>
         {required && <span className="badge danger">{t('setup.required')}</span>}
       </div>
@@ -55,7 +53,7 @@ export default function Setup() {
   async function save() {
     setSaving(true);
     try {
-      await api.saveSettings(s);
+      await api.saveSettings({ ...s, faculties: s.faculties.map((f) => f.trim()).filter(Boolean) });
       await refresh();
       toast(t('common.saved'));
     } catch {
@@ -102,16 +100,53 @@ export default function Setup() {
             <Field label={t('setup.institutionName')}>
               <input className="input" value={s.institutionName} onChange={(e) => set('institutionName', e.target.value)} />
             </Field>
-            <Field label={t('setup.faculty')}>
-              <input className="input" value={s.faculty} onChange={(e) => set('faculty', e.target.value)} />
-            </Field>
             <Field label={t('setup.semester')}>
               <input className="input" value={s.semester} onChange={(e) => set('semester', e.target.value)} />
             </Field>
           </div>
         </Step>
 
-        <Step n={2} title={t('setup.week')} required>
+        <Step n={2} title={t('setup.faculties')}>
+          <p className="small muted">{t('setup.facultiesHint')}</p>
+          <div className="stack" style={{ gap: 8 }}>
+            {s.faculties.map((f, i) => (
+              <div key={i} className="row">
+                <input
+                  className="input"
+                  value={f}
+                  placeholder={t('setup.facultyPlaceholder')}
+                  onChange={(e) =>
+                    set(
+                      'faculties',
+                      s.faculties.map((x, j) => (j === i ? e.target.value : x)),
+                    )
+                  }
+                  aria-label={`${t('setup.faculties')} ${i + 1}`}
+                />
+                <button
+                  className="btn ghost sm icon danger"
+                  onClick={() =>
+                    set(
+                      'faculties',
+                      s.faculties.filter((_, j) => j !== i),
+                    )
+                  }
+                  aria-label={t('common.delete')}
+                >
+                  <Icon name="trash" size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div>
+            <button className="btn sm" onClick={() => set('faculties', [...s.faculties, ''])}>
+              <Icon name="plus" size={14} />
+              {t('setup.addFaculty')}
+            </button>
+          </div>
+        </Step>
+
+        <Step n={3} title={t('setup.week')} required>
           <div className="form-grid">
             <Field label={t('setup.workingDays')} hint={t('setup.default', { value: 5 })}>
               <select className="select" value={s.workingDays} onChange={(e) => set('workingDays', Number(e.target.value))}>
@@ -221,7 +256,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={3} title={t('setup.parity')}>
+        <Step n={4} title={t('setup.parity')}>
           <div className="row">
             <Switch checked={s.weekParity} onChange={(v) => set('weekParity', v)} label={t('setup.parityQuestion')} />
             <div>
@@ -231,7 +266,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={4} title={t('setup.limits')}>
+        <Step n={5} title={t('setup.limits')}>
           <div className="form-grid">
             <Field label={t('setup.maxPairsGroup')} hint={t('setup.default', { value: 4 })}>
               <input
