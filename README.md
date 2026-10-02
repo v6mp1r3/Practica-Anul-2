@@ -17,3 +17,20 @@ teacher availability.
 
 Each part lives in its own folder so people can work in parallel without touching
 each other's files. See [CONTRIBUTING.md](CONTRIBUTING.md) before your first push.
+
+## Quick start (frontend)
+
+```bash
+cd frontend
+npm install
+npm run dev     # http://localhost:5173 — demo accounts are listed on the login page
+```
+
+The frontend runs on mock data until the backend is ready; see
+[frontend/README.md](frontend/README.md) and the API contract in
+[docs/API.md](docs/API.md).
+
+## Branches
+
+`frontend` and `backend` are the integration branches; `main` only receives reviewed
+merges. Details in [CONTRIBUTING.md](CONTRIBUTING.md).
