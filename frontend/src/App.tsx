@@ -15,7 +15,9 @@ import Subjects from './pages/admin/Subjects';
 import Teachers from './pages/admin/Teachers';
 import Timetables from './pages/admin/Timetables';
 import Login, { homeFor } from './pages/Login';
+import Browse from './pages/shared/Browse';
 import Notifications from './pages/shared/Notifications';
+import StudentHome from './pages/student/StudentHome';
 import Availability from './pages/teacher/Availability';
 import TeacherHome from './pages/teacher/TeacherHome';
 import { AuthProvider, useAuth } from './state/auth';
@@ -52,6 +54,7 @@ function AppRoutes() {
         }
       >
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/browse" element={<Browse />} />
       </Route>
       <Route
         path="/admin"
@@ -82,6 +85,16 @@ function AppRoutes() {
       >
         <Route index element={<TeacherHome />} />
         <Route path="availability" element={<Availability />} />
+      </Route>
+      <Route
+        path="/student"
+        element={
+          <RequireRole roles={['student']}>
+            <Layout />
+          </RequireRole>
+        }
+      >
+        <Route index element={<StudentHome />} />
       </Route>
       <Route path="*" element={<Home />} />
     </Routes>
