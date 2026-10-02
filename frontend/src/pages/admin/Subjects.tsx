@@ -1,3 +1,4 @@
+import { FacultySelect, inFaculty, useFacultyFilter } from '../../components/FacultyFilter';
 import { useRef, useState } from 'react';
 import { api } from '../../api';
 import { CrudPage } from '../../components/CrudPage';
@@ -13,6 +14,7 @@ import { downloadFile } from '../../utils/download';
 export default function Subjects() {
   const { t } = useI18n();
   const { dataset, refresh } = useDataset();
+  const [faculty, setFaculty] = useFacultyFilter(dataset);
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<CsvResult | null>(null);
@@ -38,11 +40,12 @@ export default function Subjects() {
         collection="subjects"
         title={t('nav.subjects')}
         subtitle={t('subjects.subtitle')}
-        items={dataset.subjects}
+        items={dataset.subjects.filter((x) => inFaculty(faculty, x.faculty))}
         itemLabel={(x) => `${x.code} — ${x.name}`}
         searchText={(x) => `${x.code} ${x.name}`}
         headerActions={
           <>
+            <FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} />
             <button className="btn" onClick={() => downloadFile('plan-de-studii.csv', STUDY_PLAN_TEMPLATE, 'text/csv')}>
               <Icon name="download" />
               {t('subjects.template')}

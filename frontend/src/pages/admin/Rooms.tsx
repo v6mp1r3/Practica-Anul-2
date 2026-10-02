@@ -1,3 +1,4 @@
+import { FacultySelect, inFaculty, useFacultyFilter } from '../../components/FacultyFilter';
 import { CrudPage } from '../../components/CrudPage';
 import { TagInput } from '../../components/TagInput';
 import { Field } from '../../components/ui';
@@ -10,6 +11,7 @@ const TYPES: RoomType[] = ['lecture', 'seminar', 'lab'];
 export default function Rooms() {
   const { t } = useI18n();
   const { dataset } = useDataset();
+  const [faculty, setFaculty] = useFacultyFilter(dataset);
   const knownEquipment = [
     ...new Set(dataset.rooms.flatMap((r) => r.equipment).concat(dataset.assignments.flatMap((a) => a.equipment))),
   ].sort();
@@ -19,7 +21,8 @@ export default function Rooms() {
       collection="rooms"
       title={t('nav.rooms')}
       subtitle={t('rooms.subtitle')}
-      items={dataset.rooms}
+      items={dataset.rooms.filter((x) => inFaculty(faculty, x.faculty))}
+      headerActions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} />}
       itemLabel={(x) => x.name}
       searchText={(x) => `${x.name} ${x.building} ${x.equipment.join(' ')}`}
       columns={[
@@ -29,13 +32,30 @@ export default function Rooms() {
         { label: t('rooms.capacity'), render: (x) => x.capacity },
         { label: t('rooms.equipment'), render: (x) => <span className="small muted">{x.equipment.join(', ') || '—'}</span> },
       ]}
-      newItem={(): Omit<Room, 'id'> => ({ name: '', building: '', capacity: 30, type: 'seminar', equipment: [] })}
+      newItem={(): Omit<Room, 'id'> => ({
+        name: '',
+        building: '',
+        faculty: faculty || undefined,
+        capacity: 30,
+        type: 'seminar',
+        equipment: [],
+      })}
       validate={(d) => (!d.name.trim() ? t('rooms.nameRequired') : d.capacity < 1 ? t('rooms.capacityRequired') : null)}
       renderForm={(d, set) => (
         <div className="stack">
           <div className="form-grid">
             <Field label={t('rooms.name')}>
               <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} placeholder="3-114" autoFocus />
+            </Field>
+            <Field label={t('groups.faculty')}>
+              <select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
+                <option value="">—</option>
+                {dataset.settings.faculties.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label={t('rooms.building')}>
               <input className="input" value={d.building} onChange={(e) => set({ building: e.target.value })} />

@@ -146,6 +146,7 @@ export const en: Record<MessageKey, string> = {
   'account.role': 'Role',
   'account.detailsHint': 'Role, group and department are managed by the administration.',
 
+  'faculty.all': 'All faculties',
   'tt.oddShort': 'O',
   'tt.evenShort': 'E',
   'tt.free': 'Gap',

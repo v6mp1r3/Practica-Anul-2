@@ -147,6 +147,7 @@ export const ru: Record<MessageKey, string> = {
   'account.role': 'Роль',
   'account.detailsHint': 'Роль, группой и кафедрой управляет администрация.',
 
+  'faculty.all': 'Все факультеты',
   'tt.oddShort': 'Н',
   'tt.evenShort': 'Ч',
   'tt.free': 'Окно',

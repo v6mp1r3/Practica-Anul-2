@@ -146,6 +146,7 @@ export const ro = {
   'account.role': 'Rol',
   'account.detailsHint': 'Rolul, grupa și departamentul sunt gestionate de administrație.',
 
+  'faculty.all': 'Toate facultățile',
   'tt.oddShort': 'I',
   'tt.evenShort': 'P',
   'tt.free': 'Fereastră',

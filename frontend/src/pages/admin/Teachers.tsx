@@ -1,3 +1,4 @@
+import { FacultySelect, inFaculty, useFacultyFilter } from '../../components/FacultyFilter';
 import { AvailabilityPicker } from '../../components/AvailabilityPicker';
 import { CrudPage } from '../../components/CrudPage';
 import { Field } from '../../components/ui';
@@ -11,6 +12,7 @@ const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab'];
 export default function Teachers() {
   const { t } = useI18n();
   const { dataset, index } = useDataset();
+  const [faculty, setFaculty] = useFacultyFilter(dataset);
 
   const plannedLoad = (id: string) =>
     dataset.assignments.filter((a) => a.teacherId === id).reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
@@ -20,7 +22,8 @@ export default function Teachers() {
       collection="teachers"
       title={t('nav.teachers')}
       subtitle={t('teachers.subtitle')}
-      items={dataset.teachers}
+      items={dataset.teachers.filter((x) => inFaculty(faculty, x.faculty))}
+      headerActions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} />}
       itemLabel={(x) => x.name}
       searchText={(x) => `${x.name} ${x.department} ${x.email}`}
       wideForm
@@ -64,6 +67,7 @@ export default function Teachers() {
         name: '',
         title: 'lect. univ.',
         department: '',
+        faculty: faculty || undefined,
         email: '',
         maxPairsPerWeek: 12,
         activityTypes: ['lecture', 'seminar'],
@@ -79,6 +83,16 @@ export default function Teachers() {
             </Field>
             <Field label={t('teachers.title')}>
               <input className="input" value={d.title} onChange={(e) => set({ title: e.target.value })} />
+            </Field>
+            <Field label={t('groups.faculty')}>
+              <select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
+                <option value="">—</option>
+                {dataset.settings.faculties.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label={t('teachers.department')}>
               <input className="input" value={d.department} onChange={(e) => set({ department: e.target.value })} />

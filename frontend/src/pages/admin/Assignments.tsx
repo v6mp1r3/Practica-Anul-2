@@ -29,7 +29,7 @@ export default function Assignments() {
       }
       headerActions={
         <select
-          className="select"
+          className="select pill"
           style={{ width: 180 }}
           value={groupFilter}
           onChange={(e) => setGroupFilter(e.target.value)}

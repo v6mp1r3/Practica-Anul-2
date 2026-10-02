@@ -1,3 +1,4 @@
+import { FacultySelect, inFaculty, useFacultyFilter } from '../../components/FacultyFilter';
 import { CrudPage } from '../../components/CrudPage';
 import { Field, PageHeader } from '../../components/ui';
 import { STUDY_FORMS, type Group, type Stream, type StudyForm } from '../../domain/types';
@@ -7,16 +8,21 @@ import { useDataset } from '../../state/data';
 export default function Groups() {
   const { t } = useI18n();
   const { dataset, index } = useDataset();
+  const [faculty, setFaculty] = useFacultyFilter(dataset);
 
   return (
     <div className="page">
-      <PageHeader title={t('nav.groups')} subtitle={t('groups.subtitle')} />
+      <PageHeader
+        title={t('nav.groups')}
+        subtitle={t('groups.subtitle')}
+        actions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} />}
+      />
       <div className="stack">
         <CrudPage
           embedded
           collection="groups"
           title={t('groups.groups')}
-          items={dataset.groups}
+          items={dataset.groups.filter((x) => inFaculty(faculty, x.faculty))}
           itemLabel={(x) => x.name}
           searchText={(x) => `${x.name} ${x.program} ${x.faculty ?? ''}`}
           columns={[
@@ -110,7 +116,7 @@ export default function Groups() {
           embedded
           collection="streams"
           title={t('groups.streams')}
-          items={dataset.streams}
+          items={dataset.streams.filter((x) => !faculty || x.groupIds.some((g) => index.groups.get(g)?.faculty === faculty))}
           itemLabel={(x) => x.name}
           searchText={(x) => `${x.name} ${x.groupIds.map((g) => index.groups.get(g)?.name).join(' ')}`}
           columns={[
