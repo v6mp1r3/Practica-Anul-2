@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n';
 
 const FADE_MS = 450;
+/** Plays the 5.6 s reveal in about 4 s. */
+const SPEED = 1.4;
 
 export function IntroVideo({ onDone }: { onDone: () => void }) {
   const { t } = useI18n();
@@ -25,7 +27,10 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
       onDone();
       return;
     }
-    ref.current?.play().catch(finish);
+    if (ref.current) {
+      ref.current.playbackRate = SPEED;
+      ref.current.play().catch(finish);
+    }
     const safety = setTimeout(finish, 9000); // never get stuck on the intro
     return () => clearTimeout(safety);
     // eslint-disable-next-line react-hooks/exhaustive-deps
