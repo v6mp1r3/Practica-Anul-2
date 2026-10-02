@@ -15,19 +15,19 @@ npm run dev                  # http://localhost:5173
 
 Demo accounts (password `demo` for all), shown on the login page in mock mode:
 
-| User            | Role          |
-|-----------------|---------------|
-| `elena.popescu` | administrator |
-| `daniel.rusu`   | teacher       |
+| User            | Role              |
+| --------------- | ----------------- |
+| `elena.popescu` | administrator     |
+| `daniel.rusu`   | teacher           |
 | `alex.marin`    | student (FAF-251) |
 
-Suggested first run: log in as Elena → **Generare** → *Generează* → keep a variant →
+Suggested first run: log in as Elena → **Generare** → _Generează_ → keep a variant →
 **Publică**. Then log in as Daniel or Alex to see the published timetable.
 
 ## Scripts
 
 | Command                | What it does                               |
-|------------------------|--------------------------------------------|
+| ---------------------- | ------------------------------------------ |
 | `npm run dev`          | dev server with hot reload                 |
 | `npm run build`        | type-check + production build into `dist/` |
 | `npm test`             | unit tests (Vitest)                        |
@@ -42,7 +42,7 @@ without a server. With `VITE_API_MODE=http` the client calls the REST API descri
 in [`docs/API.md`](../docs/API.md); in development `/api` is proxied to
 `VITE_API_PROXY` (default `http://localhost:8000`).
 
-In mock mode, *Configurare → Resetează datele demo* restores the demo dataset.
+In mock mode, _Configurare → Resetează datele demo_ restores the demo dataset.
 
 ## Where things are
 
