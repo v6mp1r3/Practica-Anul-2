@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChangesCard } from '../../components/ChangesCard';
 import { MyTimetable } from '../../components/MyTimetable';
 import { Empty, PageHeader, Segmented } from '../../components/ui';
 import { filterLessons } from '../../domain/views';
@@ -75,7 +76,10 @@ export default function StudentHome() {
           <Empty>{t('tt.notPublished')}</Empty>
         </div>
       ) : (
-        <MyTimetable settings={dataset.settings} index={index} lessons={mine} hide={['audience']} />
+        <div className="stack">
+          <ChangesCard groupId={group.id} />
+          <MyTimetable settings={dataset.settings} index={index} lessons={mine} hide={['audience']} />
+        </div>
       )}
     </div>
   );

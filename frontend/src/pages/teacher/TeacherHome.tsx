@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ChangesCard } from '../../components/ChangesCard';
 import { MyTimetable } from '../../components/MyTimetable';
 import { Empty, PageHeader } from '../../components/ui';
 import { parseSlotKey } from '../../domain/slots';
@@ -81,6 +82,7 @@ export default function TeacherHome() {
             </Link>
           </div>
           {over && <div className="badge danger">{t('teacher.overtime', { extra: load - teacher.maxPairsPerWeek })}</div>}
+          <ChangesCard teacherId={teacher.id} />
           <MyTimetable settings={dataset.settings} index={index} lessons={mine} hide={['teacher']} />
         </div>
       )}

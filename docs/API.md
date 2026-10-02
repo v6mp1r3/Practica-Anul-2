@@ -195,6 +195,30 @@ in `frontend/src/domain/validator.ts` / `score.ts` define what "valid" and
 "score" mean today; the backend's CP-SAT solver should produce scores the same
 validator agrees with.
 
+## Schedule changes
+
+One-off changes for a specific date: a pair moves to another room, or a
+substitute teacher takes it. The published timetable is not modified. Creating a
+change also creates a notification for everyone (`kind: "room-change"` or
+`"teacher-change"`).
+
+| Method | Path            | Role  | Body / response                          |
+| ------ | --------------- | ----- | ---------------------------------------- |
+| GET    | `/changes`      | any   | `ScheduleChange[]`                       |
+| POST   | `/changes`      | admin | change without `id`/`createdAt` → created |
+| DELETE | `/changes/{id}` | admin | `204`                                    |
+
+```json
+// ScheduleChange — the pair is identified by assignmentId + slot on that date
+{ "id": "c1", "date": "2026-10-05", "assignmentId": "a1", "slot": 1, "kind": "room",
+  "fromRoomId": "r1", "roomId": "r2", "note": "Aula 3-114 este în renovare", "createdAt": "2026-10-02T14:00:00.000Z" }
+{ "id": "c2", "date": "2026-10-06", "assignmentId": "a7", "slot": 3, "kind": "teacher",
+  "fromRoomId": "r2", "teacherId": "t10", "createdAt": "2026-10-02T14:05:00.000Z" }
+```
+
+The server should reject a change whose new room or substitute teacher is
+already busy at that slot on that date (`422`).
+
 ## Notifications
 
 | Method | Path                  | Role | Body / response                                  |
