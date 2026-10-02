@@ -162,21 +162,15 @@
     var(--brand-black) 0 100%
   );
 }
-.hero-kicker {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.8;
-}
 .login-hero h1 {
   font-size: 34px;
   max-width: 420px;
 }
-.login-hero ul {
-  padding-left: 18px;
+.hero-text {
+  max-width: 440px;
+  font-size: 16px;
+  line-height: 1.6;
   opacity: 0.9;
-  line-height: 1.9;
 }
 .login-form {
   display: grid;
@@ -229,8 +223,8 @@
   .login-hero h1 {
     font-size: 24px;
   }
-  .login-hero ul {
-    display: none;
+  .hero-text {
+    font-size: 14px;
   }
 }
 

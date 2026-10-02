@@ -38,14 +38,10 @@ export default function Login() {
   return (
     <div className="login">
       <section className="login-hero">
-        <span className="hero-kicker">{t('login.kicker')}</span>
+        <span />
         <div className="stack">
           <h1>{t('app.tagline')}</h1>
-          <ul>
-            <li>{t('login.feature1')}</li>
-            <li>{t('login.feature2')}</li>
-            <li>{t('login.feature3')}</li>
-          </ul>
+          <p className="hero-text">{t('login.intro')}</p>
         </div>
         <button
           className="btn ghost sm"

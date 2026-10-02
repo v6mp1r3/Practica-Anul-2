@@ -34,10 +34,8 @@ export const ro = {
   'login.submit': 'Intră',
   'login.invalid': 'Utilizator sau parolă greșită.',
   'login.demo': 'Conturi demo (parola: demo)',
-  'login.kicker': 'Orar universitar automat',
-  'login.feature1': 'Grupe, torente, subgrupe și săptămâni pare/impare',
-  'login.feature2': 'Mai multe variante generate, alegi tu',
-  'login.feature3': 'Conflictele sunt detectate pe loc',
+  'login.intro':
+    'Lucrează cu grupe, torente, subgrupe și săptămâni pare sau impare. Generează mai multe variante de orar, iar tu o alegi pe cea potrivită. Conflictele sunt detectate pe loc.',
 
   'nav.dashboard': 'Panou',
   'nav.setup': 'Configurare',
