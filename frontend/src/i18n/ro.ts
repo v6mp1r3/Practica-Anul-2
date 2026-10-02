@@ -100,6 +100,15 @@ export const ro = {
   'changes.saved': 'Modificarea a fost salvată și anunțată.',
   'changes.upcoming': 'Modificări în orar',
 
+  'form.full': 'Frecvență',
+  'form.reduced': 'Frecvență redusă',
+  'form.dual': 'Dual',
+  'groups.studyForm': 'Forma de învățământ',
+  'setup.forms': 'Forme de învățământ',
+  'setup.formsHint':
+    'În ce zile poate avea perechi fiecare formă. Toate formele folosesc aceiași profesori și aceleași săli, deci nu se suprapun.',
+  'generate.byForm': 'După forma de învățământ',
+
   'tt.oddShort': 'I',
   'tt.evenShort': 'P',
   'tt.free': 'Fereastră',
@@ -349,12 +358,14 @@ export const ro = {
   'day.3': 'Joi',
   'day.4': 'Vineri',
   'day.5': 'Sâmbătă',
+  'day.6': 'Duminică',
   'dayShort.0': 'Lu',
   'dayShort.1': 'Ma',
   'dayShort.2': 'Mi',
   'dayShort.3': 'Jo',
   'dayShort.4': 'Vi',
   'dayShort.5': 'Sâ',
+  'dayShort.6': 'Du',
 
   'activity.lecture': 'Curs',
   'activity.seminar': 'Seminar',
@@ -376,6 +387,7 @@ export const ro = {
   'conflict.hours-missing': '{name}: lipsesc perechi',
   'conflict.hours-extra': '{name}: perechi în plus',
   'conflict.outside-hours': '{name}: în afara programului',
+  'conflict.wrong-day': '{name}: zi nepermisă pentru forma de învățământ',
   'conflict.teacher-overtime': '{name} depășește sarcina planificată',
   'conflict.teacher-day-overload': '{name} are prea multe perechi într-o zi',
   'conflict.group-day-overload': '{name} are prea multe perechi într-o zi',

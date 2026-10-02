@@ -5,7 +5,8 @@ import { api, API_MODE } from '../../api';
 import { resetMockData } from '../../api/mock';
 import { Icon } from '../../components/Icon';
 import { Field, PageHeader, Switch } from '../../components/ui';
-import type { Settings, TimeSlot } from '../../domain/types';
+import { range } from '../../domain/slots';
+import { STUDY_FORMS, type Settings, type TimeSlot } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
@@ -146,16 +147,43 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={3} title={t('setup.week')} required>
+        <Step n={3} title={t('setup.forms')}>
+          <p className="small muted">{t('setup.formsHint')}</p>
+          <div className="stack" style={{ gap: 10 }}>
+            {STUDY_FORMS.map((form) => (
+              <div key={form} className="row wrap" style={{ gap: 12 }}>
+                <strong style={{ minWidth: 150 }}>{t(`form.${form}`)}</strong>
+                <div className="checks">
+                  {range(s.workingDays).map((d) => (
+                    <label key={d} className="check">
+                      <input
+                        type="checkbox"
+                        checked={s.formDays[form].includes(d)}
+                        onChange={(e) =>
+                          set('formDays', {
+                            ...s.formDays,
+                            [form]: e.target.checked ? [...s.formDays[form], d].sort() : s.formDays[form].filter((x) => x !== d),
+                          })
+                        }
+                      />
+                      {t(`dayShort.${d}` as 'dayShort.0')}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Step>
+
+        <Step n={4} title={t('setup.week')} required>
           <div className="form-grid">
-            <Field label={t('setup.workingDays')} hint={t('setup.default', { value: 5 })}>
+            <Field label={t('setup.workingDays')} hint={t('setup.default', { value: 7 })}>
               <select className="select" value={s.workingDays} onChange={(e) => set('workingDays', Number(e.target.value))}>
-                <option value={5}>
-                  5 ({t('day.0')}–{t('day.4')})
-                </option>
-                <option value={6}>
-                  6 ({t('day.0')}–{t('day.5')})
-                </option>
+                {[5, 6, 7].map((n) => (
+                  <option key={n} value={n}>
+                    {n} ({t('day.0')}–{t(`day.${n - 1}` as 'day.0')})
+                  </option>
+                ))}
               </select>
             </Field>
             <Field label={t('setup.lessonMinutes')} hint={t('setup.default', { value: 90 })}>
@@ -256,7 +284,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={4} title={t('setup.parity')}>
+        <Step n={5} title={t('setup.parity')}>
           <div className="row">
             <Switch checked={s.weekParity} onChange={(v) => set('weekParity', v)} label={t('setup.parityQuestion')} />
             <div>
@@ -266,7 +294,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={5} title={t('setup.limits')}>
+        <Step n={6} title={t('setup.limits')}>
           <div className="form-grid">
             <Field label={t('setup.maxPairsGroup')} hint={t('setup.default', { value: 4 })}>
               <input

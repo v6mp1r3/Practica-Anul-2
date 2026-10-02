@@ -5,8 +5,8 @@
 /* Timetable grid — white sheet, hairline rules, pastel lesson cards */
 .tt {
   display: grid;
-  grid-template-columns: 72px repeat(var(--days), minmax(128px, 1fr));
-  min-width: calc(72px + var(--days) * 128px);
+  grid-template-columns: 72px repeat(var(--days), minmax(112px, 1fr));
+  min-width: calc(72px + var(--days) * 112px);
   border: 1px solid rgba(15, 26, 31, 0.07);
   border-radius: 20px;
   background: var(--surface);

@@ -101,6 +101,15 @@ export const ru: Record<MessageKey, string> = {
   'changes.saved': 'Изменение сохранено и объявлено.',
   'changes.upcoming': 'Изменения в расписании',
 
+  'form.full': 'Очная',
+  'form.reduced': 'Заочная',
+  'form.dual': 'Дуальная',
+  'groups.studyForm': 'Форма обучения',
+  'setup.forms': 'Формы обучения',
+  'setup.formsHint':
+    'В какие дни у каждой формы могут быть пары. Все формы используют одних и тех же преподавателей и аудитории, поэтому не пересекаются.',
+  'generate.byForm': 'По форме обучения',
+
   'tt.oddShort': 'Н',
   'tt.evenShort': 'Ч',
   'tt.free': 'Окно',
@@ -351,12 +360,14 @@ export const ru: Record<MessageKey, string> = {
   'day.3': 'Четверг',
   'day.4': 'Пятница',
   'day.5': 'Суббота',
+  'day.6': 'Воскресенье',
   'dayShort.0': 'Пн',
   'dayShort.1': 'Вт',
   'dayShort.2': 'Ср',
   'dayShort.3': 'Чт',
   'dayShort.4': 'Пт',
   'dayShort.5': 'Сб',
+  'dayShort.6': 'Вс',
 
   'activity.lecture': 'Лекция',
   'activity.seminar': 'Семинар',
@@ -378,6 +389,7 @@ export const ru: Record<MessageKey, string> = {
   'conflict.hours-missing': '{name}: не хватает пар',
   'conflict.hours-extra': '{name}: лишние пары',
   'conflict.outside-hours': '{name}: вне рабочего времени',
+  'conflict.wrong-day': '{name}: день недоступен для этой формы обучения',
   'conflict.teacher-overtime': '{name} превышает плановую нагрузку',
   'conflict.teacher-day-overload': 'У {name} слишком много пар в один день',
   'conflict.group-day-overload': 'У {name} слишком много пар в один день',

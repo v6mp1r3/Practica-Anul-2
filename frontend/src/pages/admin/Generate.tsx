@@ -6,7 +6,7 @@ import { PrecheckList } from '../../components/PrecheckList';
 import { Field, PageHeader, Segmented } from '../../components/ui';
 import { precheck } from '../../domain/precheck';
 import { SOFT_WEIGHTS } from '../../domain/score';
-import type { ScoreBreakdown, Timetable } from '../../domain/types';
+import { STUDY_FORMS, type ScoreBreakdown, type Timetable } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
@@ -161,6 +161,26 @@ export default function Generate() {
             <div className="card-body stack">
               <Field label={t('generate.groups')} hint={t('generate.groupsHint')}>
                 <div className="stack" style={{ gap: 8 }}>
+                  {/* Select every group of one form of study at once, e.g. only reduced attendance */}
+                  <div className="row wrap" style={{ gap: 6 }}>
+                    <span className="small muted">{t('generate.byForm')}:</span>
+                    {STUDY_FORMS.filter((f) => dataset.groups.some((g) => g.studyForm === f)).map((f) => {
+                      const ids = dataset.groups.filter((g) => g.studyForm === f).map((g) => g.id);
+                      const on = ids.every((id) => groupIds.includes(id));
+                      return (
+                        <button
+                          key={f}
+                          type="button"
+                          className={`badge ${on ? 'primary' : ''}`}
+                          style={{ border: 'none', cursor: 'pointer' }}
+                          onClick={() => toggle(ids, !on)}
+                          aria-pressed={on}
+                        >
+                          {t(`form.${f}`)}
+                        </button>
+                      );
+                    })}
+                  </div>
                   {years.map((y) => {
                     const ids = dataset.groups.filter((g) => g.year === y).map((g) => g.id);
                     const all = ids.every((id) => groupIds.includes(id));
@@ -175,6 +195,9 @@ export default function Generate() {
                             <label key={id} className="check">
                               <input type="checkbox" checked={groupIds.includes(id)} onChange={(e) => toggle([id], e.target.checked)} />
                               {index.groups.get(id)?.name}
+                              {index.groups.get(id)?.studyForm !== 'full' && (
+                                <span className="small muted">({t(`form.${index.groups.get(id)?.studyForm ?? 'full'}`)})</span>
+                              )}
                             </label>
                           ))}
                         </div>

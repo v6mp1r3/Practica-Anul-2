@@ -1,6 +1,6 @@
 import { CrudPage } from '../../components/CrudPage';
 import { Field, PageHeader } from '../../components/ui';
-import type { Group, Stream } from '../../domain/types';
+import { STUDY_FORMS, type Group, type Stream, type StudyForm } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 
@@ -22,6 +22,14 @@ export default function Groups() {
           columns={[
             { label: t('groups.name'), render: (x) => <strong>{x.name}</strong> },
             { label: t('groups.program'), render: (x) => x.program },
+            {
+              label: t('groups.studyForm'),
+              render: (x) => (
+                <span className={`badge ${x.studyForm === 'full' ? '' : x.studyForm === 'reduced' ? 'warning' : 'primary'}`}>
+                  {t(`form.${x.studyForm}`)}
+                </span>
+              ),
+            },
             { label: t('groups.faculty'), render: (x) => <span className="small muted">{x.faculty || '—'}</span> },
             { label: t('groups.year'), render: (x) => x.year },
             { label: t('groups.size'), render: (x) => x.size },
@@ -30,7 +38,7 @@ export default function Groups() {
               render: (x) => (x.subgroups > 1 ? `${x.subgroups} × ${Math.ceil(x.size / x.subgroups)}` : '—'),
             },
           ]}
-          newItem={(): Omit<Group, 'id'> => ({ name: '', program: '', year: 1, size: 25, subgroups: 2 })}
+          newItem={(): Omit<Group, 'id'> => ({ name: '', program: '', studyForm: 'full', year: 1, size: 25, subgroups: 2 })}
           validate={(d) => (!d.name.trim() ? t('groups.nameRequired') : d.size < 1 ? t('groups.sizeRequired') : null)}
           renderForm={(d, set) => (
             <div className="form-grid">
@@ -42,6 +50,15 @@ export default function Groups() {
                   placeholder="FAF-251"
                   autoFocus
                 />
+              </Field>
+              <Field label={t('groups.studyForm')}>
+                <select className="select" value={d.studyForm} onChange={(e) => set({ studyForm: e.target.value as StudyForm })}>
+                  {STUDY_FORMS.map((f) => (
+                    <option key={f} value={f}>
+                      {t(`form.${f}`)}
+                    </option>
+                  ))}
+                </select>
               </Field>
               <Field label={t('groups.program')}>
                 <input className="input" value={d.program} onChange={(e) => set({ program: e.target.value })} />

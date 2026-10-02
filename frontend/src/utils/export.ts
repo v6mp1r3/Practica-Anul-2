@@ -3,7 +3,7 @@ import type { DatasetIndex } from '../domain/indexes';
 import { splitCsvLine } from '../domain/csv';
 import type { Lesson, Settings } from '../domain/types';
 
-const DAY_NAMES = ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
+const DAY_NAMES = ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică'];
 
 function csvCell(v: string | number): string {
   const s = String(v);
