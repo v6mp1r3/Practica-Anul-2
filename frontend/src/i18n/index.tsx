@@ -4,7 +4,7 @@ import { ro, type MessageKey } from './ro';
 
 export type Lang = 'ro' | 'en';
 const dictionaries: Record<Lang, Record<MessageKey, string>> = { ro, en };
-const LANG_KEY = 'eduschedule:lang';
+const LANG_KEY = 'eduschool:lang';
 
 type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string;
 

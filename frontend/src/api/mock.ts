@@ -7,7 +7,7 @@ import type { Dataset, Notification, Role, Timetable, User } from '../domain/typ
 import { ApiError } from './http';
 import type { Api, CollectionName, Collections } from './types';
 
-const STORE_KEY = 'eduschedule:mock:v1';
+const STORE_KEY = 'eduschool:mock:v1';
 
 interface Store {
   dataset: Dataset;

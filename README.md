@@ -1,8 +1,8 @@
-# EduSchedule
+# EduSchool
 
 Automated university timetabling — internship project, Team 1, FAF-251 (UTM).
 
-EduSchedule helps a dean's office build a conflict-free timetable (groups, streams,
+EduSchool helps a dean's office build a conflict-free timetable (groups, streams,
 subgroups, odd/even weeks), lets teachers see their load and submit availability,
 and gives students one place to see the institution's timetable, free rooms and
 teacher availability.

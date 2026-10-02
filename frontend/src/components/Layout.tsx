@@ -61,7 +61,7 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
 };
 
 type Theme = 'auto' | 'light' | 'dark';
-const THEME_KEY = 'eduschedule:theme';
+const THEME_KEY = 'eduschool:theme';
 
 function useTheme(): [Theme, () => void] {
   const [theme, setTheme] = useState<Theme>(() => {

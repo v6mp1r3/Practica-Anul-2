@@ -1,7 +1,7 @@
 // REST implementation of the API contract (docs/API.md).
 import type { Api, GenerateProgress, Session } from './types';
 
-const TOKEN_KEY = 'eduschedule:token';
+const TOKEN_KEY = 'eduschool:token';
 
 export class ApiError extends Error {
   constructor(

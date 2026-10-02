@@ -52,7 +52,7 @@ const icsText = (s: string) => s.replace(/[\\;,]/g, (m) => `\\${m}`).replace(/\n
 export function timetableToIcs(lessons: Lesson[], idx: DatasetIndex, settings: Settings, semesterStart = defaultSemesterStart(), weeks = 16): string {
   const monday = new Date(semesterStart);
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//EduSchedule//RO', 'CALSCALE:GREGORIAN'];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//EduSchool//RO', 'CALSCALE:GREGORIAN'];
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
 
   for (const l of lessons) {
@@ -67,7 +67,7 @@ export function timetableToIcs(lessons: Lesson[], idx: DatasetIndex, settings: S
     const subject = idx.subjects.get(a.subjectId);
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${l.id}@eduschedule`,
+      `UID:${l.id}@eduschool`,
       `DTSTAMP:${stamp}`,
       `DTSTART:${icsDate(first, slot.start)}`,
       `DTEND:${icsDate(first, slot.end)}`,

@@ -218,7 +218,7 @@ export const seedNotifications: Notification[] = [
   {
     id: 'n1',
     createdAt: '2026-09-28T09:00:00.000Z',
-    title: 'Bine ați venit în EduSchedule',
+    title: 'Bine ați venit în EduSchool',
     body: 'Orarul pentru semestrul de toamnă va fi publicat aici.',
     roles: [],
   },
