@@ -2,7 +2,7 @@ import type { MessageKey } from './ro';
 
 export const en: Record<MessageKey, string> = {
   'app.name': 'EduSchedule',
-  'app.tagline': 'Your university timetable, conflict-free.',
+  'app.tagline': 'Your university timetable, built automatically.',
 
   'common.save': 'Save',
   'common.cancel': 'Cancel',

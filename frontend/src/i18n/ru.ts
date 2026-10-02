@@ -2,7 +2,7 @@ import type { MessageKey } from './ro';
 
 export const ru: Record<MessageKey, string> = {
   'app.name': 'EduSchedule',
-  'app.tagline': 'Расписание университета без конфликтов.',
+  'app.tagline': 'Расписание университета, составленное автоматически.',
 
   'common.save': 'Сохранить',
   'common.cancel': 'Отмена',
