@@ -22,7 +22,12 @@ export const seedSettings: Settings = {
     'Facultatea Inginerie Mecanică, Industrială și Transporturi',
   ],
   semester: 'Toamna 2026/2027',
-  workingDays: 5,
+  workingDays: 7,
+  formDays: {
+    full: [0, 1, 2, 3, 4],
+    reduced: [5, 6],
+    dual: [0, 1, 2, 3, 4],
+  },
   lessonMinutes: 90,
   slots: [
     { start: '08:00', end: '09:30' },
@@ -104,20 +109,24 @@ export const seedRooms: Room[] = [
 const FCIM = 'Facultatea Calculatoare, Informatică și Microelectronică';
 
 export const seedGroups: Group[] = [
-  { id: 'g1', name: 'FAF-251', program: 'Ingineria Software', faculty: FCIM, year: 1, size: 24, subgroups: 2 },
-  { id: 'g2', name: 'FAF-252', program: 'Ingineria Software', faculty: FCIM, year: 1, size: 22, subgroups: 2 },
-  { id: 'g3', name: 'TI-251', program: 'Tehnologia Informației', faculty: FCIM, year: 1, size: 28, subgroups: 2 },
-  { id: 'g4', name: 'TI-252', program: 'Tehnologia Informației', faculty: FCIM, year: 1, size: 26, subgroups: 2 },
-  { id: 'g5', name: 'FAF-241', program: 'Ingineria Software', faculty: FCIM, year: 2, size: 25, subgroups: 2 },
-  { id: 'g6', name: 'FAF-242', program: 'Ingineria Software', faculty: FCIM, year: 2, size: 23, subgroups: 2 },
-  { id: 'g7', name: 'CR-241', program: 'Calculatoare și Rețele', faculty: FCIM, year: 2, size: 20, subgroups: 2 },
+  { id: 'g1', name: 'FAF-251', program: 'Ingineria Software', faculty: FCIM, studyForm: 'full', year: 1, size: 24, subgroups: 2 },
+  { id: 'g2', name: 'FAF-252', program: 'Ingineria Software', faculty: FCIM, studyForm: 'full', year: 1, size: 22, subgroups: 2 },
+  { id: 'g3', name: 'TI-251', program: 'Tehnologia Informației', faculty: FCIM, studyForm: 'full', year: 1, size: 28, subgroups: 2 },
+  { id: 'g4', name: 'TI-252', program: 'Tehnologia Informației', faculty: FCIM, studyForm: 'full', year: 1, size: 26, subgroups: 2 },
+  { id: 'g5', name: 'FAF-241', program: 'Ingineria Software', faculty: FCIM, studyForm: 'full', year: 2, size: 25, subgroups: 2 },
+  { id: 'g6', name: 'FAF-242', program: 'Ingineria Software', faculty: FCIM, studyForm: 'full', year: 2, size: 23, subgroups: 2 },
+  { id: 'g7', name: 'CR-241', program: 'Calculatoare și Rețele', faculty: FCIM, studyForm: 'full', year: 2, size: 20, subgroups: 2 },
+  // Reduced attendance: weekend sessions, fewer contact hours
+  { id: 'g8', name: 'TI-251FR', program: 'Tehnologia Informației', faculty: FCIM, studyForm: 'reduced', year: 1, size: 16, subgroups: 1 },
+  // Dual: attends the year-2 lectures with the full-time groups
+  { id: 'g9', name: 'FAF-241D', program: 'Ingineria Software', faculty: FCIM, studyForm: 'dual', year: 2, size: 15, subgroups: 1 },
 ];
 
 export const seedStreams: Stream[] = [
   { id: 's1', name: 'FAF-25', groupIds: ['g1', 'g2'] },
   { id: 's2', name: 'TI-25', groupIds: ['g3', 'g4'] },
   { id: 's3', name: 'Anul I', groupIds: ['g1', 'g2', 'g3', 'g4'] },
-  { id: 's4', name: 'Anul II', groupIds: ['g5', 'g6', 'g7'] },
+  { id: 's4', name: 'Anul II', groupIds: ['g5', 'g6', 'g7', 'g9'] },
 ];
 
 export const seedSubjects: Subject[] = [
@@ -217,6 +226,19 @@ export const seedAssignments: Assignment[] = [
     a('sub11', 'lab', 't8', sub(g, 1), 1, 'weekly', ['calculatoare', 'echipament rețea']),
     a('sub11', 'lab', 't8', sub(g, 2), 1, 'weekly', ['calculatoare', 'echipament rețea']),
   ]),
+  // Reduced attendance (TI-251FR) — Saturday/Sunday
+  a('sub1', 'lecture', 't2', group('g8')),
+  a('sub1', 'seminar', 't4', group('g8')),
+  a('sub3', 'lecture', 't10', group('g8')),
+  a('sub3', 'lab', 't11', group('g8'), 2),
+  a('sub4', 'lecture', 't14', group('g8')),
+  a('sub6', 'seminar', 't9', group('g8')),
+  // Dual (FAF-241D) — lectures come from the "Anul II" stream
+  a('sub10', 'seminar', 't14', group('g9')),
+  a('sub7', 'lab', 't6', group('g9')),
+  a('sub8', 'lab', 't1', group('g9')),
+  a('sub9', 'lab', 't13', group('g9'), 1, 'odd'),
+  a('sub11', 'lab', 't8', group('g9'), 1, 'weekly', ['calculatoare', 'echipament rețea']),
 ];
 
 export const seedDataset: Dataset = {

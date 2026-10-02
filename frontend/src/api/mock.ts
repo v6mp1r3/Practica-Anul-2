@@ -38,6 +38,12 @@ function load(): Store {
       const st = saved.dataset?.settings;
       if (st && !Array.isArray(st.faculties)) st.faculties = st.faculty ? [st.faculty] : [];
       if (!Array.isArray(saved.changes)) saved.changes = [];
+      // Stores saved before forms of study: Monday–Sunday week, every group full-time
+      if (st && !st.formDays) {
+        st.workingDays = 7;
+        st.formDays = structuredClone(seedDataset.settings.formDays);
+      }
+      for (const g of saved.dataset?.groups ?? []) if (!g.studyForm) g.studyForm = 'full';
       // Notifications saved as Romanian text before they had a kind
       for (const n of saved.notifications ?? []) {
         if (n.kind) continue;
