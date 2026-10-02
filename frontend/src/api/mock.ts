@@ -9,7 +9,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 2;
+const SEED_VERSION = 4;
 
 interface Store {
   dataset: Dataset;
@@ -66,6 +66,14 @@ function mergeSeed(saved: Store) {
   for (const st of seedDataset.streams) {
     const mine = ds.streams.find((x) => x.id === st.id);
     if (mine) for (const g of st.groupIds) if (!mine.groupIds.includes(g) && ok(g, ds.groups)) mine.groupIds.push(g);
+  }
+  // faculty on demo teachers/rooms saved before they had one
+  for (const [list, seed] of [
+    [ds.teachers, seedDataset.teachers],
+    [ds.rooms, seedDataset.rooms],
+    [ds.subjects, seedDataset.subjects],
+  ] as [{ id: string; faculty?: string }[], { id: string; faculty?: string }[]][]) {
+    for (const item of list) if (!item.faculty) item.faculty = seed.find((x) => x.id === item.id)?.faculty;
   }
   saved.seedVersion = SEED_VERSION;
 }

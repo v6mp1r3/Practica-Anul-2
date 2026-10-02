@@ -62,6 +62,8 @@ export interface Teacher {
   name: string;
   title: string;
   department: string;
+  /** Faculty the teacher belongs to; empty = teaches across faculties. */
+  faculty?: string;
   email: string;
   /** Planned weekly load in pairs; going over it is overtime. */
   maxPairsPerWeek: number;
@@ -76,6 +78,8 @@ export interface Room {
   id: string;
   name: string;
   building: string;
+  /** Faculty that manages the room; empty = shared. */
+  faculty?: string;
   capacity: number;
   type: RoomType;
   equipment: string[];
