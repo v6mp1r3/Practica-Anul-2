@@ -1,0 +1,88 @@
+# EduSchool — frontend
+
+React 18 + TypeScript + Vite. No UI framework; styles are plain CSS with design
+tokens in `src/styles/tokens.css` (EduSchool brand palette, light and dark themes).
+Font: Inter.
+
+## Run it
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local   # optional
+npm run dev                  # http://localhost:5173
+```
+
+Demo accounts (password `demo` for all), shown on the login page in mock mode:
+
+| User            | Role          |
+|-----------------|---------------|
+| `elena.popescu` | administrator |
+| `daniel.rusu`   | teacher       |
+| `alex.marin`    | student (FAF-251) |
+
+Suggested first run: log in as Elena → **Generare** → *Generează* → keep a variant →
+**Publică**. Then log in as Daniel or Alex to see the published timetable.
+
+## Scripts
+
+| Command                | What it does                               |
+|------------------------|--------------------------------------------|
+| `npm run dev`          | dev server with hot reload                 |
+| `npm run build`        | type-check + production build into `dist/` |
+| `npm test`             | unit tests (Vitest)                        |
+| `npm run typecheck`    | TypeScript only                            |
+| `npm run format`       | format everything with Prettier            |
+| `npm run format:check` | what CI runs                               |
+
+## Backend connection
+
+`VITE_API_MODE=mock` (default) keeps all data in `localStorage`, so the UI works
+without a server. With `VITE_API_MODE=http` the client calls the REST API described
+in [`docs/API.md`](../docs/API.md); in development `/api` is proxied to
+`VITE_API_PROXY` (default `http://localhost:8000`).
+
+In mock mode, *Configurare → Resetează datele demo* restores the demo dataset.
+
+## Where things are
+
+```
+src/
+  api/          API contract (types.ts), REST client (http.ts), in-browser mock (mock.ts)
+  domain/       pure logic, no React — unit tested
+    types.ts      data model (matches docs/API.md)
+    validator.ts  hard constraints: clashes, capacity, room type, availability, hours
+    score.ts      soft constraints → weighted penalty, pre-publish warnings
+    precheck.ts   data checks before generation (rooms, load, study plan)
+    generator.ts  greedy construction + Large Neighborhood Search (mock solver)
+    views.ts      filters by group/teacher/room, week parity helpers
+    csv.ts        study plan import
+  components/   shared UI: TimetableGrid, CrudPage, AvailabilityPicker, Logo…
+  pages/
+    admin/      dashboard, setup, data pages, generate, timetables, editor
+    teacher/    personal timetable + workload, availability
+    student/    personal timetable
+    shared/     institution timetable, free rooms, teacher availability, notifications
+  i18n/         ro.ts (default) and en.ts — every visible string lives here
+  state/        auth, cached server data, toasts
+  styles/       tokens, base, components, layout, timetable
+```
+
+## Conventions
+
+- Every visible string goes through `t('key')`; add the key to **both** `ro.ts` and
+  `en.ts` (TypeScript fails the build if `en.ts` is missing a key).
+- Domain logic stays in `src/domain` without React, with a `*.test.ts` next to it.
+- Run `npm run format` before committing.
+
+## Logo
+
+`src/components/Logo.tsx` currently renders a text wordmark. When the final logo is
+ready, replace the two components in that file and `public/favicon.svg`; nothing
+else needs to change.
+
+## Deploying
+
+`npm run build` produces static files in `dist/`. The app uses client-side routing,
+so the web server must serve `index.html` for unknown paths (e.g. nginx
+`try_files $uri /index.html;`).
