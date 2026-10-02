@@ -1,0 +1,91 @@
+:root {
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --bg: #f5f6fa;
+  --surface: #ffffff;
+  --surface-2: #f0f2f7;
+  --border: #e2e5ee;
+  --text: #1a1f36;
+  --text-2: #5b6380;
+  --text-3: #8a91a8;
+
+  --primary: #2f5bea;
+  --primary-hover: #2449c9;
+  --primary-soft: #e8eefe;
+  --on-primary: #ffffff;
+
+  --danger: #d93a3a;
+  --danger-soft: #fdecec;
+  --warning: #b86e00;
+  --warning-soft: #fff4e0;
+  --success: #1e8a4c;
+  --success-soft: #e6f6ec;
+
+  /* Activity colours — used on lesson cards and legends */
+  --lecture: #2f5bea;
+  --lecture-soft: #e8eefe;
+  --seminar: #13866f;
+  --seminar-soft: #e2f5f0;
+  --lab: #b25e09;
+  --lab-soft: #fdf0e1;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.18);
+  --sidebar-w: 240px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0f1220;
+    --surface: #171b2e;
+    --surface-2: #1f2439;
+    --border: #2b3150;
+    --text: #e8eaf3;
+    --text-2: #a6acc4;
+    --text-3: #747b98;
+    --primary: #6b8cff;
+    --primary-hover: #8aa3ff;
+    --primary-soft: #232c55;
+    --on-primary: #0f1220;
+    --danger: #ff6b6b;
+    --danger-soft: #3a1d24;
+    --warning: #f0a83a;
+    --warning-soft: #3a2b14;
+    --success: #4cc985;
+    --success-soft: #16301f;
+    --lecture: #7d99ff;
+    --lecture-soft: #222b52;
+    --seminar: #45c9a8;
+    --seminar-soft: #15322c;
+    --lab: #f0a352;
+    --lab-soft: #362716;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0f1220;
+  --surface: #171b2e;
+  --surface-2: #1f2439;
+  --border: #2b3150;
+  --text: #e8eaf3;
+  --text-2: #a6acc4;
+  --text-3: #747b98;
+  --primary: #6b8cff;
+  --primary-hover: #8aa3ff;
+  --primary-soft: #232c55;
+  --on-primary: #0f1220;
+  --danger: #ff6b6b;
+  --danger-soft: #3a1d24;
+  --warning: #f0a83a;
+  --warning-soft: #3a2b14;
+  --success: #4cc985;
+  --success-soft: #16301f;
+  --lecture: #7d99ff;
+  --lecture-soft: #222b52;
+  --seminar: #45c9a8;
+  --seminar-soft: #15322c;
+  --lab: #f0a352;
+  --lab-soft: #362716;
+}
