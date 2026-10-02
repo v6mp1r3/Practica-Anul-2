@@ -163,38 +163,6 @@
   }
 }
 
-/* Stats */
-.lp-stats {
-  padding: 56px 0;
-  border-bottom: 1px solid var(--border);
-}
-.lp-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-}
-.lp-stat-value {
-  font-family: var(--font-display);
-  font-size: clamp(36px, 4.4vw, 56px);
-  font-weight: 600;
-  letter-spacing: -0.035em;
-  line-height: 1;
-  color: var(--primary);
-}
-.lp-stat-label {
-  margin-top: 10px;
-  max-width: 280px;
-  color: var(--text-2);
-  font-size: 15px;
-  line-height: 1.45;
-}
-.lp-stats-note {
-  margin-top: 36px;
-  color: var(--text);
-  font-size: 17px;
-  font-weight: 500;
-}
-
 /* Sections */
 .lp-section {
   padding: clamp(72px, 10vw, 128px) 0;
@@ -386,8 +354,7 @@
   .lp-steps,
   .lp-cards,
   .lp-roles,
-  .lp-engine,
-  .lp-stats-grid {
+  .lp-engine {
     grid-template-columns: 1fr;
   }
   .lp-cards,

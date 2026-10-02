@@ -1,12 +1,10 @@
-// Landing page text in the three interface languages. Facts and figures come
-// from the internship report (Domain Analysis, §1.1 and §1.4).
+// Landing page text in the three interface languages. Facts come from the
+// internship report (Domain Analysis, §1.1 and §1.4).
 import type { Lang } from '../../i18n';
 
 export interface LandingCopy {
   nav: { features: string; how: string; roles: string; compare: string; login: string; open: string };
   hero: { title: string; text: string; cta: string; secondary: string; preview: string };
-  stats: { value: string; label: string }[];
-  statsNote: string;
   statement: { before: string; word: string; after: string };
   how: { title: string; text: string; steps: { title: string; text: string }[] };
   features: { title: string; text: string; items: { title: string; text: string }[] };
@@ -38,12 +36,6 @@ export const copy: Record<Lang, LandingCopy> = {
       secondary: 'Cum funcționează',
       preview: 'Orarul grupei FAF-251, generat chiar acum în browser',
     },
-    stats: [
-      { value: '16', label: 'instituții de învățământ superior în Republica Moldova' },
-      { value: '22 200+', label: 'studenți admiși în 2026' },
-      { value: 'NP-dificil', label: 'construirea orarului universitar, demonstrat matematic' },
-    ],
-    statsNote: 'Fiecare instituție construiește un orar nou la începutul fiecărui semestru, de cele mai multe ori manual.',
     statement: { before: 'EduSchedule te ajută să le ', word: 'gestionezi', after: ' pe toate' },
     how: {
       title: 'Trei pași, de la date la orar publicat.',
@@ -160,12 +152,6 @@ export const copy: Record<Lang, LandingCopy> = {
       secondary: 'How it works',
       preview: 'Group FAF-251’s timetable, generated right now in your browser',
     },
-    stats: [
-      { value: '16', label: 'higher education institutions in the Republic of Moldova' },
-      { value: '22,200+', label: 'students admitted in 2026' },
-      { value: 'NP-hard', label: 'university timetabling, mathematically proven' },
-    ],
-    statsNote: 'Every institution builds a new timetable at the start of each semester, mostly by hand.',
     statement: { before: 'EduSchedule helps you ', word: 'manage', after: ' them all' },
     how: {
       title: 'Three steps, from data to a published timetable.',
@@ -273,12 +259,6 @@ export const copy: Record<Lang, LandingCopy> = {
       secondary: 'Как это работает',
       preview: 'Расписание группы FAF-251, созданное прямо сейчас в браузере',
     },
-    stats: [
-      { value: '16', label: 'высших учебных заведений в Республике Молдова' },
-      { value: '22 200+', label: 'студентов зачислено в 2026 году' },
-      { value: 'NP-трудная', label: 'задача составления расписания, доказано математически' },
-    ],
-    statsNote: 'Каждое учреждение составляет новое расписание в начале каждого семестра, чаще всего вручную.',
     statement: { before: 'EduSchedule помогает вам ', word: 'управлять', after: ' всем этим' },
     how: {
       title: 'Три шага от данных до опубликованного расписания.',

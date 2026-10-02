@@ -119,20 +119,6 @@ export default function Landing() {
 
         <Statement key={lang} {...c.statement} />
 
-        <section className="lp-stats">
-          <div className="lp-container">
-            <div className="lp-stats-grid">
-              {c.stats.map((s) => (
-                <div key={s.label}>
-                  <div className="lp-stat-value">{s.value}</div>
-                  <div className="lp-stat-label">{s.label}</div>
-                </div>
-              ))}
-            </div>
-            <p className="lp-stats-note">{c.statsNote}</p>
-          </div>
-        </section>
-
         <section id="how" className="lp-section">
           <div className="lp-container">
             <h2 className="lp-h2">{c.how.title}</h2>
