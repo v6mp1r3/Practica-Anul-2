@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.*.local
+
+# python (backend)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*

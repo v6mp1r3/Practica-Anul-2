@@ -1,0 +1,7 @@
+# Normalise line endings so Windows/macOS/Linux checkouts don't produce noisy diffs
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.pdf binary
+*.ico binary
