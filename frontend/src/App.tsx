@@ -5,6 +5,7 @@ import { Loading } from './components/ui';
 import type { Role } from './domain/types';
 import { I18nProvider } from './i18n';
 import Assignments from './pages/admin/Assignments';
+import Changes from './pages/admin/Changes';
 import Dashboard from './pages/admin/Dashboard';
 import Editor from './pages/admin/Editor';
 import Generate from './pages/admin/Generate';
@@ -80,6 +81,7 @@ function AppRoutes() {
         <Route path="generate" element={<Generate />} />
         <Route path="timetables" element={<Timetables />} />
         <Route path="timetables/:id" element={<Editor />} />
+        <Route path="changes" element={<Changes />} />
       </Route>
       <Route
         path="/teacher"

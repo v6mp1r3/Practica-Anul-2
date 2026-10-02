@@ -34,6 +34,7 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
       items: [
         { to: '/admin/generate', label: 'nav.generate', icon: 'zap' },
         { to: '/admin/timetables', label: 'nav.timetables', icon: 'calendar' },
+        { to: '/admin/changes', label: 'nav.changes', icon: 'swap' },
         { to: '/browse', label: 'nav.browse', icon: 'search' },
       ],
     },
