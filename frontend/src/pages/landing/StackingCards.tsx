@@ -10,9 +10,9 @@ export interface StackCard {
 }
 
 const META = [
-  { color: '#1b7396', img: '/img/landing/setup.jpg' }, // blue (Pantone 633)
-  { color: '#006c50', img: '/img/landing/generate.jpg' }, // deep green (Pantone 342)
-  { color: '#940144', img: '/img/landing/publish.jpg' }, // plum (Pantone 221)
+  { color: '#34871d', img: '/img/landing/setup.jpg' }, // green (Pantone 363)
+  { color: '#b94676', img: '/img/landing/generate.jpg' }, // pink (Pantone 674)
+  { color: '#e65d31', img: '/img/landing/publish.jpg' }, // orange (Pantone 166)
 ];
 
 export function StackingCards({ title, cards }: { title: string; cards: StackCard[] }) {
