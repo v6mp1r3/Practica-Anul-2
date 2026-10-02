@@ -7,7 +7,7 @@ export interface LandingCopy {
   hero: { title: string; text: string; preview: string };
   statement: { before: string; word: string; after: string };
   reveal: string;
-  how: { kicker: string; title: string; button: string; steps: { title: string; text: string }[] };
+  how: { kicker: string; title: string; steps: { title: string; text: string }[] };
   features: { title: string; text: string; items: { title: string; text: string }[] };
   footer: { project: string; team: string };
 }
@@ -21,7 +21,7 @@ export const copy: Record<Lang, LandingCopy> = {
       open: 'Deschide aplicația',
     },
     hero: {
-      title: 'Orarul universității, fără conflicte.',
+      title: 'Orarul universității, construit automat.',
       text: 'EduSchedule construiește orarul pentru grupe, torente și subgrupe, ține cont de săptămânile pare și impare și îți propune mai multe variante. Tu alegi una, o ajustezi și o publici.',
       preview: 'Orarul grupei FAF-251, generat chiar acum în browser',
     },
@@ -31,7 +31,6 @@ export const copy: Record<Lang, LandingCopy> = {
     how: {
       kicker: 'Cum funcționează',
       title: 'Trei pași, de la date la orar publicat.',
-      button: 'Vezi în aplicație',
       steps: [
         {
           title: 'Configurezi',
@@ -49,7 +48,7 @@ export const copy: Record<Lang, LandingCopy> = {
     },
     features: {
       title: 'Făcut pentru cum lucrează o facultate.',
-      text: 'Nu un orar de școală adaptat, ci unul gândit pentru grupe academice, torente și laboratoare.',
+      text: 'Un orar gândit pentru universitate: grupe academice, torente și laboratoare.',
       items: [
         {
           title: 'Grupe, torente, subgrupe',
@@ -88,7 +87,7 @@ export const copy: Record<Lang, LandingCopy> = {
       open: 'Open the app',
     },
     hero: {
-      title: 'Your university timetable, conflict-free.',
+      title: 'Your university timetable, built automatically.',
       text: 'EduSchedule builds the timetable for groups, streams and subgroups, handles odd and even weeks, and offers you several variants. You pick one, adjust it and publish it.',
       preview: 'Group FAF-251’s timetable, generated right now in your browser',
     },
@@ -98,7 +97,6 @@ export const copy: Record<Lang, LandingCopy> = {
     how: {
       kicker: 'How it works',
       title: 'Three steps, from data to a published timetable.',
-      button: 'See it in the app',
       steps: [
         {
           title: 'Set up',
@@ -116,7 +114,7 @@ export const copy: Record<Lang, LandingCopy> = {
     },
     features: {
       title: 'Built for how a faculty works.',
-      text: 'Not a school timetable stretched to fit, but one designed for academic groups, streams and labs.',
+      text: 'A timetable designed for universities: academic groups, streams and labs.',
       items: [
         {
           title: 'Groups, streams, subgroups',
@@ -149,7 +147,7 @@ export const copy: Record<Lang, LandingCopy> = {
       open: 'Открыть приложение',
     },
     hero: {
-      title: 'Расписание университета без конфликтов.',
+      title: 'Расписание университета, составленное автоматически.',
       text: 'EduSchedule составляет расписание для групп, потоков и подгрупп, учитывает чётные и нечётные недели и предлагает несколько вариантов. Вы выбираете один, дорабатываете и публикуете.',
       preview: 'Расписание группы FAF-251, созданное прямо сейчас в браузере',
     },
@@ -159,7 +157,6 @@ export const copy: Record<Lang, LandingCopy> = {
     how: {
       kicker: 'Как это работает',
       title: 'Три шага от данных до опубликованного расписания.',
-      button: 'Посмотреть в приложении',
       steps: [
         {
           title: 'Настройка',
@@ -177,7 +174,7 @@ export const copy: Record<Lang, LandingCopy> = {
     },
     features: {
       title: 'Сделано под то, как работает факультет.',
-      text: 'Не школьное расписание, подогнанное под вуз, а решение для академических групп, потоков и лабораторных.',
+      text: 'Расписание, созданное для университета: академические группы, потоки и лабораторные.',
       items: [
         {
           title: 'Группы, потоки, подгруппы',

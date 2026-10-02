@@ -111,7 +111,7 @@ export default function Landing() {
 
         <Statement key={`statement-${lang}`} {...c.statement} />
 
-        <StackingCards kicker={c.how.kicker} title={c.how.title} cards={c.how.steps} button={c.how.button} to={appLink} />
+        <StackingCards kicker={c.how.kicker} title={c.how.title} cards={c.how.steps} />
 
         <ScrollText key={`reveal-${lang}`} text={c.reveal} />
 
