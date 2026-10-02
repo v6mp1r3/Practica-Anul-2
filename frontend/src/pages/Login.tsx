@@ -46,9 +46,7 @@ export default function Login() {
   return (
     <div className="login">
       <section className="login-hero">
-        <img className="doodle doodle-papers" src="/img/doodles/papers.png" alt="" aria-hidden="true" />
         <img className="doodle doodle-calendar" src="/img/doodles/calendar.png" alt="" aria-hidden="true" />
-        <img className="doodle doodle-book" src="/img/doodles/book.png" alt="" aria-hidden="true" />
         <span />
         <div className="stack">
           <h1>{t('app.tagline')}</h1>
