@@ -6,6 +6,7 @@ export interface LandingCopy {
   nav: { features: string; how: string; roles: string; compare: string; login: string; open: string };
   hero: { title: string; text: string; cta: string; secondary: string; preview: string };
   statement: { before: string; word: string; after: string };
+  reveal: string;
   how: { title: string; text: string; steps: { title: string; text: string }[] };
   features: { title: string; text: string; items: { title: string; text: string }[] };
   roles: { title: string; text: string; items: { role: string; title: string; text: string }[] };
@@ -37,6 +38,8 @@ export const copy: Record<Lang, LandingCopy> = {
       preview: 'Orarul grupei FAF-251, generat chiar acum în browser',
     },
     statement: { before: 'EduSchedule te ajută să le ', word: 'gestionezi', after: ' pe toate' },
+    reveal:
+      'Un orar nu e greu din cauza orelor, ci din cauza conflictelor: o mutare mică strică trei grupe. EduSchedule le vede pe toate înaintea ta.',
     how: {
       title: 'Trei pași, de la date la orar publicat.',
       text: 'Datele de bază se introduc o singură dată. La fiecare semestru doar generezi, alegi și publici.',
@@ -153,6 +156,8 @@ export const copy: Record<Lang, LandingCopy> = {
       preview: 'Group FAF-251’s timetable, generated right now in your browser',
     },
     statement: { before: 'EduSchedule helps you ', word: 'manage', after: ' them all' },
+    reveal:
+      'A timetable isn’t hard because of the hours — it’s hard because of the conflicts: one small move breaks three groups. EduSchedule sees them all before you do.',
     how: {
       title: 'Three steps, from data to a published timetable.',
       text: 'Base data is entered once. Each semester you just generate, choose and publish.',
@@ -260,6 +265,8 @@ export const copy: Record<Lang, LandingCopy> = {
       preview: 'Расписание группы FAF-251, созданное прямо сейчас в браузере',
     },
     statement: { before: 'EduSchedule помогает вам ', word: 'управлять', after: ' всем этим' },
+    reveal:
+      'Расписание сложно не из-за часов, а из-за конфликтов: одна небольшая перестановка ломает три группы. EduSchedule видит их все раньше вас.',
     how: {
       title: 'Три шага от данных до опубликованного расписания.',
       text: 'Основные данные вводятся один раз. Каждый семестр вы только генерируете, выбираете и публикуете.',

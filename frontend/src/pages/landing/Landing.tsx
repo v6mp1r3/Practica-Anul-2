@@ -16,6 +16,7 @@ import { useI18n } from '../../i18n';
 import { useAuth } from '../../state/auth';
 import { homeFor } from '../Login';
 import { copy } from './copy';
+import { ScrollText } from './ScrollText';
 import { Statement } from './Statement';
 import './landing.css';
 
@@ -134,6 +135,8 @@ export default function Landing() {
             </ol>
           </div>
         </section>
+
+        <ScrollText key={lang} text={c.reveal} />
 
         <section id="features" className="lp-section lp-ash">
           <div className="lp-container">
