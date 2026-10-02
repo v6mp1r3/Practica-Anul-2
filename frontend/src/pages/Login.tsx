@@ -11,6 +11,24 @@ import { useAuth } from '../state/auth';
 
 export const homeFor = (role: Role) => `/${role}`;
 
+const INTRO_KEY = 'eduschedule:intro-seen';
+
+function seenIntro(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(INTRO_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+const hasSeenIntro = (userId: string) => seenIntro().includes(userId);
+function markIntroSeen(userId: string) {
+  try {
+    localStorage.setItem(INTRO_KEY, JSON.stringify([...new Set([...seenIntro(), userId])]));
+  } catch {
+    /* storage unavailable — the intro may show again, which is harmless */
+  }
+}
+
 export default function Login() {
   const { user, login } = useAuth();
   const { t } = useI18n();
@@ -34,7 +52,12 @@ export default function Login() {
     setEntering(true);
     try {
       const me = await login(u, p);
-      setTarget(homeFor(me.role));
+      // The intro plays only the first time each user signs in (on this device)
+      if (hasSeenIntro(me.id)) navigate(homeFor(me.role), { replace: true });
+      else {
+        markIntroSeen(me.id);
+        setTarget(homeFor(me.role));
+      }
     } catch {
       setEntering(false);
       setError(t('login.invalid'));
