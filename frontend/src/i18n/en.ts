@@ -242,6 +242,11 @@ export const en: Record<MessageKey, string> = {
   'timetables.publishWithConflicts': 'The timetable has {count} conflicts. Publish anyway?',
   'timetables.publishedToast': '“{name}” was published. Teachers and students have been notified.',
 
+  'view.group': 'Group',
+  'view.teacher': 'Teacher',
+  'view.room': 'Room',
+  'view.allSubgroups': 'All subgroups',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',

@@ -241,6 +241,11 @@ export const ro = {
   'timetables.publishWithConflicts': 'Orarul are {count} conflicte. Îl publici oricum?',
   'timetables.publishedToast': '„{name}” a fost publicat. Profesorii și studenții au fost anunțați.',
 
+  'view.group': 'Grupă',
+  'view.teacher': 'Profesor',
+  'view.room': 'Sală',
+  'view.allSubgroups': 'Toate subgrupele',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',
