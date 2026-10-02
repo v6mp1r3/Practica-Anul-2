@@ -267,8 +267,6 @@ export const ro = {
   'generate.groups': 'Pentru ce grupe',
   'generate.groupsHint': 'Poți regenera un singur an fără să atingi celelalte.',
   'generate.variants': 'Număr de variante',
-  'generate.seed': 'Seed (opțional)',
-  'generate.seedHint': 'Același seed dă același rezultat.',
   'generate.effort': 'Efort de optimizare',
   'generate.effort.quick': 'Rapid',
   'generate.effort.normal': 'Normal',

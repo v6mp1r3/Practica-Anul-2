@@ -266,8 +266,6 @@ export const en: Record<MessageKey, string> = {
   'generate.groups': 'For which groups',
   'generate.groupsHint': 'You can regenerate one year without touching the others.',
   'generate.variants': 'Number of variants',
-  'generate.seed': 'Seed (optional)',
-  'generate.seedHint': 'The same seed gives the same result.',
   'generate.effort': 'Optimisation effort',
   'generate.effort.quick': 'Quick',
   'generate.effort.normal': 'Normal',

@@ -106,7 +106,6 @@ export default function Generate() {
   const [groupIds, setGroupIds] = useState<string[]>(dataset.groups.map((g) => g.id));
   const [variants, setVariants] = useState(3);
   const [effort, setEffort] = useState<Effort>('normal');
-  const [seed, setSeed] = useState('');
   const [baseId, setBaseId] = useState('');
   const [drafts, setDrafts] = useState<Timetable[]>([]);
   const [progress, setProgress] = useState<GenerateProgress | null>(null);
@@ -128,10 +127,7 @@ export default function Generate() {
     setProgress({ variant: 0, progress: 0 });
     setResult([]);
     try {
-      const out = await api.generate(
-        { groupIds, variants, iterations: EFFORT[effort], seed: seed ? Number(seed) : undefined, baseTimetableId: baseId || undefined },
-        setProgress,
-      );
+      const out = await api.generate({ groupIds, variants, iterations: EFFORT[effort], baseTimetableId: baseId || undefined }, setProgress);
       setResult(out);
     } catch {
       toast(t('common.error'), 'error');
@@ -215,9 +211,6 @@ export default function Generate() {
                       </option>
                     ))}
                   </select>
-                </Field>
-                <Field label={t('generate.seed')} hint={t('generate.seedHint')}>
-                  <input className="input" inputMode="numeric" value={seed} onChange={(e) => setSeed(e.target.value.replace(/\D/g, ''))} />
                 </Field>
               </div>
               <Field label={t('generate.effort')}>

@@ -268,8 +268,6 @@ export const ru: Record<MessageKey, string> = {
   'generate.groups': 'Для каких групп',
   'generate.groupsHint': 'Можно перегенерировать один курс, не затрагивая остальные.',
   'generate.variants': 'Число вариантов',
-  'generate.seed': 'Seed (необязательно)',
-  'generate.seedHint': 'Один и тот же seed даёт одинаковый результат.',
   'generate.effort': 'Глубина оптимизации',
   'generate.effort.quick': 'Быстро',
   'generate.effort.normal': 'Обычно',

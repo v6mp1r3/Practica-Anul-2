@@ -275,7 +275,7 @@ export function createMockApi(): Api {
           status: 'variant',
           createdAt: now,
           updatedAt: now,
-          algorithm: `Greedy + LNS (seed ${result.seed}, ${req.iterations} it.)`,
+          algorithm: `Greedy + LNS · ${req.iterations} it.`,
           groupIds: req.groupIds,
           lessons: result.lessons,
           score: result.score,
