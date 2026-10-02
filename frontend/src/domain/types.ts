@@ -176,6 +176,30 @@ export interface Conflict {
   slot?: SlotIndex;
 }
 
+export type ChangeKind = 'room' | 'teacher';
+
+/**
+ * A one-off change for a specific date: the pair moves to another room, or a
+ * substitute teacher takes it. The published timetable itself is unchanged.
+ */
+export interface ScheduleChange {
+  id: string;
+  /** Local date, "YYYY-MM-DD". */
+  date: string;
+  /** The pair being changed (identified the same way across republishes). */
+  assignmentId: string;
+  slot: SlotIndex;
+  kind: ChangeKind;
+  /** Room the pair was planned in. */
+  fromRoomId: string;
+  /** New room (kind = 'room'). */
+  roomId?: string;
+  /** Substitute teacher (kind = 'teacher'). */
+  teacherId?: string;
+  note?: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   username: string;
