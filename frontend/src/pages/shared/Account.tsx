@@ -99,7 +99,7 @@ export default function Account() {
   return (
     <div className="page">
       <PageHeader title={t('account.title')} subtitle={t('account.subtitle')} />
-      <div className="stack" style={{ maxWidth: 820 }}>
+      <div className="account-grid">
         {/* Profile */}
         <form className="card" onSubmit={saveProfile}>
           <div className="card-header">
@@ -277,7 +277,7 @@ export default function Account() {
           </div>
         </section>
 
-        <div>
+        <div className="account-full">
           <button className="btn danger" onClick={logout}>
             <Icon name="logout" size={15} />
             {t('nav.logout')}

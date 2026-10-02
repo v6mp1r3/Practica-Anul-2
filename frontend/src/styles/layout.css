@@ -329,3 +329,19 @@ img.avatar {
     opacity: 0;
   }
 }
+
+/* Account page: two cards per row (Profil | Preferințe, Parola | Detalii) */
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+.account-full {
+  grid-column: 1 / -1;
+}
+@media (max-width: 1000px) {
+  .account-grid {
+    grid-template-columns: 1fr;
+  }
+}
