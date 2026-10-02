@@ -1,5 +1,5 @@
 /* Landing page — Apple-style, like the TAFI Agent / TAFI Contabil sites:
-   big semibold display type, white, #f5f5f7 and soft-blue bands, blue accent. */
+   big semibold display type, all white, with one blue statement band. */
 
 .lp {
   background: var(--surface);
@@ -105,7 +105,7 @@
 .lp-hero {
   padding: clamp(64px, 10vw, 120px) 0 clamp(48px, 7vw, 88px);
   text-align: center;
-  background: radial-gradient(70% 55% at 50% 100%, var(--primary-soft), transparent 70%), var(--surface);
+  background: var(--surface);
 }
 .lp-preview {
   margin-top: clamp(48px, 7vw, 80px);
@@ -130,7 +130,7 @@
   gap: 7px;
   height: 40px;
   padding: 0 16px;
-  background: var(--surface-2);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
 .lp-window-bar > span {
@@ -166,7 +166,6 @@
 /* Stats */
 .lp-stats {
   padding: 56px 0;
-  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
 .lp-stats-grid {
@@ -201,10 +200,12 @@
   padding: clamp(72px, 10vw, 128px) 0;
 }
 .lp-ash {
-  background: var(--bg);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
 .lp-tint {
-  background: #eef5f8;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
 
 /* Steps */
@@ -246,6 +247,7 @@
 }
 .lp-card {
   padding: 28px;
+  border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--surface);
   box-shadow: var(--shadow);
@@ -294,6 +296,7 @@
 .lp-table-wrap {
   overflow-x: auto;
   margin-top: 48px;
+  border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--surface);
   box-shadow: var(--shadow);
@@ -327,7 +330,6 @@
   color: var(--text-2);
 }
 .lp-table .lp-us {
-  background: var(--primary-soft);
   color: var(--primary);
   font-weight: 600;
 }
@@ -359,7 +361,7 @@
 .lp-footer {
   padding: 28px 0;
   border-top: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--surface);
   color: var(--text-2);
   font-size: 13px;
 }

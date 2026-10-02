@@ -117,6 +117,8 @@ export default function Landing() {
           </div>
         </section>
 
+        <Statement key={lang} {...c.statement} />
+
         <section className="lp-stats">
           <div className="lp-container">
             <div className="lp-stats-grid">
@@ -130,8 +132,6 @@ export default function Landing() {
             <p className="lp-stats-note">{c.statsNote}</p>
           </div>
         </section>
-
-        <Statement key={lang} {...c.statement} />
 
         <section id="how" className="lp-section">
           <div className="lp-container">
