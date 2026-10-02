@@ -6,6 +6,7 @@ import type { Role } from './domain/types';
 import { I18nProvider } from './i18n';
 import Dashboard from './pages/admin/Dashboard';
 import Setup from './pages/admin/Setup';
+import Teachers from './pages/admin/Teachers';
 import Login, { homeFor } from './pages/Login';
 import Notifications from './pages/shared/Notifications';
 import { AuthProvider, useAuth } from './state/auth';
@@ -53,6 +54,7 @@ function AppRoutes() {
       >
         <Route index element={<Dashboard />} />
         <Route path="setup" element={<Setup />} />
+        <Route path="teachers" element={<Teachers />} />
       </Route>
       <Route path="*" element={<Home />} />
     </Routes>

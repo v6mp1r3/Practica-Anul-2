@@ -139,6 +139,18 @@ export const en: Record<MessageKey, string> = {
   'availability.consultation': 'Consultation',
   'availability.brush': 'Mark as:',
 
+  'teachers.subtitle': 'Teaching staff, the activity types they teach and their availability.',
+  'teachers.title': 'Academic title',
+  'teachers.department': 'Department',
+  'teachers.types': 'Activity types',
+  'teachers.load': 'Load / max',
+  'teachers.unavailable': 'Unavailable slots',
+  'teachers.maxPairs': 'Planned load (pairs/week)',
+  'teachers.maxPairsHint': 'Going over this shows an overtime warning.',
+  'teachers.availabilityHint': 'By default a teacher is available 08:00–20:00, Monday to Friday. Only mark the exceptions.',
+  'teachers.nameRequired': 'Name is required.',
+  'teachers.typeRequired': 'Pick at least one activity type.',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',

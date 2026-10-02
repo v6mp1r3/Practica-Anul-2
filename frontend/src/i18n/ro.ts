@@ -138,6 +138,18 @@ export const ro = {
   'availability.consultation': 'Consultații',
   'availability.brush': 'Marchează ca:',
 
+  'teachers.subtitle': 'Cadrele didactice, tipurile de activități pe care le predau și disponibilitatea lor.',
+  'teachers.title': 'Grad didactic',
+  'teachers.department': 'Departament',
+  'teachers.types': 'Tipuri de activități',
+  'teachers.load': 'Sarcină / maxim',
+  'teachers.unavailable': 'Intervale indisponibile',
+  'teachers.maxPairs': 'Sarcină planificată (perechi/săpt.)',
+  'teachers.maxPairsHint': 'Peste această valoare apare avertisment de suprasarcină.',
+  'teachers.availabilityHint': 'Implicit profesorul este disponibil 08:00–20:00, de luni până vineri. Marchează doar excepțiile.',
+  'teachers.nameRequired': 'Numele este obligatoriu.',
+  'teachers.typeRequired': 'Alege cel puțin un tip de activitate.',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',
