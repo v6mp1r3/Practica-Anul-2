@@ -101,6 +101,13 @@ export const ru: Record<MessageKey, string> = {
   'dashboard.step4': 'Сгенерируйте варианты и выберите один',
   'dashboard.step5': 'Доработайте вручную и опубликуйте',
 
+  'dash.latest': 'Последнее расписание',
+  'dash.pairs': 'пары',
+  'dash.conflicts': 'конфликты',
+  'dash.penalty': 'штраф',
+  'dash.week': 'Загрузка недели',
+  'dash.weekEmpty': 'Сгенерируйте расписание, чтобы увидеть неделю.',
+  'dash.publishedSwitch': 'Опубликовано',
   'timetables.status.draft': 'Черновик',
   'timetables.status.published': 'Опубликовано',
   'timetables.status.variant': 'Вариант',

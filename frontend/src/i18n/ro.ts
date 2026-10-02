@@ -100,6 +100,13 @@ export const ro = {
   'dashboard.step4': 'Generează variante și alege una',
   'dashboard.step5': 'Ajustează manual și publică',
 
+  'dash.latest': 'Ultimul orar',
+  'dash.pairs': 'perechi',
+  'dash.conflicts': 'conflicte',
+  'dash.penalty': 'penalizare',
+  'dash.week': 'Încărcarea săptămânii',
+  'dash.weekEmpty': 'Generează un orar ca să vezi încărcarea săptămânii.',
+  'dash.publishedSwitch': 'Publicat',
   'timetables.status.draft': 'Ciornă',
   'timetables.status.published': 'Publicat',
   'timetables.status.variant': 'Variantă',
