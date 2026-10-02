@@ -263,6 +263,10 @@ export const en: Record<MessageKey, string> = {
   'editor.locked': 'Pair locked',
   'editor.lockHint': 'Locked pairs are kept when regenerating.',
 
+  'editor.rename': 'Rename',
+  'editor.renamePrompt': 'Timetable name',
+  'editor.icsHint': 'Add the timetable shown to your phone calendar',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',

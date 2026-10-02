@@ -262,6 +262,10 @@ export const ro = {
   'editor.locked': 'Pereche blocată',
   'editor.lockHint': 'Perechile blocate nu sunt mutate la regenerare.',
 
+  'editor.rename': 'Redenumește',
+  'editor.renamePrompt': 'Numele orarului',
+  'editor.icsHint': 'Adaugă orarul afișat în calendarul telefonului',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',

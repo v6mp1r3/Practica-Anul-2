@@ -15,8 +15,10 @@ import type { Conflict, Dataset, Lesson, Parity, Timetable } from '../../domain/
 import { findHardConflicts } from '../../domain/validator';
 import { filterLessons, inWeek, type ViewFilter } from '../../domain/views';
 import { useI18n } from '../../i18n';
-import { useDataset } from '../../state/data';
+import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
+import { downloadFile } from '../../utils/download';
+import { timetableToCsv, timetableToIcs } from '../../utils/export';
 import { StatusBadge } from './Dashboard';
 
 const HIDE: Record<ViewFilter['kind'], LessonField[]> = { group: [], teacher: ['teacher'], room: ['room'] };
@@ -25,6 +27,7 @@ export default function Editor() {
   const { id } = useParams();
   const { t } = useI18n();
   const { dataset, index } = useDataset();
+  const { refresh } = useData();
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -149,6 +152,36 @@ export default function Editor() {
     return saved;
   }
 
+  async function publish() {
+    if (hard.length && !confirm(t('timetables.publishWithConflicts', { count: hard.length }))) return;
+    const saved = dirty || tt?.status === 'variant' ? await save() : tt;
+    if (!saved) return;
+    setTt(await api.publishTimetable(saved.id));
+    await refresh();
+    toast(t('timetables.publishedToast', { name: saved.name }));
+  }
+
+  function rename() {
+    const name = prompt(t('editor.renamePrompt'), tt?.name);
+    if (name?.trim() && tt) {
+      setTt({ ...tt, name: name.trim() });
+      setDirty(true);
+    }
+  }
+
+  function viewName() {
+    if (view.kind === 'teacher') return index.teachers.get(view.id)?.name ?? 'profesor';
+    if (view.kind === 'room') return index.rooms.get(view.id)?.name ?? 'sala';
+    return index.groups.get(view.id)?.name ?? 'grupa';
+  }
+
+  const fileBase = () =>
+    `orar-${viewName()}`
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9-]+/g, '-');
+
   return (
     <div className="page">
       <PageHeader
@@ -162,6 +195,29 @@ export default function Editor() {
         }
         actions={
           <>
+            <button className="btn ghost" onClick={rename}>
+              <Icon name="edit" size={15} />
+              {t('editor.rename')}
+            </button>
+            <button
+              className="btn"
+              onClick={() => downloadFile(`${fileBase()}.csv`, timetableToCsv(visible, index, dataset.settings), 'text/csv')}
+            >
+              <Icon name="download" size={15} />
+              CSV
+            </button>
+            <button
+              className="btn"
+              onClick={() => downloadFile(`${fileBase()}.ics`, timetableToIcs(visible, index, dataset.settings), 'text/calendar')}
+              title={t('editor.icsHint')}
+            >
+              <Icon name="calendar" size={15} />
+              iCal
+            </button>
+            <button className="btn" onClick={() => window.print()}>
+              <Icon name="printer" size={15} />
+              {t('common.print')}
+            </button>
             <button className="btn" onClick={undo} disabled={!history.length} title="Ctrl/⌘ + Z">
               {t('editor.undo')}
             </button>
@@ -169,12 +225,20 @@ export default function Editor() {
               <Icon name="check" />
               {tt.status === 'variant' ? t('generate.keep') : t('common.save')}
             </button>
+            {tt.status !== 'published' || dirty ? (
+              <button className="btn primary" onClick={publish}>
+                {t('timetables.publish')}
+              </button>
+            ) : null}
           </>
         }
       />
 
       <div className="editor-layout">
         <div className="stack" style={{ minWidth: 0 }}>
+          <h2 className="print-only">
+            {viewName()} — {dataset.settings.semester}
+          </h2>
           <div className="row wrap no-print">
             <ViewPicker dataset={dataset} view={view} onView={setView} week={week} onWeek={setWeek} />
           </div>

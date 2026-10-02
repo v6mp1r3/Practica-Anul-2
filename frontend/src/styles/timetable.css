@@ -197,7 +197,21 @@
   color: var(--primary);
 }
 
+.print-only {
+  display: none;
+}
+
 @media print {
+  .print-only {
+    display: block;
+  }
+  .page-header .row,
+  .editor-layout > aside {
+    display: none !important;
+  }
+  .editor-layout {
+    display: block;
+  }
   .sidebar,
   .topbar,
   .no-print,
