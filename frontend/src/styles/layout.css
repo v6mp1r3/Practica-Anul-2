@@ -184,6 +184,33 @@
     radial-gradient(40% 40% at 85% 15%, rgba(78, 168, 205, 0.12), transparent 70%), var(--bg);
   color: var(--text);
 }
+/* Hand-drawn doodles around the headline (black ink, transparent PNGs) */
+.doodle {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+.doodle-papers {
+  top: 6%;
+  left: 8%;
+  width: clamp(110px, 13vw, 190px);
+  transform: rotate(-8deg);
+}
+.doodle-calendar {
+  top: 9%;
+  right: 7%;
+  width: clamp(130px, 15vw, 230px);
+  transform: rotate(6deg);
+}
+.doodle-book {
+  right: 8%;
+  bottom: 7%;
+  width: clamp(130px, 15vw, 230px);
+  transform: rotate(-4deg);
+}
+.login-hero > :not(.doodle) {
+  position: relative;
+}
 .login-hero h1 {
   font-size: clamp(34px, 4.2vw, 56px);
   line-height: 1.05;
@@ -238,6 +265,9 @@
   }
   .hero-text {
     font-size: 14px;
+  }
+  .doodle {
+    display: none;
   }
 }
 
