@@ -34,6 +34,9 @@ export const ro = {
   'login.submit': 'Intră',
   'login.invalid': 'Utilizator sau parolă greșită.',
   'login.demo': 'Conturi demo (parola: demo)',
+  'login.feature1': 'Grupe, torente, subgrupe și săptămâni pare/impare',
+  'login.feature2': 'Mai multe variante generate, alegi tu',
+  'login.feature3': 'Conflictele sunt detectate pe loc',
 
   'nav.dashboard': 'Panou',
   'nav.setup': 'Configurare',
@@ -53,6 +56,11 @@ export const ro = {
   'nav.logout': 'Ieșire',
   'nav.language': 'English',
   'nav.theme': 'Temă',
+
+  'notifications.title': 'Notificări',
+  'notifications.subtitle': 'Modificări de orar și mesaje de la administrație.',
+  'notifications.markRead': 'Marchează toate ca citite',
+  'notifications.new': 'Nou',
 
   'day.0': 'Luni',
   'day.1': 'Marți',
