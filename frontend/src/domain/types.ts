@@ -85,7 +85,7 @@ export interface Subject {
   name: string;
   credits: number;
   year: number;
-  /** Pairs per week by activity type, from the study plan. */
+  /** Pairs per week by activity type, from the study plan (0.5 = every other week). */
   lecturePairs: number;
   seminarPairs: number;
   labPairs: number;
