@@ -63,6 +63,16 @@ export const en: Record<MessageKey, string> = {
   'notifications.markRead': 'Mark all as read',
   'notifications.new': 'New',
 
+  'tt.oddShort': 'O',
+  'tt.evenShort': 'E',
+  'tt.free': 'Gap',
+  'tt.noLessons': 'No pairs on this day.',
+  'tt.pair': 'Pair',
+  'tt.notPublished': 'The timetable has not been published yet.',
+  'tt.weekOdd': 'Odd week',
+  'tt.weekEven': 'Even week',
+  'tt.weekAll': 'Both',
+
   'day.0': 'Monday',
   'day.1': 'Tuesday',
   'day.2': 'Wednesday',

@@ -62,6 +62,16 @@ export const ro = {
   'notifications.markRead': 'Marchează toate ca citite',
   'notifications.new': 'Nou',
 
+  'tt.oddShort': 'I',
+  'tt.evenShort': 'P',
+  'tt.free': 'Fereastră',
+  'tt.noLessons': 'Nicio pereche în această zi.',
+  'tt.pair': 'Perechea',
+  'tt.notPublished': 'Orarul nu a fost publicat încă.',
+  'tt.weekOdd': 'Săptămâna impară',
+  'tt.weekEven': 'Săptămâna pară',
+  'tt.weekAll': 'Ambele',
+
   'day.0': 'Luni',
   'day.1': 'Marți',
   'day.2': 'Miercuri',
