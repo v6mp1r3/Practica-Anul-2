@@ -27,7 +27,7 @@ export function gapsInDay(slots: number[]): number {
 
 /** All (group, subgroup) views — a student experiences their group plus their subgroup. */
 function studentViews(ds: Dataset): Cohort[] {
-  return ds.groups.flatMap((g) =>
+  return ds.groups.flatMap((g): Cohort[] =>
     g.subgroups > 1 ? range(g.subgroups).map((s) => ({ groupId: g.id, subgroup: s + 1 })) : [{ groupId: g.id, subgroup: null }],
   );
 }
