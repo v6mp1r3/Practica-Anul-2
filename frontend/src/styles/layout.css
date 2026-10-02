@@ -1,0 +1,208 @@
+.shell {
+  display: flex;
+  min-height: 100%;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-w);
+  height: 100vh;
+  flex: none;
+  padding: 16px 12px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 18px;
+  font-weight: 700;
+  font-size: 16px;
+}
+.brand img {
+  width: 28px;
+  height: 28px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+.nav-section {
+  padding: 14px 10px 4px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-weight: 550;
+}
+.nav a:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.nav a.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.nav .count {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.page {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 28px 48px;
+}
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.page-header .titles {
+  flex: 1;
+  min-width: 220px;
+}
+.page-header p {
+  margin-top: 4px;
+  color: var(--text-2);
+}
+
+.topbar {
+  display: none;
+}
+
+/* Login */
+.login {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+}
+.login-hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px;
+  background: linear-gradient(150deg, #2f5bea 0%, #1b2f86 100%);
+  color: #fff;
+}
+.login-hero h1 {
+  font-size: 34px;
+  max-width: 420px;
+}
+.login-hero ul {
+  padding-left: 18px;
+  opacity: 0.9;
+  line-height: 1.9;
+}
+.login-form {
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+}
+.login-form form {
+  width: min(360px, 100%);
+}
+.demo-accounts button {
+  width: 100%;
+  justify-content: flex-start;
+  height: auto;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+@media (max-width: 860px) {
+  .sidebar {
+    position: fixed;
+    z-index: 40;
+    left: 0;
+    transform: translateX(-100%);
+    transition: transform 0.2s;
+    box-shadow: var(--shadow-lg);
+  }
+  .sidebar.open {
+    transform: none;
+  }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .page {
+    padding: 16px 16px 40px;
+  }
+  .login {
+    grid-template-columns: 1fr;
+  }
+  .login-hero {
+    padding: 28px 20px;
+  }
+  .login-hero h1 {
+    font-size: 24px;
+  }
+  .login-hero ul {
+    display: none;
+  }
+}
