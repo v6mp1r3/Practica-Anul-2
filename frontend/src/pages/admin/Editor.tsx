@@ -249,6 +249,7 @@ export default function Editor() {
             hide={HIDE[view.kind]}
             conflictIds={conflictIds}
             highlightIds={selected ? new Set([selected.id]) : highlightIds}
+            dimOthers={!selected && !!selectedConflict}
             onMove={move}
             onLessonClick={(l) => setSelectedId((cur) => (cur === l.id ? null : l.id))}
             canDrop={(id, day, slot) => conflictsIfMoved(id, day, slot).length === 0}

@@ -4,8 +4,8 @@
 
 .tt {
   display: grid;
-  grid-template-columns: 76px repeat(var(--days), minmax(150px, 1fr));
-  min-width: calc(76px + var(--days) * 150px);
+  grid-template-columns: 72px repeat(var(--days), minmax(128px, 1fr));
+  min-width: calc(72px + var(--days) * 128px);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);

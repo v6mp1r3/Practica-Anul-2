@@ -68,6 +68,8 @@ export interface GridProps {
   hide?: LessonField[];
   conflictIds?: Set<string>;
   highlightIds?: Set<string>;
+  /** Fade lessons that are not highlighted (used to focus on a conflict). */
+  dimOthers?: boolean;
   /** Highlights today's column. */
   today?: Day;
   /** Enables drag & drop; called with the new slot. */
@@ -88,6 +90,7 @@ export function TimetableGrid({
   hide,
   conflictIds,
   highlightIds,
+  dimOthers = false,
   today,
   onMove,
   canDrop,
@@ -157,7 +160,7 @@ export function TimetableGrid({
                       hide={hide}
                       conflict={conflictIds?.has(l.id)}
                       highlight={highlightIds?.has(l.id)}
-                      dim={highlightIds && highlightIds.size > 0 && !highlightIds.has(l.id)}
+                      dim={dimOthers && !!highlightIds && !highlightIds.has(l.id)}
                       draggable={!!onMove && !l.locked}
                       onDragStart={(e) => {
                         e.dataTransfer.setData('text/plain', l.id);
