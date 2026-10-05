@@ -70,6 +70,15 @@ export default function Subjects() {
           { label: t('subjects.year'), render: (x) => x.year },
           { label: t('groups.faculty'), render: (x) => <span className="small muted">{x.faculty || '—'}</span> },
           { label: 'ECTS', render: (x) => x.credits },
+          {
+            label: '',
+            render: (x) =>
+              x.edgeOfDay ? (
+                <span className="badge warning" title={t('subjects.edgeOfDay')}>
+                  {t('subjects.edgeShort')}
+                </span>
+              ) : null,
+          },
           { label: t('activity.lecture'), render: (x) => pairs(x.lecturePairs) },
           { label: t('activity.seminar'), render: (x) => pairs(x.seminarPairs) },
           { label: t('activity.lab'), render: (x) => pairs(x.labPairs) },
@@ -115,6 +124,15 @@ export default function Subjects() {
                 />
               </Field>
             </div>
+            <label className="row" style={{ gap: 12, cursor: 'pointer' }}>
+              <input type="checkbox" checked={!!d.edgeOfDay} onChange={(e) => set({ edgeOfDay: e.target.checked || undefined })} />
+              <span>
+                <strong>{t('subjects.edgeOfDay')}</strong>
+                <span className="small muted" style={{ display: 'block' }}>
+                  {t('subjects.edgeOfDayHint')}
+                </span>
+              </span>
+            </label>
             <div>
               <h3>{t('subjects.pairsPerWeek')}</h3>
               <p className="small muted" style={{ margin: '2px 0 8px' }}>
