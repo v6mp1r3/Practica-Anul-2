@@ -38,15 +38,39 @@ export default function Groups() {
               ),
             },
             { label: t('groups.faculty'), render: (x) => <span className="small muted">{x.faculty || '—'}</span> },
-            { label: t('groups.year'), render: (x) => x.year },
+            {
+              label: t('groups.year'),
+              render: (x) => (
+                <span>
+                  {x.year}
+                  {x.programYears && <span className="small muted"> / {x.programYears}</span>}
+                </span>
+              ),
+            },
             { label: t('groups.size'), render: (x) => x.size },
             {
               label: t('groups.subgroups'),
               render: (x) => (x.subgroups > 1 ? `${x.subgroups} × ${Math.ceil(x.size / x.subgroups)}` : '—'),
             },
           ]}
-          newItem={(): Omit<Group, 'id'> => ({ name: '', program: '', studyForm: 'full', year: 1, size: 25, subgroups: 2 })}
-          validate={(d) => (!d.name.trim() ? t('groups.nameRequired') : d.size < 1 ? t('groups.sizeRequired') : null)}
+          newItem={(): Omit<Group, 'id'> => ({
+            name: '',
+            program: '',
+            studyForm: 'full',
+            year: 1,
+            programYears: 4,
+            size: 25,
+            subgroups: 2,
+          })}
+          validate={(d) =>
+            !d.name.trim()
+              ? t('groups.nameRequired')
+              : d.size < 1
+                ? t('groups.sizeRequired')
+                : d.programYears && d.year > d.programYears
+                  ? t('groups.yearOver')
+                  : null
+          }
           renderForm={(d, set) => (
             <div className="form-grid">
               <Field label={t('groups.name')}>
@@ -80,15 +104,30 @@ export default function Groups() {
                   ))}
                 </Select>
               </Field>
+              <Field label={t('groups.programYears')}>
+                <Select
+                  className="select"
+                  value={d.programYears ?? 4}
+                  onChange={(e) => {
+                    const programYears = Number(e.target.value);
+                    set({ programYears, year: Math.min(d.year, programYears) });
+                  }}
+                >
+                  {[3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>
+                      {t('groups.yearsN', { n })}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
               <Field label={t('groups.year')}>
-                <input
-                  className="input"
-                  type="number"
-                  min={1}
-                  max={6}
-                  value={d.year}
-                  onChange={(e) => set({ year: Number(e.target.value) || 1 })}
-                />
+                <Select className="select" value={d.year} onChange={(e) => set({ year: Number(e.target.value) })}>
+                  {Array.from({ length: d.programYears ?? 6 }, (_, i) => (
+                    <option key={i} value={i + 1}>
+                      {i + 1}
+                    </option>
+                  ))}
+                </Select>
               </Field>
               <Field label={t('groups.size')}>
                 <input
