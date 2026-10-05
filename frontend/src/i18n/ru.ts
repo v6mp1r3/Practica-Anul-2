@@ -148,6 +148,8 @@ export const ru: Record<MessageKey, string> = {
   'account.detailsHint': 'Роль, группой и кафедрой управляет администрация.',
 
   'faculty.all': 'Все факультеты',
+  'timetables.clashOnPublish':
+    'Нельзя опубликовать: другой факультет уже занял те же аудитории или преподавателей ({count} пересечений). Сгенерируйте расписание заново.',
   'tt.oddShort': 'Н',
   'tt.evenShort': 'Ч',
   'tt.free': 'Окно',

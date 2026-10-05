@@ -147,6 +147,8 @@ export const en: Record<MessageKey, string> = {
   'account.detailsHint': 'Role, group and department are managed by the administration.',
 
   'faculty.all': 'All faculties',
+  'timetables.clashOnPublish':
+    'Cannot publish: another faculty has since booked the same rooms or teachers ({count} clashes). Generate the timetable again.',
   'tt.oddShort': 'O',
   'tt.evenShort': 'E',
   'tt.free': 'Gap',

@@ -18,6 +18,7 @@ import { useI18n } from '../../i18n';
 import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { downloadFile } from '../../utils/download';
+import { publishSafely } from '../../utils/publish';
 import { timetableToCsv, timetableToIcs } from '../../utils/export';
 import { StatusBadge } from './Dashboard';
 
@@ -156,7 +157,9 @@ export default function Editor() {
     if (hard.length && !confirm(t('timetables.publishWithConflicts', { count: hard.length }))) return;
     const saved = dirty || tt?.status === 'variant' ? await save() : tt;
     if (!saved) return;
-    setTt(await api.publishTimetable(saved.id));
+    const done = await publishSafely(saved.id, (count) => toast(t('timetables.clashOnPublish', { count }), 'error'));
+    if (!done) return;
+    setTt(done);
     await refresh();
     toast(t('timetables.publishedToast', { name: saved.name }));
   }

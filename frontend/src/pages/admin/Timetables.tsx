@@ -7,6 +7,7 @@ import type { Timetable } from '../../domain/types';
 import { dateLocale, useI18n } from '../../i18n';
 import { useData } from '../../state/data';
 import { useToast } from '../../state/toast';
+import { publishSafely } from '../../utils/publish';
 import { StatusBadge } from './Dashboard';
 import { VariantComparison } from './Generate';
 
@@ -44,7 +45,7 @@ export default function Timetables() {
 
   async function publish(tt: Timetable) {
     if (tt.score?.hard && !confirm(t('timetables.publishWithConflicts', { count: tt.score.hard }))) return;
-    await api.publishTimetable(tt.id);
+    if (!(await publishSafely(tt.id, (count) => toast(t('timetables.clashOnPublish', { count }), 'error')))) return;
     await Promise.all([load(), refresh()]);
     toast(t('timetables.publishedToast', { name: tt.name }));
   }

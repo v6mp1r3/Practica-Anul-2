@@ -147,6 +147,8 @@ export const ro = {
   'account.detailsHint': 'Rolul, grupa și departamentul sunt gestionate de administrație.',
 
   'faculty.all': 'Toate facultățile',
+  'timetables.clashOnPublish':
+    'Nu se poate publica: între timp altă facultate a ocupat aceleași săli sau profesori ({count} suprapuneri). Generează din nou orarul.',
   'tt.oddShort': 'I',
   'tt.evenShort': 'P',
   'tt.free': 'Fereastră',
