@@ -1,3 +1,4 @@
+import { useAdminScope } from '../../components/FacultyFilter';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, type GenerateProgress } from '../../api';
@@ -92,7 +93,10 @@ export default function Generate() {
   const { dataset, index } = useDataset();
   const toast = useToast();
   const navigate = useNavigate();
-  const [groupIds, setGroupIds] = useState<string[]>(dataset.groups.map((g) => g.id));
+  // Faculty administrators generate only for their own faculty's groups
+  const scope = useAdminScope();
+  const scopeGroups = dataset.groups.filter((g) => !scope || g.faculty === scope);
+  const [groupIds, setGroupIds] = useState<string[]>(scopeGroups.map((g) => g.id));
   const [form, setForm] = useState<'all' | StudyForm>('all');
   const [variants, setVariants] = useState(3);
   const [effort, setEffort] = useState<Effort>('normal');
@@ -110,7 +114,7 @@ export default function Generate() {
 
   const issues = useMemo(() => precheck(dataset, index), [dataset, index]);
   const hard = issues.filter((i) => i.severity === 'hard');
-  const formGroups = dataset.groups.filter((g) => form === 'all' || g.studyForm === form);
+  const formGroups = scopeGroups.filter((g) => form === 'all' || g.studyForm === form);
   const years = [...new Set(formGroups.map((g) => g.year))].sort();
   const running = progress !== null;
 
@@ -151,7 +155,7 @@ export default function Generate() {
                   value={form}
                   onChange={(f) => {
                     setForm(f);
-                    setGroupIds(dataset.groups.filter((g) => f === 'all' || g.studyForm === f).map((g) => g.id));
+                    setGroupIds(scopeGroups.filter((g) => f === 'all' || g.studyForm === f).map((g) => g.id));
                   }}
                   options={[
                     { value: 'all', label: t('generate.allForms') },

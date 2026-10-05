@@ -1,3 +1,4 @@
+import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api';
@@ -18,7 +19,17 @@ export default function Timetables() {
   const [list, setList] = useState<Timetable[] | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
 
-  const load = useCallback(() => api.listTimetables().then(setList), []);
+  // Faculty administrators see the timetables that include their groups
+  const scope = useAdminScope();
+  const { dataset } = useData();
+  const load = useCallback(
+    () =>
+      api.listTimetables().then((all) => {
+        const mine = dataset ? facultyGroupIds(dataset, scope) : [];
+        setList(scope ? all.filter((tt) => tt.groupIds.some((g) => mine.includes(g))) : all);
+      }),
+    [scope, dataset],
+  );
   useEffect(() => {
     load();
   }, [load]);

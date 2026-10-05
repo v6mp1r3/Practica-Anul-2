@@ -1,3 +1,4 @@
+import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
 import { TagInput } from '../../components/TagInput';
@@ -15,7 +16,12 @@ export default function Assignments() {
   const { dataset, index } = useDataset();
   const [groupFilter, setGroupFilter] = useState('');
 
-  const items = groupFilter ? dataset.assignments.filter((a) => index.audienceTouchesGroup(a.audience, groupFilter)) : dataset.assignments;
+  // Faculty administrators see only the teaching load of their faculty's groups
+  const scope = useAdminScope();
+  const scopeGroups = facultyGroupIds(dataset, scope);
+  const visibleGroups = dataset.groups.filter((g) => scopeGroups.includes(g.id));
+  const inScope = dataset.assignments.filter((a) => !scope || scopeGroups.some((g) => index.audienceTouchesGroup(a.audience, g)));
+  const items = groupFilter ? inScope.filter((a) => index.audienceTouchesGroup(a.audience, groupFilter)) : inScope;
   const equipment = [...new Set(dataset.rooms.flatMap((r) => r.equipment))].sort();
 
   return (
@@ -37,7 +43,7 @@ export default function Assignments() {
           aria-label={t('assignments.filterGroup')}
         >
           <option value="">{t('assignments.allGroups')}</option>
-          {dataset.groups.map((g) => (
+          {visibleGroups.map((g) => (
             <option key={g.id} value={g.id}>
               {g.name}
             </option>

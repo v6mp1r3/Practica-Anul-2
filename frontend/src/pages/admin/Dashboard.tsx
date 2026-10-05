@@ -1,3 +1,4 @@
+import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 // Admin dashboard — glass-style widgets: timetable status ring, week timeline,
 // today's date and week parity, activity distribution, recent timetables and
 // the data check.
@@ -89,9 +90,14 @@ export default function Dashboard() {
   const { refresh, changes } = useData();
   const toast = useToast();
   const [list, setList] = useState<Timetable[]>([]);
-  const [groupId, setGroupId] = useState(dataset.groups[0]?.id ?? '');
+  // Faculty administrators see their own faculty's figures
+  const scope = useAdminScope();
+  const scopeGroupIds = facultyGroupIds(dataset, scope);
+  const scopeGroups = dataset.groups.filter((g) => scopeGroupIds.includes(g.id));
+  const [groupId, setGroupId] = useState(scopeGroups[0]?.id ?? '');
 
-  const load = () => api.listTimetables().then(setList);
+  const load = () =>
+    api.listTimetables().then((all) => setList(scope ? all.filter((tt) => tt.groupIds.some((g) => scopeGroupIds.includes(g))) : all));
   useEffect(() => {
     load();
   }, []);
@@ -164,7 +170,7 @@ export default function Dashboard() {
             <label className="dash-select">
               <Icon name="layers" size={15} />
               <Select className="select-bare" value={groupId} onChange={(e) => setGroupId(e.target.value)} aria-label={t('view.group')}>
-                {dataset.groups.map((g) => (
+                {scopeGroups.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name}
                   </option>
@@ -305,13 +311,15 @@ export default function Dashboard() {
             <span className="spacer" />
             <span className="dash-facts">
               <span>
-                <strong>{dataset.teachers.length}</strong> {t('dashboard.teachers').toLowerCase()}
+                <strong>{dataset.teachers.filter((x) => !scope || !x.faculty || x.faculty === scope).length}</strong>{' '}
+                {t('dashboard.teachers').toLowerCase()}
               </span>
               <span>
-                <strong>{dataset.rooms.length}</strong> {t('dashboard.rooms').toLowerCase()}
+                <strong>{dataset.rooms.filter((x) => !scope || !x.faculty || x.faculty === scope).length}</strong>{' '}
+                {t('dashboard.rooms').toLowerCase()}
               </span>
               <span>
-                <strong>{dataset.groups.length}</strong> {t('dashboard.groups').toLowerCase()}
+                <strong>{scopeGroups.length}</strong> {t('dashboard.groups').toLowerCase()}
               </span>
             </span>
           </div>

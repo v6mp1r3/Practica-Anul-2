@@ -1,3 +1,4 @@
+import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 // "Modificări în orar": one-off changes for a given date — a pair moves to
 // another room, or a substitute teacher takes it. Saving notifies everyone.
 import { useMemo, useState } from 'react';
@@ -25,12 +26,19 @@ export default function Changes() {
   const toast = useToast();
   const [open, setOpen] = useState(false);
 
+  const scope = useAdminScope();
+  const scopeGroups = facultyGroupIds(dataset, scope);
+  const mine = changes.filter((c) => {
+    const a = index.assignments.get(c.assignmentId);
+    return !scope || (!!a && scopeGroups.some((g) => index.audienceTouchesGroup(a.audience, g)));
+  });
   const today = toDateString(new Date());
   const sorted = useMemo(() => {
-    const upcoming = changes.filter((c) => c.date >= today).sort((a, b) => a.date.localeCompare(b.date) || a.slot - b.slot);
-    const past = changes.filter((c) => c.date < today).sort((a, b) => b.date.localeCompare(a.date) || a.slot - b.slot);
+    const upcoming = mine.filter((c) => c.date >= today).sort((a, b) => a.date.localeCompare(b.date) || a.slot - b.slot);
+    const past = mine.filter((c) => c.date < today).sort((a, b) => b.date.localeCompare(a.date) || a.slot - b.slot);
     return [...upcoming, ...past];
-  }, [changes, today]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [changes, today, scope]);
 
   const fmtDate = (s: string) => parseDate(s).toLocaleDateString(dateLocale(lang), { weekday: 'short', day: '2-digit', month: 'short' });
   const what = (assignmentId: string) => {
@@ -151,6 +159,7 @@ function ChangeForm({
 }) {
   const { t } = useI18n();
   const { dataset, index } = useDataset();
+  const scope = useAdminScope();
   const [date, setDate] = useState(defaultDate);
   const [groupId, setGroupId] = useState('');
   const [lessonId, setLessonId] = useState('');
@@ -160,9 +169,13 @@ function ChangeForm({
   const [saving, setSaving] = useState(false);
 
   const dayLessons = useMemo(() => {
-    const all = lessonsOnDate(dataset, lessons, date);
+    const scoped = facultyGroupIds(dataset, scope);
+    const all = lessonsOnDate(dataset, lessons, date).filter((l) => {
+      const asg = index.assignmentOf(l);
+      return !scope || (!!asg && scoped.some((g) => index.audienceTouchesGroup(asg.audience, g)));
+    });
     return (groupId ? filterLessons(index, all, { kind: 'group', id: groupId }) : all).sort((a, b) => a.slot - b.slot);
-  }, [dataset, index, lessons, date, groupId]);
+  }, [dataset, index, lessons, date, groupId, scope]);
   const lesson = dayLessons.find((l) => l.id === lessonId);
   const assignment = lesson && index.assignmentOf(lesson);
 
@@ -234,11 +247,13 @@ function ChangeForm({
               }}
             >
               <option value="">{t('assignments.allGroups')}</option>
-              {dataset.groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
+              {dataset.groups
+                .filter((g) => !scope || g.faculty === scope)
+                .map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
             </Select>
           </Field>
         </div>
