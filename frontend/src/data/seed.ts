@@ -28,14 +28,15 @@ export const seedSettings: Settings = {
   workingDays: 7,
   formDays: {
     full: [0, 1, 2, 3, 4],
-    reduced: [5, 6],
+    // reduced attendance meets every day of its sessions (UTM, art. 55)
+    reduced: [0, 1, 2, 3, 4, 5, 6],
     dual: [0, 1, 2, 3, 4],
   },
   formMaxPairs: { full: 4, reduced: 6, dual: 4 },
+  // teaching sessions for reduced attendance this semester (the exam session is separate)
   reducedSessions: [
-    { start: '2026-10-03', end: '2026-10-04' },
-    { start: '2026-11-07', end: '2026-11-08' },
-    { start: '2026-12-05', end: '2026-12-06' },
+    { start: '2026-10-12', end: '2026-10-25' },
+    { start: '2027-01-11', end: '2027-01-24' },
   ],
   lessonMinutes: 90,
   slots: [
@@ -382,13 +383,13 @@ export const seedAssignments: Assignment[] = [
     a('sub14', 'lab', 't19', sub(g, 1), 1, 'weekly', ['electronică']),
     a('sub14', 'lab', 't19', sub(g, 2), 1, 'weekly', ['electronică']),
   ]),
-  // Reduced attendance (TI-251FR) — Saturday/Sunday
-  a('sub1', 'lecture', 't2', group('g8')),
-  a('sub1', 'seminar', 't4', group('g8')),
-  a('sub3', 'lecture', 't10', group('g8')),
-  a('sub3', 'lab', 't11', group('g8'), 2),
-  a('sub4', 'lecture', 't14', group('g8')),
-  a('sub6', 'seminar', 't9', group('g8')),
+  // Reduced attendance (TI-251FR) — pairs per session, placed on session dates
+  { ...a('sub1', 'lecture', 't2', group('g8')), pairsPerSession: 6 },
+  { ...a('sub1', 'seminar', 't4', group('g8')), pairsPerSession: 3 },
+  { ...a('sub3', 'lecture', 't10', group('g8')), pairsPerSession: 4 },
+  { ...a('sub3', 'lab', 't11', group('g8'), 2), pairsPerSession: 6 },
+  { ...a('sub4', 'lecture', 't14', group('g8')), pairsPerSession: 4 },
+  { ...a('sub6', 'seminar', 't9', group('g8')), pairsPerSession: 2 },
   // Dual (FAF-241D) — lectures come from the "Anul II" stream
   a('sub10', 'seminar', 't14', group('g9')),
   a('sub7', 'lab', 't6', group('g9')),

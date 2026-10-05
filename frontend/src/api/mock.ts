@@ -10,7 +10,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 6;
+const SEED_VERSION = 7;
 
 interface Store {
   dataset: Dataset;
@@ -84,6 +84,22 @@ function mergeSeed(saved: Store) {
   for (const sub of ds.subjects) {
     const seed = seedDataset.subjects.find((x) => x.id === sub.id);
     if (seed?.edgeOfDay && sub.edgeOfDay === undefined) sub.edgeOfDay = true;
+  }
+  // reduced attendance became session-based: every day of real session dates
+  const st = ds.settings;
+  if (JSON.stringify(st.formDays?.reduced) === '[5,6]') st.formDays.reduced = [...seedDataset.settings.formDays.reduced];
+  if (
+    JSON.stringify(st.reducedSessions) ===
+    JSON.stringify([
+      { start: '2026-10-03', end: '2026-10-04' },
+      { start: '2026-11-07', end: '2026-11-08' },
+      { start: '2026-12-05', end: '2026-12-06' },
+    ])
+  )
+    st.reducedSessions = structuredClone(seedDataset.settings.reducedSessions);
+  for (const a of ds.assignments) {
+    const seed = seedDataset.assignments.find((x) => x.id === a.id);
+    if (seed?.pairsPerSession && a.pairsPerSession === undefined) a.pairsPerSession = seed.pairsPerSession;
   }
   // demo accounts added later (institution + faculty administrators)
   const users = new Set(saved.users.map((u) => u.username));
