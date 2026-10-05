@@ -105,12 +105,12 @@ export default function Dashboard() {
   const issues = useMemo(() => precheck(dataset, index), [dataset, index]);
   const shown = published ?? list.find((x) => x.status === 'draft') ?? list[0] ?? null;
   const required = shown
-    ? scopeAssignments(dataset, shown.groupIds, index).reduce((n, a) => n + a.pairsPerWeek, 0)
-    : dataset.assignments.reduce((n, a) => n + a.pairsPerWeek, 0);
+    ? scopeAssignments(dataset, shown.groupIds, index).reduce((n, a) => n + index.requiredPairs(a), 0)
+    : dataset.assignments.reduce((n, a) => n + index.requiredPairs(a), 0);
   const placed = shown?.lessons.length ?? 0;
 
   const typeOf = (l: Lesson) => index.assignmentOf(l)?.type ?? 'lecture';
-  const groupLessons = shown ? filterLessons(index, shown.lessons, { kind: 'group', id: groupId }) : [];
+  const groupLessons = shown ? filterLessons(index, shown.lessons, { kind: 'group', id: groupId }).filter((l) => !l.date) : [];
   const slots = dataset.settings.slots;
 
   const totals = { lecture: 0, seminar: 0, lab: 0 } as Record<ActivityType, number>;

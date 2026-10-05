@@ -51,8 +51,8 @@ export function MyTimetable({
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  const shown = lessons.filter((l) => inWeek(l, week));
-  const todays = lessons.filter((l) => inWeek(l, settings.weekParity ? thisWeek : 'weekly'));
+  const shown = lessons.filter((l) => !l.date && inWeek(l, week));
+  const todays = lessons.filter((l) => !l.date && inWeek(l, settings.weekParity ? thisWeek : 'weekly'));
   const next = nextLesson(todays, settings, now);
 
   return (

@@ -158,24 +158,27 @@ export function TimetableGrid({
                     </div>
                   )}
                   {renderCell?.(day, slot)}
-                  {lessonsAt(lessons, day, slot).map((l) => (
-                    <LessonCard
-                      key={l.id}
-                      lesson={l}
-                      index={index}
-                      hide={hide}
-                      conflict={conflictIds?.has(l.id)}
-                      highlight={highlightIds?.has(l.id)}
-                      dim={dimOthers && !!highlightIds && !highlightIds.has(l.id)}
-                      draggable={!!onMove && !l.locked}
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData('text/plain', l.id);
-                        e.dataTransfer.effectAllowed = 'move';
-                        setDragging(l.id);
-                      }}
-                      onClick={onLessonClick ? () => onLessonClick(l) : undefined}
-                    />
-                  ))}
+                  {/* the weekly grid shows the repeating week; session (dated) pairs have their own calendar */}
+                  {lessonsAt(lessons, day, slot)
+                    .filter((l) => !l.date)
+                    .map((l) => (
+                      <LessonCard
+                        key={l.id}
+                        lesson={l}
+                        index={index}
+                        hide={hide}
+                        conflict={conflictIds?.has(l.id)}
+                        highlight={highlightIds?.has(l.id)}
+                        dim={dimOthers && !!highlightIds && !highlightIds.has(l.id)}
+                        draggable={!!onMove && !l.locked}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', l.id);
+                          e.dataTransfer.effectAllowed = 'move';
+                          setDragging(l.id);
+                        }}
+                        onClick={onLessonClick ? () => onLessonClick(l) : undefined}
+                      />
+                    ))}
                 </div>
               );
             })}
