@@ -37,6 +37,7 @@ export const en: Record<MessageKey, string> = {
   'intro.skip': 'Skip',
 
   'nav.menu': 'Main menu',
+  'nav.menuButton': 'Menu',
   'nav.account': 'Account',
   'nav.dashboard': 'Dashboard',
   'nav.setup': 'Setup',

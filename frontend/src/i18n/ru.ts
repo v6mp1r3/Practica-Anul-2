@@ -37,6 +37,7 @@ export const ru: Record<MessageKey, string> = {
   'intro.skip': 'Пропустить',
 
   'nav.menu': 'Главное меню',
+  'nav.menuButton': 'Меню',
   'nav.account': 'Аккаунт',
   'nav.dashboard': 'Панель',
   'nav.setup': 'Настройка',

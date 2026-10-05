@@ -71,15 +71,30 @@ export function Layout() {
   const location = useLocation();
 
   useEffect(() => setOpen(false), [location.pathname]);
+  // the menu drawer (phones, tablets): Escape closes it, the page behind doesn't scroll
+  useEffect(() => {
+    if (!open) return;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', esc);
+    document.body.classList.add('menu-open');
+    return () => {
+      document.removeEventListener('keydown', esc);
+      document.body.classList.remove('menu-open');
+    };
+  }, [open]);
   if (!user) return null;
 
   const unread = notifications.filter((n) => !n.read).length;
 
   return (
     <div className="shell">
-      <aside className={`sidebar ${open ? 'open' : ''}`}>
+      <div className={`sidebar-backdrop ${open ? 'open' : ''}`} onClick={() => setOpen(false)} aria-hidden />
+      <aside className={`sidebar ${open ? 'open' : ''}`} id="app-menu">
         <div className="brand">
           <Logo height={26} />
+          <button className="btn ghost icon sidebar-close" onClick={() => setOpen(false)} aria-label={t('common.close')}>
+            <Icon name="x" />
+          </button>
         </div>
         <nav className="nav">
           {NAV[user.role]
@@ -128,13 +143,23 @@ export function Layout() {
       </aside>
       <div className="main">
         <header className="topbar">
-          <button className="btn ghost icon" onClick={() => setOpen((o) => !o)} aria-label="Menu">
+          <button
+            className="btn ghost icon"
+            onClick={() => setOpen((o) => !o)}
+            aria-label={t('nav.menuButton')}
+            aria-expanded={open}
+            aria-controls="app-menu"
+          >
             <Icon name="menu" />
           </button>
           <Logo height={20} />
           <span className="spacer" />
-          <NavLink to="/notifications" className="btn ghost icon" aria-label={t('nav.notifications')}>
+          <NavLink to="/notifications" className="btn ghost icon topbar-bell" aria-label={t('nav.notifications')}>
             <Icon name="bell" />
+            {unread > 0 && <span className="count">{unread}</span>}
+          </NavLink>
+          <NavLink to="/account" className="topbar-avatar" aria-label={t('account.title')}>
+            <Avatar name={user.name} src={user.avatar} />
           </NavLink>
         </header>
         <div className="panel">

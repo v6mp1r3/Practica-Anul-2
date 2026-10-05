@@ -36,6 +36,7 @@ export const ro = {
   'intro.skip': 'Sari peste',
 
   'nav.menu': 'Meniu principal',
+  'nav.menuButton': 'Meniu',
   'nav.account': 'Cont',
   'nav.dashboard': 'Panou',
   'nav.setup': 'Configurare',
