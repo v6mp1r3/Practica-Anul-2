@@ -8,7 +8,7 @@ import { Field, PageHeader, Switch } from '../../components/ui';
 import { range } from '../../domain/slots';
 import { STUDY_FORMS, type Settings, type TimeSlot } from '../../domain/types';
 import { useI18n } from '../../i18n';
-import { useDataset } from '../../state/data';
+import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { Select } from '../../components/Select';
 
@@ -47,7 +47,8 @@ export default function Setup() {
   const { t } = useI18n();
   const { dataset, refresh } = useDataset();
   const toast = useToast();
-  const [s, setS] = useState<Settings>(dataset.settings);
+  const { institutionTimeFormat } = useData();
+  const [s, setS] = useState<Settings>({ ...dataset.settings, timeFormat: institutionTimeFormat });
   const [breakMin, setBreakMin] = useState(15);
   const [saving, setSaving] = useState(false);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({ ...x, [k]: v }));

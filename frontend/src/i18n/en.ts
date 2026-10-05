@@ -177,6 +177,7 @@ export const en: Record<MessageKey, string> = {
   'setup.timeFormat': 'Time format',
   'setup.timeFormat24': '24-hour',
   'setup.timeFormat12': '12-hour, AM/PM',
+  'account.timeFormatHint': 'How times are shown in the app on this device.',
   'tt.oddShort': 'O',
   'tt.evenShort': 'E',
   'tt.free': 'Gap',

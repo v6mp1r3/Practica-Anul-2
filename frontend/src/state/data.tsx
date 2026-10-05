@@ -15,13 +15,44 @@ interface Data {
   loading: boolean;
   refresh: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
+  /** The institution's default time format (Configurare). */
+  institutionTimeFormat: TimeFormat;
+  /** This person's own choice on this device ('' = follow the institution). */
+  myTimeFormat: TimeFormat | '';
+  setMyTimeFormat: (f: TimeFormat | '') => void;
 }
+
+type TimeFormat = '24h' | '12h';
+const TIME_KEY = 'eduschedule:timeFormat';
 
 const DataContext = createContext<Data | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [dataset, setDataset] = useState<Dataset | null>(null);
+  const [raw, setDataset] = useState<Dataset | null>(null);
+  const [myTimeFormat, setMyState] = useState<TimeFormat | ''>(() => {
+    try {
+      const v = localStorage.getItem(TIME_KEY);
+      return v === '24h' || v === '12h' ? v : '';
+    } catch {
+      return '';
+    }
+  });
+  const setMyTimeFormat = useCallback((f: TimeFormat | '') => {
+    setMyState(f);
+    try {
+      if (f) localStorage.setItem(TIME_KEY, f);
+      else localStorage.removeItem(TIME_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const institutionTimeFormat: TimeFormat = raw?.settings.timeFormat ?? '24h';
+  // Everything that shows times reads settings.timeFormat, so the personal choice is applied there
+  const dataset = useMemo(
+    () => (raw && myTimeFormat ? { ...raw, settings: { ...raw.settings, timeFormat: myTimeFormat } } : raw),
+    [raw, myTimeFormat],
+  );
   const [published, setPublished] = useState<Timetable | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [changes, setChanges] = useState<ScheduleChange[]>([]);
@@ -57,8 +88,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const index = useMemo(() => (dataset ? new DatasetIndex(dataset) : null), [dataset]);
 
   const value = useMemo(
-    () => ({ dataset, index, published, notifications, changes, loading, refresh, refreshNotifications }),
-    [dataset, index, published, notifications, changes, loading, refresh, refreshNotifications],
+    () => ({
+      dataset,
+      index,
+      published,
+      notifications,
+      changes,
+      loading,
+      refresh,
+      refreshNotifications,
+      institutionTimeFormat,
+      myTimeFormat,
+      setMyTimeFormat,
+    }),
+    [
+      dataset,
+      index,
+      published,
+      notifications,
+      changes,
+      loading,
+      refresh,
+      refreshNotifications,
+      institutionTimeFormat,
+      myTimeFormat,
+      setMyTimeFormat,
+    ],
   );
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

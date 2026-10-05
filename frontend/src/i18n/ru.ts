@@ -178,6 +178,7 @@ export const ru: Record<MessageKey, string> = {
   'setup.timeFormat': 'Формат времени',
   'setup.timeFormat24': '24 часа',
   'setup.timeFormat12': '12 часов, AM/PM',
+  'account.timeFormatHint': 'Как отображается время в приложении на этом устройстве.',
   'tt.oddShort': 'Н',
   'tt.evenShort': 'Ч',
   'tt.free': 'Окно',

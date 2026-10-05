@@ -177,6 +177,7 @@ export const ro = {
   'setup.timeFormat': 'Format oră',
   'setup.timeFormat24': '24 de ore',
   'setup.timeFormat12': '12 ore, AM/PM',
+  'account.timeFormatHint': 'Cum vezi orele în aplicație, pe acest dispozitiv.',
   'tt.oddShort': 'I',
   'tt.evenShort': 'P',
   'tt.free': 'Fereastră',

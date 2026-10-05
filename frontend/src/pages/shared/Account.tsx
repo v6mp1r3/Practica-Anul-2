@@ -43,7 +43,7 @@ export function Avatar({ name, src, size = 36 }: { name: string; src?: string; s
 export default function Account() {
   const { t } = useI18n();
   const { user, setUser, logout } = useAuth();
-  const { index } = useData();
+  const { index, myTimeFormat, setMyTimeFormat, institutionTimeFormat } = useData();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -169,6 +169,24 @@ export default function Account() {
                 <div className="small muted">{t('account.languageHint')}</div>
               </div>
               <LanguageSwitch />
+            </div>
+            <div className="row wrap" style={{ justifyContent: 'space-between' }}>
+              <div>
+                <strong>{t('setup.timeFormat')}</strong>
+                <div className="small muted">{t('account.timeFormatHint')}</div>
+              </div>
+              <div className="segmented" role="group" aria-label={t('setup.timeFormat')}>
+                {(['24h', '12h'] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    aria-pressed={(myTimeFormat || institutionTimeFormat) === f}
+                    onClick={() => setMyTimeFormat(f === institutionTimeFormat ? '' : f)}
+                  >
+                    {f === '24h' ? '17:06' : '05:06 PM'}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="row wrap" style={{ justifyContent: 'space-between' }}>
               <div>
