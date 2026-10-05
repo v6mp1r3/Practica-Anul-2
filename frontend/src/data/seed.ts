@@ -108,6 +108,7 @@ export const seedTeachers: Teacher[] = (
     t('t17', 'Galina Melnic', 'conf. univ., dr.', 'Matematică', 8, ['lecture'], ['3:0', '3:1']),
     t('t18', 'Svetlana Ungureanu', 'lect. univ.', 'Matematică', 12, ['seminar']),
     t('t19', 'Dumitru Vrabie', 'asist. univ.', 'Telecomunicații', 14, ['lab']),
+    t('t20', 'Vitalie Bălan', 'lect. univ.', 'Educație fizică', 12, ['seminar'], ['2:0', '2:1', '2:2', '2:3', '2:4', '2:5', '2:6']),
   ] as Teacher[]
 ).map((x) => ({ ...x, faculty: FET_TEACHERS.includes(x.id) ? FET : FCIM }));
 
@@ -119,7 +120,16 @@ export const seedRooms: Room[] = [
   { id: 'r5', name: '3-213', building: 'Blocul 3', faculty: FCIM, capacity: 30, type: 'seminar', equipment: ['tablă', 'proiector'] },
   { id: 'r6', name: '3-301', building: 'Blocul 3', faculty: FCIM, capacity: 32, type: 'seminar', equipment: ['tablă'] },
   { id: 'r7', name: '1-201', building: 'Blocul 1', faculty: FCIM, capacity: 30, type: 'seminar', equipment: ['tablă'] },
-  { id: 'r8', name: '3-404', building: 'Blocul 3', faculty: FCIM, capacity: 16, type: 'lab', equipment: ['calculatoare'] },
+  {
+    id: 'r8',
+    name: '3-404',
+    building: 'Blocul 3',
+    faculty: FCIM,
+    preferredSubjectIds: ['sub3'],
+    capacity: 16,
+    type: 'lab',
+    equipment: ['calculatoare'],
+  },
   { id: 'r9', name: '3-405', building: 'Blocul 3', faculty: FCIM, capacity: 16, type: 'lab', equipment: ['calculatoare'] },
   {
     id: 'r10',
@@ -131,6 +141,7 @@ export const seedRooms: Room[] = [
     equipment: ['calculatoare', 'echipament rețea'],
   },
   { id: 'r11', name: '3-505', building: 'Blocul 3', faculty: FCIM, capacity: 14, type: 'lab', equipment: ['calculatoare', 'electronică'] },
+  { id: 'r16', name: 'Sala de sport', building: 'Blocul 2', faculty: FCIM, capacity: 60, type: 'seminar', equipment: ['sport'] },
   // FET building
   { id: 'r12', name: '9-101', building: 'Blocul 9', faculty: FET, capacity: 90, type: 'lecture', equipment: ['proiector'] },
   { id: 'r13', name: '9-205', building: 'Blocul 9', faculty: FET, capacity: 30, type: 'seminar', equipment: ['tablă'] },
@@ -236,6 +247,18 @@ export const seedSubjects: Subject[] = [
     labPairs: 0,
   },
   {
+    id: 'sub15',
+    code: 'EF',
+    name: 'Educație fizică',
+    credits: 2,
+    year: 1,
+    faculty: FCIM,
+    edgeOfDay: true,
+    lecturePairs: 0,
+    seminarPairs: 1,
+    labPairs: 0,
+  },
+  {
     id: 'sub12',
     code: 'MI',
     name: 'Matematică pentru ingineri',
@@ -315,6 +338,8 @@ export const seedAssignments: Assignment[] = [
     a('sub4', 'seminar', 't4', group(g), 1, i % 2 === 0 ? 'odd' : 'even'),
     a('sub6', 'seminar', 't9', group(g)),
   ]),
+  // Physical education — first or last pair of the day, in the sports hall
+  ...['g1', 'g2', 'g3', 'g4'].map((g) => a('sub15', 'seminar', 't20', group(g), 1, 'weekly', ['sport'])),
   // Year 1 — labs per subgroup
   ...['g1', 'g2'].flatMap((g) => [
     a('sub3', 'lab', 't1', sub(g, 1), 2),

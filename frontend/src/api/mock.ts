@@ -10,7 +10,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 5;
+const SEED_VERSION = 6;
 
 interface Store {
   dataset: Dataset;
@@ -75,6 +75,15 @@ function mergeSeed(saved: Store) {
     [ds.subjects, seedDataset.subjects],
   ] as [{ id: string; faculty?: string }[], { id: string; faculty?: string }[]][]) {
     for (const item of list) if (!item.faculty) item.faculty = seed.find((x) => x.id === item.id)?.faculty;
+  }
+  // room preferences and "first/last pair" flags added to existing demo records
+  for (const r of ds.rooms) {
+    const seed = seedDataset.rooms.find((x) => x.id === r.id);
+    if (seed?.preferredSubjectIds && !r.preferredSubjectIds) r.preferredSubjectIds = [...seed.preferredSubjectIds];
+  }
+  for (const sub of ds.subjects) {
+    const seed = seedDataset.subjects.find((x) => x.id === sub.id);
+    if (seed?.edgeOfDay && sub.edgeOfDay === undefined) sub.edgeOfDay = true;
   }
   // demo accounts added later (institution + faculty administrators)
   const users = new Set(saved.users.map((u) => u.username));
