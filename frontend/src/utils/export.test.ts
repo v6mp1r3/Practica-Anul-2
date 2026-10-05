@@ -31,3 +31,17 @@ describe('timetableToIcs', () => {
     expect(ics).toContain('DTSTART:20260914T080000'); // Mon 31 Aug is before the start → next odd Monday
   });
 });
+
+describe('reduced-attendance session pairs', () => {
+  const dated: Lesson = { id: 'd', assignmentId: 'a1', day: 2, slot: 1, roomId: 'r1', parity: 'weekly', date: '2026-10-14' };
+  it('puts the date in the CSV', () => {
+    const rows = readCsvRows(timetableToCsv([dated, ...lessons], idx, seedDataset.settings));
+    expect(rows[0][11]).toBe('Data');
+    expect(rows[3][11]).toBe('2026-10-14');
+  });
+  it('exports a single, non-recurring event', () => {
+    const ics = timetableToIcs([dated], idx, seedDataset.settings, new Date(2026, 8, 1));
+    expect(ics).toContain('DTSTART:20261014T094500');
+    expect(ics).not.toContain('RRULE');
+  });
+});
