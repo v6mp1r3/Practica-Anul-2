@@ -15,6 +15,7 @@ export const SOFT_WEIGHTS: Record<keyof ScoreBreakdown, number> = {
   preferenceMisses: 1,
   roomMisses: 2,
   edgeMisses: 8,
+  shiftMisses: 4,
 };
 
 /** The weeks we need to look at: one if parity is off, odd + even otherwise. */
@@ -53,6 +54,7 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
     preferenceMisses: 0,
     roomMisses: 0,
     edgeMisses: 0,
+    shiftMisses: 0,
   };
   const weeks = weeksFor(ds);
   const weekShare = 1 / weeks.length;
@@ -122,8 +124,16 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
     if (pref.length && !pref.some((r) => r.id === l.roomId)) b.roomMisses += parityWeight(l.parity);
   }
 
-  // 08:00 classes have ~10 points lower attendance (report, ref. [9])
-  b.earlyStarts = lessons.filter((l) => l.slot === 0).reduce((n, l) => n + parityWeight(l.parity), 0);
+  // Pairs outside the part of the day of their year of study (session pairs count per session)
+  const sessions = Math.max(1, ds.settings.reducedSessions?.length ?? 1);
+  for (const l of all) {
+    const a = idx.assignmentOf(l);
+    if (a) b.shiftMisses += idx.shiftDistance(a, l.slot) * (l.date ? 1 / sessions : parityWeight(l.parity));
+  }
+
+  // 08:00 classes have ~10 points lower attendance (report, ref. [9]) — unless the
+  // institution gives years of study their own part of the day, which may start at 08:00
+  if (!ds.settings.yearShifts?.length) b.earlyStarts = lessons.filter((l) => l.slot === 0).reduce((n, l) => n + parityWeight(l.parity), 0);
 
   for (const k of Object.keys(b) as (keyof ScoreBreakdown)[]) b[k] = Math.round(b[k] * 10) / 10;
   const soft = Math.round((Object.keys(b) as (keyof ScoreBreakdown)[]).reduce((s, k) => s + b[k] * SOFT_WEIGHTS[k], 0) * 10) / 10;

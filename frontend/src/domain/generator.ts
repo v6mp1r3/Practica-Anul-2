@@ -127,8 +127,12 @@ class Builder {
   private cost(a: Assignment, day: number, slot: number): number {
     const { settings } = this.ds;
     const t = this.idx.teachers.get(a.teacherId);
-    let c = slot === 0 ? 1.5 : 0;
-    if (slot >= settings.slots.length - 1) c += 1;
+    // each year of study has its part of the day (year 1 mornings, upper years after lunch)
+    const shift = this.idx.shiftDistance(a, slot);
+    let c = 4 * shift;
+    const shifted = !!settings.yearShifts?.length;
+    if (!shifted && slot === 0) c += 1.5;
+    if (!shifted && slot >= settings.slots.length - 1) c += 1;
 
     const gapDelta = (slots: number[]) => {
       if (!slots.length) return 0;

@@ -122,7 +122,8 @@ export function placeSessions(ds: Dataset, idx: DatasetIndex, loads: Assignment[
               }
               // spread the session evenly: the least busy dates first, over the whole range
               cost += new Set(taken).size * 1.2;
-              if (start === 0) cost += 0.5;
+              // stay within the part of the day of the group's year of study
+              cost += slots.reduce((n, s) => n + idx.shiftDistance(a, s), 0) * 1.5;
               if (groupIds.some((g) => board.subjectOnDate(date, a.subjectId, g))) cost += 3;
               cost += rng.next() * 0.6;
               if (best && cost >= best.cost) continue;

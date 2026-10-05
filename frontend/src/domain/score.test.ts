@@ -55,16 +55,22 @@ describe('scoreTimetable', () => {
     expect(gappy.soft).toBeGreaterThan(compact.soft);
   });
 
-  it('penalises 08:00 starts', () => {
+  it('penalises 08:00 starts when years have no shifts', () => {
     expect(
       scoreTimetable(
-        ds,
+        { ...ds, settings: { ...ds.settings, yearShifts: [] } },
         at([
           [0, 0],
           [1, 1],
         ]),
       ).breakdown.earlyStarts,
     ).toBe(1);
+  });
+
+  it('keeps each year of study in its part of the day', () => {
+    // g1 is year 1: pairs 1–4; pair 7 is three pairs past its shift
+    expect(scoreTimetable(ds, at([[0, 0]])).breakdown.shiftMisses).toBe(0);
+    expect(scoreTimetable(ds, at([[0, 6]])).breakdown.shiftMisses).toBe(3);
   });
 });
 

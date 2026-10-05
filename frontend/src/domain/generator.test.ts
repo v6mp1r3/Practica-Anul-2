@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
 import { generateTimetable, scopeAssignments } from './generator';
+import { DatasetIndex } from './indexes';
+import type { Lesson } from './types';
 import { findHardConflicts } from './validator';
 
 const allGroups = seedDataset.groups.map((g) => g.id);
@@ -65,5 +67,25 @@ describe('comfort rules', () => {
       (l) => seedDataset.assignments.find((a) => a.id === l.assignmentId)?.subjectId === 'sub3' && l.roomId !== 'r1',
     );
     expect(pcLabs.some((l) => l.roomId === 'r8')).toBe(true);
+  });
+});
+
+describe('parts of the day per year of study', () => {
+  it('puts year 1 in the morning and years 3–4 after lunch', async () => {
+    const idx = new DatasetIndex(seedDataset);
+    const { lessons } = await generateTimetable(seedDataset, {
+      groupIds: ['g1', 'g2', 'g3', 'g4', 'g13', 'g14'],
+      seed: 5,
+      iterations: 150,
+    });
+    const yearOf = (l: Lesson) => idx.groups.get(idx.cohorts(idx.assignmentOf(l)!.audience)[0].groupId)!.year;
+    const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const first = lessons.filter((l) => yearOf(l) === 1).map((l) => l.slot);
+    const upper = lessons.filter((l) => yearOf(l) >= 3).map((l) => l.slot);
+    expect(Math.max(...upper)).toBeGreaterThan(3);
+    expect(avg(upper)).toBeGreaterThan(avg(first) + 1.5);
+    // nearly everything inside its shift
+    const outside = lessons.filter((l) => idx.shiftDistance(idx.assignmentOf(l)!, l.slot) > 0).length;
+    expect(outside / lessons.length).toBeLessThan(0.1);
   });
 });
