@@ -1,7 +1,8 @@
 // Conflict validator — the same hard constraints the solver must respect
 // (report §2.1.3). Runs in the browser so the editor can show clashes live.
 import { DatasetIndex } from './indexes';
-import { paritiesOverlap, slotKey } from './slots';
+import { lessonsOverlap } from './overlap';
+import { slotKey } from './slots';
 import type { Conflict, Dataset, Lesson } from './types';
 
 export function groupBySlot(lessons: Lesson[]): Map<string, Lesson[]> {
@@ -26,7 +27,7 @@ export function findHardConflicts(ds: Dataset, lessons: Lesson[], idx = new Data
       for (let j = i + 1; j < slotLessons.length; j++) {
         const x = slotLessons[i];
         const y = slotLessons[j];
-        if (!paritiesOverlap(x.parity, y.parity)) continue;
+        if (!lessonsOverlap(x, y)) continue;
         const ax = idx.assignmentOf(x);
         const ay = idx.assignmentOf(y);
         if (!ax || !ay) continue;
@@ -68,8 +69,9 @@ export function findHardConflicts(ds: Dataset, lessons: Lesson[], idx = new Data
   for (const l of lessons) placed.set(l.assignmentId, [...(placed.get(l.assignmentId) ?? []), l.id]);
   for (const a of ds.assignments) {
     const ids = placed.get(a.id) ?? [];
-    if (ids.length < a.pairsPerWeek) out.push({ kind: 'hours-missing', severity: 'hard', lessonIds: ids, subjectId: a.id });
-    if (ids.length > a.pairsPerWeek) out.push({ kind: 'hours-extra', severity: 'hard', lessonIds: ids, subjectId: a.id });
+    const need = idx.requiredPairs(a);
+    if (ids.length < need) out.push({ kind: 'hours-missing', severity: 'hard', lessonIds: ids, subjectId: a.id });
+    if (ids.length > need) out.push({ kind: 'hours-extra', severity: 'hard', lessonIds: ids, subjectId: a.id });
   }
 
   return out;

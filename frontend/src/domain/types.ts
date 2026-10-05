@@ -137,6 +137,11 @@ export interface Assignment {
   teacherId: string;
   audience: Audience;
   pairsPerWeek: number;
+  /**
+   * Reduced attendance: pairs held in each session (UTM: about 1/5 of the
+   * full-time hours, same lecture/seminar/lab mix). Used instead of pairsPerWeek.
+   */
+  pairsPerSession?: number;
   parity: Parity;
   roomType: RoomType;
   equipment: string[];
@@ -151,6 +156,11 @@ export interface Lesson {
   parity: Parity;
   /** Edited by hand — the improver must not move it. */
   locked?: boolean;
+  /**
+   * Reduced attendance: the exact date ("YYYY-MM-DD") of this pair inside a
+   * session. Dated pairs happen once, on that date; undated pairs repeat weekly.
+   */
+  date?: string;
 }
 
 export type TimetableStatus = 'draft' | 'published' | 'variant';

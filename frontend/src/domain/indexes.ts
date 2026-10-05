@@ -77,6 +77,18 @@ export class DatasetIndex {
     return this.ds.settings.formMaxPairs?.[form] ?? this.ds.settings.maxPairsPerDayGroup;
   }
 
+  /** A teaching load for reduced-attendance groups only: scheduled on session dates. */
+  isReduced(a: Pick<Assignment, 'audience'>): boolean {
+    const cohorts = this.cohorts(a.audience);
+    return cohorts.length > 0 && cohorts.every((c) => this.groups.get(c.groupId)?.studyForm === 'reduced');
+  }
+
+  /** Pairs a teaching load must receive in the timetable. */
+  requiredPairs(a: Assignment): number {
+    if (!this.isReduced(a)) return a.pairsPerWeek;
+    return (a.pairsPerSession ?? a.pairsPerWeek) * (this.ds.settings.reducedSessions?.length ?? 0);
+  }
+
   /** Days a pair may be placed on: allowed for every group in its audience. */
   allowedDays(a: Assignment): Day[] {
     const lists = this.cohorts(a.audience).map((c) => this.groupDays(c.groupId));
