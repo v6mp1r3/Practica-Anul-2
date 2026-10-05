@@ -575,7 +575,7 @@ table.table {
 
 /* Upcoming schedule changes: stand out in red */
 .changes-card {
-  border-color: rgba(213, 0, 47, 0.28);
+  border-color: transparent;
   background: linear-gradient(0deg, var(--danger-soft), var(--danger-soft)), #fff;
 }
 .changes-card h2 {
