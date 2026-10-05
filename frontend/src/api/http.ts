@@ -85,6 +85,7 @@ export function createHttpApi(baseUrl: string): Api {
     saveTimetable: (t) => request('PUT', `/timetables/${t.id}`, t),
     deleteTimetable: (id) => request('DELETE', `/timetables/${id}`),
     publishTimetable: (id) => request('POST', `/timetables/${id}/publish`),
+    unpublishTimetable: (id) => request('POST', `/timetables/${id}/unpublish`),
     getPublished: () => request('GET', '/timetables/published'),
 
     // Generation is a background job: start it, then poll until it is done.

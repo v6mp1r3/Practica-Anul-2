@@ -87,6 +87,12 @@ export interface Api {
   saveTimetable(t: Timetable): Promise<Timetable>;
   deleteTimetable(id: string): Promise<void>;
   publishTimetable(id: string): Promise<Timetable>;
+  /**
+   * Withdraw a published timetable: it becomes a draft again. A faculty
+   * administrator withdraws only their faculty's groups; their pairs come back
+   * as a separate draft and the other faculties stay published.
+   */
+  unpublishTimetable(id: string): Promise<Timetable>;
   /** The timetable students and teachers see; null before the first publish. */
   getPublished(): Promise<Timetable | null>;
 

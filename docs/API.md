@@ -121,14 +121,15 @@ Extra endpoints:
 
 ## Timetables
 
-| Method | Path                       | Role  | Notes                                                                       |
-| ------ | -------------------------- | ----- | --------------------------------------------------------------------------- |
-| GET    | `/timetables`              | admin | all drafts, variants and the published one                                  |
-| GET    | `/timetables/published`    | any   | the published timetable, or `null`                                          |
-| GET    | `/timetables/{id}`         | any   |                                                                             |
-| PUT    | `/timetables/{id}`         | admin | create or update; a `variant` becomes a `draft`; server recomputes `score`  |
-| DELETE | `/timetables/{id}`         | admin |                                                                             |
-| POST   | `/timetables/{id}/publish` | admin | previous published one becomes `draft`; creates a notification for everyone |
+| Method | Path                         | Role  | Notes                                                                                                                                                                                                                     |
+| ------ | ---------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/timetables`                | admin | all drafts, variants and the published one                                                                                                                                                                                |
+| GET    | `/timetables/published`      | any   | the published timetable, or `null`                                                                                                                                                                                        |
+| GET    | `/timetables/{id}`           | any   |                                                                                                                                                                                                                           |
+| PUT    | `/timetables/{id}`           | admin | create or update; a `variant` becomes a `draft`; server recomputes `score`                                                                                                                                                |
+| DELETE | `/timetables/{id}`           | admin |                                                                                                                                                                                                                           |
+| POST   | `/timetables/{id}/publish`   | admin | previous published one becomes `draft`; creates a notification for everyone                                                                                                                                               |
+| POST   | `/timetables/{id}/unpublish` | admin | withdraws it (back to `draft`); a faculty admin withdraws only their faculty's groups — those pairs come back as a new `draft`, the rest stays published. 409 if not published. Notifies the affected groups and teachers |
 
 ```json
 // Timetable
@@ -248,7 +249,7 @@ already busy at that slot on that date (`422`).
 ```
 
 - **Text:** notifications carry a `kind` and `params`; the client writes the text
-  in the viewer's language (RO/RU/EN). Kinds: `welcome`, `published` (`name`),
+  in the viewer's language (RO/RU/EN). Kinds: `welcome`, `published` (`name`), `unpublished` (`name`),
   `updated` (`name`, `count`), `availability` (`name`), `room-change` and
   `teacher-change` (the change's fields). `title`/`body` are only used for
   free-text messages without a `kind`.

@@ -309,7 +309,7 @@ export interface ProfileUpdate {
   emailNotifications?: boolean;
 }
 
-export type NotificationKind = 'welcome' | 'published' | 'updated' | 'availability' | 'room-change' | 'teacher-change';
+export type NotificationKind = 'welcome' | 'published' | 'unpublished' | 'updated' | 'availability' | 'room-change' | 'teacher-change';
 
 export interface Notification {
   id: string;

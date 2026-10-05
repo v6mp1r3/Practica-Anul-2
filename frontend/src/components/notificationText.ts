@@ -12,6 +12,8 @@ export function notificationText(n: Notification, t: Translate, idx: DatasetInde
       return { title: t('notify.welcome.title'), body: t('notify.welcome.body') };
     case 'published':
       return { title: t('notify.published.title'), body: t('notify.published.body', { name: p.name ?? '' }) };
+    case 'unpublished':
+      return { title: t('notify.unpublished.title'), body: t('notify.unpublished.body', { name: p.name ?? '' }) };
     case 'updated':
       return { title: t('notify.updated.title'), body: t('notify.updated.body', { name: p.name ?? '', count: p.count ?? 0 }) };
     case 'availability':

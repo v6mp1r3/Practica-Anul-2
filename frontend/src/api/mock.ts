@@ -429,6 +429,48 @@ export function createMockApi(): Api {
       persist();
       return delay(t);
     },
+    async unpublishTimetable(id) {
+      const u = requireRole('admin');
+      const t = store.timetables.find((x) => x.id === id);
+      if (!t) throw new ApiError(404, 'Not found');
+      if (t.status !== 'published') throw new ApiError(409, 'Not published');
+      // A faculty administrator withdraws only their own faculty's groups
+      const mine = new Set(t.groupIds.filter((g) => !u.faculty || store.dataset.groups.find((x) => x.id === g)?.faculty === u.faculty));
+      if (!mine.size) throw new ApiError(403, 'None of these groups belong to your faculty');
+      const touches = (l: { assignmentId: string }) => groupsOf(l.assignmentId).some((g) => mine.has(g));
+      const withdrawn = t.lessons.filter(touches);
+      const now = new Date().toISOString();
+      let result: Timetable;
+      if (mine.size === t.groupIds.length) {
+        t.status = 'draft';
+        t.updatedAt = now;
+        result = t;
+      } else {
+        // other faculties keep their published pairs; ours come back as a draft
+        result = {
+          ...structuredClone(t),
+          id: uid('tt'),
+          status: 'draft',
+          groupIds: [...mine],
+          lessons: structuredClone(withdrawn),
+          updatedAt: now,
+          score: scoreTimetable(store.dataset, withdrawn),
+        };
+        t.lessons = t.lessons.filter((l) => !touches(l));
+        t.groupIds = t.groupIds.filter((g) => !mine.has(g));
+        t.updatedAt = now;
+        store.timetables.unshift(result);
+      }
+      // tell the students and teachers of the withdrawn groups
+      notify('unpublished', { name: t.name }, [], {
+        groupIds: [...mine],
+        teacherIds: [
+          ...new Set(withdrawn.map((l) => store.dataset.assignments.find((a) => a.id === l.assignmentId)?.teacherId ?? '')),
+        ].filter(Boolean),
+      });
+      persist();
+      return delay(result);
+    },
     async getPublished() {
       currentUser();
       return delay(store.timetables.find((t) => t.status === 'published') ?? null);
