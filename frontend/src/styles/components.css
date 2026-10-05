@@ -578,16 +578,6 @@ table.table {
 .changes-card h2 {
   color: var(--danger);
 }
-.changes-badge {
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--danger);
-  color: #fff;
-  flex: none;
-}
 .changes-count {
   min-width: 22px;
   height: 22px;
@@ -599,15 +589,4 @@ table.table {
   font-weight: 700;
   line-height: 22px;
   text-align: center;
-}
-.changes-kind {
-  display: inline-grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  background: #fff;
-  color: var(--danger);
-  border: 1px solid rgba(213, 0, 47, 0.2);
-  flex: none;
 }

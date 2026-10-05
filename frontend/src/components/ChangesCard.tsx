@@ -3,7 +3,6 @@ import { parseDate, upcomingChanges } from '../domain/changes';
 import { fmtTime } from '../domain/slots';
 import { dateLocale, useI18n } from '../i18n';
 import { useDataset } from '../state/data';
-import { Icon } from './Icon';
 
 export function ChangesCard({ groupId, teacherId }: { groupId?: string; teacherId?: string }) {
   const { t, lang } = useI18n();
@@ -14,9 +13,6 @@ export function ChangesCard({ groupId, teacherId }: { groupId?: string; teacherI
   return (
     <section className="card changes-card">
       <div className="card-header">
-        <span className="changes-badge" aria-hidden>
-          <Icon name="alert" size={16} />
-        </span>
         <h2>{t('changes.upcoming')}</h2>
         <span className="changes-count">{list.length}</span>
       </div>
@@ -35,9 +31,6 @@ export function ChangesCard({ groupId, teacherId }: { groupId?: string; teacherI
                 });
           return (
             <div key={c.id} className="row wrap" style={{ gap: 12 }}>
-              <span className="changes-kind" title={t(c.kind === 'room' ? 'notify.room.title' : 'notify.teacher.title')}>
-                <Icon name={c.kind === 'room' ? 'door' : 'user'} size={14} />
-              </span>
               <strong style={{ minWidth: 120 }}>
                 {parseDate(c.date).toLocaleDateString(dateLocale(lang), { weekday: 'short', day: '2-digit', month: 'short' })}
               </strong>
