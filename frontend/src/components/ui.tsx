@@ -1,5 +1,5 @@
 // Small presentational building blocks shared by every page.
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { LANGS, useI18n } from '../i18n';
 import { Icon } from './Icon';
 
@@ -119,4 +119,18 @@ export function LanguageSwitch() {
       ))}
     </div>
   );
+}
+
+/** The current time as "HH:MM", refreshed every 20 seconds (for live examples). */
+export function useClock(): string {
+  const now = () => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+  const [time, setTime] = useState(now);
+  useEffect(() => {
+    const id = setInterval(() => setTime(now()), 20_000);
+    return () => clearInterval(id);
+  }, []);
+  return time;
 }

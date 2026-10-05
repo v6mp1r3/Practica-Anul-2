@@ -4,8 +4,8 @@ import { useState, type ReactNode } from 'react';
 import { api, API_MODE } from '../../api';
 import { resetMockData } from '../../api/mock';
 import { Icon } from '../../components/Icon';
-import { Field, PageHeader, Switch } from '../../components/ui';
-import { range } from '../../domain/slots';
+import { Field, PageHeader, Switch, useClock } from '../../components/ui';
+import { fmtTime, range } from '../../domain/slots';
 import { STUDY_FORMS, type Settings, type TimeSlot } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useData, useDataset } from '../../state/data';
@@ -50,6 +50,7 @@ export default function Setup() {
   const { institutionTimeFormat } = useData();
   const [s, setS] = useState<Settings>({ ...dataset.settings, timeFormat: institutionTimeFormat });
   const [breakMin, setBreakMin] = useState(15);
+  const clock = useClock();
   const [saving, setSaving] = useState(false);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({ ...x, [k]: v }));
 
@@ -275,10 +276,14 @@ export default function Setup() {
             <Field label={t('setup.breakMinutes')} hint={t('setup.default', { value: 15 })}>
               <input className="input" type="number" min={0} value={breakMin} onChange={(e) => setBreakMin(num(e.target.value))} />
             </Field>
-            <Field label={t('setup.timeFormat')} hint={t('setup.default', { value: '17:06' })}>
+            <Field label={t('setup.timeFormat')} hint={t('setup.default', { value: t('setup.timeFormat24') })}>
               <Select value={s.timeFormat ?? '24h'} onChange={(e) => set('timeFormat', e.target.value as '24h' | '12h')}>
-                <option value="24h">17:06 ({t('setup.timeFormat24')})</option>
-                <option value="12h">05:06 PM ({t('setup.timeFormat12')})</option>
+                <option value="24h">
+                  {fmtTime(clock, '24h')} ({t('setup.timeFormat24')})
+                </option>
+                <option value="12h">
+                  {fmtTime(clock, '12h')} ({t('setup.timeFormat12')})
+                </option>
               </Select>
             </Field>
           </div>

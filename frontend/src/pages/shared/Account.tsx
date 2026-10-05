@@ -4,7 +4,8 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../../api';
 import { Icon } from '../../components/Icon';
-import { Field, LanguageSwitch, PageHeader, Switch, initials } from '../../components/ui';
+import { Field, LanguageSwitch, PageHeader, Switch, initials, useClock } from '../../components/ui';
+import { fmtTime } from '../../domain/slots';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../state/auth';
 import { useData } from '../../state/data';
@@ -46,6 +47,7 @@ export default function Account() {
   const { index, myTimeFormat, setMyTimeFormat, institutionTimeFormat } = useData();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
+  const clock = useClock();
 
   const [first, setFirst] = useState(() => user?.name.split(' ')[0] ?? '');
   const [last, setLast] = useState(() => user?.name.split(' ').slice(1).join(' ') ?? '');
@@ -183,7 +185,7 @@ export default function Account() {
                     aria-pressed={(myTimeFormat || institutionTimeFormat) === f}
                     onClick={() => setMyTimeFormat(f === institutionTimeFormat ? '' : f)}
                   >
-                    {f === '24h' ? '17:06' : '05:06 PM'}
+                    {fmtTime(clock, f)}
                   </button>
                 ))}
               </div>
