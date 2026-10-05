@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Loading } from './components/ui';
 import type { Role } from './domain/types';
 import { I18nProvider } from './i18n';
+import Admins from './pages/admin/Admins';
 import Assignments from './pages/admin/Assignments';
 import Changes from './pages/admin/Changes';
 import Dashboard from './pages/admin/Dashboard';
@@ -84,6 +85,7 @@ function AppRoutes() {
       >
         <Route index element={<Dashboard />} />
         <Route path="setup" element={<Setup />} />
+        <Route path="admins" element={<Admins />} />
         <Route path="teachers" element={<Teachers />} />
         <Route path="rooms" element={<Rooms />} />
         <Route path="groups" element={<Groups />} />

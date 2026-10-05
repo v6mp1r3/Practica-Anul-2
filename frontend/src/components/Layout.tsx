@@ -23,6 +23,7 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
       section: 'nav.setup',
       items: [
         { to: '/admin/setup', label: 'nav.setup', icon: 'settings' },
+        { to: '/admin/admins', label: 'nav.admins', icon: 'user' },
         { to: '/admin/teachers', label: 'nav.teachers', icon: 'users' },
         { to: '/admin/rooms', label: 'nav.rooms', icon: 'door' },
         { to: '/admin/groups', label: 'nav.groups', icon: 'layers' },
@@ -81,17 +82,24 @@ export function Layout() {
           <Logo height={26} />
         </div>
         <nav className="nav">
-          {NAV[user.role].map((group, i) => (
-            <div key={i} style={{ display: 'contents' }}>
-              {group.section && <div className="nav-section">{t(group.section)}</div>}
-              {group.items.map((item) => (
-                <NavLink key={item.to} to={item.to} end={item.end}>
-                  <Icon name={item.icon} />
-                  {t(item.label)}
-                </NavLink>
-              ))}
-            </div>
-          ))}
+          {NAV[user.role]
+            // faculty administrators: no institution-wide settings or accounts
+            .map((g) =>
+              user.role === 'admin' && user.faculty
+                ? { ...g, items: g.items.filter((i) => i.to !== '/admin/setup' && i.to !== '/admin/admins') }
+                : g,
+            )
+            .map((group, i) => (
+              <div key={i} style={{ display: 'contents' }}>
+                {group.section && <div className="nav-section">{t(group.section)}</div>}
+                {group.items.map((item) => (
+                  <NavLink key={item.to} to={item.to} end={item.end}>
+                    <Icon name={item.icon} />
+                    {t(item.label)}
+                  </NavLink>
+                ))}
+              </div>
+            ))}
           <div className="nav-section" />
           <NavLink to="/notifications">
             <Icon name="bell" />
