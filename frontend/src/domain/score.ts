@@ -7,11 +7,14 @@ import { findHardConflicts } from './validator';
 
 export const SOFT_WEIGHTS: Record<keyof ScoreBreakdown, number> = {
   teacherGaps: 3,
-  groupGaps: 4,
+  // students should have no gaps between pairs — the heaviest comfort rule
+  groupGaps: 12,
   earlyStarts: 1,
   dayOverload: 5,
   unevenDays: 1,
   preferenceMisses: 1,
+  roomMisses: 2,
+  edgeMisses: 8,
 };
 
 /** The weeks we need to look at: one if parity is off, odd + even otherwise. */
@@ -41,7 +44,16 @@ function lessonHitsView(idx: DatasetIndex, l: Lesson, view: Cohort): boolean {
 }
 
 export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new DatasetIndex(ds)): Score {
-  const b: ScoreBreakdown = { teacherGaps: 0, groupGaps: 0, earlyStarts: 0, dayOverload: 0, unevenDays: 0, preferenceMisses: 0 };
+  const b: ScoreBreakdown = {
+    teacherGaps: 0,
+    groupGaps: 0,
+    earlyStarts: 0,
+    dayOverload: 0,
+    unevenDays: 0,
+    preferenceMisses: 0,
+    roomMisses: 0,
+    edgeMisses: 0,
+  };
   const weeks = weeksFor(ds);
   const weekShare = 1 / weeks.length;
   const days = range(ds.settings.workingDays);
@@ -67,6 +79,17 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
     const groupDays = idx.groupDays(view.groupId);
     for (const week of weeks) {
       const perDay = groupDays.map((d) => vl.filter((l) => l.day === d && inWeek(l, week)).map((l) => l.slot));
+      // "first or last pair only" subjects: must sit at an end of the group's day
+      for (const d of groupDays) {
+        const dl = vl.filter((l) => l.day === d && inWeek(l, week));
+        if (!dl.length) continue;
+        const lo = Math.min(...dl.map((l) => l.slot));
+        const hi = Math.max(...dl.map((l) => l.slot));
+        for (const l of dl) {
+          const subj = idx.subjects.get(idx.assignmentOf(l)?.subjectId ?? '');
+          if (subj?.edgeOfDay && l.slot !== lo && l.slot !== hi) b.edgeMisses += weekShare;
+        }
+      }
       for (const slots of perDay) {
         b.groupGaps += weekShare * gapsInDay(slots);
         b.dayOverload += weekShare * Math.max(0, new Set(slots).size - idx.groupMaxPairs(view.groupId));
@@ -75,6 +98,14 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
       const avg = loads.reduce((x, y) => x + y, 0) / loads.length;
       b.unevenDays += weekShare * loads.reduce((x, y) => x + Math.abs(y - avg), 0);
     }
+  }
+
+  // Pairs outside their preferred ("de dorit") rooms
+  for (const l of lessons) {
+    const a = idx.assignmentOf(l);
+    if (!a) continue;
+    const pref = idx.preferredRooms(a);
+    if (pref.length && !pref.some((r) => r.id === l.roomId)) b.roomMisses += parityWeight(l.parity);
   }
 
   // 08:00 classes have ~10 points lower attendance (report, ref. [9])
@@ -122,6 +153,32 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
     });
     if (!all.length) continue;
     for (const d of idx.groupDays(g.id)) {
+      // gaps, per subgroup view and week
+      const views = g.subgroups > 1 ? range(g.subgroups).map((i) => i + 1) : [null];
+      const gapLessons = new Set<string>();
+      const edgeLessons = new Set<string>();
+      for (const sub of views) {
+        for (const week of weeks) {
+          const dl = all.filter((l) => {
+            const a = idx.assignmentOf(l)!;
+            const hits = idx
+              .cohorts(a.audience)
+              .some((c) => c.groupId === g.id && (c.subgroup === null || sub === null || c.subgroup === sub));
+            return hits && l.day === d && inWeek(l, week);
+          });
+          if (gapsInDay(dl.map((l) => l.slot)) > 0) dl.forEach((l) => gapLessons.add(l.id));
+          if (dl.length) {
+            const lo = Math.min(...dl.map((l) => l.slot));
+            const hi = Math.max(...dl.map((l) => l.slot));
+            for (const l of dl) {
+              const subj = idx.subjects.get(idx.assignmentOf(l)!.subjectId);
+              if (subj?.edgeOfDay && l.slot !== lo && l.slot !== hi) edgeLessons.add(l.id);
+            }
+          }
+        }
+      }
+      if (gapLessons.size) out.push({ kind: 'group-gap', severity: 'warning', lessonIds: [...gapLessons], subjectId: g.id, day: d });
+      if (edgeLessons.size) out.push({ kind: 'edge-of-day', severity: 'warning', lessonIds: [...edgeLessons], subjectId: g.id, day: d });
       const count = new Set(all.filter((l) => l.day === d).map((l) => l.slot)).size;
       const whole = new Set(gl.filter((l) => l.day === d).map((l) => l.slot)).size;
       if (whole > idx.groupMaxPairs(g.id)) {

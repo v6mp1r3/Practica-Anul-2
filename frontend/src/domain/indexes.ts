@@ -84,6 +84,14 @@ export class DatasetIndex {
     return lists.reduce((acc, l) => acc.filter((d) => l.includes(d)));
   }
 
+  /** Rooms marked "de dorit" for this pair (by its subject or one of its groups). */
+  preferredRooms(a: Assignment): Room[] {
+    const groups = this.cohorts(a.audience).map((c) => c.groupId);
+    return this.ds.rooms.filter(
+      (r) => r.preferredSubjectIds?.includes(a.subjectId) || r.preferredGroupIds?.some((g) => groups.includes(g)),
+    );
+  }
+
   assignmentOf(lesson: Lesson): Assignment | undefined {
     return this.assignments.get(lesson.assignmentId);
   }

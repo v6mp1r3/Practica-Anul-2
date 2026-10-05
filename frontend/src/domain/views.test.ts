@@ -42,3 +42,14 @@ describe('week helpers', () => {
     expect(dayIndexOf(new Date(2026, 9, 4))).toBe(6);
   });
 });
+
+describe('fmtTime', () => {
+  it('shows 24-hour or 12-hour times', async () => {
+    const { fmtTime } = await import('./slots');
+    expect(fmtTime('17:06')).toBe('17:06');
+    expect(fmtTime('17:06', '12h')).toBe('05:06 PM');
+    expect(fmtTime('08:00', '12h')).toBe('08:00 AM');
+    expect(fmtTime('12:30', '12h')).toBe('12:30 PM');
+    expect(fmtTime('00:15', '12h')).toBe('12:15 AM');
+  });
+});

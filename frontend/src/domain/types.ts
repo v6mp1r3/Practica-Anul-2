@@ -46,6 +46,8 @@ export interface Settings {
    */
   reducedSessions: { start: string; end: string }[];
   lessonMinutes: number;
+  /** How times are shown: "17:06" (24h, default) or "05:06 PM" (12h). */
+  timeFormat?: '24h' | '12h';
   slots: TimeSlot[];
   weekParity: boolean;
   maxPairsPerDayGroup: number;
@@ -78,6 +80,9 @@ export interface Room {
   id: string;
   name: string;
   building: string;
+  /** Subjects and groups that should preferably ("de dorit") use this room. */
+  preferredSubjectIds?: string[];
+  preferredGroupIds?: string[];
   /** Faculty that manages the room; empty = shared. */
   faculty?: string;
   capacity: number;
@@ -112,6 +117,8 @@ export interface Subject {
   name: string;
   credits: number;
   year: number;
+  /** Must be the first or last pair of the group's day (e.g. physical education). */
+  edgeOfDay?: boolean;
   /** Faculty whose study plan includes it; empty = shared by all faculties. */
   faculty?: string;
   /** Pairs per week by activity type, from the study plan (0.5 = every other week). */
@@ -155,6 +162,10 @@ export interface ScoreBreakdown {
   dayOverload: number;
   unevenDays: number;
   preferenceMisses: number;
+  /** Pairs not placed in one of their preferred ("de dorit") rooms. */
+  roomMisses: number;
+  /** "First or last pair only" subjects (e.g. physical education) placed mid-day. */
+  edgeMisses: number;
 }
 
 export interface Score {
@@ -191,7 +202,9 @@ export type ConflictKind =
   | 'teacher-day-overload'
   | 'group-day-overload'
   | 'group-day-underload'
-  | 'no-consultation';
+  | 'no-consultation'
+  | 'group-gap'
+  | 'edge-of-day';
 
 export interface Conflict {
   kind: ConflictKind;

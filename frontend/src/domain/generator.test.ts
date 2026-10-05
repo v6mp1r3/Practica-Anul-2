@@ -51,3 +51,19 @@ describe('keeping other groups', () => {
     expect(second.score.hard).toBe(0);
   });
 });
+
+describe('comfort rules', () => {
+  it('leaves students without gaps and puts physical education first or last', async () => {
+    const { score } = await generateTimetable(seedDataset, { groupIds: allGroups, seed: 3, iterations: 250 });
+    expect(score.breakdown.groupGaps).toBe(0);
+    expect(score.breakdown.edgeMisses).toBe(0);
+  });
+
+  it('prefers the room marked "de dorit"', async () => {
+    const { lessons } = await generateTimetable(seedDataset, { groupIds: ['g1'], seed: 2, iterations: 40 });
+    const pcLabs = lessons.filter(
+      (l) => seedDataset.assignments.find((a) => a.id === l.assignmentId)?.subjectId === 'sub3' && l.roomId !== 'r1',
+    );
+    expect(pcLabs.some((l) => l.roomId === 'r8')).toBe(true);
+  });
+});

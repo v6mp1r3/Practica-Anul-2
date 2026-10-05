@@ -141,7 +141,11 @@ class Builder {
         const o = this.idx.assignmentOf(l)!;
         return this.idx.audienceTouchesGroup(o.audience, cohort.groupId);
       }, day);
-      c += 4 * gapDelta(slots);
+      // no gaps for students: strongly prefer slots next to the group's other pairs
+      c += 10 * gapDelta(slots);
+      // "first or last pair only" subjects must not land between other pairs
+      const subj = this.idx.subjects.get(a.subjectId);
+      if (subj?.edgeOfDay && slots.length && slot > Math.min(...slots) && slot < Math.max(...slots)) c += 12;
       if (new Set(slots).size >= this.idx.groupMaxPairs(cohort.groupId)) c += 6;
       const sameSubject = this.lessons.some((l) => {
         const o = this.idx.assignmentOf(l)!;
@@ -159,9 +163,11 @@ class Builder {
     const { settings } = this.ds;
     const teacher = this.idx.teachers.get(a.teacherId);
     const size = this.idx.audienceSize(a.audience);
+    const preferred = new Set(this.idx.preferredRooms(a).map((r) => r.id));
     const rooms = this.ds.rooms
       .filter((r) => r.capacity >= size && this.idx.roomFits(a, r) && this.idx.hasEquipment(a, r))
-      .sort((x, y) => x.capacity - y.capacity);
+      // preferred ("de dorit") rooms first, then the smallest room that fits
+      .sort((x, y) => Number(preferred.has(y.id)) - Number(preferred.has(x.id)) || x.capacity - y.capacity);
 
     let best: Lesson | null = null;
     let bestCost = Infinity;
