@@ -284,7 +284,8 @@ table.table {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  /* above the sticky top bar and the menu drawer */
+  z-index: 170;
   display: grid;
   place-items: center;
   padding: 16px;
@@ -351,6 +352,8 @@ table.table {
   background: transparent;
 }
 .segmented button {
+  flex: none;
+  white-space: nowrap;
   height: 32px;
   padding: 0 15px;
   border: none;
@@ -589,4 +592,50 @@ table.table {
   font-weight: 700;
   line-height: 22px;
   text-align: center;
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 640px) {
+  /* button rows (week, subgroup, form…) scroll sideways instead of breaking words */
+  .segmented {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .segmented::-webkit-scrollbar {
+    display: none;
+  }
+  .card-header {
+    flex-wrap: wrap;
+    padding: 16px 16px 10px;
+  }
+  .card-body {
+    padding: 14px 16px;
+  }
+  .card-header .search-line {
+    width: 100%;
+    order: 5;
+  }
+  /* tables scroll sideways; cells keep their words together */
+  table.table th,
+  table.table td {
+    white-space: nowrap;
+  }
+  .modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+  .modal,
+  .modal.wide {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 22px 22px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .select.pill {
+    min-width: 0;
+  }
 }

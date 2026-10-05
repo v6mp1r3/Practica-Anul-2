@@ -10,7 +10,8 @@
   border: 1px solid rgba(15, 26, 31, 0.07);
   border-radius: 20px;
   background: var(--surface);
-  overflow: hidden;
+  /* clip (not hidden): keeps the time column able to stick while scrolling sideways */
+  overflow: clip;
 }
 
 .tt-head,
@@ -289,4 +290,22 @@
 .busy-lesson span {
   color: var(--text-2);
   font-size: 11.5px;
+}
+
+/* Phones: narrower columns, the time column stays visible while scrolling */
+@media (max-width: 640px) {
+  .tt {
+    grid-template-columns: 58px repeat(var(--days), minmax(104px, 1fr));
+    min-width: calc(58px + var(--days) * 104px);
+  }
+  .tt-time,
+  .tt > .tt-head:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--surface);
+  }
+  .tt-time {
+    padding: 10px 8px;
+  }
 }
