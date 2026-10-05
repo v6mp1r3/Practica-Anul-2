@@ -15,6 +15,19 @@ export function toDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** Every date from start to end (inclusive) that falls on one of the given weekdays. */
+export function sessionDates(start: string, end: string, days: number[]): string[] {
+  const out: string[] = [];
+  if (!start || !end) return out;
+  const d = parseDate(start);
+  const last = parseDate(end);
+  while (d <= last) {
+    if (days.includes(dayIndexOf(d))) out.push(toDateString(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
 /** Is the date inside one of the reduced-attendance sessions (or are there none)? */
 export function inReducedSession(ds: Dataset, date: string): boolean {
   const sessions = ds.settings.reducedSessions ?? [];
@@ -32,6 +45,7 @@ export function lessonsOnDate(ds: Dataset, lessons: Lesson[], date: string, idx 
   const week = ds.settings.weekParity ? weekParityOf(d) : 'weekly';
   const sessionDay = inReducedSession(ds, date);
   return lessons.filter((l) => {
+    if (l.date) return l.date === date;
     if (l.day !== day || !inWeek(l, week)) return false;
     if (sessionDay) return true;
     const a = idx.assignmentOf(l);

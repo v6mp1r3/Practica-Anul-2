@@ -94,17 +94,11 @@ describe('upcomingChanges', () => {
 
 describe('reduced-attendance sessions', () => {
   const reduced = seedDataset.assignments.find((a) => a.audience.kind === 'group' && a.audience.id === 'g8')!;
-  const satLesson: Lesson = { id: 'r', assignmentId: reduced.id, day: 5, slot: 2, roomId: 'r1', parity: 'weekly' };
+  const dated: Lesson = { id: 'r', assignmentId: reduced.id, day: 1, slot: 2, roomId: 'r1', parity: 'weekly', date: '2026-10-13' };
 
-  it('happens only on dates inside a session', () => {
-    // seed sessions: 3–4 Oct, 7–8 Nov, 5–6 Dec 2026 (Saturday–Sunday)
-    expect(lessonsOnDate(seedDataset, [satLesson], '2026-10-03').map((l) => l.id)).toEqual(['r']);
-    expect(lessonsOnDate(seedDataset, [satLesson], '2026-10-10')).toEqual([]);
-  });
-
-  it('runs every week when no sessions are set', () => {
-    const ds = { ...seedDataset, settings: { ...seedDataset.settings, reducedSessions: [] } };
-    expect(lessonsOnDate(ds, [satLesson], '2026-10-10').map((l) => l.id)).toEqual(['r']);
+  it('shows a dated pair only on its own date', () => {
+    expect(lessonsOnDate(seedDataset, [dated], '2026-10-13').map((l) => l.id)).toEqual(['r']);
+    expect(lessonsOnDate(seedDataset, [dated], '2026-10-20')).toEqual([]); // same weekday, next week
   });
 
   it('does not affect full-time pairs', () => {

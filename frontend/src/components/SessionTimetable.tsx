@@ -1,25 +1,14 @@
 // Full calendar for reduced-attendance groups: every session (date range from
 // Configurare), one column per real date the group meets, with the pairs that
 // take place on that date (weekday + odd/even week + session).
+import { lessonsOnDate, parseDate, sessionDates, toDateString } from '../domain/changes';
 import type { DatasetIndex } from '../domain/indexes';
-import { lessonsOnDate, parseDate, toDateString } from '../domain/changes';
 import { fmtTime, range } from '../domain/slots';
 import type { Dataset, Lesson } from '../domain/types';
-import { dayIndexOf } from '../domain/views';
 import { dateLocale, useI18n } from '../i18n';
 import { LessonCard, type LessonField } from './TimetableGrid';
 
-/** Every date from start to end (inclusive) that falls on one of the given weekdays. */
-export function sessionDates(start: string, end: string, days: number[]): string[] {
-  const out: string[] = [];
-  const d = parseDate(start);
-  const last = parseDate(end);
-  while (d <= last) {
-    if (days.includes(dayIndexOf(d))) out.push(toDateString(d));
-    d.setDate(d.getDate() + 1);
-  }
-  return out;
-}
+export { sessionDates };
 
 export function SessionTimetable({
   dataset,
@@ -31,12 +20,13 @@ export function SessionTimetable({
   dataset: Dataset;
   index: DatasetIndex;
   lessons: Lesson[];
-  groupId: string;
+  /** Whose days to show; without it, the reduced form's days. */
+  groupId?: string;
   hide?: LessonField[];
 }) {
   const { t, lang } = useI18n();
   const { settings } = dataset;
-  const days = index.groupDays(groupId);
+  const days = groupId ? index.groupDays(groupId) : (settings.formDays?.reduced ?? [0, 1, 2, 3, 4, 5, 6]);
   const today = toDateString(new Date());
   const fmt = (s: string, o: Intl.DateTimeFormatOptions) => parseDate(s).toLocaleDateString(dateLocale(lang), o);
 
@@ -94,6 +84,34 @@ export function SessionTimetable({
           </section>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * For weekly pages (teacher, room, group views): when the view also has
+ * reduced-attendance session pairs, show them in their session calendar below.
+ */
+export function SessionsSection({
+  dataset,
+  index,
+  lessons,
+  hide,
+}: {
+  dataset: Dataset;
+  index: DatasetIndex;
+  lessons: Lesson[];
+  hide?: LessonField[];
+}) {
+  const { t } = useI18n();
+  if (!lessons.some((l) => l.date) || !dataset.settings.reducedSessions?.length) return null;
+  return (
+    <div className="stack" style={{ marginTop: 8 }}>
+      <div>
+        <h2>{t('session.sectionTitle')}</h2>
+        <p className="small muted">{t('session.sectionHint')}</p>
+      </div>
+      <SessionTimetable dataset={dataset} index={index} lessons={lessons} hide={hide} />
     </div>
   );
 }
