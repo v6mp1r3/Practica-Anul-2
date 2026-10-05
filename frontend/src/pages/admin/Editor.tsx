@@ -6,6 +6,7 @@ import { api } from '../../api';
 import { ConflictList } from '../../components/ConflictList';
 import { Icon } from '../../components/Icon';
 import { LessonPanel } from '../../components/LessonPanel';
+import { SessionsSection } from '../../components/SessionTimetable';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { ViewPicker } from '../../components/ViewPicker';
 import { Loading, PageHeader } from '../../components/ui';
@@ -262,6 +263,8 @@ export default function Editor() {
             <span className="spacer" />
             <span className="small muted no-print">{t('editor.dragHint')}</span>
           </div>
+          {/* reduced-attendance session pairs of this view, on their real dates */}
+          <SessionsSection dataset={dataset} index={index} lessons={filterLessons(index, lessons, view)} hide={HIDE[view.kind]} />
         </div>
 
         <aside className="stack no-print">

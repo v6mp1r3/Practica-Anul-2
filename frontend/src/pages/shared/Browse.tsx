@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
-import { SessionTimetable } from '../../components/SessionTimetable';
+import { SessionsSection, SessionTimetable } from '../../components/SessionTimetable';
 import { ViewPicker } from '../../components/ViewPicker';
 import { Empty, PageHeader } from '../../components/ui';
 import type { Parity } from '../../domain/types';
@@ -49,13 +49,21 @@ export default function Browse() {
               hide={HIDE[view.kind]}
             />
           ) : (
-            <TimetableGrid
-              settings={dataset.settings}
-              index={index}
-              lessons={lessons}
-              hide={HIDE[view.kind]}
-              today={dayIndexOf(new Date())}
-            />
+            <>
+              <TimetableGrid
+                settings={dataset.settings}
+                index={index}
+                lessons={lessons}
+                hide={HIDE[view.kind]}
+                today={dayIndexOf(new Date())}
+              />
+              <SessionsSection
+                dataset={dataset}
+                index={index}
+                lessons={filterLessons(index, published.lessons, view)}
+                hide={HIDE[view.kind]}
+              />
+            </>
           )}
           <Legend />
         </div>

@@ -110,7 +110,8 @@ export const ru: Record<MessageKey, string> = {
 
   'setup.formMaxPairs': 'Макс. пар в день',
   'setup.sessions': 'Сессии заочной формы',
-  'setup.sessionsHint': 'У заочных групп пары проходят только в дни этих сессий, по расписанию, составленному для их дней.',
+  'setup.sessionsHint':
+    'Заочные группы учатся компактно в эти сессии, в любой день недели, с разными дисциплинами по дням. Расписание составляется по календарным датам из количества пар за сессию по каждой дисциплине.',
   'setup.session': 'Сессия',
   'generate.form': 'Форма обучения',
   'generate.allForms': 'Все',
@@ -181,6 +182,8 @@ export const ru: Record<MessageKey, string> = {
   'account.timeFormatHint': 'Как отображается время в приложении на этом устройстве.',
   'session.days': '{count} дн.',
   'session.noDays': 'В эту сессию нет учебных дней этой формы.',
+  'session.sectionTitle': 'Заочная форма — сессии',
+  'session.sectionHint': 'Пары в сессиях заочной формы по реальным датам; еженедельные пары в эти дни тоже показаны.',
   'tt.oddShort': 'Н',
   'tt.evenShort': 'Ч',
   'tt.free': 'Окно',
@@ -321,6 +324,9 @@ export const ru: Record<MessageKey, string> = {
   'assignments.teacher': 'Преподаватель',
   'assignments.audience': 'Студенты',
   'assignments.pairs': 'Пар/нед.',
+  'assignments.perSession': '/сессия',
+  'assignments.pairsSession': 'Пар за сессию',
+  'assignments.pairsSessionHint': 'Заочное обучение: пары в каждой сессии, блоками по календарным датам',
   'assignments.parity': 'Чётность',
   'assignments.roomType': 'Тип аудитории',
   'assignments.equipment': 'Необходимое оборудование',

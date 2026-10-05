@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChangesCard } from '../../components/ChangesCard';
 import { MyTimetable } from '../../components/MyTimetable';
+import { SessionsSection } from '../../components/SessionTimetable';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { ViewPicker } from '../../components/ViewPicker';
 import { Empty, PageHeader } from '../../components/ui';
@@ -76,6 +77,12 @@ export default function TeacherHome() {
                 today={dayIndexOf(new Date())}
               />
               <Legend />
+              <SessionsSection
+                dataset={dataset}
+                index={index}
+                lessons={filterLessons(index, published.lessons, view)}
+                hide={HIDE[view.kind]}
+              />
             </>
           ) : (
             <>
@@ -114,6 +121,7 @@ export default function TeacherHome() {
               {over && <div className="badge danger">{t('teacher.overtime', { extra: load - teacher.maxPairsPerWeek })}</div>}
               <ChangesCard teacherId={teacher.id} />
               <MyTimetable settings={dataset.settings} index={index} lessons={mine} hide={['teacher']} />
+              <SessionsSection dataset={dataset} index={index} lessons={mine} hide={['teacher']} />
             </>
           )}
         </div>

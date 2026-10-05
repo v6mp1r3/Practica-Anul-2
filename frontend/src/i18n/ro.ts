@@ -109,7 +109,8 @@ export const ro = {
 
   'setup.formMaxPairs': 'Maxim perechi/zi',
   'setup.sessions': 'Sesiuni pentru frecvență redusă',
-  'setup.sessionsHint': 'Grupele cu frecvență redusă au perechi doar în zilele din aceste sesiuni, după orarul generat pentru zilele lor.',
+  'setup.sessionsHint':
+    'Grupele cu frecvență redusă învață compact în aceste sesiuni, în orice zi a săptămânii, cu discipline diferite de la o zi la alta. Orarul se generează pe date calendaristice, din perechile pe sesiune ale fiecărei discipline.',
   'setup.session': 'Sesiune',
   'generate.form': 'Forma de învățământ',
   'generate.allForms': 'Toate',
@@ -180,6 +181,8 @@ export const ro = {
   'account.timeFormatHint': 'Cum vezi orele în aplicație, pe acest dispozitiv.',
   'session.days': '{count} zile',
   'session.noDays': 'Nicio zi a formei de învățământ în această sesiune.',
+  'session.sectionTitle': 'Frecvență redusă — sesiuni',
+  'session.sectionHint': 'Perechile din sesiunile de frecvență redusă, pe date reale; în aceste zile apar și perechile săptămânale.',
   'tt.oddShort': 'I',
   'tt.evenShort': 'P',
   'tt.free': 'Fereastră',
@@ -320,6 +323,9 @@ export const ro = {
   'assignments.teacher': 'Profesor',
   'assignments.audience': 'Studenți',
   'assignments.pairs': 'Perechi/săpt.',
+  'assignments.perSession': '/sesiune',
+  'assignments.pairsSession': 'Perechi pe sesiune',
+  'assignments.pairsSessionHint': 'Frecvență redusă: perechi în fiecare sesiune, în blocuri pe zile calendaristice',
   'assignments.parity': 'Paritate',
   'assignments.roomType': 'Tip sală',
   'assignments.equipment': 'Echipament necesar',
