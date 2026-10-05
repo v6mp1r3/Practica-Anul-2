@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { TimetableGrid } from '../../components/TimetableGrid';
 import { PageHeader, Segmented } from '../../components/ui';
 import { teacherStateAt, type TeacherSlotState } from '../../domain/availability';
-import type { Parity } from '../../domain/types';
+import { paritiesOverlap } from '../../domain/slots';
+import type { Day, Parity } from '../../domain/types';
 import { dayIndexOf, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
@@ -10,8 +11,9 @@ import { Select } from '../../components/Select';
 
 const CELL: Record<TeacherSlotState, string> = {
   free: 'state-free',
-  teaching: 'state-preferred',
-  unavailable: 'state-unavailable',
+  // teaching = busy (red, with the pair); unavailable stays neutral so the two don't look alike
+  teaching: 'state-teaching',
+  unavailable: 'state-off',
   consultation: 'state-consultation',
 };
 
@@ -30,6 +32,28 @@ export default function TeacherAvailability() {
     teaching: t('teacherAvail.teaching'),
     unavailable: t('availability.unavailable'),
     consultation: t('availability.consultation'),
+  };
+
+  // The pair(s) the teacher has in a slot of the chosen week
+  const lessonsAt = (d: Day, s: number) =>
+    lessons.filter(
+      (l) => !l.date && l.day === d && l.slot === s && paritiesOverlap(l.parity, week) && index.assignmentOf(l)?.teacherId === teacherId,
+    );
+  const renderCell = (d: Day, s: number) => {
+    const state = teacherStateAt(index, lessons, teacherId, d, s, week);
+    if (state !== 'teaching') return label[state];
+    return lessonsAt(d, s).map((l) => {
+      const a = index.assignmentOf(l)!;
+      return (
+        <div key={l.id} className="busy-lesson">
+          <strong>
+            {index.subjects.get(a.subjectId)?.code} · {t(`activity.${a.type}`)}
+          </strong>
+          <span>{index.audienceLabel(a.audience)}</span>
+          <span>{index.rooms.get(l.roomId)?.name}</span>
+        </div>
+      );
+    });
   };
 
   // Who is free right now?
@@ -105,7 +129,7 @@ export default function TeacherAvailability() {
           lessons={[]}
           today={today}
           cellClass={(d, s) => CELL[teacherStateAt(index, lessons, teacherId, d, s, week)]}
-          renderCell={(d, s) => label[teacherStateAt(index, lessons, teacherId, d, s, week)]}
+          renderCell={renderCell}
         />
       </div>
     </div>

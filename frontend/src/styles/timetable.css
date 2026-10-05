@@ -266,3 +266,27 @@
     border: none;
   }
 }
+
+/* Teacher availability (students/teachers view): busy slots in red with the pair */
+.avail .tt-cell.state-teaching {
+  flex-direction: column;
+  gap: 4px;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.avail .tt-cell.state-off {
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+.busy-lesson {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1.3;
+  text-align: center;
+}
+.busy-lesson span {
+  color: var(--text-2);
+  font-size: 11.5px;
+}
