@@ -40,7 +40,8 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
   }
 
   for (const t of ds.teachers) {
-    const mine = ds.assignments.filter((a) => a.teacherId === t.id);
+    // weekly load: reduced-attendance loads happen in sessions, not every week
+    const mine = ds.assignments.filter((a) => a.teacherId === t.id && !idx.isReduced(a));
     if (!mine.length) continue;
     const load = mine.reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
     if (load > t.maxPairsPerWeek) {
@@ -92,7 +93,8 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
       }
     }
 
-    // Is the week physically big enough for this group?
+    // Is the week physically big enough for this group? (sessions are checked separately)
+    if (g.studyForm === 'reduced') continue;
     const views = g.subgroups > 1 ? range(g.subgroups).map((i) => i + 1) : [null];
     for (const sub of views) {
       const pairs = touching

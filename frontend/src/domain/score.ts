@@ -57,6 +57,9 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
   const weeks = weeksFor(ds);
   const weekShare = 1 / weeks.length;
   const days = range(ds.settings.workingDays);
+  const all = lessons;
+  // weekly rules look at the repeating week; dated (session) pairs are scored per date below
+  lessons = lessons.filter((l) => !l.date);
 
   // Teachers: gaps and preferred periods
   const byTeacher = new Map<string, Lesson[]>();
@@ -100,8 +103,19 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
     }
   }
 
+  // Session pairs (reduced attendance): no gaps within each date
+  const byGroupDate = new Map<string, number[]>();
+  for (const l of all) {
+    if (!l.date) continue;
+    for (const c of idx.cohorts(idx.assignmentOf(l)?.audience ?? { kind: 'group', id: '' })) {
+      const k = `${c.groupId}|${l.date}`;
+      byGroupDate.set(k, [...(byGroupDate.get(k) ?? []), l.slot]);
+    }
+  }
+  for (const slots of byGroupDate.values()) b.groupGaps += gapsInDay(slots);
+
   // Pairs outside their preferred ("de dorit") rooms
-  for (const l of lessons) {
+  for (const l of all) {
     const a = idx.assignmentOf(l);
     if (!a) continue;
     const pref = idx.preferredRooms(a);
@@ -113,7 +127,7 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
 
   for (const k of Object.keys(b) as (keyof ScoreBreakdown)[]) b[k] = Math.round(b[k] * 10) / 10;
   const soft = Math.round((Object.keys(b) as (keyof ScoreBreakdown)[]).reduce((s, k) => s + b[k] * SOFT_WEIGHTS[k], 0) * 10) / 10;
-  return { hard: findHardConflicts(ds, lessons, idx).length, soft, breakdown: b };
+  return { hard: findHardConflicts(ds, all, idx).length, soft, breakdown: b };
 }
 
 /** Things worth fixing before publishing, but that don't make the timetable invalid. */
@@ -123,7 +137,7 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
   const weeks = weeksFor(ds);
 
   for (const t of ds.teachers) {
-    const tl = lessons.filter((l) => idx.assignmentOf(l)?.teacherId === t.id);
+    const tl = lessons.filter((l) => !l.date && idx.assignmentOf(l)?.teacherId === t.id);
     if (!tl.length) continue;
     const load = tl.reduce((n, l) => n + parityWeight(l.parity), 0);
     if (load > t.maxPairsPerWeek)
@@ -143,6 +157,7 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
   }
 
   for (const g of ds.groups) {
+    if (g.studyForm === 'reduced') continue; // session dates, not a weekly pattern
     const gl = lessons.filter((l) => {
       const a = idx.assignmentOf(l);
       return a && a.audience.kind !== 'subgroup' && idx.audienceTouchesGroup(a.audience, g.id);

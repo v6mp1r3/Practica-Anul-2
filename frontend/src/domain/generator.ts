@@ -4,6 +4,7 @@
 // Neighborhood Search (report, Algorithm 2). Locked lessons are never moved.
 import { DatasetIndex } from './indexes';
 import { createRng, type Rng } from './rng';
+import { placeSessions } from './sessions';
 import { scoreTimetable } from './score';
 import { paritiesOverlap, range, slotKey } from './slots';
 import type { Assignment, Dataset, Lesson, Score } from './types';
@@ -235,7 +236,7 @@ const better = (x: Score, y: Score) => x.hard < y.hard || (x.hard === y.hard && 
  * greedily, keep the result if it is not worse.
  */
 function lnsStep(ds: Dataset, idx: DatasetIndex, current: Lesson[], currentScore: Score, k: number, rng: Rng, keep: Set<string>) {
-  const movable = current.filter((l) => !l.locked && !keep.has(l.id));
+  const movable = current.filter((l) => !l.locked && !keep.has(l.id) && !l.date);
   if (!movable.length) return null;
   const strategy = rng.pick(['random', 'byDay', 'byTeacher', 'byGroup'] as const);
   const seed = rng.pick(movable);
@@ -276,9 +277,14 @@ export async function generateTimetable(
   const fixed = (opts.fixed ?? []).filter((l) => scopedIds.has(l.assignmentId));
   const keep = (opts.keep ?? []).filter((l) => !scopedIds.has(l.assignmentId));
   const keepIds = new Set(keep.map((l) => l.id));
-  const scopedDs: Dataset = { ...ds, assignments: scoped };
+  // Reduced attendance is placed on session dates afterwards; the weekly engine
+  // handles full-time and dual groups
+  const weekly = scoped.filter((a) => !idx.isReduced(a));
+  const reduced = scoped.filter((a) => idx.isReduced(a));
+  const weeklyFixed = fixed.filter((l) => !l.date);
+  const scopedDs: Dataset = { ...ds, assignments: weekly };
 
-  let lessons = construct(ds, idx, scoped, [...keep, ...fixed], rng).lessons;
+  let lessons = construct(ds, idx, weekly, [...keep, ...weeklyFixed], rng).lessons;
   let score = scoreTimetable(scopedDs, lessons, idx);
   let k = 4;
   let stale = 0;
@@ -299,6 +305,10 @@ export async function generateTimetable(
       await new Promise((r) => setTimeout(r, 0)); // keep the UI responsive
     }
   }
+  if (reduced.length) {
+    lessons = [...lessons, ...placeSessions(ds, idx, reduced, lessons, rng)];
+  }
+  score = scoreTimetable({ ...ds, assignments: scoped }, lessons, idx);
   onProgress?.(1, score);
   return { lessons, score, seed: opts.seed };
 }
