@@ -29,6 +29,12 @@ export interface TimeSlot {
   end: string; // "09:30"
 }
 
+/** First and last pair (0-based, inclusive) of a year's part of the day. */
+export interface YearShift {
+  first: number;
+  last: number;
+}
+
 export interface Settings {
   institutionName: string;
   /** Faculties of the institution — as many as needed, none required. */
@@ -49,6 +55,11 @@ export interface Settings {
   /** How times are shown: "17:06" (24h, default) or "05:06 PM" (12h). */
   timeFormat?: '24h' | '12h';
   slots: TimeSlot[];
+  /**
+   * Part of the day each year of study is taught in (index 0 = year 1), as a
+   * range of pairs, e.g. year 1 in the morning, years 3+ after lunch. Soft rule.
+   */
+  yearShifts?: YearShift[];
   weekParity: boolean;
   maxPairsPerDayGroup: number;
   minPairsPerDayGroup: number;
@@ -95,6 +106,8 @@ export interface Group {
   name: string; // FAF-251
   program: string;
   year: number;
+  /** Length of the study programme in years (3–6); `year` can't exceed it. */
+  programYears?: number;
   size: number;
   /** Form of study; decides which days the group can have pairs on. */
   studyForm: StudyForm;
@@ -176,6 +189,8 @@ export interface ScoreBreakdown {
   roomMisses: number;
   /** "First or last pair only" subjects (e.g. physical education) placed mid-day. */
   edgeMisses: number;
+  /** Pairs outside the part of the day of the group's year of study (in pairs of distance). */
+  shiftMisses: number;
 }
 
 export interface Score {

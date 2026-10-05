@@ -1,4 +1,4 @@
-import type { Assignment, Audience, Dataset, Day, Group, Lesson, Room, Stream, Subject, Teacher } from './types';
+import type { Assignment, Audience, Dataset, Day, Group, Lesson, Room, Stream, Subject, Teacher, YearShift } from './types';
 
 /** A slice of students: a whole group (subgroup = null) or one subgroup. */
 export interface Cohort {
@@ -69,6 +69,23 @@ export class DatasetIndex {
     const { settings } = this.ds;
     const form = this.groups.get(groupId)?.studyForm ?? 'full';
     return (settings.formDays?.[form] ?? []).filter((d) => d < settings.workingDays);
+  }
+
+  /** The part of the day a group's year of study is taught in, if set. */
+  groupShift(groupId: string): YearShift | undefined {
+    const year = this.groups.get(groupId)?.year ?? 1;
+    const shifts = this.ds.settings.yearShifts ?? [];
+    return shifts.length ? shifts[Math.min(year, shifts.length) - 1] : undefined;
+  }
+
+  /** How many pairs `slot` lies outside the shifts of the pair's groups (0 = inside all). */
+  shiftDistance(a: Pick<Assignment, 'audience'>, slot: number): number {
+    let d = 0;
+    for (const c of this.cohorts(a.audience)) {
+      const s = this.groupShift(c.groupId);
+      if (s) d += slot < s.first ? s.first - slot : slot > s.last ? slot - s.last : 0;
+    }
+    return d;
   }
 
   /** Most pairs per day for a group, from its form of study. */
