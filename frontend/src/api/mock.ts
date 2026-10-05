@@ -10,7 +10,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 7;
+const SEED_VERSION = 8;
 
 interface Store {
   dataset: Dataset;
@@ -100,6 +100,12 @@ function mergeSeed(saved: Store) {
   for (const a of ds.assignments) {
     const seed = seedDataset.assignments.find((x) => x.id === a.id);
     if (seed?.pairsPerSession && a.pairsPerSession === undefined) a.pairsPerSession = seed.pairsPerSession;
+  }
+  // parts of the day per year of study, and programme lengths
+  if (!st.yearShifts) st.yearShifts = structuredClone(seedDataset.settings.yearShifts);
+  for (const g of ds.groups) {
+    const seed = seedDataset.groups.find((x) => x.id === g.id);
+    if (g.programYears === undefined) g.programYears = seed?.programYears ?? Math.max(4, g.year);
   }
   // demo accounts added later (institution + faculty administrators)
   const users = new Set(saved.users.map((u) => u.username));
