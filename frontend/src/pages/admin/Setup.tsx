@@ -52,6 +52,8 @@ export default function Setup() {
   const [breakMin, setBreakMin] = useState(15);
   const clock = useClock();
   const [saving, setSaving] = useState(false);
+  // as many years as the longest programme (at least 4, at most 6)
+  const shiftYears = Math.min(6, Math.max(4, ...dataset.groups.map((g) => g.programYears ?? g.year)));
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({ ...x, [k]: v }));
 
   async function save() {
@@ -61,6 +63,10 @@ export default function Setup() {
         ...s,
         faculties: s.faculties.map((f) => f.trim()).filter(Boolean),
         reducedSessions: s.reducedSessions.filter((x) => x.start && x.end && x.start <= x.end),
+        yearShifts: s.yearShifts?.map((x) => ({
+          first: Math.min(x.first, s.slots.length - 1),
+          last: Math.min(x.last, s.slots.length - 1),
+        })),
       });
       await refresh();
       toast(t('common.saved'));
@@ -369,6 +375,48 @@ export default function Setup() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Part of the day per year of study (programmes last 3–6 years) */}
+          <div className="stack" style={{ gap: 8 }}>
+            <h3>{t('setup.shifts')}</h3>
+            <p className="small muted">{t('setup.shiftsHint')}</p>
+            {range(shiftYears).map((y) => {
+              const shift = s.yearShifts?.[y] ?? { first: 0, last: s.slots.length - 1 };
+              const setShift = (v: Partial<typeof shift>) => {
+                const next = range(shiftYears).map((i) => s.yearShifts?.[i] ?? { first: 0, last: s.slots.length - 1 });
+                next[y] = { ...shift, ...v };
+                if (next[y].last < next[y].first)
+                  next[y] = v.first !== undefined ? { ...next[y], last: next[y].first } : { ...next[y], first: next[y].last };
+                set('yearShifts', next);
+              };
+              const pairOption = (i: number, edge: 'start' | 'end') => (
+                <option key={i} value={i}>
+                  {i + 1} · {fmtTime(s.slots[i][edge], s.timeFormat)}
+                </option>
+              );
+              return (
+                <div key={y} className="row wrap">
+                  <strong style={{ minWidth: 70 }}>{t('setup.year', { n: y + 1 })}</strong>
+                  <span className="small muted">{t('setup.fromPair')}</span>
+                  <Select
+                    style={{ width: 150 }}
+                    value={Math.min(shift.first, s.slots.length - 1)}
+                    onChange={(e) => setShift({ first: Number(e.target.value) })}
+                  >
+                    {range(s.slots.length).map((i) => pairOption(i, 'start'))}
+                  </Select>
+                  <span className="small muted">{t('setup.toPair')}</span>
+                  <Select
+                    style={{ width: 150 }}
+                    value={Math.min(shift.last, s.slots.length - 1)}
+                    onChange={(e) => setShift({ last: Number(e.target.value) })}
+                  >
+                    {range(s.slots.length).map((i) => pairOption(i, 'end'))}
+                  </Select>
+                </div>
+              );
+            })}
           </div>
         </Step>
 
