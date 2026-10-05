@@ -111,3 +111,18 @@ describe('reduced-attendance sessions', () => {
     expect(lessonsOnDate(seedDataset, lessons, EVEN_MONDAY).map((l) => l.id)).toEqual(['x']);
   });
 });
+
+describe('sessionDates', () => {
+  it('lists every weekend date inside a three-week session', async () => {
+    const { sessionDates } = await import('../components/SessionTimetable');
+    // Sat 3 Oct – Sun 18 Oct 2026, reduced attendance meets Saturday and Sunday
+    expect(sessionDates('2026-10-03', '2026-10-18', [5, 6])).toEqual([
+      '2026-10-03',
+      '2026-10-04',
+      '2026-10-10',
+      '2026-10-11',
+      '2026-10-17',
+      '2026-10-18',
+    ]);
+  });
+});
