@@ -15,7 +15,7 @@ import { Select } from '../../components/Select';
 export default function Subjects() {
   const { t } = useI18n();
   const { dataset, refresh } = useDataset();
-  const [faculty, setFaculty] = useFacultyFilter(dataset);
+  const [faculty, setFaculty, locked] = useFacultyFilter(dataset);
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<CsvResult | null>(null);
@@ -46,7 +46,7 @@ export default function Subjects() {
         searchText={(x) => `${x.code} ${x.name}`}
         headerActions={
           <>
-            <FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} />
+            <FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} locked={locked} />
             <button className="btn" onClick={() => downloadFile('plan-de-studii.csv', STUDY_PLAN_TEMPLATE, 'text/csv')}>
               <Icon name="download" />
               {t('subjects.template')}

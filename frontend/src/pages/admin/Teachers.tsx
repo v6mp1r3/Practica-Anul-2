@@ -13,7 +13,7 @@ const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab'];
 export default function Teachers() {
   const { t } = useI18n();
   const { dataset, index } = useDataset();
-  const [faculty, setFaculty] = useFacultyFilter(dataset);
+  const [faculty, setFaculty, locked] = useFacultyFilter(dataset);
 
   const plannedLoad = (id: string) =>
     dataset.assignments.filter((a) => a.teacherId === id).reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
@@ -24,7 +24,7 @@ export default function Teachers() {
       title={t('nav.teachers')}
       subtitle={t('teachers.subtitle')}
       items={dataset.teachers.filter((x) => inFaculty(faculty, x.faculty))}
-      headerActions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} />}
+      headerActions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} locked={locked} />}
       itemLabel={(x) => x.name}
       searchText={(x) => `${x.name} ${x.department} ${x.email}`}
       wideForm

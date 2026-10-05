@@ -12,7 +12,7 @@ const TYPES: RoomType[] = ['lecture', 'seminar', 'lab'];
 export default function Rooms() {
   const { t } = useI18n();
   const { dataset } = useDataset();
-  const [faculty, setFaculty] = useFacultyFilter(dataset);
+  const [faculty, setFaculty, locked] = useFacultyFilter(dataset);
   const knownEquipment = [
     ...new Set(dataset.rooms.flatMap((r) => r.equipment).concat(dataset.assignments.flatMap((a) => a.equipment))),
   ].sort();
@@ -23,7 +23,7 @@ export default function Rooms() {
       title={t('nav.rooms')}
       subtitle={t('rooms.subtitle')}
       items={dataset.rooms.filter((x) => inFaculty(faculty, x.faculty))}
-      headerActions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} />}
+      headerActions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} locked={locked} />}
       itemLabel={(x) => x.name}
       searchText={(x) => `${x.name} ${x.building} ${x.equipment.join(' ')}`}
       columns={[

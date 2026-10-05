@@ -9,14 +9,14 @@ import { Select } from '../../components/Select';
 export default function Groups() {
   const { t } = useI18n();
   const { dataset, index } = useDataset();
-  const [faculty, setFaculty] = useFacultyFilter(dataset);
+  const [faculty, setFaculty, locked] = useFacultyFilter(dataset);
 
   return (
     <div className="page">
       <PageHeader
         title={t('nav.groups')}
         subtitle={t('groups.subtitle')}
-        actions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} />}
+        actions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} locked={locked} />}
       />
       <div className="stack">
         <CrudPage
