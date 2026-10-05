@@ -178,6 +178,8 @@ export const ro = {
   'setup.timeFormat24': '24 de ore',
   'setup.timeFormat12': '12 ore, AM/PM',
   'account.timeFormatHint': 'Cum vezi orele în aplicație, pe acest dispozitiv.',
+  'session.days': '{count} zile',
+  'session.noDays': 'Nicio zi a formei de învățământ în această sesiune.',
   'tt.oddShort': 'I',
   'tt.evenShort': 'P',
   'tt.free': 'Fereastră',

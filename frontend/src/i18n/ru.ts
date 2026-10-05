@@ -179,6 +179,8 @@ export const ru: Record<MessageKey, string> = {
   'setup.timeFormat24': '24 часа',
   'setup.timeFormat12': '12 часов, AM/PM',
   'account.timeFormatHint': 'Как отображается время в приложении на этом устройстве.',
+  'session.days': '{count} дн.',
+  'session.noDays': 'В эту сессию нет учебных дней этой формы.',
   'tt.oddShort': 'Н',
   'tt.evenShort': 'Ч',
   'tt.free': 'Окно',

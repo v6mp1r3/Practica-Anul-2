@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { ChangesCard } from '../../components/ChangesCard';
 import { MyTimetable } from '../../components/MyTimetable';
+import { SessionTimetable } from '../../components/SessionTimetable';
 import { Empty, PageHeader, Segmented } from '../../components/ui';
-import { parseDate } from '../../domain/changes';
 import type { Lesson } from '../../domain/types';
 import { filterLessons } from '../../domain/views';
-import { dateLocale, useI18n } from '../../i18n';
+import { useI18n } from '../../i18n';
 import { useAuth } from '../../state/auth';
 import { useDataset } from '../../state/data';
 import { downloadFile } from '../../utils/download';
@@ -33,7 +33,7 @@ function save(key: string, value: unknown) {
 }
 
 export default function StudentHome() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const { user } = useAuth();
   const { dataset, index, published } = useDataset();
   const group = user?.groupId ? index.groups.get(user.groupId) : undefined;
@@ -76,7 +76,6 @@ export default function StudentHome() {
 
   const others = dataset.groups.filter((g) => g.id !== group.id).sort((a, b) => a.name.localeCompare(b.name));
   const sessions = group.studyForm === 'reduced' ? dataset.settings.reducedSessions : [];
-  const fmt = (s: string) => parseDate(s).toLocaleDateString(dateLocale(lang), { day: '2-digit', month: 'short' });
 
   return (
     <div className="page">
@@ -134,22 +133,13 @@ export default function StudentHome() {
         </div>
       ) : (
         <div className="stack">
-          {sessions.length > 0 && (
-            <section className="card">
-              <div className="card-header">
-                <h2>{t('student.sessions')}</h2>
-              </div>
-              <div className="card-body row wrap" style={{ gap: 10, paddingTop: 4 }}>
-                {sessions.map((s, i) => (
-                  <span key={i} className="badge primary" style={{ padding: '6px 12px', fontSize: 13 }}>
-                    {fmt(s.start)} – {fmt(s.end)}
-                  </span>
-                ))}
-              </div>
-            </section>
-          )}
           <ChangesCard groupId={group.id} />
-          <MyTimetable settings={dataset.settings} index={index} lessons={lessons} hide={shown.length === 1 ? ['audience'] : []} />
+          {/* Reduced attendance: the full calendar of every session, not one week */}
+          {sessions.length > 0 && shown.length === 1 && shown[0] === group.id ? (
+            <SessionTimetable dataset={dataset} index={index} lessons={lessons} groupId={group.id} hide={['audience']} />
+          ) : (
+            <MyTimetable settings={dataset.settings} index={index} lessons={lessons} hide={shown.length === 1 ? ['audience'] : []} />
+          )}
         </div>
       )}
     </div>
