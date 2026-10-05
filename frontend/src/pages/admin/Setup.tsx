@@ -274,6 +274,12 @@ export default function Setup() {
             <Field label={t('setup.breakMinutes')} hint={t('setup.default', { value: 15 })}>
               <input className="input" type="number" min={0} value={breakMin} onChange={(e) => setBreakMin(num(e.target.value))} />
             </Field>
+            <Field label={t('setup.timeFormat')} hint={t('setup.default', { value: '17:06' })}>
+              <Select value={s.timeFormat ?? '24h'} onChange={(e) => set('timeFormat', e.target.value as '24h' | '12h')}>
+                <option value="24h">17:06 ({t('setup.timeFormat24')})</option>
+                <option value="12h">05:06 PM ({t('setup.timeFormat12')})</option>
+              </Select>
+            </Field>
           </div>
 
           <div>

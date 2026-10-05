@@ -13,7 +13,7 @@ import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { Select } from '../../components/Select';
 
-const EFFORT = { quick: 80, normal: 250, thorough: 700 } as const;
+const EFFORT = { quick: 150, normal: 250, thorough: 700 } as const;
 type Effort = keyof typeof EFFORT;
 
 export function VariantComparison({ variants, onKeep }: { variants: Timetable[]; onKeep?: (t: Timetable) => void }) {

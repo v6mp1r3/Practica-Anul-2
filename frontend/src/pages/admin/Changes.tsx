@@ -1,3 +1,4 @@
+import { fmtTime } from '../../domain/slots';
 import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 // "Modificări în orar": one-off changes for a given date — a pair moves to
 // another room, or a substitute teacher takes it. Saving notifies everyone.
@@ -104,7 +105,8 @@ export default function Changes() {
                       <strong>{fmtDate(c.date)}</strong>
                     </td>
                     <td>
-                      {c.slot + 1} <span className="small muted">{dataset.settings.slots[c.slot]?.start}</span>
+                      {c.slot + 1}{' '}
+                      <span className="small muted">{fmtTime(dataset.settings.slots[c.slot]?.start, dataset.settings.timeFormat)}</span>
                     </td>
                     <td>{what(c.assignmentId)}</td>
                     <td>
@@ -184,7 +186,7 @@ function ChangeForm({
 
   const label = (l: Lesson) => {
     const a = index.assignmentOf(l);
-    return `${l.slot + 1} · ${dataset.settings.slots[l.slot]?.start} — ${a ? index.subjects.get(a.subjectId)?.code : ''} ${a ? t(`activity.${a.type}`) : ''} · ${a ? index.audienceLabel(a.audience) : ''} · ${index.rooms.get(l.roomId)?.name} · ${a ? index.teachers.get(a.teacherId)?.name : ''}`;
+    return `${l.slot + 1} · ${fmtTime(dataset.settings.slots[l.slot]?.start, dataset.settings.timeFormat)} — ${a ? index.subjects.get(a.subjectId)?.code : ''} ${a ? t(`activity.${a.type}`) : ''} · ${a ? index.audienceLabel(a.audience) : ''} · ${index.rooms.get(l.roomId)?.name} · ${a ? index.teachers.get(a.teacherId)?.name : ''}`;
   };
 
   async function save() {

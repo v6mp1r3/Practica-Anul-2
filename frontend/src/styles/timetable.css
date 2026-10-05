@@ -45,6 +45,9 @@
   font-size: 12px;
   color: var(--text-3);
 }
+.tt-time span {
+  white-space: nowrap;
+}
 .tt-time strong {
   color: var(--text);
   font-size: 13px;

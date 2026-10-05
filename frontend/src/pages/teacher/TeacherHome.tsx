@@ -5,7 +5,7 @@ import { MyTimetable } from '../../components/MyTimetable';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { ViewPicker } from '../../components/ViewPicker';
 import { Empty, PageHeader } from '../../components/ui';
-import { parseSlotKey } from '../../domain/slots';
+import { fmtTime, parseSlotKey } from '../../domain/slots';
 import type { ActivityType, Parity } from '../../domain/types';
 import { dayIndexOf, filterLessons, inWeek, teacherLoad, type ViewFilter } from '../../domain/views';
 import { useI18n } from '../../i18n';
@@ -105,7 +105,7 @@ export default function TeacherHome() {
                 <Link to="/teacher/availability" className="card stat" style={{ color: 'inherit' }}>
                   <div className="value" style={{ fontSize: 18 }}>
                     {consultation
-                      ? `${t(`dayShort.${consultation[0]}` as 'dayShort.0')} ${dataset.settings.slots[consultation[1]]?.start}`
+                      ? `${t(`dayShort.${consultation[0]}` as 'dayShort.0')} ${fmtTime(dataset.settings.slots[consultation[1]]?.start, dataset.settings.timeFormat)}`
                       : '—'}
                   </div>
                   <div className="label">{consultation ? t('availability.consultation') : t('teacher.setConsultation')}</div>

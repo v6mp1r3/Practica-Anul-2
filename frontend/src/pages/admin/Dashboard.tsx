@@ -11,7 +11,7 @@ import { PageHeader } from '../../components/ui';
 import { toDateString } from '../../domain/changes';
 import { scopeAssignments } from '../../domain/generator';
 import { precheck } from '../../domain/precheck';
-import { range } from '../../domain/slots';
+import { fmtTime, range } from '../../domain/slots';
 import type { ActivityType, Lesson, Timetable } from '../../domain/types';
 import { filterLessons, weekParityOf } from '../../domain/views';
 import { dateLocale, useI18n } from '../../i18n';
@@ -193,7 +193,7 @@ export default function Dashboard() {
                             key={run.from}
                             className={`tl-bar ${run.type}`}
                             style={{ gridColumn: `${run.from + 1} / ${run.to + 2}` }}
-                            title={`${slots[run.from]?.start}–${slots[run.to]?.end}`}
+                            title={`${fmtTime(slots[run.from]?.start, dataset.settings.timeFormat)}–${fmtTime(slots[run.to]?.end, dataset.settings.timeFormat)}`}
                           />
                         ))}
                       </div>
@@ -203,7 +203,7 @@ export default function Dashboard() {
                     <span className="tl-day" />
                     <div className="tl-track">
                       {slots.map((s, i) => (
-                        <span key={i}>{s.start}</span>
+                        <span key={i}>{fmtTime(s.start, dataset.settings.timeFormat)}</span>
                       ))}
                     </div>
                   </div>
@@ -278,7 +278,11 @@ export default function Dashboard() {
             {list.slice(0, 4).map((tt) => (
               <div key={tt.id} className="dash-recent-row">
                 <span className="dash-time">
-                  {new Date(tt.updatedAt).toLocaleTimeString(dateLocale(lang), { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(tt.updatedAt).toLocaleTimeString(dateLocale(lang), {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: dataset.settings.timeFormat === '12h',
+                  })}
                 </span>
                 <Link to={`/admin/timetables/${tt.id}`} className="dash-recent-name">
                   <strong>{tt.name}</strong>

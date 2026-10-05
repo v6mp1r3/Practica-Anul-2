@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { TimetableGrid } from '../../components/TimetableGrid';
 import { Empty, Field, PageHeader, Segmented } from '../../components/ui';
 import { freeRooms } from '../../domain/availability';
-import { range } from '../../domain/slots';
+import { fmtTime, range } from '../../domain/slots';
 import type { Parity, RoomType } from '../../domain/types';
 import { dayIndexOf, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
@@ -46,7 +46,7 @@ export default function FreeRooms() {
               <Select className="select" value={slot} onChange={(e) => setSlot(Number(e.target.value))}>
                 {dataset.settings.slots.map((s, i) => (
                   <option key={i} value={i}>
-                    {i + 1} · {s.start}–{s.end}
+                    {i + 1} · {fmtTime(s.start, dataset.settings.timeFormat)}–{fmtTime(s.end, dataset.settings.timeFormat)}
                   </option>
                 ))}
               </Select>

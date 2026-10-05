@@ -1,5 +1,5 @@
 import type { DatasetIndex } from '../domain/indexes';
-import { paritiesOverlap, range } from '../domain/slots';
+import { fmtTime, paritiesOverlap, range } from '../domain/slots';
 import type { Dataset, Lesson, Parity } from '../domain/types';
 import { useI18n } from '../i18n';
 import { Icon } from './Icon';
@@ -88,7 +88,7 @@ export function LessonPanel({
             >
               {dataset.settings.slots.map((s, i) => (
                 <option key={i} value={i}>
-                  {i + 1} · {s.start}
+                  {i + 1} · {fmtTime(s.start, dataset.settings.timeFormat)}
                 </option>
               ))}
             </Select>

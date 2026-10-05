@@ -483,6 +483,8 @@ table.table {
   box-shadow: 0 0 0 3px var(--primary-soft);
 }
 .select.pill {
+  width: auto;
+  min-width: 180px;
   height: 36px;
   padding: 0 34px 0 16px;
   border: 1px solid var(--border-strong);

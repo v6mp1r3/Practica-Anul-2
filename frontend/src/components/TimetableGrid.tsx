@@ -1,6 +1,6 @@
 import { useEffect, useState, type DragEvent, type ReactNode } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
-import { range } from '../domain/slots';
+import { fmtTime, range } from '../domain/slots';
 import type { Day, Lesson, Settings, SlotIndex } from '../domain/types';
 import { lessonsAt } from '../domain/views';
 import { useI18n } from '../i18n';
@@ -120,9 +120,8 @@ export function TimetableGrid({
           <div key={slot} style={{ display: 'contents' }}>
             <div className="tt-time">
               <strong>{slot + 1}</strong>
-              <span>
-                {s.start}–{s.end}
-              </span>
+              <span>{fmtTime(s.start, settings.timeFormat)}</span>
+              <span>{fmtTime(s.end, settings.timeFormat)}</span>
             </div>
             {days.map((day) => {
               const key = `${day}:${slot}`;
@@ -205,7 +204,7 @@ function nowPosition(settings: Settings, now: Date): { slot: number; frac: numbe
   const slot = settings.slots.findIndex((s) => m >= toMin(s.start) && m < toMin(s.end));
   if (slot < 0) return null;
   const s = settings.slots[slot];
-  const label = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const label = fmtTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`, settings.timeFormat);
   return { slot, frac: (m - toMin(s.start)) / (toMin(s.end) - toMin(s.start)), label };
 }
 
@@ -260,8 +259,8 @@ export function Agenda({
         return (
           <div key={slot} className="agenda-item">
             <div className="when">
-              <strong>{settings.slots[slot]?.start}</strong>
-              {settings.slots[slot]?.end}
+              <strong>{fmtTime(settings.slots[slot]?.start, settings.timeFormat)}</strong>
+              {fmtTime(settings.slots[slot]?.end, settings.timeFormat)}
             </div>
             <div className="stack" style={{ gap: 6 }}>
               {here.length ? (

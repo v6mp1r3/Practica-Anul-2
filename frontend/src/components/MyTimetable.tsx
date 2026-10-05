@@ -2,7 +2,7 @@
 // and the full week — the agenda is the default on phones.
 import { useEffect, useState } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
-import { range } from '../domain/slots';
+import { fmtTime, range } from '../domain/slots';
 import type { Lesson, Parity, Settings } from '../domain/types';
 import { dayIndexOf, inWeek, weekParityOf } from '../domain/views';
 import { useI18n } from '../i18n';
@@ -62,7 +62,7 @@ export function MyTimetable({
           <div className="card-body row wrap" style={{ gap: 16 }}>
             <div>
               <div className="small muted">{next.current ? t('my.now') : t('my.next')}</div>
-              <div className="stat-value">{settings.slots[next.lesson.slot]?.start}</div>
+              <div className="stat-value">{fmtTime(settings.slots[next.lesson.slot]?.start, settings.timeFormat)}</div>
             </div>
             <div style={{ flex: 1, minWidth: 220 }}>
               <LessonCard lesson={next.lesson} index={index} hide={hide} />

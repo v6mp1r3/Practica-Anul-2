@@ -1,5 +1,6 @@
 // Upcoming schedule changes for one group or teacher, shown on their home page.
 import { parseDate, upcomingChanges } from '../domain/changes';
+import { fmtTime } from '../domain/slots';
 import { dateLocale, useI18n } from '../i18n';
 import { useDataset } from '../state/data';
 import { Icon } from './Icon';
@@ -35,7 +36,7 @@ export function ChangesCard({ groupId, teacherId }: { groupId?: string; teacherI
                 {parseDate(c.date).toLocaleDateString(dateLocale(lang), { weekday: 'short', day: '2-digit', month: 'short' })}
               </strong>
               <span className="muted" style={{ minWidth: 90 }}>
-                {t('tt.pair')} {c.slot + 1} · {dataset.settings.slots[c.slot]?.start}
+                {t('tt.pair')} {c.slot + 1} · {fmtTime(dataset.settings.slots[c.slot]?.start, dataset.settings.timeFormat)}
               </span>
               <span>
                 {a && `${index.subjects.get(a.subjectId)?.code} ${t(`activity.${a.type}`)} — `}
