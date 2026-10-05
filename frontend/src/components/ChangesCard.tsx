@@ -12,10 +12,13 @@ export function ChangesCard({ groupId, teacherId }: { groupId?: string; teacherI
   if (!list.length) return null;
 
   return (
-    <section className="card">
+    <section className="card changes-card">
       <div className="card-header">
-        <Icon name="swap" size={17} />
+        <span className="changes-badge" aria-hidden>
+          <Icon name="alert" size={16} />
+        </span>
         <h2>{t('changes.upcoming')}</h2>
+        <span className="changes-count">{list.length}</span>
       </div>
       <div className="card-body stack" style={{ gap: 12, paddingTop: 4 }}>
         {list.map((c) => {
@@ -32,6 +35,9 @@ export function ChangesCard({ groupId, teacherId }: { groupId?: string; teacherI
                 });
           return (
             <div key={c.id} className="row wrap" style={{ gap: 12 }}>
+              <span className="changes-kind" title={t(c.kind === 'room' ? 'notify.room.title' : 'notify.teacher.title')}>
+                <Icon name={c.kind === 'room' ? 'door' : 'user'} size={14} />
+              </span>
               <strong style={{ minWidth: 120 }}>
                 {parseDate(c.date).toLocaleDateString(dateLocale(lang), { weekday: 'short', day: '2-digit', month: 'short' })}
               </strong>
