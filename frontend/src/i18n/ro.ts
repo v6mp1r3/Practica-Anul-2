@@ -124,9 +124,8 @@ export const ro = {
   'generate.allForms': 'Toate',
   'student.sessions': 'Sesiunile tale',
 
-  'student.showGroups': 'Grupe afișate:',
   'student.myGroup': 'Grupa mea',
-  'student.otherGroups': 'Alte grupe',
+  'student.otherGroup': 'Altă grupă',
   'account.title': 'Contul meu',
   'account.subtitle': 'Datele tale, parola și preferințele.',
   'account.profile': 'Profil',

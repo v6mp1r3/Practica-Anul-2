@@ -125,9 +125,8 @@ export const ru: Record<MessageKey, string> = {
   'generate.allForms': 'Все',
   'student.sessions': 'Ваши сессии',
 
-  'student.showGroups': 'Показать группы:',
   'student.myGroup': 'Моя группа',
-  'student.otherGroups': 'Другие группы',
+  'student.otherGroup': 'Другая группа',
   'account.title': 'Мой аккаунт',
   'account.subtitle': 'Ваши данные, пароль и настройки.',
   'account.profile': 'Профиль',

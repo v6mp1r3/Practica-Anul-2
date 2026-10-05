@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChangesCard } from '../../components/ChangesCard';
-import { GroupMultiPicker } from '../../components/GroupMultiPicker';
+import { Select } from '../../components/Select';
 import { MyTimetable } from '../../components/MyTimetable';
 import { SessionTimetable } from '../../components/SessionTimetable';
 import { Empty, PageHeader, Segmented } from '../../components/ui';
@@ -13,7 +13,8 @@ import { downloadFile } from '../../utils/download';
 import { timetableToIcs } from '../../utils/export';
 
 const SUBGROUP_KEY = 'eduschedule:subgroup';
-const GROUPS_KEY = 'eduschedule:groups';
+// one group at a time: the student's own, or another one they pick
+const VIEW_KEY = 'eduschedule:viewGroup';
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -39,10 +40,9 @@ export default function StudentHome() {
   const { dataset, index, published } = useDataset();
   const group = user?.groupId ? index.groups.get(user.groupId) : undefined;
   const [subgroup, setSubgroupState] = useState<number | null>(() => load<number | null>(SUBGROUP_KEY, null));
-  // Groups shown in the grid: the student's own group by default, others on demand
-  const [shown, setShownState] = useState<string[]>(() => {
-    const saved = load<string[]>(GROUPS_KEY, []).filter((id) => index.groups.has(id));
-    return saved.length ? saved : group ? [group.id] : [];
+  const [viewId, setViewState] = useState<string>(() => {
+    const saved = load<string | null>(VIEW_KEY, null);
+    return saved && index.groups.has(saved) ? saved : (group?.id ?? '');
   });
 
   if (!group) return <Empty />;
@@ -51,41 +51,29 @@ export default function StudentHome() {
     setSubgroupState(s);
     save(SUBGROUP_KEY, s);
   };
-  const setShown = (ids: string[]) => {
-    const next = ids.length ? ids : [group.id];
-    setShownState(next);
-    save(GROUPS_KEY, next);
+  const setView = (id: string) => {
+    setViewState(id);
+    save(VIEW_KEY, id === group.id ? null : id);
   };
-  const toggle = (id: string) => setShown(shown.includes(id) ? shown.filter((x) => x !== id) : [...shown, id]);
+  const viewed = index.groups.get(viewId) ?? group;
+  const mine = viewed.id === group.id;
 
-  const onlyMine = shown.length === 1 && shown[0] === group.id;
-  const allIds = dataset.groups.map((g) => g.id);
-  const everything = allIds.every((id) => shown.includes(id));
-
-  const lessons: Lesson[] = [];
-  if (published) {
-    const seen = new Set<string>();
-    for (const id of shown) {
-      for (const l of filterLessons(index, published.lessons, { kind: 'group', id, subgroup: onlyMine ? subgroup : null })) {
-        if (!seen.has(l.id)) {
-          seen.add(l.id);
-          lessons.push(l);
-        }
-      }
-    }
-  }
+  const lessons: Lesson[] = published
+    ? filterLessons(index, published.lessons, { kind: 'group', id: viewed.id, subgroup: mine ? subgroup : null })
+    : [];
 
   const others = dataset.groups.filter((g) => g.id !== group.id).sort((a, b) => a.name.localeCompare(b.name));
-  const sessions = group.studyForm === 'reduced' ? dataset.settings.reducedSessions : [];
+  const faculties = [...new Set(others.map((g) => g.faculty ?? ''))];
+  const sessions = viewed.studyForm === 'reduced' ? dataset.settings.reducedSessions : [];
 
   return (
     <div className="page">
       <PageHeader
         title={t('nav.timetable')}
-        subtitle={`${group.name} · ${group.program} · ${t(`form.${group.studyForm}`)} · ${t('groups.year')} ${group.year}`}
+        subtitle={`${viewed.name} · ${viewed.program} · ${t(`form.${viewed.studyForm}`)} · ${t('groups.year')} ${viewed.year}`}
         actions={
           <>
-            {onlyMine && group.subgroups > 1 && (
+            {mine && group.subgroups > 1 && (
               <Segmented
                 value={String(subgroup ?? 0)}
                 onChange={(v) => setSubgroup(Number(v) || null)}
@@ -101,7 +89,7 @@ export default function StudentHome() {
             {lessons.length > 0 && (
               <button
                 className="btn"
-                onClick={() => downloadFile(`orar-${group.name}.ics`, timetableToIcs(lessons, index, dataset.settings), 'text/calendar')}
+                onClick={() => downloadFile(`orar-${viewed.name}.ics`, timetableToIcs(lessons, index, dataset.settings), 'text/calendar')}
               >
                 {t('my.addToCalendar')}
               </button>
@@ -110,23 +98,32 @@ export default function StudentHome() {
         }
       />
 
-      {/* Which groups to show: own group, any others, or all */}
+      {/* Whose timetable: your own group, or one other group — never several at once */}
       <div className="row wrap" style={{ gap: 8, marginBottom: 18 }}>
-        <span className="small muted">{t('student.showGroups')}</span>
-        <div className="segmented group-filter" role="group" aria-label={t('student.showGroups')}>
-          <button type="button" aria-pressed={!everything && shown.includes(group.id)} onClick={() => setShown([group.id])}>
+        <div className="segmented">
+          <button type="button" aria-pressed={mine} onClick={() => setView(group.id)} style={{ whiteSpace: 'nowrap' }}>
             {t('student.myGroup')} · {group.name}
           </button>
-          <GroupMultiPicker
-            groups={others}
-            selected={everything ? [] : shown}
-            onToggle={(id) => (everything ? setShown([group.id, id]) : toggle(id))}
-            active={!everything && others.some((g) => shown.includes(g.id))}
-          />
-          <button type="button" aria-pressed={everything} onClick={() => setShown(everything ? [group.id] : allIds)}>
-            {t('common.all')}
-          </button>
         </div>
+        <Select
+          className="select pill"
+          value={mine ? '' : viewed.id}
+          onChange={(e) => setView(e.target.value || group.id)}
+          aria-label={t('student.otherGroup')}
+        >
+          <option value="">{t('student.otherGroup')}</option>
+          {faculties.map((f) => (
+            <optgroup key={f} label={f || '—'}>
+              {others
+                .filter((g) => (g.faculty ?? '') === f)
+                .map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name} · {t('groups.year')} {g.year}
+                  </option>
+                ))}
+            </optgroup>
+          ))}
+        </Select>
       </div>
 
       {!published ? (
@@ -135,12 +132,12 @@ export default function StudentHome() {
         </div>
       ) : (
         <div className="stack">
-          <ChangesCard groupId={group.id} />
+          <ChangesCard groupId={viewed.id} />
           {/* Reduced attendance: the full calendar of every session, not one week */}
-          {sessions.length > 0 && shown.length === 1 && shown[0] === group.id ? (
-            <SessionTimetable dataset={dataset} index={index} lessons={lessons} groupId={group.id} hide={['audience']} />
+          {sessions.length > 0 ? (
+            <SessionTimetable dataset={dataset} index={index} lessons={lessons} groupId={viewed.id} hide={['audience']} />
           ) : (
-            <MyTimetable settings={dataset.settings} index={index} lessons={lessons} hide={shown.length === 1 ? ['audience'] : []} />
+            <MyTimetable settings={dataset.settings} index={index} lessons={lessons} hide={['audience']} />
           )}
         </div>
       )}

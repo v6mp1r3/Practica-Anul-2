@@ -123,9 +123,8 @@ export const en: Record<MessageKey, string> = {
   'generate.allForms': 'All',
   'student.sessions': 'Your sessions',
 
-  'student.showGroups': 'Groups shown:',
   'student.myGroup': 'My group',
-  'student.otherGroups': 'Other groups',
+  'student.otherGroup': 'Another group',
   'account.title': 'My account',
   'account.subtitle': 'Your details, password and preferences.',
   'account.profile': 'Profile',
