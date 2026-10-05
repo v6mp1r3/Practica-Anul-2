@@ -86,10 +86,20 @@ export default function Assignments() {
             </span>
           ),
         },
-        { label: t('assignments.pairs'), render: (x) => x.pairsPerWeek },
+        {
+          label: t('assignments.pairs'),
+          render: (x) =>
+            index.isReduced(x) ? (
+              <span>
+                {x.pairsPerSession ?? x.pairsPerWeek} <span className="small muted">{t('assignments.perSession')}</span>
+              </span>
+            ) : (
+              x.pairsPerWeek
+            ),
+        },
         {
           label: t('assignments.parity'),
-          render: (x) => (x.parity === 'weekly' ? '—' : <span className="badge">{t(`parity.${x.parity}`)}</span>),
+          render: (x) => (x.parity === 'weekly' || index.isReduced(x) ? '—' : <span className="badge">{t(`parity.${x.parity}`)}</span>),
         },
       ]}
       newItem={(): Omit<Assignment, 'id'> => ({
@@ -103,12 +113,18 @@ export default function Assignments() {
         equipment: [],
       })}
       validate={(d) =>
-        !d.subjectId || !d.teacherId || !d.audience.id ? t('assignments.required') : d.pairsPerWeek < 1 ? t('assignments.pairsMin') : null
+        !d.subjectId || !d.teacherId || !d.audience.id
+          ? t('assignments.required')
+          : (index.isReduced(d) ? (d.pairsPerSession ?? d.pairsPerWeek) : d.pairsPerWeek) < 1
+            ? t('assignments.pairsMin')
+            : null
       }
       renderForm={(d, set) => {
         const teacher = index.teachers.get(d.teacherId);
         const setAudience = (aud: Audience) => set({ audience: aud });
         const subgroupsOf = (id: string) => index.groups.get(id)?.subgroups ?? 1;
+        // reduced attendance is counted per session, not per week (no odd/even weeks either)
+        const reduced = index.isReduced(d);
         return (
           <div className="stack">
             <div className="form-grid">
@@ -213,17 +229,30 @@ export default function Assignments() {
             </Field>
 
             <div className="form-grid">
-              <Field label={t('assignments.pairs')}>
-                <input
-                  className="input"
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={d.pairsPerWeek}
-                  onChange={(e) => set({ pairsPerWeek: Number(e.target.value) || 0 })}
-                />
-              </Field>
-              {dataset.settings.weekParity && (
+              {reduced ? (
+                <Field label={t('assignments.pairsSession')} hint={t('assignments.pairsSessionHint')}>
+                  <input
+                    className="input"
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={d.pairsPerSession ?? d.pairsPerWeek}
+                    onChange={(e) => set({ pairsPerSession: Number(e.target.value) || 0, parity: 'weekly' })}
+                  />
+                </Field>
+              ) : (
+                <Field label={t('assignments.pairs')}>
+                  <input
+                    className="input"
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={d.pairsPerWeek}
+                    onChange={(e) => set({ pairsPerWeek: Number(e.target.value) || 0 })}
+                  />
+                </Field>
+              )}
+              {dataset.settings.weekParity && !reduced && (
                 <Field label={t('assignments.parity')}>
                   <Select className="select" value={d.parity} onChange={(e) => set({ parity: e.target.value as Parity })}>
                     {PARITIES.map((p) => (
