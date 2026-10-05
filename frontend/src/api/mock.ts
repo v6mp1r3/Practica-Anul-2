@@ -3,13 +3,14 @@
 import { seedDataset, seedNotifications, seedUsers } from '../data/seed';
 import { generateTimetable } from '../domain/generator';
 import { scoreTimetable } from '../domain/score';
+import { findHardConflicts } from '../domain/validator';
 import type { Dataset, Notification, NotificationKind, Role, ScheduleChange, Timetable, User } from '../domain/types';
 import { ApiError } from './http';
 import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 4;
+const SEED_VERSION = 5;
 
 interface Store {
   dataset: Dataset;
@@ -74,6 +75,13 @@ function mergeSeed(saved: Store) {
     [ds.subjects, seedDataset.subjects],
   ] as [{ id: string; faculty?: string }[], { id: string; faculty?: string }[]][]) {
     for (const item of list) if (!item.faculty) item.faculty = seed.find((x) => x.id === item.id)?.faculty;
+  }
+  // demo accounts added later (institution + faculty administrators)
+  const users = new Set(saved.users.map((u) => u.username));
+  for (const u of seedUsers) if (!users.has(u.username)) saved.users.push(structuredClone(u));
+  for (const u of saved.users) {
+    const seed = seedUsers.find((x) => x.id === u.id);
+    if (seed?.faculty && u.faculty === undefined) u.faculty = seed.faculty;
   }
   saved.seedVersion = SEED_VERSION;
 }
@@ -145,6 +153,20 @@ function currentUser(): User {
   return u;
 }
 
+/** Institution administrator: an admin without a faculty. */
+function requireInstitutionAdmin(): User {
+  const u = requireRole('admin');
+  if (u.faculty) throw new ApiError(403, 'Only the institution administrator can do this');
+  return u;
+}
+
+/** Groups an assignment's audience covers. */
+function groupsOf(assignmentId: string): string[] {
+  const a = store.dataset.assignments.find((x) => x.id === assignmentId);
+  if (!a) return [];
+  return a.audience.kind === 'stream' ? (store.dataset.streams.find((x) => x.id === a.audience.id)?.groupIds ?? []) : [a.audience.id];
+}
+
 function requireRole(...roles: Role[]): User {
   const u = currentUser();
   if (!roles.includes(u.role)) throw new ApiError(403, 'Forbidden');
@@ -212,6 +234,37 @@ export function createMockApi(): Api {
       persist();
       return delay(undefined);
     },
+    async listUsers() {
+      requireInstitutionAdmin();
+      return delay(store.users);
+    },
+    async createUser(nu) {
+      requireInstitutionAdmin();
+      const username = nu.username.trim().toLowerCase();
+      if (!username || store.users.some((u) => u.username === username)) throw new ApiError(422, 'Username taken');
+      if (nu.password.length < 8) throw new ApiError(422, 'Password too short');
+      const { password, ...rest } = nu;
+      const created: User = { ...rest, username, id: uid('u') };
+      store.users.push(created);
+      store.passwords = { ...store.passwords, [created.id]: password };
+      persist();
+      return delay(created);
+    },
+    async updateUser(user) {
+      requireInstitutionAdmin();
+      const i = store.users.findIndex((u) => u.id === user.id);
+      if (i < 0) throw new ApiError(404, 'Not found');
+      store.users[i] = { ...store.users[i], ...user };
+      persist();
+      return delay(store.users[i]);
+    },
+    async deleteUser(id) {
+      const me = requireInstitutionAdmin();
+      if (id === me.id) throw new ApiError(422, 'You cannot delete your own account');
+      store.users = store.users.filter((u) => u.id !== id);
+      persist();
+      return delay(undefined);
+    },
     async me() {
       return delay(currentUser(), 0);
     },
@@ -225,7 +278,7 @@ export function createMockApi(): Api {
       return delay(store.dataset);
     },
     async saveSettings(settings) {
-      requireRole('admin');
+      requireInstitutionAdmin();
       store.dataset.settings = settings;
       persist();
       return delay(settings);
@@ -319,6 +372,24 @@ export function createMockApi(): Api {
       const t = store.timetables.find((x) => x.id === id);
       if (!t) throw new ApiError(404, 'Not found');
       const prev = store.timetables.find((x) => x.status === 'published');
+      if (prev && prev.id !== t.id) {
+        // Only this timetable's groups are replaced; other faculties' published pairs stay
+        const mine = new Set(t.groupIds);
+        const touches = (l: { assignmentId: string }) => groupsOf(l.assignmentId).some((g) => mine.has(g));
+        const merged = [...prev.lessons.filter((l) => !touches(l)), ...t.lessons.filter(touches)];
+        // Refuse if this draft now double-books a room, teacher or group that
+        // another faculty published in the meantime
+        const ownIds = new Set(t.lessons.filter(touches).map((l) => l.id));
+        const clashes = findHardConflicts(store.dataset, merged).filter(
+          (c) =>
+            ['room-clash', 'teacher-clash', 'group-clash'].includes(c.kind) &&
+            c.lessonIds.some((id) => ownIds.has(id)) &&
+            c.lessonIds.some((id) => !ownIds.has(id)),
+        );
+        if (clashes.length) throw new ApiError(409, String(clashes.length));
+        t.lessons = merged;
+        t.groupIds = [...new Set([...prev.groupIds, ...t.groupIds])];
+      }
       const changes = countChanges(prev, t);
       if (prev) prev.status = 'draft';
       t.status = 'published';
@@ -337,13 +408,19 @@ export function createMockApi(): Api {
       requireRole('admin');
       const base = req.baseTimetableId ? store.timetables.find((t) => t.id === req.baseTimetableId) : undefined;
       const fixed = base?.lessons.filter((l) => l.locked) ?? [];
+      // Other groups' published pairs (e.g. another faculty) stay in place and booked
+      const selected = new Set(req.groupIds);
+      const keep =
+        store.timetables
+          .find((t) => t.status === 'published')
+          ?.lessons.filter((l) => !groupsOf(l.assignmentId).some((g) => selected.has(g))) ?? [];
       const seed0 = req.seed ?? Math.floor(Math.random() * 1e6);
       const out: Timetable[] = [];
       const now = new Date().toISOString();
       for (let v = 0; v < req.variants; v++) {
         const result = await generateTimetable(
           store.dataset,
-          { groupIds: req.groupIds, seed: seed0 + v * 7919, iterations: req.iterations, fixed },
+          { groupIds: req.groupIds, seed: seed0 + v * 7919, iterations: req.iterations, fixed, keep },
           (p, best) => onProgress?.({ variant: v, progress: (v + p) / req.variants, best }),
         );
         out.push({

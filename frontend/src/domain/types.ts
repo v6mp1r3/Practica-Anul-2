@@ -232,6 +232,11 @@ export interface User {
   username: string;
   name: string;
   role: Role;
+  /**
+   * For administrators: the faculty they are responsible for. An administrator
+   * without a faculty manages the whole institution (settings, faculty admins).
+   */
+  faculty?: string;
   /** For teachers: their Teacher id. */
   teacherId?: string;
   /** For students: their Group id. */
@@ -242,6 +247,19 @@ export interface User {
   avatar?: string;
   /** Also send schedule-change notifications by email. */
   emailNotifications?: boolean;
+}
+
+/** What the institution administrator sets when creating an account. */
+export interface NewUser {
+  username: string;
+  name: string;
+  role: Role;
+  faculty?: string;
+  email?: string;
+  teacherId?: string;
+  groupId?: string;
+  /** Initial password; the person changes it in "Contul meu". */
+  password: string;
 }
 
 /** Fields a user may change about themselves. */

@@ -5,6 +5,7 @@ import type {
   Dataset,
   Group,
   Notification,
+  NewUser,
   ProfileUpdate,
   Room,
   ScheduleChange,
@@ -62,6 +63,11 @@ export interface Api {
   logout(): Promise<void>;
   /** The signed-in user changes their own profile. */
   updateProfile(update: ProfileUpdate): Promise<User>;
+  /** Accounts (institution administrator only). */
+  listUsers(): Promise<User[]>;
+  createUser(user: NewUser): Promise<User>;
+  updateUser(user: User): Promise<User>;
+  deleteUser(id: string): Promise<void>;
   /** Fails with 400 when the current password is wrong. */
   changePassword(current: string, next: string): Promise<void>;
 
