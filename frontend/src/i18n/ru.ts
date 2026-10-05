@@ -162,6 +162,7 @@ export const ru: Record<MessageKey, string> = {
   'admins.passwordHint': 'Не менее 8 символов; человек сменит его в «Моём аккаунте».',
   'admins.required': 'Имя и пользователь обязательны.',
   'admins.usernameTaken': 'Такой пользователь уже существует.',
+  'availability.readOnly': 'Ваша доступность, установленная администрацией. Для изменений обратитесь к администратору факультета.',
   'tt.oddShort': 'Н',
   'tt.evenShort': 'Ч',
   'tt.free': 'Окно',

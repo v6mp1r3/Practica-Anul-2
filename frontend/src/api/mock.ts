@@ -327,12 +327,11 @@ export function createMockApi(): Api {
     },
 
     async updateAvailability(teacherId, data) {
-      const u = requireRole('admin', 'teacher');
-      if (u.role === 'teacher' && u.teacherId !== teacherId) throw new ApiError(403, 'Forbidden');
+      // Only the administration enters and edits availability; teachers just see it
+      requireRole('admin');
       const t = store.dataset.teachers.find((x) => x.id === teacherId);
       if (!t) throw new ApiError(404, 'Not found');
       Object.assign(t, data);
-      if (u.role === 'teacher') notify('availability', { name: t.name }, ['admin']);
       persist();
       return delay(t);
     },

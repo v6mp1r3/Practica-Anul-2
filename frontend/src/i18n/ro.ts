@@ -161,6 +161,7 @@ export const ro = {
   'admins.passwordHint': 'Cel puțin 8 caractere; persoana o schimbă în „Contul meu”.',
   'admins.required': 'Numele și utilizatorul sunt obligatorii.',
   'admins.usernameTaken': 'Utilizatorul există deja.',
+  'availability.readOnly': 'Disponibilitatea ta, stabilită de administrație. Pentru modificări, adresează-te administratorului facultății.',
   'tt.oddShort': 'I',
   'tt.evenShort': 'P',
   'tt.free': 'Fereastră',

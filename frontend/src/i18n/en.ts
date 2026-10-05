@@ -161,6 +161,7 @@ export const en: Record<MessageKey, string> = {
   'admins.passwordHint': 'At least 8 characters; the person changes it in “My account”.',
   'admins.required': 'Name and username are required.',
   'admins.usernameTaken': 'That username already exists.',
+  'availability.readOnly': 'Your availability, set by the administration. To change it, contact your faculty administrator.',
   'tt.oddShort': 'O',
   'tt.evenShort': 'E',
   'tt.free': 'Gap',

@@ -20,12 +20,15 @@ export function AvailabilityPicker({
   value,
   onChange,
   allowConsultation = true,
+  readOnly = false,
 }: {
   settings: Settings;
   index: DatasetIndex;
   value: AvailabilityValue;
   onChange: (v: AvailabilityValue) => void;
   allowConsultation?: boolean;
+  /** Show the grid without editing (teachers see what the administration set). */
+  readOnly?: boolean;
 }) {
   const { t } = useI18n();
   const [brush, setBrush] = useState<Brush>('unavailable');
@@ -66,17 +69,19 @@ export function AvailabilityPicker({
 
   return (
     <div className="stack" style={{ gap: 10 }}>
-      <div className="row wrap">
-        <span className="small muted">{t('availability.brush')}</span>
-        <Segmented value={brush} onChange={setBrush} options={brushes.map((b) => ({ value: b, label: label[b] }))} />
-      </div>
+      {!readOnly && (
+        <div className="row wrap">
+          <span className="small muted">{t('availability.brush')}</span>
+          <Segmented value={brush} onChange={setBrush} options={brushes.map((b) => ({ value: b, label: label[b] }))} />
+        </div>
+      )}
       <TimetableGrid
         className="avail"
         settings={settings}
         index={index}
         lessons={[]}
         cellClass={(d, s) => `state-${stateOf(slotKey(d, s))}`}
-        onCellClick={paint}
+        onCellClick={readOnly ? undefined : paint}
         renderCell={(d, s) => {
           const st = stateOf(slotKey(d, s));
           return st === 'free' ? '' : label[st];
