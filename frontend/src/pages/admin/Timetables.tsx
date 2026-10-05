@@ -116,7 +116,7 @@ export default function Timetables() {
                           <strong>{tt.name}</strong>
                         </Link>
                         <div className="small muted">
-                          {tt.lessons.length} · {tt.algorithm}
+                          {tt.lessons.length} {t('dash.pairs')}
                         </div>
                       </td>
                       <td>

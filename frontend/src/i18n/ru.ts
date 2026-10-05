@@ -371,7 +371,6 @@ export const ru: Record<MessageKey, string> = {
   'generate.compareHint':
     'Все варианты соблюдают обязательные правила. Сравнивайте их по окнам, парам в 08:00 и перегруженным дням: чем меньше, тем удобнее расписание.',
   'generate.best': 'Самый удобный',
-  'generate.algorithm': 'Алгоритм',
   'generate.open': 'Открыть',
   'generate.keep': 'Сохранить как черновик',
   'generate.kept': '«{name}» сохранён как черновик',

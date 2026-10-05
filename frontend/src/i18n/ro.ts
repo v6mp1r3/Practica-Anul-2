@@ -370,7 +370,6 @@ export const ro = {
   'generate.compareHint':
     'Toate variantele respectă regulile obligatorii. Compară-le după ferestre, perechi la 08:00 și zile încărcate: cu cât mai puține, cu atât orarul e mai comod.',
   'generate.best': 'Cea mai comodă',
-  'generate.algorithm': 'Algoritm',
   'generate.open': 'Deschide',
   'generate.keep': 'Păstrează ca ciornă',
   'generate.kept': '„{name}” salvat ca ciornă',

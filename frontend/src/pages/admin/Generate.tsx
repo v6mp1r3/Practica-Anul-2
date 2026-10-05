@@ -58,14 +58,6 @@ export function VariantComparison({ variants, onKeep }: { variants: Timetable[];
             );
           })}
           <tr>
-            <td className="muted small">{t('generate.algorithm')}</td>
-            {variants.map((v) => (
-              <td key={v.id} className="small muted">
-                {v.algorithm}
-              </td>
-            ))}
-          </tr>
-          <tr>
             <td />
             {variants.map((v) => (
               <td key={v.id}>

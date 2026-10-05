@@ -206,7 +206,6 @@ export default function Editor() {
         subtitle={
           <span className="row wrap">
             <StatusBadge status={tt.status} />
-            <span>{tt.algorithm}</span>
             {dirty && <span className="badge warning">{t('editor.unsaved')}</span>}
           </span>
         }

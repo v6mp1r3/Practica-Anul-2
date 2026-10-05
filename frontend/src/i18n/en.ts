@@ -369,7 +369,6 @@ export const en: Record<MessageKey, string> = {
   'generate.compareHint':
     'All variants respect the hard rules. Compare them by gaps, 08:00 pairs and overloaded days: the fewer, the more comfortable the timetable.',
   'generate.best': 'Most comfortable',
-  'generate.algorithm': 'Algorithm',
   'generate.open': 'Open',
   'generate.keep': 'Keep as draft',
   'generate.kept': '“{name}” saved as a draft',

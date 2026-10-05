@@ -291,7 +291,6 @@ export default function Dashboard() {
                 </span>
                 <Link to={`/admin/timetables/${tt.id}`} className="dash-recent-name">
                   <strong>{tt.name}</strong>
-                  <span className="muted small">{tt.algorithm}</span>
                 </Link>
                 <span className="dash-score" title={t('dash.conflicts')}>
                   <span className={tt.score?.hard ? 'bad' : 'good'}>{tt.score?.hard ?? 0}</span>
