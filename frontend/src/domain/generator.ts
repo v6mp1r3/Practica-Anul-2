@@ -14,6 +14,12 @@ export interface GenerateOptions {
   iterations: number;
   /** Lessons to keep as they are (locked by hand or from other years). */
   fixed?: Lesson[];
+  /**
+   * Pairs of other groups (e.g. another faculty's published timetable): they
+   * keep their rooms and teachers busy, are never moved, and are returned with
+   * the result so the timetable stays complete.
+   */
+  keep?: Lesson[];
 }
 
 export interface GenerateResult {
@@ -222,8 +228,8 @@ const better = (x: Score, y: Score) => x.hard < y.hard || (x.hard === y.hard && 
  * One LNS step: free k lessons chosen by a domain strategy, re-insert them
  * greedily, keep the result if it is not worse.
  */
-function lnsStep(ds: Dataset, idx: DatasetIndex, current: Lesson[], currentScore: Score, k: number, rng: Rng) {
-  const movable = current.filter((l) => !l.locked);
+function lnsStep(ds: Dataset, idx: DatasetIndex, current: Lesson[], currentScore: Score, k: number, rng: Rng, keep: Set<string>) {
+  const movable = current.filter((l) => !l.locked && !keep.has(l.id));
   if (!movable.length) return null;
   const strategy = rng.pick(['random', 'byDay', 'byTeacher', 'byGroup'] as const);
   const seed = rng.pick(movable);
@@ -260,16 +266,19 @@ export async function generateTimetable(
   const idx = new DatasetIndex(ds);
   const rng = createRng(opts.seed);
   const scoped = scopeAssignments(ds, opts.groupIds, idx);
-  const fixed = (opts.fixed ?? []).filter((l) => scoped.some((a) => a.id === l.assignmentId));
+  const scopedIds = new Set(scoped.map((a) => a.id));
+  const fixed = (opts.fixed ?? []).filter((l) => scopedIds.has(l.assignmentId));
+  const keep = (opts.keep ?? []).filter((l) => !scopedIds.has(l.assignmentId));
+  const keepIds = new Set(keep.map((l) => l.id));
   const scopedDs: Dataset = { ...ds, assignments: scoped };
 
-  let lessons = construct(ds, idx, scoped, fixed, rng).lessons;
+  let lessons = construct(ds, idx, scoped, [...keep, ...fixed], rng).lessons;
   let score = scoreTimetable(scopedDs, lessons, idx);
   let k = 4;
   let stale = 0;
 
   for (let i = 0; i < opts.iterations; i++) {
-    const next = lnsStep(scopedDs, idx, lessons, score, k, rng);
+    const next = lnsStep(scopedDs, idx, lessons, score, k, rng, keepIds);
     if (next && (next.score.hard < score.hard || next.score.soft < score.soft)) {
       lessons = next.lessons;
       score = next.score;

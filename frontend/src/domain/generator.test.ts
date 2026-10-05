@@ -39,3 +39,15 @@ describe('generateTimetable', () => {
     expect(long.score.soft).toBeLessThanOrEqual(quick.score.soft);
   });
 });
+
+describe('keeping other groups', () => {
+  it('keeps another faculty’s pairs in place and avoids their rooms and teachers', async () => {
+    const fcim = seedDataset.groups.filter((g) => g.faculty?.includes('Calculatoare')).map((g) => g.id);
+    const fet = seedDataset.groups.filter((g) => g.faculty?.includes('Electronică')).map((g) => g.id);
+    const first = await generateTimetable(seedDataset, { groupIds: fcim, seed: 5, iterations: 20 });
+    const second = await generateTimetable(seedDataset, { groupIds: fet, seed: 6, iterations: 20, keep: first.lessons });
+    for (const l of first.lessons) expect(second.lessons).toContainEqual(l);
+    expect(findHardConflicts(seedDataset, second.lessons)).toEqual([]);
+    expect(second.score.hard).toBe(0);
+  });
+});
