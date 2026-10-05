@@ -8,7 +8,7 @@ import type { Timetable } from '../../domain/types';
 import { dateLocale, useI18n } from '../../i18n';
 import { useData } from '../../state/data';
 import { useToast } from '../../state/toast';
-import { publishSafely } from '../../utils/publish';
+import { publishSafely, unpublishWithConfirm } from '../../utils/publish';
 import { StatusBadge } from './Dashboard';
 import { VariantComparison } from './Generate';
 
@@ -59,6 +59,12 @@ export default function Timetables() {
     if (!(await publishSafely(tt.id, (count) => toast(t('timetables.clashOnPublish', { count }), 'error')))) return;
     await Promise.all([load(), refresh()]);
     toast(t('timetables.publishedToast', { name: tt.name }));
+  }
+
+  async function unpublish(tt: Timetable) {
+    if (!(await unpublishWithConfirm(tt, scope || undefined, t))) return;
+    await Promise.all([load(), refresh()]);
+    toast(t('timetables.unpublishedToast'));
   }
 
   if (!list) return <Loading />;
@@ -121,9 +127,13 @@ export default function Timetables() {
                       </td>
                       <td className="small muted">{fmt(tt.updatedAt)}</td>
                       <td className="actions">
-                        {tt.status !== 'published' && (
+                        {tt.status !== 'published' ? (
                           <button className="btn sm" onClick={() => publish(tt)}>
                             {t('timetables.publish')}
+                          </button>
+                        ) : (
+                          <button className="btn sm" onClick={() => unpublish(tt)}>
+                            {t('timetables.unpublish')}
                           </button>
                         )}
                         <button

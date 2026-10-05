@@ -19,7 +19,8 @@ import { useI18n } from '../../i18n';
 import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { downloadFile } from '../../utils/download';
-import { publishSafely } from '../../utils/publish';
+import { publishSafely, unpublishWithConfirm } from '../../utils/publish';
+import { useAdminScope } from '../../components/FacultyFilter';
 import { timetableToCsv, timetableToIcs } from '../../utils/export';
 import { StatusBadge } from './Dashboard';
 
@@ -28,6 +29,7 @@ const HIDE: Record<ViewFilter['kind'], LessonField[]> = { group: [], teacher: ['
 export default function Editor() {
   const { id } = useParams();
   const { t } = useI18n();
+  const scope = useAdminScope();
   const { dataset, index } = useDataset();
   const { refresh } = useData();
   const toast = useToast();
@@ -165,6 +167,17 @@ export default function Editor() {
     toast(t('timetables.publishedToast', { name: saved.name }));
   }
 
+  async function unpublish() {
+    if (!tt) return;
+    const draft = await unpublishWithConfirm(tt, scope || undefined, t);
+    if (!draft) return;
+    await refresh();
+    toast(t('timetables.unpublishedToast'));
+    // a faculty administrator gets their groups back as a new draft
+    if (draft.id !== tt.id) navigate(`/admin/timetables/${draft.id}`);
+    else setTt(draft);
+  }
+
   function rename() {
     const name = prompt(t('editor.renamePrompt'), tt?.name);
     if (name?.trim() && tt) {
@@ -233,7 +246,11 @@ export default function Editor() {
               <button className="btn primary" onClick={publish}>
                 {t('timetables.publish')}
               </button>
-            ) : null}
+            ) : (
+              <button className="btn" onClick={unpublish}>
+                {t('timetables.unpublish')}
+              </button>
+            )}
           </>
         }
       />

@@ -68,6 +68,8 @@ export const ru: Record<MessageKey, string> = {
   'notify.welcome.body': 'Расписание осеннего семестра будет опубликовано здесь.',
   'notify.published.title': 'Расписание опубликовано',
   'notify.published.body': '«{name}» теперь доступно.',
+  'notify.unpublished.body': '«{name}» больше не опубликовано. Обновлённое расписание скоро появится.',
+  'notify.unpublished.title': 'Публикация расписания отменена',
   'notify.updated.title': 'Расписание обновлено',
   'notify.updated.body': 'В «{name}» изменено пар: {count}.',
   'notify.availability.title': 'Доступность обновлена',
@@ -125,6 +127,7 @@ export const ru: Record<MessageKey, string> = {
 
   'student.showGroups': 'Показать группы:',
   'student.myGroup': 'Моя группа',
+  'student.otherGroups': 'Другие группы',
   'account.title': 'Мой аккаунт',
   'account.subtitle': 'Ваши данные, пароль и настройки.',
   'account.profile': 'Профиль',
@@ -384,6 +387,11 @@ export const ru: Record<MessageKey, string> = {
   'timetables.compareHint': 'Отметьте два или более расписания, чтобы сравнить их.',
   'timetables.publishWithConflicts': 'В расписании {count} конфликтов. Всё равно опубликовать?',
   'timetables.publishedToast': '«{name}» опубликовано. Преподаватели и студенты получили уведомление.',
+  'timetables.unpublishedToast': 'Публикация отменена. Расписание снова черновик.',
+  'timetables.unpublishConfirmFaculty':
+    'Отменить публикацию для групп факультета {faculty}? Остальные факультеты останутся опубликованными.',
+  'timetables.unpublishConfirm': 'Отменить публикацию «{name}»? Преподаватели и студенты не увидят его, пока вы не опубликуете его снова.',
+  'timetables.unpublish': 'Отменить публикацию',
 
   'view.group': 'Группа',
   'view.teacher': 'Преподаватель',

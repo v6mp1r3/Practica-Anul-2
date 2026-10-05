@@ -68,6 +68,8 @@ export const en: Record<MessageKey, string> = {
   'notify.welcome.body': 'The autumn semester timetable will be published here.',
   'notify.published.title': 'The timetable was published',
   'notify.published.body': '“{name}” is now available.',
+  'notify.unpublished.body': '“{name}” is no longer published. An updated timetable will be published soon.',
+  'notify.unpublished.title': 'Timetable unpublished',
   'notify.updated.title': 'The timetable was updated',
   'notify.updated.body': '{count} pairs changed in “{name}”.',
   'notify.availability.title': 'Availability updated',
@@ -123,6 +125,7 @@ export const en: Record<MessageKey, string> = {
 
   'student.showGroups': 'Groups shown:',
   'student.myGroup': 'My group',
+  'student.otherGroups': 'Other groups',
   'account.title': 'My account',
   'account.subtitle': 'Your details, password and preferences.',
   'account.profile': 'Profile',
@@ -382,6 +385,10 @@ export const en: Record<MessageKey, string> = {
   'timetables.compareHint': 'Tick two or more timetables to compare them.',
   'timetables.publishWithConflicts': 'The timetable has {count} conflicts. Publish anyway?',
   'timetables.publishedToast': '“{name}” was published. Teachers and students have been notified.',
+  'timetables.unpublishedToast': 'Unpublished. The timetable is a draft again.',
+  'timetables.unpublishConfirmFaculty': 'Unpublish the timetable for the groups of {faculty}? The other faculties stay published.',
+  'timetables.unpublishConfirm': 'Unpublish “{name}”? Teachers and students won’t see it until you publish it again.',
+  'timetables.unpublish': 'Unpublish',
 
   'view.group': 'Group',
   'view.teacher': 'Teacher',

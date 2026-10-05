@@ -67,6 +67,8 @@ export const ro = {
   'notify.welcome.body': 'Orarul pentru semestrul de toamnă va fi publicat aici.',
   'notify.published.title': 'Orarul a fost publicat',
   'notify.published.body': '„{name}” este acum disponibil.',
+  'notify.unpublished.body': '„{name}” nu mai este publicat. Un orar actualizat va fi publicat în curând.',
+  'notify.unpublished.title': 'Publicarea orarului a fost anulată',
   'notify.updated.title': 'Orarul a fost actualizat',
   'notify.updated.body': '{count} perechi au fost modificate în „{name}”.',
   'notify.availability.title': 'Disponibilitate actualizată',
@@ -124,6 +126,7 @@ export const ro = {
 
   'student.showGroups': 'Grupe afișate:',
   'student.myGroup': 'Grupa mea',
+  'student.otherGroups': 'Alte grupe',
   'account.title': 'Contul meu',
   'account.subtitle': 'Datele tale, parola și preferințele.',
   'account.profile': 'Profil',
@@ -383,6 +386,12 @@ export const ro = {
   'timetables.compareHint': 'Bifează două sau mai multe orare pentru a le compara.',
   'timetables.publishWithConflicts': 'Orarul are {count} conflicte. Îl publici oricum?',
   'timetables.publishedToast': '„{name}” a fost publicat. Profesorii și studenții au fost anunțați.',
+  'timetables.unpublishedToast': 'Publicarea a fost anulată. Orarul a devenit ciornă.',
+  'timetables.unpublishConfirmFaculty':
+    'Anulezi publicarea orarului pentru grupele facultății {faculty}? Celelalte facultăți rămân publicate.',
+  'timetables.unpublishConfirm':
+    'Anulezi publicarea orarului „{name}”? Profesorii și studenții nu îl vor mai vedea până îl publici din nou.',
+  'timetables.unpublish': 'Anulează publicarea',
 
   'view.group': 'Grupă',
   'view.teacher': 'Profesor',

@@ -17,7 +17,7 @@ import { filterLessons, weekParityOf } from '../../domain/views';
 import { dateLocale, useI18n } from '../../i18n';
 import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
-import { publishSafely } from '../../utils/publish';
+import { publishSafely, unpublishWithConfirm } from '../../utils/publish';
 import './dashboard.css';
 import { Select } from '../../components/Select';
 
@@ -122,7 +122,12 @@ export default function Dashboard() {
   const week = weekParityOf(now);
 
   async function publish(tt: Timetable) {
-    if (tt.status === 'published') return;
+    if (tt.status === 'published') {
+      if (!(await unpublishWithConfirm(tt, scope || undefined, t))) return;
+      await Promise.all([load(), refresh()]);
+      toast(t('timetables.unpublishedToast'));
+      return;
+    }
     if (!confirm(`${t('timetables.publish')}: „${tt.name}”?`)) return;
     if (!(await publishSafely(tt.id, (count) => toast(t('timetables.clashOnPublish', { count }), 'error')))) return;
     await Promise.all([load(), refresh()]);
