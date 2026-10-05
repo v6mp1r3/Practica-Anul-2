@@ -569,3 +569,43 @@ table.table {
     transform: translateY(-3px);
   }
 }
+
+/* Students: own group / other groups (checklist) / all */
+.group-filter button {
+  white-space: nowrap;
+}
+.group-picker {
+  position: relative;
+}
+.group-picker > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.group-picker-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+.group-picker-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 260px;
+}
+.group-picker-menu .select-option input {
+  margin: 0;
+  accent-color: var(--primary);
+}
+.group-picker-menu .search-line {
+  position: sticky;
+  top: -6px;
+  z-index: 1;
+  background: #fff;
+}

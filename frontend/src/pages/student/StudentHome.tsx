@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChangesCard } from '../../components/ChangesCard';
+import { GroupMultiPicker } from '../../components/GroupMultiPicker';
 import { MyTimetable } from '../../components/MyTimetable';
 import { SessionTimetable } from '../../components/SessionTimetable';
 import { Empty, PageHeader, Segmented } from '../../components/ui';
@@ -112,15 +113,16 @@ export default function StudentHome() {
       {/* Which groups to show: own group, any others, or all */}
       <div className="row wrap" style={{ gap: 8, marginBottom: 18 }}>
         <span className="small muted">{t('student.showGroups')}</span>
-        <div className="segmented" role="group" aria-label={t('student.showGroups')}>
+        <div className="segmented group-filter" role="group" aria-label={t('student.showGroups')}>
           <button type="button" aria-pressed={!everything && shown.includes(group.id)} onClick={() => setShown([group.id])}>
             {t('student.myGroup')} · {group.name}
           </button>
-          {others.map((g) => (
-            <button key={g.id} type="button" aria-pressed={!everything && shown.includes(g.id)} onClick={() => toggle(g.id)}>
-              {g.name}
-            </button>
-          ))}
+          <GroupMultiPicker
+            groups={others}
+            selected={everything ? [] : shown}
+            onToggle={(id) => (everything ? setShown([group.id, id]) : toggle(id))}
+            active={!everything && others.some((g) => shown.includes(g.id))}
+          />
           <button type="button" aria-pressed={everything} onClick={() => setShown(everything ? [group.id] : allIds)}>
             {t('common.all')}
           </button>
