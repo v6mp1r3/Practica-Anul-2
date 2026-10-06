@@ -1,6 +1,11 @@
 // Public timetables — no sign-in. Two pages: students (any group) and
 // teachers (any teacher); the last choice is remembered on this device.
 import { useState } from 'react';
+import { ExamCalendar, type CalendarEntry } from '../../components/ExamCalendar';
+import { examEntries, midtermEntries } from '../../components/examEntries';
+import { parseDate } from '../../domain/changes';
+import { evaluationOf, midtermsFor, teachingWeek } from '../../domain/exams';
+import type { ExamEvent, Lesson } from '../../domain/types';
 import { ChangesCard } from '../../components/ChangesCard';
 import { MyTimetable } from '../../components/MyTimetable';
 import { Select } from '../../components/Select';
@@ -8,12 +13,13 @@ import { SessionTimetable, SessionsSection } from '../../components/SessionTimet
 import { Empty, PageHeader, Segmented } from '../../components/ui';
 import { fmtTime, parseSlotKey } from '../../domain/slots';
 import { filterLessons } from '../../domain/views';
-import { useI18n } from '../../i18n';
+import { dateLocale, useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { downloadFile } from '../../utils/download';
 import { timetableToIcs } from '../../utils/export';
 
 type Kind = 'group' | 'teacher';
+type Tab = 'timetable' | 'midterms' | 'exams' | 'reexams';
 interface Choice {
   kind: Kind;
   id: string;
@@ -50,7 +56,9 @@ export function TeacherSchedule() {
 
 function Schedule({ kind }: { kind: Kind }) {
   const { t, lang } = useI18n();
-  const { dataset, index, published } = useDataset();
+  const { dataset, index, published, exams } = useDataset();
+  // Orar | Atestări | Examene | Reexaminări for the chosen group or teacher
+  const [tab, setTab] = useState<Tab>('timetable');
   const [choice, setChoiceState] = useState<Choice>(() => loadChoice(kind));
   const setChoice = (c: Choice) => {
     setChoiceState(c);
@@ -165,24 +173,121 @@ function Schedule({ kind }: { kind: Kind }) {
         <div className="card">
           <Empty>{choice.kind === 'group' ? t('public.chooseGroupHint') : t('public.chooseTeacherHint')}</Empty>
         </div>
-      ) : !published ? (
-        <div className="card">
-          <Empty>{t('tt.notPublished')}</Empty>
-        </div>
       ) : (
         <div className="stack">
-          <ChangesCard groupId={group?.id} teacherId={teacher?.id} />
-          {reducedGroup ? (
-            // reduced attendance: the full calendar of every session, not one week
-            <SessionTimetable dataset={dataset} index={index} lessons={lessons} groupId={group!.id} hide={['audience']} />
+          <Segmented
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: 'timetable', label: t('nav.timetable') },
+              { value: 'midterms', label: t('exams.midterms') },
+              { value: 'exams', label: t('exams.exams') },
+              { value: 'reexams', label: t('exams.reexams') },
+            ]}
+          />
+          {tab !== 'timetable' ? (
+            <Evaluations
+              tab={tab}
+              who={group ? { groupId: group.id, subgroup: choice.subgroup } : { teacherId: teacher!.id }}
+              lessons={published?.lessons ?? []}
+              events={exams}
+            />
+          ) : !published ? (
+            <div className="card">
+              <Empty>{t('tt.notPublished')}</Empty>
+            </div>
           ) : (
-            <>
-              <MyTimetable settings={dataset.settings} index={index} lessons={lessons} hide={group ? ['audience'] : ['teacher']} />
-              {teacher && <SessionsSection dataset={dataset} index={index} lessons={lessons} hide={['teacher']} />}
-            </>
+            <TimetableTab />
           )}
         </div>
       )}
+    </div>
+  );
+
+  function TimetableTab() {
+    return (
+      <div className="stack">
+        <ChangesCard groupId={group?.id} teacherId={teacher?.id} />
+        {reducedGroup ? (
+          // reduced attendance: the full calendar of every session, not one week
+          <SessionTimetable dataset={dataset} index={index} lessons={lessons} groupId={group!.id} hide={['audience']} />
+        ) : (
+          <>
+            <MyTimetable settings={dataset.settings} index={index} lessons={lessons} hide={group ? ['audience'] : ['teacher']} />
+            {teacher && <SessionsSection dataset={dataset} index={index} lessons={lessons} hide={['teacher']} />}
+          </>
+        )}
+      </div>
+    );
+  }
+}
+
+/** Atestări, exams or retakes of one group or teacher, as a calendar by date. */
+function Evaluations({
+  tab,
+  who,
+  lessons,
+  events,
+}: {
+  tab: Exclude<Tab, 'timetable'>;
+  who: { groupId: string; subgroup: number | null } | { teacherId: string };
+  lessons: Lesson[];
+  events: ExamEvent[];
+}) {
+  const { t, lang } = useI18n();
+  const { dataset, index } = useDataset();
+  const ev = evaluationOf(dataset);
+  const mine = (e: ExamEvent) => ('groupId' in who ? e.groupId === who.groupId : e.teacherId === who.teacherId);
+  const hide: ('teacher' | 'group')[] = 'groupId' in who ? ['group'] : ['teacher'];
+  const fmt = (d: string) => parseDate(d).toLocaleDateString(dateLocale(lang), { day: 'numeric', month: 'short' });
+
+  let entries: CalendarEntry[];
+  let note: string | null = null;
+  if (tab === 'midterms') {
+    const reducedGroup = 'groupId' in who && index.groups.get(who.groupId)?.studyForm === 'reduced';
+    if (ev.midtermMode === 'separate' && !reducedGroup) {
+      entries = examEntries(
+        events.filter((e) => e.round.startsWith('midterm') && mine(e)),
+        index,
+        t,
+      );
+    } else {
+      // held in the subject's own class
+      let list = midtermsFor(dataset, index, lessons, 'groupId' in who ? { groupId: who.groupId } : { teacherId: who.teacherId });
+      if ('groupId' in who && who.subgroup) {
+        const sg = who.subgroup;
+        list = list.filter((m) => {
+          const aud = index.assignmentOf(m.lesson)!.audience;
+          return aud.kind !== 'subgroup' || aud.subgroup === sg;
+        });
+      }
+      entries = midtermEntries(list, index, dataset.settings, t);
+    }
+    note = ev.midtermWeeks
+      .map((w, i) => {
+        const r = teachingWeek(ev, w);
+        return t('exams.midtermWeek', { n: i + 1, week: w, from: fmt(r.start), to: fmt(r.end) });
+      })
+      .join(' · ');
+  } else {
+    const round = tab === 'exams' ? 'session' : 'reexam';
+    entries = examEntries(
+      events.filter((e) => e.round === round && mine(e)),
+      index,
+      t,
+    );
+  }
+
+  return (
+    <div className="stack">
+      {note && <p className="small muted">{note}</p>}
+      <ExamCalendar
+        entries={entries}
+        index={index}
+        settings={dataset.settings}
+        hide={hide}
+        empty={<Empty>{t('exams.notPublished')}</Empty>}
+      />
     </div>
   );
 }
