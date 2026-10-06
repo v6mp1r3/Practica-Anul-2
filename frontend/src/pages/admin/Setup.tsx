@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { api, API_MODE } from '../../api';
 import { resetMockData } from '../../api/mock';
 import { Icon } from '../../components/Icon';
-import { Field, PageHeader, Switch, useClock } from '../../components/ui';
+import { Field, PageHeader, Switch, TimeInput, useClock } from '../../components/ui';
 import { fmtTime, range } from '../../domain/slots';
 import { STUDY_FORMS, type Settings, type TimeSlot } from '../../domain/types';
 import { UTM_FACULTIES, UTM_NAME } from '../../domain/utm';
@@ -340,27 +340,27 @@ export default function Setup() {
                     <tr key={i}>
                       <td>{i + 1}</td>
                       <td>
-                        <input
-                          className="input"
-                          type="time"
+                        <TimeInput
                           value={slot.start}
-                          onChange={(e) =>
+                          format={s.timeFormat}
+                          aria-label={`${t('tt.pair')} ${i + 1} — ${t('setup.start')}`}
+                          onChange={(v) =>
                             set(
                               'slots',
-                              s.slots.map((x, j) => (j === i ? { ...x, start: e.target.value } : x)),
+                              s.slots.map((x, j) => (j === i ? { ...x, start: v } : x)),
                             )
                           }
                         />
                       </td>
                       <td>
-                        <input
-                          className="input"
-                          type="time"
+                        <TimeInput
                           value={slot.end}
-                          onChange={(e) =>
+                          format={s.timeFormat}
+                          aria-label={`${t('tt.pair')} ${i + 1} — ${t('setup.end')}`}
+                          onChange={(v) =>
                             set(
                               'slots',
-                              s.slots.map((x, j) => (j === i ? { ...x, end: e.target.value } : x)),
+                              s.slots.map((x, j) => (j === i ? { ...x, end: v } : x)),
                             )
                           }
                         />
