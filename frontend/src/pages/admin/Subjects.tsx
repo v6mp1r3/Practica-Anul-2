@@ -1,3 +1,4 @@
+import { CycleTabs, useCycle } from '../../components/CycleTabs';
 import { useAdminScope } from '../../components/FacultyFilter';
 import { useRef, useState } from 'react';
 import { api } from '../../api';
@@ -16,6 +17,8 @@ export default function Subjects() {
   const { t } = useI18n();
   const { dataset, refresh } = useDataset();
   const scope = useAdminScope();
+  // licență | master's study plan
+  const [cycle, setCycle] = useCycle();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<CsvResult | null>(null);
@@ -41,11 +44,12 @@ export default function Subjects() {
         collection="subjects"
         title={t('nav.subjects')}
         subtitle={t('subjects.subtitle')}
-        items={dataset.subjects.filter((x) => !scope || !x.faculty || x.faculty === scope)}
+        items={dataset.subjects.filter((x) => (!scope || !x.faculty || x.faculty === scope) && (x.cycle ?? 'licenta') === cycle)}
         itemLabel={(x) => `${x.code} — ${x.name}`}
         searchText={(x) => `${x.code} ${x.name}`}
         headerActions={
           <>
+            <CycleTabs value={cycle} onChange={setCycle} />
             <button className="btn" onClick={() => downloadFile('plan-de-studii.csv', STUDY_PLAN_TEMPLATE, 'text/csv')}>
               <Icon name="download" />
               {t('subjects.template')}
@@ -99,6 +103,7 @@ export default function Subjects() {
           { label: t('activity.lab'), render: (x) => pairs(x.labPairs) },
         ]}
         newItem={(): Omit<Subject, 'id'> => ({
+          cycle,
           code: '',
           name: '',
           faculty: scope || undefined,

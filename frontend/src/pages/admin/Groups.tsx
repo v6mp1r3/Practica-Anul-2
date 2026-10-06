@@ -1,3 +1,4 @@
+import { CycleTabs, groupInCycle, useCycle } from '../../components/CycleTabs';
 import { useAdminScope } from '../../components/FacultyFilter';
 import { CrudPage } from '../../components/CrudPage';
 import { Field, PageHeader } from '../../components/ui';
@@ -11,16 +12,19 @@ export default function Groups() {
   const { dataset, index } = useDataset();
   const scope = useAdminScope();
   const faculty = scope;
+  // licență | master's
+  const [cycle, setCycle] = useCycle();
+  const mine = (g: { cycle?: StudyCycle }) => groupInCycle(g, cycle);
 
   return (
     <div className="page">
-      <PageHeader title={t('nav.groups')} subtitle={t('groups.subtitle')} />
+      <PageHeader title={t('nav.groups')} subtitle={t('groups.subtitle')} actions={<CycleTabs value={cycle} onChange={setCycle} />} />
       <div className="stack">
         <CrudPage
           embedded
           collection="groups"
           title={t('groups.groups')}
-          items={dataset.groups.filter((x) => !faculty || x.faculty === faculty)}
+          items={dataset.groups.filter((x) => (!faculty || x.faculty === faculty) && mine(x))}
           itemLabel={(x) => x.name}
           searchText={(x) => `${x.name} ${x.program} ${x.faculty ?? ''}`}
           columns={[
@@ -66,7 +70,9 @@ export default function Groups() {
             program: '',
             studyForm: 'full',
             year: 1,
-            programYears: 4,
+            // the cycle being shown (master's lasts 2 years)
+            cycle,
+            programYears: cycle === 'master' ? 2 : 4,
             size: 25,
             // not split by default: subgroups are only for small rooms (e.g. A01)
             subgroups: 1,
@@ -185,7 +191,11 @@ export default function Groups() {
           embedded
           collection="streams"
           title={t('groups.streams')}
-          items={dataset.streams.filter((x) => !faculty || x.groupIds.some((g) => index.groups.get(g)?.faculty === faculty))}
+          items={dataset.streams.filter(
+            (x) =>
+              (!faculty || x.groupIds.some((g) => index.groups.get(g)?.faculty === faculty)) &&
+              x.groupIds.some((g) => mine(index.groups.get(g) ?? {})),
+          )}
           itemLabel={(x) => x.name}
           searchText={(x) => `${x.name} ${x.groupIds.map((g) => index.groups.get(g)?.name).join(' ')}`}
           columns={[

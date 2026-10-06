@@ -1,3 +1,4 @@
+import { CycleTabs, audienceInCycle, groupInCycle, useCycle } from '../../components/CycleTabs';
 import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
@@ -19,8 +20,15 @@ export default function Assignments() {
   // Faculty administrators see only the teaching load of their faculty's groups
   const scope = useAdminScope();
   const scopeGroups = facultyGroupIds(dataset, scope);
-  const visibleGroups = dataset.groups.filter((g) => scopeGroups.includes(g.id));
-  const inScope = dataset.assignments.filter((a) => !scope || scopeGroups.some((g) => index.audienceTouchesGroup(a.audience, g)));
+  // licență | master's
+  const [cycle, setCycle] = useCycle();
+  const visibleGroups = dataset.groups.filter((g) => scopeGroups.includes(g.id) && groupInCycle(g, cycle));
+  // the form offers this cycle's subjects, groups and streams
+  const cycleSubjects = dataset.subjects.filter((x) => (x.cycle ?? 'licenta') === cycle);
+  const cycleStreams = dataset.streams.filter((st) => st.groupIds.some((g) => visibleGroups.some((v) => v.id === g)));
+  const inScope = dataset.assignments.filter(
+    (a) => (!scope || scopeGroups.some((g) => index.audienceTouchesGroup(a.audience, g))) && audienceInCycle(index, a.audience, cycle),
+  );
   const items = groupFilter ? inScope.filter((a) => index.audienceTouchesGroup(a.audience, groupFilter)) : inScope;
   const equipment = [...new Set(dataset.rooms.flatMap((r) => r.equipment))].sort();
 
@@ -35,20 +43,23 @@ export default function Assignments() {
         `${index.subjects.get(x.subjectId)?.code} ${index.subjects.get(x.subjectId)?.name} ${index.teachers.get(x.teacherId)?.name} ${index.audienceLabel(x.audience)}`
       }
       headerActions={
-        <Select
-          className="select pill"
-          style={{ width: 180 }}
-          value={groupFilter}
-          onChange={(e) => setGroupFilter(e.target.value)}
-          aria-label={t('assignments.filterGroup')}
-        >
-          <option value="">{t('assignments.allGroups')}</option>
-          {visibleGroups.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
-        </Select>
+        <>
+          <CycleTabs value={cycle} onChange={setCycle} />
+          <Select
+            className="select pill"
+            style={{ width: 180 }}
+            value={groupFilter}
+            onChange={(e) => setGroupFilter(e.target.value)}
+            aria-label={t('assignments.filterGroup')}
+          >
+            <option value="">{t('assignments.allGroups')}</option>
+            {visibleGroups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </Select>
+        </>
       }
       wideForm
       columns={[
@@ -103,10 +114,10 @@ export default function Assignments() {
         },
       ]}
       newItem={(): Omit<Assignment, 'id'> => ({
-        subjectId: dataset.subjects[0]?.id ?? '',
+        subjectId: cycleSubjects[0]?.id ?? '',
         type: 'lecture',
         teacherId: dataset.teachers[0]?.id ?? '',
-        audience: dataset.streams[0] ? { kind: 'stream', id: dataset.streams[0].id } : { kind: 'group', id: dataset.groups[0]?.id ?? '' },
+        audience: cycleStreams[0] ? { kind: 'stream', id: cycleStreams[0].id } : { kind: 'group', id: visibleGroups[0]?.id ?? '' },
         pairsPerWeek: 1,
         parity: 'weekly',
         roomType: 'lecture',
@@ -130,7 +141,7 @@ export default function Assignments() {
             <div className="form-grid">
               <Field label={t('assignments.subject')}>
                 <Select className="select" value={d.subjectId} onChange={(e) => set({ subjectId: e.target.value })}>
-                  {dataset.subjects.map((s) => (
+                  {cycleSubjects.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.code} — {s.name}
                     </option>
@@ -184,10 +195,10 @@ export default function Assignments() {
                   onChange={(kind) =>
                     setAudience(
                       kind === 'stream'
-                        ? { kind, id: dataset.streams[0]?.id ?? '' }
+                        ? { kind, id: cycleStreams[0]?.id ?? '' }
                         : kind === 'group'
-                          ? { kind, id: dataset.groups[0]?.id ?? '' }
-                          : { kind, id: dataset.groups[0]?.id ?? '', subgroup: 1 },
+                          ? { kind, id: visibleGroups[0]?.id ?? '' }
+                          : { kind, id: visibleGroups[0]?.id ?? '', subgroup: 1 },
                     )
                   }
                   options={[
@@ -202,7 +213,7 @@ export default function Assignments() {
                   value={d.audience.id}
                   onChange={(e) => setAudience({ ...d.audience, id: e.target.value } as Audience)}
                 >
-                  {(d.audience.kind === 'stream' ? dataset.streams : dataset.groups).map((x) => (
+                  {(d.audience.kind === 'stream' ? cycleStreams : visibleGroups).map((x) => (
                     <option key={x.id} value={x.id}>
                       {x.name}
                     </option>
