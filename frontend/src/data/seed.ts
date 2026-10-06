@@ -555,6 +555,7 @@ export const seedSubjects: Subject[] = [
   // master's
   {
     id: 'sub20',
+    cycle: 'master',
     code: 'ASA',
     name: 'Arhitecturi software avansate',
     credits: 6,
@@ -566,6 +567,7 @@ export const seedSubjects: Subject[] = [
   },
   {
     id: 'sub21',
+    cycle: 'master',
     code: 'MCS',
     name: 'Metodologia cercetării științifice',
     credits: 4,
@@ -577,6 +579,7 @@ export const seedSubjects: Subject[] = [
   },
   {
     id: 'sub22',
+    cycle: 'master',
     code: 'SCM',
     name: 'Sisteme de comunicații mobile',
     credits: 6,
