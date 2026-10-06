@@ -609,6 +609,8 @@ export const ro = {
   'calendar.from': 'De la',
   'calendar.to': 'până la',
   'setup.midtermSpanWeeks': 'Durata unei perioade de atestări (săptămâni)',
+  'timetables.evaluations': 'Atestări, examene și reexaminări',
+  'timetables.noEvaluations': 'Nu a fost generat încă niciun orar de evaluare.',
 } as const;
 
 export type MessageKey = keyof typeof ro;

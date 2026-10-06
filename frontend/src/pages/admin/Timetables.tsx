@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import { Icon } from '../../components/Icon';
 import { Empty, Loading, PageHeader } from '../../components/ui';
-import type { Timetable } from '../../domain/types';
+import { findExamProblems } from '../../domain/exams';
+import type { ExamPlan, ExamRound, Timetable } from '../../domain/types';
 import { dateLocale, useI18n } from '../../i18n';
 import { useData } from '../../state/data';
 import { useToast } from '../../state/toast';
@@ -163,6 +164,108 @@ export default function Timetables() {
           </div>
         ) : (
           list.length > 1 && <p className="small muted">{t('timetables.compareHint')}</p>
+        )}
+
+        <EvaluationPlans />
+      </div>
+    </div>
+  );
+}
+
+const ROUND_ORDER: ExamRound[] = ['midterm1', 'midterm2', 'session', 'remidterm1', 'remidterm2', 'reexam'];
+
+/** Every atestări / final exams / retakes timetable of the faculty, drafts included. */
+function EvaluationPlans() {
+  const { t, lang } = useI18n();
+  const { dataset, refresh } = useData();
+  const toast = useToast();
+  const [plans, setPlans] = useState<ExamPlan[] | null>(null);
+  const load = useCallback(() => api.listExamPlans().then(setPlans), []);
+  useEffect(() => {
+    load();
+  }, [load]);
+  if (!plans || !dataset) return null;
+
+  const name = (r: ExamRound) =>
+    r === 'midterm1' || r === 'midterm2'
+      ? t('exams.midterm', { n: r === 'midterm1' ? 1 : 2 })
+      : r === 'session'
+        ? t('exams.exams')
+        : r === 'reexam'
+          ? t('exams.reexam')
+          : t('exams.remidterm', { n: r === 'remidterm1' ? 1 : 2 });
+  const fmt = (iso: string) => new Date(iso).toLocaleString(dateLocale(lang), { dateStyle: 'short', timeStyle: 'short' });
+  const sorted = [...plans].sort((a, b) => ROUND_ORDER.indexOf(a.round) - ROUND_ORDER.indexOf(b.round));
+
+  async function setStatus(p: ExamPlan, publish: boolean) {
+    await (publish ? api.publishExamPlan(p.round) : api.unpublishExamPlan(p.round));
+    await Promise.all([load(), refresh()]);
+    toast(t(publish ? 'exams.publishedToast' : 'exams.unpublishedToast'));
+  }
+  async function remove(p: ExamPlan) {
+    if (!confirm(t('common.confirmDelete', { name: name(p.round) }))) return;
+    await api.deleteExamPlan(p.round);
+    await Promise.all([load(), refresh()]);
+  }
+
+  return (
+    <div className="stack" style={{ gap: 10 }}>
+      <h2>{t('timetables.evaluations')}</h2>
+      <div className="card">
+        {sorted.length === 0 ? (
+          <Empty>{t('timetables.noEvaluations')}</Empty>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>{t('common.name')}</th>
+                  <th>{t('timetables.status')}</th>
+                  <th>{t('score.hard')}</th>
+                  <th>{t('timetables.updated')}</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((p) => {
+                  const problems = findExamProblems(dataset, p.events).length;
+                  return (
+                    <tr key={p.round}>
+                      <td>
+                        <Link to={`/admin/evaluations?round=${p.round}`}>
+                          <strong>{name(p.round)}</strong>
+                        </Link>
+                        <div className="small muted">
+                          {p.events.filter((e) => e.kind === 'exam').length} · {dataset.settings.semester}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`badge ${p.status === 'published' ? 'success' : 'primary'}`}>{t(`exams.status.${p.status}`)}</span>
+                      </td>
+                      <td>
+                        <span className={`badge ${problems ? 'danger' : 'success'}`}>{problems}</span>
+                      </td>
+                      <td className="small muted">{fmt(p.updatedAt)}</td>
+                      <td className="actions">
+                        {p.status === 'published' ? (
+                          <button className="btn sm" onClick={() => setStatus(p, false)}>
+                            {t('exams.unpublish')}
+                          </button>
+                        ) : (
+                          <button className="btn sm" onClick={() => setStatus(p, true)} disabled={!p.events.length}>
+                            {t('exams.publish')}
+                          </button>
+                        )}
+                        <button className="btn ghost sm icon danger" onClick={() => remove(p)} aria-label={t('common.delete')}>
+                          <Icon name="trash" size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

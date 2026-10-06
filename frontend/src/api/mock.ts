@@ -566,6 +566,16 @@ export function createMockApi(): Api {
       const u = requireRole('admin');
       return delay((store.examPlans ?? []).find((p) => p.faculty === (u.faculty ?? '') && p.round === round) ?? null);
     },
+    async listExamPlans() {
+      const u = requireRole('admin');
+      return delay((store.examPlans ?? []).filter((p) => p.faculty === (u.faculty ?? '')));
+    },
+    async deleteExamPlan(round) {
+      const u = requireRole('admin');
+      store.examPlans = (store.examPlans ?? []).filter((p) => !(p.faculty === (u.faculty ?? '') && p.round === round));
+      persist();
+      return delay(undefined);
+    },
     async generateExamPlan(round) {
       const u = requireRole('admin');
       const faculty = u.faculty ?? '';

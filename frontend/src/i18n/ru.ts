@@ -610,4 +610,6 @@ export const ru: Record<MessageKey, string> = {
   'calendar.from': 'С',
   'calendar.to': 'по',
   'setup.midtermSpanWeeks': 'Длительность периода аттестаций (недели)',
+  'timetables.evaluations': 'Аттестации, экзамены и пересдачи',
+  'timetables.noEvaluations': 'Расписаний оценивания ещё нет.',
 };

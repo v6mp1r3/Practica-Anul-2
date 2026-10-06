@@ -606,4 +606,6 @@ export const en: Record<MessageKey, string> = {
   'calendar.from': 'From',
   'calendar.to': 'to',
   'setup.midtermSpanWeeks': 'Length of a midterm period (weeks)',
+  'timetables.evaluations': 'Midterms, exams and retakes',
+  'timetables.noEvaluations': 'No evaluation timetable generated yet.',
 };

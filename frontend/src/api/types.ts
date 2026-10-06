@@ -110,6 +110,9 @@ export interface Api {
   listPublishedExams(): Promise<ExamEvent[]>;
   /** The administrator's faculty's plan for one round, draft or published; null if none yet. */
   getExamPlan(round: ExamRound): Promise<ExamPlan | null>;
+  /** Every plan of the administrator's faculty (all rounds, drafts and published). */
+  listExamPlans(): Promise<ExamPlan[]>;
+  deleteExamPlan(round: ExamRound): Promise<void>;
   /** Generate a new draft for the administrator's faculty (other faculties' published events stay booked). */
   generateExamPlan(round: ExamRound): Promise<ExamPlan & { warnings: number }>;
   saveExamPlan(plan: ExamPlan): Promise<ExamPlan>;
