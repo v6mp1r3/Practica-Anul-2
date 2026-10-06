@@ -599,4 +599,6 @@ export const en: Record<MessageKey, string> = {
   'exams.midtermShort': 'Midterm',
   'generate.whatTimetable': 'Timetable',
   'generate.examsHint': 'Generated for all of the faculty’s groups. Then check, move and publish them in Evaluations.',
+  'setup.examDays': 'Exam and consultation days — full-time',
+  'setup.reducedExamDays': 'Exam and consultation days — reduced attendance',
 };

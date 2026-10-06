@@ -51,14 +51,20 @@ describe('exam session', () => {
       const gap = (new Date(e.date).getTime() - new Date(c.date).getTime()) / 86400000;
       if (gap === 0) expect(c.end <= e.start).toBe(true);
       else {
-        // every day in between is a Sunday or a holiday
+        // every day in between is a day without exams (weekend for frecvență) or a holiday
         for (let d = 1; d < gap; d++) {
           const between = new Date(new Date(c.date).getTime() + d * 86400000);
           const iso = between.toISOString().slice(0, 10);
-          expect(between.getDay() === 0 || ev.vacations.some((v) => v.start <= iso && iso <= v.end)).toBe(true);
+          const days = idx.groups.get(e.groupId)?.studyForm === 'reduced' ? ev.reducedExamDays : ev.examDays;
+          const off = !days.includes(((between.getDay() + 6) % 7) as never);
+          expect(off || ev.vacations.some((v) => v.start <= iso && iso <= v.end)).toBe(true);
         }
       }
-      expect(new Date(c.date).getDay()).not.toBe(0);
+      // frecvență: no exams or consultations at the weekend
+      if (idx.groups.get(e.groupId)?.studyForm !== 'reduced') {
+        expect([0, 6]).not.toContain(new Date(c.date).getDay());
+        expect([0, 6]).not.toContain(new Date(e.date).getDay());
+      }
       expect(c.date).not.toBe('2026-12-25');
     }
   });

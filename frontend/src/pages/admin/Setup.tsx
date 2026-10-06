@@ -663,6 +663,29 @@ export default function Setup() {
                     </div>
                   ))}
 
+                  {/* weekdays for exams and consultations: frecvență on weekdays, frecvență redusă also at the weekend */}
+                  {(
+                    [
+                      ['examDays', 'setup.examDays'],
+                      ['reducedExamDays', 'setup.reducedExamDays'],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <Field key={key} label={t(label)}>
+                      <div className="checks">
+                        {range(7).map((d) => (
+                          <label key={d} className="check">
+                            <input
+                              type="checkbox"
+                              checked={ev[key].includes(d)}
+                              onChange={(e) => setEv({ [key]: e.target.checked ? [...ev[key], d].sort() : ev[key].filter((x) => x !== d) })}
+                            />
+                            {t(`dayShort.${d}` as 'dayShort.0')}
+                          </label>
+                        ))}
+                      </div>
+                    </Field>
+                  ))}
+
                   <div className="form-grid">
                     <Field label={t('setup.examMinGap')} hint={t('setup.default', { value: 2 })}>
                       <input

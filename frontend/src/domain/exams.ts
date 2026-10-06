@@ -25,7 +25,10 @@ export const DEFAULT_EVALUATION: EvaluationSettings = {
   reexamSession: [{ start: '2027-01-25', end: '2027-02-06' }],
   // extra days off only — public holidays and breaks are computed every year (holidays.ts)
   vacations: [],
-  examDays: [0, 1, 2, 3, 4, 5],
+  // licență: exams and consultations on weekdays only (a Monday exam's consultation is on Friday)
+  examDays: [0, 1, 2, 3, 4],
+  // frecvență redusă: weekends too
+  reducedExamDays: [0, 1, 2, 3, 4, 5, 6],
   examMinGap: 2,
   examFrom: '08:00',
   examTo: '18:00',
@@ -158,7 +161,9 @@ export function generateExams(
     const group = idx.groups.get(groupId);
     if (!group) continue;
     const ranges = round === 'reexam' ? ev.reexamSession : group.studyForm === 'reduced' ? ev.reducedExamSession : ev.examSession;
-    const dates = rangeDates(ranges, ev.examDays, ev.vacations);
+    // frecvență: weekdays only; frecvență redusă may also use the weekend
+    const days = group.studyForm === 'reduced' ? ev.reducedExamDays : ev.examDays;
+    const dates = rangeDates(ranges, days, ev.vacations);
     const subjects = rng
       .shuffle(examSubjects(ds, idx, groupId))
       .sort((a, b) => (idx.subjects.get(b)?.credits ?? 0) - (idx.subjects.get(a)?.credits ?? 0));
@@ -192,6 +197,7 @@ export function generateExams(
             const exam: ExamEvent = { id: newId(), kind: 'exam', round, subjectId, groupId, teacherId, roomId: room.id, date, start, end };
             const consultation = consultationFor(
               ev,
+              days,
               exam,
               rng,
               rooms,
@@ -223,26 +229,28 @@ export function examAvailable(unavailable: string[] | undefined, date: string, s
   return true;
 }
 
-/** The day before, skipping days without exams (a Monday exam gets its consultation on Saturday). */
-function previousExamDay(ev: EvaluationSettings, date: string): string {
+/** The working day before (a Monday exam's consultation is on Friday), skipping holidays. */
+function previousExamDay(ev: EvaluationSettings, days: Day[], date: string): string {
   let d = addDays(date, -1);
-  for (let i = 0; i < 21 && (!ev.examDays.includes(dayIndexOf(parseDate(d)) as Day) || vacationOn(ev, d)); i++) d = addDays(d, -1);
+  for (let i = 0; i < 21 && (!days.includes(dayIndexOf(parseDate(d)) as Day) || vacationOn(ev, d)); i++) d = addDays(d, -1);
   return d;
 }
 
 /** The consultation before an exam: same teacher, its room if free. */
 function consultationFor(
   ev: EvaluationSettings,
+  days: Day[],
   exam: ExamEvent,
   rng: Rng,
   rooms: Room[],
   free: (e: ExamEvent) => boolean,
 ): ExamEvent | null {
   const sameDay = { date: exam.date, start: toHHMM(toMin(exam.start) - 60), minutes: 45 };
-  const before = previousExamDay(ev, exam.date);
+  const before = previousExamDay(ev, days, exam.date);
   // right after a holiday (or on request) the consultation is the same day, just before the exam
+  // (a weekend in between is fine: Friday's consultation for a Monday exam)
   const tries =
-    ev.consultation === 'sameDay' || daysBetween(before, exam.date) > 2
+    ev.consultation === 'sameDay' || daysBetween(before, exam.date) > 3
       ? [sameDay]
       : // any time in the exam hours of that day, different from one exam to the next
         rng

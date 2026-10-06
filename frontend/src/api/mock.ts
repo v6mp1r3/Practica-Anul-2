@@ -13,7 +13,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 13;
+const SEED_VERSION = 14;
 
 interface Store {
   dataset: Dataset;
@@ -127,6 +127,9 @@ function mergeSeed(saved: Store) {
       '2027-07-01',
     ]);
     st.evaluation.vacations = (st.evaluation.vacations ?? []).filter((v) => !auto.has(v.start));
+    // Saturday is no longer an exam day by default
+    if (JSON.stringify(st.evaluation.examDays) === '[0,1,2,3,4,5]') st.evaluation.examDays = [0, 1, 2, 3, 4];
+    if (!st.evaluation.reducedExamDays) st.evaluation.reducedExamDays = [0, 1, 2, 3, 4, 5, 6];
   }
   for (const g of ds.groups) {
     const seed = seedDataset.groups.find((x) => x.id === g.id);

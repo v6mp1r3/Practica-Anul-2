@@ -81,6 +81,8 @@ export interface EvaluationSettings {
   holidayOverrides?: Record<string, { start: string; end: string } | null>;
   /** Weekdays exams may be held on (0 = Monday). */
   examDays: Day[];
+  /** Weekdays for reduced-attendance groups' exams and consultations (weekends too). */
+  reducedExamDays: Day[];
   /** Free days at least between two exams of the same group. */
   examMinGap: number;
   /**

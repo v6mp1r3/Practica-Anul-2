@@ -601,6 +601,8 @@ export const ro = {
   'exams.midtermShort': 'Atestare',
   'generate.whatTimetable': 'Orar',
   'generate.examsHint': 'Se generează pentru toate grupele facultății. Apoi le verifici, le muți și le publici în Evaluări.',
+  'setup.examDays': 'Zile de examen și consultații — frecvență',
+  'setup.reducedExamDays': 'Zile de examen și consultații — frecvență redusă',
 } as const;
 
 export type MessageKey = keyof typeof ro;

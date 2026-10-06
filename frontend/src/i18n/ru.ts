@@ -602,4 +602,6 @@ export const ru: Record<MessageKey, string> = {
   'exams.midtermShort': 'Аттестация',
   'generate.whatTimetable': 'Расписание',
   'generate.examsHint': 'Генерируется для всех групп факультета. Затем проверьте, перенесите и опубликуйте их в разделе «Оценивание».',
+  'setup.examDays': 'Дни экзаменов и консультаций — очное',
+  'setup.reducedExamDays': 'Дни экзаменов и консультаций — заочное',
 };
