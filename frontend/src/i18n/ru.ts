@@ -600,4 +600,6 @@ export const ru: Record<MessageKey, string> = {
   'exams.weekOf': 'неделя {n} из {count}',
   'exams.dragHint': 'перетащите карточку, чтобы перенести',
   'exams.midtermShort': 'Аттестация',
+  'generate.whatTimetable': 'Расписание',
+  'generate.examsHint': 'Генерируется для всех групп факультета. Затем проверьте, перенесите и опубликуйте их в разделе «Оценивание».',
 };

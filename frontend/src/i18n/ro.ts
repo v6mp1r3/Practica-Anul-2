@@ -599,6 +599,8 @@ export const ro = {
   'exams.weekOf': 'săptămâna {n} din {count}',
   'exams.dragHint': 'trage un card pentru a-l muta',
   'exams.midtermShort': 'Atestare',
+  'generate.whatTimetable': 'Orar',
+  'generate.examsHint': 'Se generează pentru toate grupele facultății. Apoi le verifici, le muți și le publici în Evaluări.',
 } as const;
 
 export type MessageKey = keyof typeof ro;

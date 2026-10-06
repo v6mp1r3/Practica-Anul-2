@@ -2,6 +2,7 @@
 // (and atestări, when held after classes) are generated, checked, edited and
 // published here; atestări held in class follow from the published timetable.
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api';
 import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { ExamWeekCalendar } from '../../components/ExamWeekCalendar';
@@ -28,7 +29,12 @@ export default function Evaluations() {
   const scope = useAdminScope();
   const ev = evaluationOf(dataset);
   const separate = ev.midtermMode === 'separate';
-  const [round, setRound] = useState<ExamRound>('session');
+  // Generare sends here with the round it just generated (?round=session)
+  const [params] = useSearchParams();
+  const asked = params.get('round');
+  const [round, setRound] = useState<ExamRound>(
+    asked === 'midterm1' || asked === 'midterm2' || asked === 'reexam' || asked === 'session' ? asked : 'session',
+  );
   const [plan, setPlan] = useState<ExamPlan | null>(null);
   const [busy, setBusy] = useState(false);
   const [groupId, setGroupId] = useState('');

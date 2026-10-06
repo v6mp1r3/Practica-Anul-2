@@ -597,4 +597,6 @@ export const en: Record<MessageKey, string> = {
   'exams.weekOf': 'week {n} of {count}',
   'exams.dragHint': 'drag a card to move it',
   'exams.midtermShort': 'Midterm',
+  'generate.whatTimetable': 'Timetable',
+  'generate.examsHint': 'Generated for all of the faculty’s groups. Then check, move and publish them in Evaluations.',
 };
