@@ -101,6 +101,23 @@ const SECTION_KEYS: Record<number, (keyof Settings)[]> = {
   6: ['evaluation'],
 };
 
+/** Configurare → Evaluări → Atestări: the settings its own save button stores (the rest is Examene finale). */
+const MIDTERM_KEYS: (keyof EvaluationSettings)[] = [
+  'semesterStart',
+  'midtermWeeks',
+  'midtermSpanWeeks',
+  'midtermRetakeWeeks',
+  'midtermMode',
+  'midtermStartTimes',
+  'midtermMinutes',
+];
+/** Days off are edited on their own page (Zile libere și vacanțe). */
+const HOLIDAY_KEYS: (keyof EvaluationSettings)[] = ['vacations', 'holidayOverrides'];
+const tabKeys = (tab: 'midterms' | 'finals') =>
+  (Object.keys(DEFAULT_EVALUATION) as (keyof EvaluationSettings)[]).filter(
+    (k) => !HOLIDAY_KEYS.includes(k) && MIDTERM_KEYS.includes(k) === (tab === 'midterms'),
+  );
+
 export default function Setup() {
   const { t, lang } = useI18n();
   const { dataset, refresh } = useDataset();
@@ -112,7 +129,7 @@ export default function Setup() {
   const [faculty, setFaculty] = useState(user?.faculty ?? '');
   const clock = useClock();
   const [saving, setSaving] = useState(false);
-  const [justSaved, setJustSaved] = useState<number | null>(null);
+  const [justSaved, setJustSaved] = useState<number | string | null>(null);
   // as many years as the longest programme (at least 4, at most 6)
   const shiftYears = Math.min(6, Math.max(4, ...dataset.groups.map((g) => g.programYears ?? g.year)));
   const ev = { ...DEFAULT_EVALUATION, ...s.evaluation };
@@ -178,8 +195,14 @@ export default function Setup() {
       const own: Partial<Settings> = Object.fromEntries(SECTION_KEYS[section].map((k) => [k, clean[k]]));
       // days off are edited on their own page (Zile libere și vacanțe): keep them as stored
       const storedEv = { ...DEFAULT_EVALUATION, ...saved.evaluation };
-      if (section === 6)
-        own.evaluation = { ...clean.evaluation!, vacations: storedEv.vacations, holidayOverrides: storedEv.holidayOverrides };
+      // Evaluări: only the open tab (atestări or examene finale); the other tab stays as last saved
+      if (section === 6) {
+        const keys = tabKeys(evalTab);
+        own.evaluation = {
+          ...storedEv,
+          ...(Object.fromEntries(keys.map((k) => [k, clean.evaluation![k]])) as Partial<EvaluationSettings>),
+        };
+      }
       await api.saveSettings({ ...saved, ...own });
       // the form now shows exactly what was stored (e.g. empty rows dropped)
       setS((x) => ({ ...x, ...own }));
@@ -196,7 +219,7 @@ export default function Setup() {
         );
       }
       await refresh();
-      setJustSaved(section);
+      setJustSaved(section === 6 ? `6-${evalTab}` : section);
     } catch {
       toast(t('common.error'), 'error');
     } finally {
@@ -208,21 +231,22 @@ export default function Setup() {
   const stored: Settings = { ...dataset.settings, timeFormat: institutionTimeFormat };
   const norm = (k: keyof Settings, v: Settings[keyof Settings]) =>
     JSON.stringify(k === 'evaluation' ? { ...DEFAULT_EVALUATION, ...(v as Settings['evaluation']) } : (v ?? null));
-  // days off live on their own page, so Evaluări compares everything else
-  const evRest = (v: Settings['evaluation']) => {
-    const { vacations: _v, holidayOverrides: _o, ...rest } = { ...DEFAULT_EVALUATION, ...v };
-    return JSON.stringify(rest);
+  // Evaluări compares the open tab's settings only (days off live on their own page)
+  const evPart = (v: Settings['evaluation'], keys: (keyof EvaluationSettings)[]) => {
+    const full = { ...DEFAULT_EVALUATION, ...v };
+    return JSON.stringify(keys.map((k) => full[k]));
   };
+  const tabDirty = (tab: 'midterms' | 'finals') => evPart(s.evaluation, tabKeys(tab)) !== evPart(stored.evaluation, tabKeys(tab));
   const dirty = (section: number) =>
     section === 6
-      ? evRest(s.evaluation) !== evRest(stored.evaluation)
+      ? evPart(s.evaluation, tabKeys(evalTab)) !== evPart(stored.evaluation, tabKeys(evalTab))
       : SECTION_KEYS[section].some((k) => k !== 'institutionName' && norm(k, s[k]) !== norm(k, stored[k])) ||
         (section === 1 && !!faculty && faculty !== user?.faculty);
   const step = (n: number) => ({
     onSave: () => save(n),
     saving,
     dirty: dirty(n),
-    saved: justSaved === n && !dirty(n),
+    saved: justSaved === (n === 6 ? `6-${evalTab}` : n) && !dirty(n),
   });
 
   const num = (v: string, min = 0) => Math.max(min, Number(v) || 0);
@@ -585,8 +609,9 @@ export default function Setup() {
             value={evalTab}
             onChange={setEvalTab}
             options={[
-              { value: 'midterms', label: t('exams.midterms') },
-              { value: 'finals', label: t('exams.exams') },
+              // a dot marks a tab with unsaved changes
+              { value: 'midterms', label: t('exams.midterms') + (tabDirty('midterms') ? ' •' : '') },
+              { value: 'finals', label: t('exams.exams') + (tabDirty('finals') ? ' •' : '') },
             ]}
           />
           {/* settings on the left; the year with its holidays (and this tab's periods) on the right */}
