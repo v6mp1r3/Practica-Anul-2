@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
 import { fmtTime, range } from '../domain/slots';
-import type { Lesson, Parity, Settings } from '../domain/types';
+import type { Lesson, Parity, Settings, Vacation } from '../domain/types';
+import { toDateString } from '../domain/changes';
+import { useHolidayName } from './Holidays';
 import { dayIndexOf, inWeek, weekParityOf } from '../domain/views';
 import { useI18n } from '../i18n';
 import { Agenda, Legend, LessonCard, TimetableGrid, type LessonField } from './TimetableGrid';
@@ -30,16 +32,26 @@ export function MyTimetable({
   index,
   lessons,
   hide,
+  holidays = [],
 }: {
   settings: Settings;
   index: DatasetIndex;
   lessons: Lesson[];
   hide?: LessonField[];
+  /** The year's days off: the days of this week that fall on one show it instead of lessons. */
+  holidays?: Vacation[];
 }) {
   const { t } = useI18n();
+  const holidayName = useHolidayName();
   const now = new Date();
   const todayIdx = dayIndexOf(now);
   const thisWeek = weekParityOf(now);
+  // the dates of this week (Monday first), e.g. Friday 25 December -> Crăciunul
+  const weekDates = range(7).map((d) => {
+    const x = new Date(now);
+    x.setDate(now.getDate() - todayIdx + d);
+    return toDateString(x);
+  });
   const [mode, setMode] = useState<'week' | 'day'>(isPhone() ? 'day' : 'week');
   const [week, setWeek] = useState<Parity>(settings.weekParity ? thisWeek : 'weekly');
   const [day, setDay] = useState(todayIdx < settings.workingDays ? todayIdx : 0);
@@ -52,8 +64,14 @@ export function MyTimetable({
   }, []);
 
   const shown = lessons.filter((l) => !l.date && inWeek(l, week));
+  // only the week actually happening now is tied to dates
+  const isThisWeek = !settings.weekParity || week === thisWeek;
+  const dayOff = weekDates.map((date) => {
+    const h = isThisWeek ? holidays.find((v) => v.start <= date && date <= v.end) : undefined;
+    return h ? holidayName(h) : undefined;
+  });
   const todays = lessons.filter((l) => !l.date && inWeek(l, settings.weekParity ? thisWeek : 'weekly'));
-  const next = nextLesson(todays, settings, now);
+  const next = dayOff[todayIdx] ? null : nextLesson(todays, settings, now);
 
   return (
     <div className="stack">
@@ -109,12 +127,12 @@ export function MyTimetable({
             </div>
           </div>
           <div className="card-body">
-            <Agenda settings={settings} index={index} lessons={shown} day={day} hide={hide} />
+            <Agenda settings={settings} index={index} lessons={shown} day={day} hide={hide} off={dayOff[day]} />
           </div>
         </div>
       ) : (
         <>
-          <TimetableGrid settings={settings} index={index} lessons={shown} hide={hide} today={todayIdx} />
+          <TimetableGrid settings={settings} index={index} lessons={shown} hide={hide} today={todayIdx} dayOff={dayOff} />
           <Legend />
         </>
       )}

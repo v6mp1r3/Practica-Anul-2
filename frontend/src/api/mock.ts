@@ -13,7 +13,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 12;
+const SEED_VERSION = 13;
 
 interface Store {
   dataset: Dataset;
@@ -113,6 +113,11 @@ function mergeSeed(saved: Store) {
   // parts of the day per year of study, and programme lengths
   if (!st.yearShifts) st.yearShifts = structuredClone(seedDataset.settings.yearShifts);
   if (!st.evaluation) st.evaluation = structuredClone(seedDataset.settings.evaluation);
+  // days off are computed every year now: the old hand-written 2026-27 list is not an "extra"
+  if (st.evaluation) {
+    const auto = new Set(['2026-12-25', '2026-12-28', '2027-03-08', '2027-05-01', '2027-05-03', '2027-05-09', '2027-05-10', '2027-06-01', '2027-07-01']);
+    st.evaluation.vacations = (st.evaluation.vacations ?? []).filter((v) => !auto.has(v.start));
+  }
   for (const g of ds.groups) {
     const seed = seedDataset.groups.find((x) => x.id === g.id);
     if (g.programYears === undefined) g.programYears = seed?.programYears ?? Math.max(4, g.year);

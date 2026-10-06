@@ -239,7 +239,13 @@ function Schedule({ kind }: { kind: Kind }) {
           <SessionTimetable dataset={dataset} index={index} lessons={lessons} groupId={group!.id} hide={['audience']} />
         ) : (
           <>
-            <MyTimetable settings={dataset.settings} index={index} lessons={lessons} hide={group ? ['audience'] : ['teacher']} />
+            <MyTimetable
+              settings={dataset.settings}
+              index={index}
+              lessons={lessons}
+              hide={group ? ['audience'] : ['teacher']}
+              holidays={evaluationOf(dataset).vacations}
+            />
             {teacher && <SessionsSection dataset={dataset} index={index} lessons={lessons} hide={['teacher']} />}
           </>
         )}

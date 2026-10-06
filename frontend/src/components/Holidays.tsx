@@ -1,12 +1,19 @@
 // The university's holidays, shown on every timetable (public pages and admin).
 import { parseDate, toDateString } from '../domain/changes';
 import { evaluationOf, vacationOn } from '../domain/exams';
-import type { Dataset } from '../domain/types';
+import type { Dataset, Vacation } from '../domain/types';
 import { dateLocale, useI18n } from '../i18n';
+
+/** A day off's name in the current language (automatic ones are translated). */
+export function useHolidayName() {
+  const { t } = useI18n();
+  return (v: Vacation) => (v.nameKey ? t(v.nameKey as 'holiday.winter') : v.name);
+}
 
 /** Holidays of the academic year; past ones dimmed. */
 export function HolidaysCard({ dataset }: { dataset: Dataset }) {
   const { t, lang } = useI18n();
+  const name = useHolidayName();
   const ev = evaluationOf(dataset);
   if (!ev.vacations.length) return null;
   const today = toDateString(new Date());
@@ -21,7 +28,7 @@ export function HolidaysCard({ dataset }: { dataset: Dataset }) {
           .sort((a, b) => a.start.localeCompare(b.start))
           .map((v) => (
             <span key={`${v.start}-${v.name}`} className={`holiday ${v.end < today ? 'past' : ''}`}>
-              <strong>{v.name}</strong>
+              <strong>{name(v)}</strong>
               <span>{v.start === v.end ? fmt(v.start) : `${fmt(v.start)} – ${fmt(v.end)}`}</span>
             </span>
           ))}
@@ -33,13 +40,14 @@ export function HolidaysCard({ dataset }: { dataset: Dataset }) {
 /** "Vacanța de iarnă: nu sunt ore" when today is a holiday. */
 export function HolidayToday({ dataset }: { dataset: Dataset }) {
   const { t, lang } = useI18n();
+  const name = useHolidayName();
   const v = vacationOn(evaluationOf(dataset), toDateString(new Date()));
   if (!v) return null;
   const fmt = (d: string) => parseDate(d).toLocaleDateString(dateLocale(lang), { day: 'numeric', month: 'long' });
   return (
     <div className="card holiday-today">
       <div className="card-body">
-        <strong>{t('vacation.now', { name: v.name })}</strong>
+        <strong>{t('vacation.now', { name: name(v) })}</strong>
         <div className="small muted">{v.start === v.end ? fmt(v.start) : `${fmt(v.start)} – ${fmt(v.end)}`}</div>
       </div>
     </div>

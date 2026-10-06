@@ -38,6 +38,8 @@ export interface YearShift {
 /** A named holiday period (one day: start = end). */
 export interface Vacation {
   name: string;
+  /** Translation key, for the days off worked out automatically. */
+  nameKey?: string;
   start: string;
   end: string;
 }
@@ -70,8 +72,13 @@ export interface EvaluationSettings {
   /** Exam session of reduced-attendance groups. */
   reducedExamSession: DateRange[];
   reexamSession: DateRange[];
-  /** Holidays and public holidays: no classes, atestări or exams. */
+  /**
+   * Extra days off the administrator added for this year. The public holidays and
+   * the university's breaks are worked out every year (domain/holidays.ts).
+   */
   vacations: Vacation[];
+  /** Automatic days off moved (new dates) or hidden (null) this year, by id ("2026:winter"). */
+  holidayOverrides?: Record<string, { start: string; end: string } | null>;
   /** Weekdays exams may be held on (0 = Monday). */
   examDays: Day[];
   /** Free days at least between two exams of the same group. */

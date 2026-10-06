@@ -3,6 +3,7 @@
 // take place on that date (weekday + odd/even week + session).
 import { lessonsOnDate, parseDate, sessionDates, toDateString } from '../domain/changes';
 import { evaluationOf, vacationOn } from '../domain/exams';
+import { useHolidayName } from './Holidays';
 import type { DatasetIndex } from '../domain/indexes';
 import { fmtTime, range } from '../domain/slots';
 import type { Dataset, Lesson } from '../domain/types';
@@ -26,6 +27,7 @@ export function SessionTimetable({
   hide?: LessonField[];
 }) {
   const { t, lang } = useI18n();
+  const holidayName = useHolidayName();
   const { settings } = dataset;
   const days = groupId ? index.groupDays(groupId) : (settings.formDays?.reduced ?? [0, 1, 2, 3, 4, 5, 6]);
   const today = toDateString(new Date());
@@ -59,7 +61,7 @@ export function SessionTimetable({
                     {dates.map((d) => {
                       const holiday = vacationOn(ev, d);
                       return (
-                        <div key={d} className={`tt-head ${d === today ? 'today' : holiday ? 'holiday-col' : ''}`} title={holiday?.name}>
+                        <div key={d} className={`tt-head ${d === today ? 'today' : holiday ? 'holiday-col' : ''}`} title={holiday ? holidayName(holiday) : undefined}>
                           {fmt(d, { weekday: 'short' })} {fmt(d, { day: '2-digit', month: '2-digit' })}
                           {holiday && <div className="small">{t('vacation.short')}</div>}
                         </div>

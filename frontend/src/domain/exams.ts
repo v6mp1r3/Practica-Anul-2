@@ -4,6 +4,7 @@
 // retakes in afternoon pairs after the session. Atestări 1 and 2 are held in
 // the subject's own classes in teaching weeks 7 and 14.
 import { parseDate, sessionDates, toDateString } from './changes';
+import { holidaysOf } from './holidays';
 import type { DatasetIndex } from './indexes';
 import type { Rng } from './rng';
 import type { ActivityType, Dataset, DateRange, Day, EvaluationSettings, ExamEvent, Lesson, Room } from './types';
@@ -22,18 +23,8 @@ export const DEFAULT_EVALUATION: EvaluationSettings = {
   ],
   reducedExamSession: [{ start: '2027-01-25', end: '2027-02-06' }],
   reexamSession: [{ start: '2027-01-25', end: '2027-02-06' }],
-  // UTM's breaks (as in the 2025-26 calendar) and Moldova's public holidays, 2026-27
-  vacations: [
-    { name: 'Crăciunul (stil nou)', start: '2026-12-25', end: '2026-12-25' },
-    { name: 'Vacanța de iarnă', start: '2026-12-28', end: '2027-01-10' },
-    { name: 'Ziua Internațională a Femeii', start: '2027-03-08', end: '2027-03-08' },
-    { name: 'Ziua Muncii', start: '2027-05-01', end: '2027-05-01' },
-    { name: 'Vacanța de Paște', start: '2027-05-03', end: '2027-05-08' },
-    { name: 'Ziua Victoriei', start: '2027-05-09', end: '2027-05-09' },
-    { name: 'Paștele Blajinilor', start: '2027-05-10', end: '2027-05-10' },
-    { name: 'Ziua Ocrotirii Copiilor', start: '2027-06-01', end: '2027-06-01' },
-    { name: 'Vacanța de vară', start: '2027-07-01', end: '2027-08-31' },
-  ],
+  // extra days off only — public holidays and breaks are computed every year (holidays.ts)
+  vacations: [],
   examDays: [0, 1, 2, 3, 4, 5],
   examMinGap: 2,
   examFrom: '08:00',
@@ -46,7 +37,11 @@ export const DEFAULT_EVALUATION: EvaluationSettings = {
   reexamMinutes: 90,
 };
 
-export const evaluationOf = (ds: Dataset): EvaluationSettings => ({ ...DEFAULT_EVALUATION, ...ds.settings.evaluation });
+/** The evaluation settings, with `vacations` = every day off of the year (automatic + added). */
+export const evaluationOf = (ds: Dataset): EvaluationSettings => {
+  const ev = { ...DEFAULT_EVALUATION, ...ds.settings.evaluation };
+  return { ...ev, vacations: holidaysOf(ev) };
+};
 
 const toMin = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);

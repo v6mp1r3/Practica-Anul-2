@@ -107,7 +107,6 @@ const SECTION_KEYS: Record<number, (keyof Settings)[]> = {
   4: ['weekParity'],
   5: ['minPairsPerDayGroup', 'maxPairsPerDayGroup', 'maxPairsPerDayTeacher', 'consultationRequired'],
   6: ['evaluation'],
-  7: ['evaluation'],
 };
 
 export default function Setup() {
@@ -143,10 +142,6 @@ export default function Setup() {
           examSession: ev.examSession.filter((x) => x.start && x.end && x.start <= x.end),
           reducedExamSession: ev.reducedExamSession.filter((x) => x.start && x.end && x.start <= x.end),
           reexamSession: ev.reexamSession.filter((x) => x.start && x.end && x.start <= x.end),
-          vacations: ev.vacations
-            .filter((x) => x.name.trim() && x.start && x.end && x.start <= x.end)
-            .map((x) => ({ ...x, name: x.name.trim() }))
-            .sort((a, b) => a.start.localeCompare(b.start)),
         },
         yearShifts: s.yearShifts?.map((x) => ({
           first: Math.min(x.first, s.slots.length - 1),
@@ -156,19 +151,13 @@ export default function Setup() {
       // only this section's settings; the others stay as last saved
       const saved: Settings = { ...dataset.settings, timeFormat: institutionTimeFormat };
       const own: Partial<Settings> = Object.fromEntries(SECTION_KEYS[section].map((k) => [k, clean[k]]));
-      // Evaluări (6) and Vacanțe (7) share settings.evaluation: each keeps the other's part as stored
+      // days off are edited on their own page (Zile libere și vacanțe): keep them as stored
       const storedEv = { ...DEFAULT_EVALUATION, ...saved.evaluation };
-      if (section === 6) own.evaluation = { ...clean.evaluation!, vacations: storedEv.vacations };
-      if (section === 7) own.evaluation = { ...storedEv, vacations: clean.evaluation!.vacations };
+      if (section === 6)
+        own.evaluation = { ...clean.evaluation!, vacations: storedEv.vacations, holidayOverrides: storedEv.holidayOverrides };
       await api.saveSettings({ ...saved, ...own });
       // the form now shows exactly what was stored (e.g. empty rows dropped)
-      setS((x) =>
-        section === 6
-          ? { ...x, evaluation: { ...own.evaluation!, vacations: { ...DEFAULT_EVALUATION, ...x.evaluation }.vacations } }
-          : section === 7
-            ? { ...x, evaluation: { ...DEFAULT_EVALUATION, ...x.evaluation, vacations: own.evaluation!.vacations } }
-            : { ...x, ...own },
-      );
+      setS((x) => ({ ...x, ...own }));
       // the administrator's own faculty is part of their account (section 1)
       if (section === 1 && user && faculty && faculty !== user.faculty) {
         setUser(
@@ -194,13 +183,14 @@ export default function Setup() {
   const stored: Settings = { ...dataset.settings, timeFormat: institutionTimeFormat };
   const norm = (k: keyof Settings, v: Settings[keyof Settings]) =>
     JSON.stringify(k === 'evaluation' ? { ...DEFAULT_EVALUATION, ...(v as Settings['evaluation']) } : (v ?? null));
-  const evPart = (v: Settings['evaluation'], part: 6 | 7) => {
-    const { vacations, ...rest } = { ...DEFAULT_EVALUATION, ...v };
-    return JSON.stringify(part === 7 ? vacations : rest);
+  // days off live on their own page, so Evaluări compares everything else
+  const evRest = (v: Settings['evaluation']) => {
+    const { vacations: _v, holidayOverrides: _o, ...rest } = { ...DEFAULT_EVALUATION, ...v };
+    return JSON.stringify(rest);
   };
   const dirty = (section: number) =>
-    section === 6 || section === 7
-      ? evPart(s.evaluation, section) !== evPart(stored.evaluation, section)
+    section === 6
+      ? evRest(s.evaluation) !== evRest(stored.evaluation)
       : SECTION_KEYS[section].some((k) => k !== 'institutionName' && norm(k, s[k]) !== norm(k, stored[k])) ||
         (section === 1 && !!faculty && faculty !== user?.faculty);
   const step = (n: number) => ({
@@ -708,61 +698,6 @@ export default function Setup() {
             </div>
           )}
 
-        </Step>
-
-        {/* University holidays and single days off: shown on every timetable, nothing is scheduled on them */}
-        <Step n={7} {...step(7)} title={t('vacation.title')}>
-          <div className="stack" style={{ gap: 8 }}>
-            {ev.vacations.map((v, i) => (
-              <div key={i} className="row wrap">
-                <input
-                  className="input"
-                  style={{ width: 230 }}
-                  value={v.name}
-                  placeholder={t('vacation.name')}
-                  aria-label={t('vacation.name')}
-                  onChange={(e) => setEv({ vacations: ev.vacations.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)) })}
-                />
-                {(['start', 'end'] as const).map((edge) => (
-                  <input
-                    key={edge}
-                    className="input"
-                    type="date"
-                    style={{ width: 170 }}
-                    value={v[edge]}
-                    min={edge === 'end' ? v.start : undefined}
-                    aria-label={`${v.name} — ${t(`setup.${edge}`)}`}
-                    onChange={(e) =>
-                      setEv({
-                        vacations: ev.vacations.map((x, j) =>
-                          j === i
-                            ? {
-                                ...x,
-                                [edge]: e.target.value,
-                                ...(edge === 'start' && (!x.end || x.end < e.target.value) ? { end: e.target.value } : {}),
-                              }
-                            : x,
-                        ),
-                      })
-                    }
-                  />
-                ))}
-                <button
-                  className="btn ghost sm icon danger"
-                  onClick={() => setEv({ vacations: ev.vacations.filter((_, j) => j !== i) })}
-                  aria-label={t('common.delete')}
-                >
-                  <Icon name="trash" size={14} />
-                </button>
-              </div>
-            ))}
-            <div>
-              <button className="btn sm" onClick={() => setEv({ vacations: [...ev.vacations, { name: '', start: '', end: '' }] })}>
-                <Icon name="plus" size={14} />
-                {t('vacation.add')}
-              </button>
-            </div>
-          </div>
         </Step>
       </div>
     </div>

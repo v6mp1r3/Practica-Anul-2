@@ -72,6 +72,8 @@ export interface GridProps {
   dimOthers?: boolean;
   /** Highlights today's column. */
   today?: Day;
+  /** Days off this week (by day index): the column shows the holiday instead of lessons. */
+  dayOff?: (string | undefined)[];
   /** Enables drag & drop; called with the new slot. */
   onMove?: (lessonId: string, day: Day, slot: SlotIndex) => void;
   /** Tells the grid whether dropping a lesson at a slot would be conflict-free. */
@@ -92,6 +94,7 @@ export function TimetableGrid({
   highlightIds,
   dimOthers = false,
   today,
+  dayOff,
   onMove,
   canDrop,
   onLessonClick,
@@ -112,8 +115,9 @@ export function TimetableGrid({
       <div className={`tt ${className}`} style={{ ['--days' as string]: settings.workingDays }}>
         <div className="tt-head" />
         {days.map((d) => (
-          <div key={d} className={`tt-head ${d === today ? 'today' : ''}`}>
+          <div key={d} className={`tt-head ${d === today ? 'today' : ''} ${dayOff?.[d] ? 'holiday-col' : ''}`}>
             {t(`day.${d}` as 'day.0')}
+            {dayOff?.[d] && <div className="small">{dayOff[d]}</div>}
           </div>
         ))}
         {settings.slots.map((s, slot) => (
@@ -129,7 +133,7 @@ export function TimetableGrid({
               return (
                 <div
                   key={key}
-                  className={`tt-cell ${dropState} ${cellClass?.(day, slot) ?? ''} ${onCellClick ? 'selectable' : ''}`}
+                  className={`tt-cell ${dropState} ${cellClass?.(day, slot) ?? ''} ${onCellClick ? 'selectable' : ''} ${dayOff?.[day] ? 'day-off' : ''}`}
                   onClick={onCellClick ? () => onCellClick(day, slot) : undefined}
                   onDragOver={
                     onMove
@@ -160,7 +164,7 @@ export function TimetableGrid({
                   {renderCell?.(day, slot)}
                   {/* the weekly grid shows the repeating week; session (dated) pairs have their own calendar */}
                   {lessonsAt(lessons, day, slot)
-                    .filter((l) => !l.date)
+                    .filter((l) => !l.date && !dayOff?.[day])
                     .map((l) => (
                       <LessonCard
                         key={l.id}
@@ -241,14 +245,18 @@ export function Agenda({
   lessons,
   day,
   hide,
+  off,
 }: {
   settings: Settings;
   index: DatasetIndex;
   lessons: Lesson[];
   day: Day;
   hide?: LessonField[];
+  /** The day is a holiday: no lessons, just its name. */
+  off?: string;
 }) {
   const { t } = useI18n();
+  if (off) return <div className="agenda-free">{t('vacation.now', { name: off })}</div>;
   const dayLessons = lessons.filter((l) => l.day === day);
   if (!dayLessons.length) return <div className="agenda-free">{t('tt.noLessons')}</div>;
   const first = Math.min(...dayLessons.map((l) => l.slot));

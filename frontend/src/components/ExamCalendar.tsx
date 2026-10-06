@@ -2,6 +2,7 @@
 // per day, its consultations / exams / atestări in time order (like the
 // faculties' published session sheets, but readable on a phone).
 import type { ReactNode } from 'react';
+import { useHolidayName } from './Holidays';
 import { parseDate } from '../domain/changes';
 import type { DatasetIndex } from '../domain/indexes';
 import { fmtTime } from '../domain/slots';
@@ -45,6 +46,7 @@ export function ExamCalendar({
   vacations?: Vacation[];
 }) {
   const { t, lang } = useI18n();
+  const holidayName = useHolidayName();
   if (!entries.length) return <div className="card">{empty}</div>;
   const days = [...new Set(entries.map((e) => e.date))].sort();
   const today = new Date().toISOString().slice(0, 10);
@@ -62,7 +64,7 @@ export function ExamCalendar({
         vacation ? (
           <section key={`v-${vacation.start}`} className="card exam-day vacation">
             <header>
-              <strong>{vacation.name}</strong>
+              <strong>{holidayName(vacation)}</strong>
               <span>{vacation.start === vacation.end ? fmt(vacation.start) : `${fmt(vacation.start)} – ${fmt(vacation.end)}`}</span>
             </header>
             <p className="small muted" style={{ margin: 0, padding: '0 18px 14px' }}>

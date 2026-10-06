@@ -817,3 +817,106 @@ table.table {
   font-weight: 600;
   font-size: 14px;
 }
+
+/* A day off in the weekly timetable: the column shows the holiday, no lessons */
+.tt-cell.day-off {
+  background: var(--success-soft);
+}
+
+/* Zile libere și vacanțe: the year as twelve small months */
+.year-cal {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px 24px;
+}
+.year-cal-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+  text-transform: capitalize;
+}
+.year-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  font-size: 12px;
+  text-align: center;
+}
+.year-cal-dow {
+  color: var(--text-3);
+  font-size: 11px;
+  padding-bottom: 2px;
+}
+.year-cal-day {
+  padding: 4px 0;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.year-cal-day.weekend {
+  color: var(--text-3);
+}
+.year-cal-day.off.break {
+  background: var(--success-soft);
+  color: var(--success);
+  font-weight: 600;
+}
+.year-cal-day.off.day {
+  background: var(--success);
+  color: #fff;
+  font-weight: 600;
+}
+.year-cal-day.today {
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+.year-cal-legend {
+  display: flex;
+  gap: 18px;
+  margin-top: 16px;
+}
+.year-cal-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* the list under the calendar */
+.holiday-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.holiday-row:last-of-type {
+  border-bottom: none;
+}
+.holiday-name {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.holiday-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  flex: none;
+}
+.holiday-dot.break {
+  background: var(--success-soft);
+  box-shadow: inset 0 0 0 1.5px var(--success);
+}
+.holiday-dot.day {
+  background: var(--success);
+}
+.holidays-hidden {
+  padding-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}

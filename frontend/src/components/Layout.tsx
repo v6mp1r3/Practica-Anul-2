@@ -37,6 +37,7 @@ const NAV: Partial<Record<Role, { section?: MessageKey; items: NavItem[] }[]>> =
         { to: '/admin/timetables', label: 'nav.timetables', icon: 'calendar' },
         { to: '/admin/changes', label: 'nav.changes', icon: 'swap' },
         { to: '/admin/evaluations', label: 'nav.evaluations', icon: 'check' },
+        { to: '/admin/holidays', label: 'nav.holidays', icon: 'sun' },
         { to: '/browse', label: 'nav.browse', icon: 'search' },
       ],
     },
