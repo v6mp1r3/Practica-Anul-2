@@ -100,14 +100,17 @@ describe('atestări', () => {
 describe('separate atestări timetable', () => {
   it('fits every subject into week 7 after classes, without clashes', async () => {
     const { lessons } = await generateTimetable(seedDataset, { groupIds: fcim, seed: 5, iterations: 40 });
-    const { events, warnings } = generateMidterms(seedDataset, idx, fcim, 1, lessons, [], createRng(3));
+    const separate = { ...seedDataset, settings: { ...seedDataset.settings, evaluation: { ...ev, midtermMode: 'separate' as const } } };
+    const { events, warnings } = generateMidterms(separate, idx, fcim, 1, lessons, [], createRng(3));
     expect(warnings).toEqual([]);
     const week = teachingWeek(ev, 7);
-    expect(events.every((e) => e.date >= week.start && e.date <= week.end && e.round === 'midterm1')).toBe(true);
+    const regular = events.filter((e) => e.groupId !== 'g8');
+    expect(regular.every((e) => e.date >= week.start && e.date <= week.end && e.round === 'midterm1')).toBe(true);
     expect(findExamProblems(seedDataset, events)).toEqual([]);
     // never over one of the group's classes that week (week 7 = odd)
     for (const e of events) {
       const day = (new Date(e.date).getDay() + 6) % 7;
+      if (e.lessonId) continue; // held in a session class
       const overlapping = lessons.filter(
         (l) =>
           !l.date &&
@@ -119,7 +122,37 @@ describe('separate atestări timetable', () => {
       );
       expect(overlapping).toEqual([]);
     }
-    // FR keeps its atestări in the session classes
-    expect(events.some((e) => e.groupId === 'g8')).toBe(false);
+    // FR keeps its atestări in its session classes
+    expect(events.filter((e) => e.groupId === 'g8').every((e) => e.lessonId)).toBe(true);
+  });
+});
+
+describe('atestări held in class', () => {
+  it('turns each subject’s class of week 14 into an atestare, in its room and time', async () => {
+    const { lessons } = await generateTimetable(seedDataset, { groupIds: fcim, seed: 6, iterations: 40 });
+    const { events } = generateMidterms(seedDataset, idx, fcim, 2, lessons, [], createRng(1));
+    const week = teachingWeek(ev, 14);
+    expect(events.length).toBeGreaterThan(20);
+    for (const e of events) {
+      const l = lessons.find((x) => x.id === e.lessonId)!;
+      expect(l.roomId).toBe(e.roomId);
+      expect(seedDataset.settings.slots[l.slot].start).toBe(e.start);
+      // FR (g8) sits its atestări in its own sessions
+      if (e.groupId !== 'g8') expect(e.date >= week.start && e.date <= week.end).toBe(true);
+    }
+    // a stream lecture shared by groups, or both subgroups' labs, are not clashes
+    expect(findExamProblems(seedDataset, events)).toEqual([]);
+  });
+});
+
+describe('exam-period availability', () => {
+  it('keeps exams and consultations off the days a teacher is unavailable', () => {
+    const t3 = seedDataset.teachers.find((t) => t.id === 't3')!;
+    const blocked = rangeDates(ev.examSession, ev.examDays, ev.vacations).slice(0, 8);
+    const ds = { ...seedDataset, teachers: seedDataset.teachers.map((t) => (t.id === 't3' ? { ...t3, examUnavailable: blocked } : t)) };
+    const { events } = generateExams(ds, new DatasetIndex(ds), fcim, 'session', [], createRng(4));
+    const mine = events.filter((e) => e.teacherId === 't3');
+    expect(mine.length).toBeGreaterThan(0);
+    expect(mine.some((e) => blocked.includes(e.date))).toBe(false);
   });
 });

@@ -137,6 +137,12 @@ export interface Teacher {
   preferred: SlotKey[];
   /** Weekly consultation hour, if already fixed. */
   consultation?: SlotKey;
+  /**
+   * Exam-period availability, separate from the weekly one: dates (or half
+   * days) the teacher can't examine — "2026-12-15" whole day, "2026-12-15|am"
+   * before 13:00, "2026-12-15|pm" from 13:00.
+   */
+  examUnavailable?: string[];
 }
 
 export interface Room {
@@ -415,6 +421,10 @@ export interface ExamEvent {
   date: string;
   start: string;
   end: string;
+  /** Atestare held in a class: that class (a stream lecture serves several groups at once). */
+  lessonId?: string;
+  /** Lab atestare of one subgroup (the two subgroups sit theirs at the same time). */
+  subgroup?: number;
 }
 
 /** A faculty's exam timetable for one round. */

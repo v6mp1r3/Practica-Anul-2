@@ -561,7 +561,7 @@ export function createMockApi(): Api {
       const result =
         round === 'midterm1' || round === 'midterm2'
           ? generateMidterms(ds, idx, groupIds, round === 'midterm1' ? 1 : 2, classes, busy, rng)
-          : generateExams(ds, idx, groupIds, round, busy, rng);
+          : generateExams(ds, idx, groupIds, round, busy, rng, classes);
       const plan: ExamPlan = { faculty, round, status: 'draft', events: result.events, updatedAt: new Date().toISOString() };
       store.examPlans = [...plans.filter((p) => !(p.faculty === faculty && p.round === round)), plan];
       persist();

@@ -7,7 +7,7 @@ import { parseDate, sessionDates, toDateString } from './changes';
 import type { DatasetIndex } from './indexes';
 import type { Rng } from './rng';
 import type { ActivityType, Dataset, DateRange, Day, EvaluationSettings, ExamEvent, Lesson, Room } from './types';
-import { paritiesOverlap, slotKey } from './slots';
+import { paritiesOverlap } from './slots';
 import { dayIndexOf } from './views';
 
 export const DEFAULT_EVALUATION: EvaluationSettings = {
@@ -85,9 +85,14 @@ export function examinerOf(ds: Dataset, idx: DatasetIndex, groupId: string, subj
 const overlaps = (a: { date: string; start: string; end: string }, b: { date: string; start: string; end: string }) =>
   a.date === b.date && toMin(a.start) < toMin(b.end) && toMin(b.start) < toMin(a.end);
 
-/** Two events that can't happen at once: same teacher, room or group. */
+/** Same students: same group, unless they are different subgroups. */
+const sameStudents = (a: ExamEvent, b: ExamEvent) => a.groupId === b.groupId && !(a.subgroup && b.subgroup && a.subgroup !== b.subgroup);
+
+/** Two events that can't happen at once: same teacher, room or students (one class shared by groups is fine). */
 const clash = (a: ExamEvent, b: ExamEvent) =>
-  overlaps(a, b) && (a.teacherId === b.teacherId || a.roomId === b.roomId || a.groupId === b.groupId);
+  overlaps(a, b) &&
+  !(a.lessonId && a.lessonId === b.lessonId) &&
+  (a.teacherId === b.teacherId || a.roomId === b.roomId || sameStudents(a, b));
 
 let counter = 0;
 const newId = () => `E${Date.now().toString(36)}${(counter++).toString(36)}`;
@@ -109,6 +114,8 @@ export function generateExams(
   round: 'session' | 'reexam',
   busy: ExamEvent[],
   rng: Rng,
+  /** The published weekly timetable: exams prefer the rooms the subject is taught in. */
+  classes: Lesson[] = [],
 ): ExamResult {
   const ev = evaluationOf(ds);
   const placed: ExamEvent[] = [];
@@ -120,19 +127,23 @@ export function generateExams(
   const minutes = round === 'session' ? ev.examMinutes : ev.reexamMinutes;
   const minGap = round === 'session' ? ev.examMinGap : Math.min(1, ev.examMinGap);
 
-  // the teacher's weekly "unavailable" pairs also hold during the session
-  const teacherFree = (teacherId: string, date: string, start: string, end: string) => {
-    const t = idx.teachers.get(teacherId);
-    if (!t?.unavailable.length) return true;
-    const day = dayIndexOf(parseDate(date));
-    return !ds.settings.slots.some(
-      (s, i) => t.unavailable.includes(slotKey(day, i)) && toMin(s.start) < toMin(end) && toMin(start) < toMin(s.end),
+  // the teacher's exam-period availability (not the weekly one: there are no classes)
+  const teacherFree = (teacherId: string, date: string, start: string, end: string) =>
+    examAvailable(idx.teachers.get(teacherId)?.examUnavailable, date, start, end);
+  // the rooms the group is taught the subject in come first (usually where the exam is held)
+  const roomsFor = (size: number, groupId: string, subjectId: string): Room[] => {
+    const taught = new Set(
+      classes
+        .filter((l) => {
+          const a = idx.assignmentOf(l);
+          return a?.subjectId === subjectId && idx.audienceTouchesGroup(a.audience, groupId);
+        })
+        .map((l) => l.roomId),
     );
-  };
-  const roomsFor = (size: number): Room[] =>
-    ds.rooms
+    return ds.rooms
       .filter((r) => r.type !== 'lab' && !r.equipment.includes('sport') && r.capacity >= size)
-      .sort((a, b) => a.capacity - b.capacity);
+      .sort((a, b) => Number(taught.has(b.id)) - Number(taught.has(a.id)) || a.capacity - b.capacity);
+  };
 
   // groups with the most exams first; a little randomness between runs
   const order = rng.shuffle(groupIds).sort((a, b) => examSubjects(ds, idx, b).length - examSubjects(ds, idx, a).length);
@@ -145,7 +156,7 @@ export function generateExams(
     const subjects = rng
       .shuffle(examSubjects(ds, idx, groupId))
       .sort((a, b) => (idx.subjects.get(b)?.credits ?? 0) - (idx.subjects.get(a)?.credits ?? 0));
-    const rooms = roomsFor(idx.audienceSize({ kind: 'group', id: groupId }));
+    const size = idx.audienceSize({ kind: 'group', id: groupId });
     let last: string | null = null;
 
     subjects.forEach((subjectId, i) => {
@@ -157,6 +168,7 @@ export function generateExams(
       // spread the exams evenly over the session
       // (leaving room after the last one, so a late exam still has its free days)
       const target = Math.floor((i * dates.length) / subjects.length);
+      const rooms = roomsFor(size, groupId, subjectId);
       let done: ExamEvent | null = null;
       for (let gap = minGap; gap >= 0 && !done; gap--) {
         const earliest = last ? addDays(last, gap + 1) : dates[0];
@@ -172,7 +184,12 @@ export function generateExams(
             );
             if (!room) continue;
             const exam: ExamEvent = { id: newId(), kind: 'exam', round, subjectId, groupId, teacherId, roomId: room.id, date, start, end };
-            const consultation = consultationFor(ev, exam, rooms, (e) => free(e) && !clash(e, exam));
+            const consultation = consultationFor(
+              ev,
+              exam,
+              rooms,
+              (e) => free(e) && !clash(e, exam) && teacherFree(teacherId, e.date, e.start, e.end),
+            );
             if (!consultation) continue;
             done = exam;
             placed.push(exam, consultation);
@@ -187,6 +204,16 @@ export function generateExams(
     });
   }
   return { events: placed, warnings };
+}
+
+/** Is the teacher available to examine then? (exam-period availability: whole or half days) */
+export function examAvailable(unavailable: string[] | undefined, date: string, start: string, end: string): boolean {
+  if (!unavailable?.length) return true;
+  if (unavailable.includes(date)) return false;
+  const noon = 13 * 60;
+  if (toMin(start) < noon && unavailable.includes(`${date}|am`)) return false;
+  if (toMin(end) > noon && unavailable.includes(`${date}|pm`)) return false;
+  return true;
 }
 
 /** The day before, skipping days without exams (a Monday exam gets its consultation on Saturday). */
@@ -227,8 +254,8 @@ export function findExamProblems(ds: Dataset, events: ExamEvent[]): ExamProblem[
     for (let j = i + 1; j < events.length; j++) {
       const a = events[i];
       const b = events[j];
-      if (!overlaps(a, b)) continue;
-      const what = a.teacherId === b.teacherId ? 'teacher' : a.roomId === b.roomId ? 'room' : a.groupId === b.groupId ? 'group' : null;
+      if (!overlaps(a, b) || (a.lessonId && a.lessonId === b.lessonId)) continue;
+      const what = a.teacherId === b.teacherId ? 'teacher' : a.roomId === b.roomId ? 'room' : sameStudents(a, b) ? 'group' : null;
       if (what) out.push({ kind: 'clash', ids: [a.id, b.id], what });
     }
   }
@@ -328,7 +355,9 @@ const groupSubjects = (ds: Dataset, idx: DatasetIndex, groupId: string) => [
 ];
 
 /**
- * Separate atestări timetable: in teaching week 7 (or 14), after classes —
+ * Atestări timetable for teaching week 7 (or 14). Held in class: each subject's
+ * atestare is its class that week, in that class's room (rooms can be changed
+ * afterwards for exceptions). Held separately: after classes —
  * never over a class of the group, the teacher or the room (any faculty), at
  * most two atestări a day per group. Reduced-attendance groups keep theirs in
  * the session classes.
@@ -366,7 +395,28 @@ export function generateMidterms(
       .sort((a, b) => a.capacity - b.capacity);
 
   for (const groupId of rng.shuffle(groupIds)) {
-    if (idx.groups.get(groupId)?.studyForm === 'reduced') continue;
+    // held in the subject's own class (or a reduced-attendance group's session class): its time and room
+    if (ev.midtermMode === 'inClass' || idx.groups.get(groupId)?.studyForm === 'reduced') {
+      for (const m of midtermsFor(ds, idx, classes, { groupId }).filter((x) => x.n === n)) {
+        const a = idx.assignmentOf(m.lesson)!;
+        const slot = ds.settings.slots[m.lesson.slot];
+        placed.push({
+          id: newId(),
+          kind: 'exam',
+          round,
+          subjectId: a.subjectId,
+          groupId,
+          teacherId: a.teacherId,
+          roomId: m.lesson.roomId,
+          date: m.date,
+          start: slot.start,
+          end: slot.end,
+          lessonId: m.lesson.id,
+          subgroup: a.audience.kind === 'subgroup' ? a.audience.subgroup : undefined,
+        });
+      }
+      continue;
+    }
     const subjects = rng.shuffle(groupSubjects(ds, idx, groupId));
     const size = idx.audienceSize({ kind: 'group', id: groupId });
     subjects.forEach((subjectId, i) => {
