@@ -309,3 +309,13 @@ separate from the weekly one: `"2026-12-15"` whole day, `"2026-12-15|am"` before
   "end": "14:15"
 }
 ```
+
+## Master's (study cycle)
+
+Groups and subjects have `cycle`: `licenta` (default) or `master`. Master's groups
+follow `Settings.masterEvaluation` — only what differs from licență
+(`startOffsetWeeks` after licență's week 1, its atestare weeks, sessions, exam
+days and hours, `consultation: "sameDay"`…) — and `Settings.masterYearShifts`
+(evening part of the day). A master's group is compared only with master's
+subjects in the study-plan check. Holidays, pair times, rooms and teachers are
+shared, so a teacher who teaches both cycles is checked across both.
