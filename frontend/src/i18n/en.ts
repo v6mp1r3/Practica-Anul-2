@@ -115,7 +115,6 @@ export const en: Record<MessageKey, string> = {
   'form.dual': 'Dual',
   'groups.studyForm': 'Form of study',
   'setup.forms': 'Forms of study',
-  'setup.formsHint': 'Which days each form can have pairs on. All forms share the same teachers and rooms, so they never clash.',
 
   'setup.formMaxPairs': 'Max pairs/day',
   'setup.sessions': 'Reduced-attendance sessions',

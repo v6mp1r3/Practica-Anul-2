@@ -115,8 +115,6 @@ export const ro = {
   'form.dual': 'Dual',
   'groups.studyForm': 'Forma de învățământ',
   'setup.forms': 'Forme de învățământ',
-  'setup.formsHint':
-    'În ce zile poate avea perechi fiecare formă. Toate formele folosesc aceiași profesori și aceleași săli, deci nu se suprapun.',
 
   'setup.formMaxPairs': 'Maxim perechi/zi',
   'setup.sessions': 'Sesiuni pentru frecvență redusă',

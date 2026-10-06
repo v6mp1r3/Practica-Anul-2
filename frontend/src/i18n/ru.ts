@@ -116,8 +116,6 @@ export const ru: Record<MessageKey, string> = {
   'form.dual': 'Дуальная',
   'groups.studyForm': 'Форма обучения',
   'setup.forms': 'Формы обучения',
-  'setup.formsHint':
-    'В какие дни у каждой формы могут быть пары. Все формы используют одних и тех же преподавателей и аудитории, поэтому не пересекаются.',
 
   'setup.formMaxPairs': 'Макс. пар в день',
   'setup.sessions': 'Сессии заочной формы',

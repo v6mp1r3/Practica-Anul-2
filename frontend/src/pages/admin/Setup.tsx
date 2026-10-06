@@ -169,7 +169,6 @@ export default function Setup() {
         </Step>
 
         <Step n={2} title={t('setup.forms')}>
-          <p className="small muted">{t('setup.formsHint')}</p>
           <div className="stack" style={{ gap: 10 }}>
             {STUDY_FORMS.map((form) => (
               <div key={form} className="row wrap" style={{ gap: 12 }}>
