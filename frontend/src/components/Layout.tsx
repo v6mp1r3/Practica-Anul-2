@@ -132,9 +132,10 @@ export function Layout() {
               <span className="small">{t('nav.adminLogin')}</span>
             </NavLink>
           )}
-          <div className="row">
+          {/* language switch centered; the logout button (administrators) on the right */}
+          <div className="sidebar-lang">
+            <span />
             <LanguageSwitch />
-            <span className="spacer" />
             {user && (
               <button className="btn ghost sm icon" onClick={logout} title={t('nav.logout')} aria-label={t('nav.logout')}>
                 <Icon name="logout" size={15} />
