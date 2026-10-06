@@ -23,8 +23,11 @@ export function YearCalendar({
   onSelect,
   periods = [],
   compact,
+  semester,
 }: {
   year: number;
+  /** Only this semester's six months (default: the whole year). */
+  semester?: 'autumn' | 'spring';
   holidays: Holiday[];
   selected?: string | null;
   onSelect?: (id: string) => void;
@@ -36,7 +39,9 @@ export function YearCalendar({
   const { t, lang } = useI18n();
   const name = useHolidayName();
   const today = toDateString(new Date());
-  const months = Array.from({ length: 12 }, (_, i) => new Date(year, 8 + i, 1));
+  // the whole academic year, or one semester: autumn September → February, spring February → July
+  const startMonth = semester === 'spring' ? 13 : 8;
+  const months = Array.from({ length: semester ? 6 : 12 }, (_, i) => new Date(year, startMonth + i, 1));
   const on = (d: string) => holidays.find((h) => h.start <= d && d <= h.end);
   const inPeriod = (d: string) => periods.find((p) => p.start <= d && d <= p.end);
   const current = holidays.find((h) => h.id === selected);

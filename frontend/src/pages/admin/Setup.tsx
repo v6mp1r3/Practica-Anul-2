@@ -768,6 +768,7 @@ export default function Setup() {
                 holidays={holidays}
                 periods={evalTab === 'midterms' ? midtermPeriods : examPeriods}
                 compact={evalTab !== 'midterms'}
+                semester={s.semester.startsWith('Primăvara') ? 'spring' : 'autumn'}
               />
             </aside>
           </div>
