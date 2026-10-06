@@ -1,12 +1,12 @@
 // "Contul meu": every role can edit their own profile, picture, password and
 // preferences. Role details (group, department) are read-only — the
 // administration manages those.
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../../api';
 import { Icon } from '../../components/Icon';
-import { Field, LanguageSwitch, PageHeader, Switch, initials, useClock } from '../../components/ui';
+import { Field, PageHeader, Switch, initials, useClock } from '../../components/ui';
 import { fmtTime } from '../../domain/slots';
-import { useI18n } from '../../i18n';
+import { LANGS, useI18n, type Lang } from '../../i18n';
 import { useAuth } from '../../state/auth';
 import { useData } from '../../state/data';
 import { useToast } from '../../state/toast';
@@ -42,7 +42,7 @@ export function Avatar({ name, src, size = 36 }: { name: string; src?: string; s
 }
 
 export default function Account() {
-  const { t } = useI18n();
+  const { t, lang, setLang } = useI18n();
   const { user, setUser, logout } = useAuth();
   const { index, myTimeFormat, setMyTimeFormat, institutionTimeFormat } = useData();
   const toast = useToast();
@@ -56,6 +56,13 @@ export default function Account() {
   const [avatar, setAvatar] = useState<string | undefined>(user?.avatar);
   const [notify, setNotify] = useState(!!user?.emailNotifications);
   const [saving, setSaving] = useState(false);
+  // preferences wait for "Salvează" (the button shows only after a change, then "Salvat")
+  const [prefLang, setPrefLang] = useState<Lang>(lang);
+  const [prefTime, setPrefTime] = useState<'24h' | '12h'>(myTimeFormat || institutionTimeFormat);
+  const [prefNotify, setPrefNotify] = useState(!!user?.emailNotifications);
+  const [prefSaved, setPrefSaved] = useState(false);
+  // the language switch in the menu changes it too
+  useEffect(() => setPrefLang(lang), [lang]);
 
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -66,6 +73,24 @@ export default function Account() {
   const group = user.groupId ? index?.groups.get(user.groupId) : undefined;
   const teacher = user.teacherId ? index?.teachers.get(user.teacherId) : undefined;
   const fullName = `${first.trim()} ${last.trim()}`.trim();
+  const prefDirty = prefLang !== lang || prefTime !== (myTimeFormat || institutionTimeFormat) || prefNotify !== !!user.emailNotifications;
+
+  async function savePreferences() {
+    try {
+      if (prefNotify !== !!user!.emailNotifications)
+        setUser(await api.updateProfile({ name: user!.name, email: user!.email, phone: user!.phone, emailNotifications: prefNotify }));
+      setMyTimeFormat(prefTime === institutionTimeFormat ? '' : prefTime);
+      setLang(prefLang);
+      setNotify(prefNotify);
+      setPrefSaved(true);
+    } catch {
+      toast(t('common.error'), 'error');
+    }
+  }
+  const changePref = (fn: () => void) => {
+    fn();
+    setPrefSaved(false);
+  };
 
   async function saveProfile(e: FormEvent) {
     e.preventDefault();
@@ -170,7 +195,13 @@ export default function Account() {
                 <strong>{t('nav.language')}</strong>
                 <div className="small muted">{t('account.languageHint')}</div>
               </div>
-              <LanguageSwitch />
+              <div className="segmented" role="group" aria-label={t('nav.language')}>
+                {LANGS.map((l) => (
+                  <button key={l} type="button" aria-pressed={prefLang === l} onClick={() => changePref(() => setPrefLang(l))}>
+                    {l.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="row wrap" style={{ justifyContent: 'space-between' }}>
               <div>
@@ -179,12 +210,7 @@ export default function Account() {
               </div>
               <div className="segmented" role="group" aria-label={t('setup.timeFormat')}>
                 {(['24h', '12h'] as const).map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    aria-pressed={(myTimeFormat || institutionTimeFormat) === f}
-                    onClick={() => setMyTimeFormat(f === institutionTimeFormat ? '' : f)}
-                  >
+                  <button key={f} type="button" aria-pressed={prefTime === f} onClick={() => changePref(() => setPrefTime(f))}>
                     {fmtTime(clock, f)}
                   </button>
                 ))}
@@ -195,19 +221,23 @@ export default function Account() {
                 <strong>{t('account.emailNotifications')}</strong>
                 <div className="small muted">{t('account.emailNotificationsHint')}</div>
               </div>
-              <Switch
-                checked={notify}
-                label={t('account.emailNotifications')}
-                onChange={async (v) => {
-                  setNotify(v);
-                  try {
-                    setUser(await api.updateProfile({ name: user.name, email: user.email, phone: user.phone, emailNotifications: v }));
-                  } catch {
-                    setNotify(!v);
-                  }
-                }}
-              />
+              <Switch checked={prefNotify} label={t('account.emailNotifications')} onChange={(v) => changePref(() => setPrefNotify(v))} />
             </div>
+            {(prefDirty || prefSaved) && (
+              <div className="row" style={{ justifyContent: 'flex-end' }}>
+                {prefDirty ? (
+                  <button type="button" className="btn primary" onClick={savePreferences}>
+                    <Icon name="check" />
+                    {t('common.save')}
+                  </button>
+                ) : (
+                  <span className="saved-note">
+                    <Icon name="check" size={15} />
+                    {t('common.saved')}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
