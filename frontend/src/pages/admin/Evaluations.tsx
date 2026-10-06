@@ -173,6 +173,7 @@ export default function Evaluations() {
           index={index}
           settings={dataset.settings}
           highlight={problemIds}
+          vacations={ev.vacations}
           onEdit={(id) => setEditing(plan?.events.find((e) => e.id === id) ?? null)}
           empty={<Empty>{t('exams.none')}</Empty>}
         />

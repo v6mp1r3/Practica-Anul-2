@@ -7,6 +7,7 @@ import { parseDate, toDateString } from '../../domain/changes';
 import { evaluationOf, midtermsFor, teachingWeek } from '../../domain/exams';
 import type { ExamEvent, Lesson } from '../../domain/types';
 import { ChangesCard } from '../../components/ChangesCard';
+import { HolidaysCard, HolidayToday } from '../../components/Holidays';
 import { MyTimetable } from '../../components/MyTimetable';
 import { Select } from '../../components/Select';
 import { SessionTimetable, SessionsSection } from '../../components/SessionTimetable';
@@ -232,6 +233,7 @@ function Schedule({ kind }: { kind: Kind }) {
             </div>
           </div>
         )}
+        <HolidayToday dataset={dataset} />
         {!sessionNow && <ChangesCard groupId={group?.id} teacherId={teacher?.id} />}
         {sessionNow ? null : reducedGroup ? (
           // reduced attendance: the full calendar of every session, not one week
@@ -242,6 +244,7 @@ function Schedule({ kind }: { kind: Kind }) {
             {teacher && <SessionsSection dataset={dataset} index={index} lessons={lessons} hide={['teacher']} />}
           </>
         )}
+        <HolidaysCard dataset={dataset} />
       </div>
     );
   }

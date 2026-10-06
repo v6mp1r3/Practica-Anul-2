@@ -2,6 +2,7 @@
 // Configurare), one column per real date the group meets, with the pairs that
 // take place on that date (weekday + odd/even week + session).
 import { lessonsOnDate, parseDate, sessionDates, toDateString } from '../domain/changes';
+import { evaluationOf, vacationOn } from '../domain/exams';
 import type { DatasetIndex } from '../domain/indexes';
 import { fmtTime, range } from '../domain/slots';
 import type { Dataset, Lesson } from '../domain/types';
@@ -28,6 +29,7 @@ export function SessionTimetable({
   const { settings } = dataset;
   const days = groupId ? index.groupDays(groupId) : (settings.formDays?.reduced ?? [0, 1, 2, 3, 4, 5, 6]);
   const today = toDateString(new Date());
+  const ev = evaluationOf(dataset);
   const fmt = (s: string, o: Intl.DateTimeFormatOptions) => parseDate(s).toLocaleDateString(dateLocale(lang), o);
 
   return (
@@ -54,11 +56,15 @@ export function SessionTimetable({
                 <div className="tt-scroll">
                   <div className="tt" style={{ ['--days' as string]: dates.length }}>
                     <div className="tt-head" />
-                    {dates.map((d) => (
-                      <div key={d} className={`tt-head ${d === today ? 'today' : ''}`}>
-                        {fmt(d, { weekday: 'short' })} {fmt(d, { day: '2-digit', month: '2-digit' })}
-                      </div>
-                    ))}
+                    {dates.map((d) => {
+                      const holiday = vacationOn(ev, d);
+                      return (
+                        <div key={d} className={`tt-head ${d === today ? 'today' : holiday ? 'holiday-col' : ''}`} title={holiday?.name}>
+                          {fmt(d, { weekday: 'short' })} {fmt(d, { day: '2-digit', month: '2-digit' })}
+                          {holiday && <div className="small">{t('vacation.short')}</div>}
+                        </div>
+                      );
+                    })}
                     {range(settings.slots.length).map((slot) => (
                       <div key={slot} style={{ display: 'contents' }}>
                         <div className="tt-time">

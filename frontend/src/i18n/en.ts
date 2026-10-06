@@ -550,4 +550,10 @@ export const en: Record<MessageKey, string> = {
   'exams.seeExams': 'See the final exams',
   'exams.seeReexams': 'See the retakes',
   'exams.weekRange': 'Week {week} · {from} – {to}',
+  'vacation.none': 'Holiday: no classes, midterms or exams.',
+  'vacation.title': 'Holidays',
+  'vacation.name': 'Name',
+  'vacation.now': '{name}: no classes',
+  'vacation.add': 'Holiday',
+  'vacation.short': 'holiday',
 };

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { HolidaysCard } from '../../components/Holidays';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { SessionsSection, SessionTimetable } from '../../components/SessionTimetable';
 import { ViewPicker } from '../../components/ViewPicker';
@@ -65,6 +66,7 @@ export default function Browse() {
             </>
           )}
           <Legend />
+          <HolidaysCard dataset={dataset} />
         </div>
       )}
     </div>

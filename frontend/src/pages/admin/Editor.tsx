@@ -7,6 +7,7 @@ import { ConflictList } from '../../components/ConflictList';
 import { Icon } from '../../components/Icon';
 import { LessonPanel } from '../../components/LessonPanel';
 import { SessionsSection } from '../../components/SessionTimetable';
+import { HolidaysCard } from '../../components/Holidays';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { ViewPicker } from '../../components/ViewPicker';
 import { Loading, PageHeader } from '../../components/ui';
@@ -279,6 +280,7 @@ export default function Editor() {
           />
           <div className="row wrap">
             <Legend />
+            <HolidaysCard dataset={dataset} />
             <span className="spacer" />
             <span className="small muted no-print">{t('editor.dragHint')}</span>
           </div>

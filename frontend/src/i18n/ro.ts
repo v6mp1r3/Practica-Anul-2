@@ -551,6 +551,12 @@ export const ro = {
   'exams.seeExams': 'Vezi examenele finale',
   'exams.seeReexams': 'Vezi reexaminările',
   'exams.weekRange': 'Săptămâna {week} · {from} – {to}',
+  'vacation.none': 'Vacanță: nu sunt ore, atestări sau examene.',
+  'vacation.title': 'Vacanțe',
+  'vacation.name': 'Denumire',
+  'vacation.now': '{name}: nu sunt ore',
+  'vacation.add': 'Vacanță',
+  'vacation.short': 'vacanță',
 } as const;
 
 export type MessageKey = keyof typeof ro;

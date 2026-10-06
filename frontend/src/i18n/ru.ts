@@ -552,4 +552,10 @@ export const ru: Record<MessageKey, string> = {
   'exams.seeExams': 'Смотреть итоговые экзамены',
   'exams.seeReexams': 'Смотреть пересдачи',
   'exams.weekRange': 'Неделя {week} · {from} – {to}',
+  'vacation.none': 'Каникулы: нет занятий, аттестаций и экзаменов.',
+  'vacation.title': 'Каникулы',
+  'vacation.name': 'Название',
+  'vacation.now': '{name}: занятий нет',
+  'vacation.add': 'Каникулы',
+  'vacation.short': 'каникулы',
 };

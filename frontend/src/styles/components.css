@@ -726,3 +726,43 @@ table.table {
   border-color: transparent;
   background: var(--primary-soft);
 }
+
+.exam-day.vacation {
+  border-color: transparent;
+  background: var(--success-soft);
+}
+.exam-day.vacation header strong {
+  text-transform: none;
+}
+
+/* University holidays on the timetables */
+.holidays-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 0;
+}
+.holiday {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  background: var(--success-soft);
+  font-size: 13px;
+}
+.holiday span {
+  color: var(--text-2);
+  font-size: 12px;
+}
+.holiday.past {
+  opacity: 0.5;
+}
+.holiday-today {
+  border-color: transparent;
+  background: var(--success-soft);
+}
+.tt-head.holiday-col {
+  background: var(--success-soft);
+  color: var(--success);
+}
