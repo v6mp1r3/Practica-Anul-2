@@ -23,7 +23,7 @@ import FreeRooms from './pages/shared/FreeRooms';
 import Account from './pages/shared/Account';
 import Notifications from './pages/shared/Notifications';
 import TeacherAvailability from './pages/shared/TeacherAvailability';
-import Schedule from './pages/public/Schedule';
+import { StudentSchedule, TeacherSchedule } from './pages/public/Schedule';
 import { AuthProvider, useAuth } from './state/auth';
 import { DataProvider, useData } from './state/data';
 import { ToastProvider } from './state/toast';
@@ -71,7 +71,8 @@ function AppRoutes() {
           </RequireData>
         }
       >
-        <Route path="/orar" element={<Schedule />} />
+        <Route path="/studenti" element={<StudentSchedule />} />
+        <Route path="/profesori" element={<TeacherSchedule />} />
         <Route path="/rooms" element={<FreeRooms />} />
         <Route path="/teachers" element={<TeacherAvailability />} />
       </Route>
@@ -97,8 +98,9 @@ function AppRoutes() {
         <Route path="changes" element={<Changes />} />
       </Route>
       {/* old student/teacher pages and anything unknown */}
-      <Route path="/student" element={<Navigate to="/orar" replace />} />
-      <Route path="/teacher/*" element={<Navigate to="/orar" replace />} />
+      <Route path="/orar" element={<Navigate to="/studenti" replace />} />
+      <Route path="/student" element={<Navigate to="/studenti" replace />} />
+      <Route path="/teacher/*" element={<Navigate to="/profesori" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

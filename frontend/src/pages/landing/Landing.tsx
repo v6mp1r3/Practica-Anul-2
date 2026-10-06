@@ -93,7 +93,7 @@ export default function Landing() {
             <Link to={adminLink} className="btn ghost lp-admin">
               {user ? c.nav.open : c.nav.login}
             </Link>
-            <Link to="/orar" className="btn primary">
+            <Link to="/studenti" className="btn primary">
               {c.nav.schedule}
             </Link>
           </div>

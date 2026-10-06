@@ -1,5 +1,5 @@
-// Public timetable — no sign-in. Students pick their group, teachers pick
-// themselves; the choice is remembered on this device.
+// Public timetables — no sign-in. Two pages: students (any group) and
+// teachers (any teacher); the last choice is remembered on this device.
 import { useState } from 'react';
 import { ChangesCard } from '../../components/ChangesCard';
 import { MyTimetable } from '../../components/MyTimetable';
@@ -20,30 +20,38 @@ interface Choice {
   subgroup: number | null;
 }
 
-const KEY = 'eduschedule:public:choice';
+const keyFor = (kind: Kind) => `eduschedule:public:${kind}`;
 
-function loadChoice(): Choice {
+function loadChoice(kind: Kind): Choice {
   try {
-    const c = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Choice | null;
-    if (c && (c.kind === 'group' || c.kind === 'teacher')) return c;
+    const c = JSON.parse(localStorage.getItem(keyFor(kind)) ?? 'null') as Choice | null;
+    if (c && c.kind === kind) return c;
   } catch {
     /* ignore */
   }
-  return { kind: 'group', id: '', subgroup: null };
+  return { kind, id: '', subgroup: null };
 }
 
 function saveChoice(c: Choice) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(c));
+    localStorage.setItem(keyFor(c.kind), JSON.stringify(c));
   } catch {
     /* ignore */
   }
 }
 
-export default function Schedule() {
+export function StudentSchedule() {
+  return <Schedule kind="group" />;
+}
+
+export function TeacherSchedule() {
+  return <Schedule kind="teacher" />;
+}
+
+function Schedule({ kind }: { kind: Kind }) {
   const { t, lang } = useI18n();
   const { dataset, index, published } = useDataset();
-  const [choice, setChoiceState] = useState<Choice>(loadChoice);
+  const [choice, setChoiceState] = useState<Choice>(() => loadChoice(kind));
   const setChoice = (c: Choice) => {
     setChoiceState(c);
     saveChoice(c);
@@ -72,12 +80,12 @@ export default function Schedule() {
     ? `${group.program} · ${t(`form.${group.studyForm}`)} · ${t('groups.year')} ${group.year}`
     : teacher
       ? `${teacher.title} · ${teacher.department}`
-      : t('public.pick');
+      : undefined;
 
   return (
     <div className="page">
       <PageHeader
-        title={chosen ? `${t('nav.timetable')} · ${chosen.name}` : t('nav.timetable')}
+        title={chosen ? chosen.name : t(kind === 'group' ? 'nav.studentSchedule' : 'nav.teacherSchedule')}
         subtitle={subtitle}
         actions={
           <>
@@ -106,16 +114,8 @@ export default function Schedule() {
         }
       />
 
-      {/* Group (students) or teacher (teachers), then which one — a single timetable at a time */}
+      {/* any group (students' page) or any teacher (teachers' page) — one timetable at a time */}
       <div className="row wrap" style={{ gap: 8, marginBottom: 18 }}>
-        <Segmented
-          value={choice.kind}
-          onChange={(kind) => setChoice({ kind, id: '', subgroup: null })}
-          options={[
-            { value: 'group', label: t('view.group') },
-            { value: 'teacher', label: t('view.teacher') },
-          ]}
-        />
         {choice.kind === 'group' ? (
           <Select
             className="select pill"

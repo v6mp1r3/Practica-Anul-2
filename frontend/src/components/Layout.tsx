@@ -48,7 +48,8 @@ const PUBLIC_NAV: { section?: MessageKey; items: NavItem[] }[] = [
   {
     section: 'nav.menu',
     items: [
-      { to: '/orar', label: 'nav.timetable', icon: 'calendar' },
+      { to: '/studenti', label: 'nav.studentSchedule', icon: 'layers' },
+      { to: '/profesori', label: 'nav.teacherSchedule', icon: 'user' },
       { to: '/rooms', label: 'nav.freeRooms', icon: 'door' },
       { to: '/teachers', label: 'nav.teacherAvailability', icon: 'users' },
     ],

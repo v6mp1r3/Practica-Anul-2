@@ -14,7 +14,7 @@ npm run dev                  # http://localhost:5173
 ```
 
 Only the administration signs in — one or more accounts per faculty. Students and
-teachers use the public pages without an account: **Orar** (`/orar`, pick a group or a
+teachers use the public pages without an account: **Orar studenți** (`/studenti`, any group), **Orar profesori** (`/profesori`, any
 teacher), **Săli libere** (`/rooms`) and **Profesori disponibili** (`/teachers`).
 
 Demo administrator accounts (password `demo`), shown on the login page in mock mode:
@@ -27,7 +27,7 @@ Demo administrator accounts (password `demo`), shown on the login page in mock m
 The landing page is at `/`; administrators sign in at `/login`.
 
 Suggested first run: log in as Elena → **Generare** → _Generează_ → keep a variant →
-**Publică**. Then open `/orar` (no sign-in) and pick a group or a teacher.
+**Publică**. Then open `/studenti` or `/profesori` (no sign-in) and pick a group or a teacher.
 
 ## Scripts
 
@@ -65,7 +65,7 @@ src/
   components/   shared UI: TimetableGrid, CrudPage, AvailabilityPicker, Logo…
   pages/
     admin/      dashboard, setup, data pages, generate, timetables, editor
-    public/     timetable for a chosen group or teacher (no sign-in)
+    public/     student timetable (any group) and teacher timetable (any teacher), no sign-in
     shared/     free rooms and teacher availability (public), institution timetable, notifications
     landing/    public one-page site (copy.ts holds the RO/EN/RU text)
   i18n/         ro.ts (default), en.ts, ru.ts — every visible string lives here

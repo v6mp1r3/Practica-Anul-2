@@ -10,7 +10,7 @@ import { useI18n } from '../i18n';
 import { useAuth } from '../state/auth';
 
 // only administrators sign in; anyone else uses the public timetable
-export const homeFor = (role: Role) => (role === 'admin' ? '/admin' : '/orar');
+export const homeFor = (role: Role) => (role === 'admin' ? '/admin' : '/studenti');
 
 const INTRO_KEY = 'eduschedule:intro-seen';
 
@@ -96,7 +96,7 @@ export default function Login() {
             <LanguageSwitch />
           </div>
           <p className="small muted" style={{ textAlign: 'center' }}>
-            {t('login.publicNote')} <Link to="/orar">{t('login.publicLink')}</Link>
+            {t('login.publicNote')} <Link to="/studenti">{t('login.publicLink')}</Link>
           </p>
 
           {API_MODE === 'mock' && (
