@@ -639,3 +639,84 @@ table.table {
     min-width: 0;
   }
 }
+
+/* Exam / atestări calendar: one card per day */
+.exam-days {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.exam-day header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 14px 18px 8px;
+}
+.exam-day header strong {
+  text-transform: capitalize;
+}
+.exam-day header span {
+  color: var(--text-2);
+  font-size: 13px;
+}
+.exam-day.past {
+  opacity: 0.55;
+}
+.exam-day ul {
+  margin: 0;
+  padding: 0 10px 10px;
+  list-style: none;
+}
+.exam-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: 12px;
+}
+.exam-row + .exam-row {
+  border-top: 1px solid var(--border);
+}
+.exam-row.problem {
+  background: var(--danger-soft);
+}
+.exam-time {
+  display: flex;
+  flex-direction: column;
+  min-width: 64px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.exam-time small {
+  color: var(--text-3);
+  font-weight: 500;
+  font-size: 12px;
+}
+.exam-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.exam-badge {
+  align-self: flex-start;
+}
+.exam-badge.exam {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.exam-badge.consultation {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.exam-badge.midterm {
+  background: var(--warning-soft, #fff4e5);
+  color: var(--warning, #b45309);
+}
+@media (max-width: 640px) {
+  .exam-days {
+    grid-template-columns: 1fr;
+  }
+}
