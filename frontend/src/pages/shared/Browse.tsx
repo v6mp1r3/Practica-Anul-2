@@ -43,7 +43,16 @@ export default function Browse() {
         </div>
       ) : (
         <div className="stack">
-          <ViewPicker dataset={dataset} view={view} onView={setView} week={week} onWeek={setWeek} showWeek={!reducedGroup} limit={limit} />
+          <ViewPicker
+            dataset={dataset}
+            view={view}
+            onView={setView}
+            week={week}
+            onWeek={setWeek}
+            showWeek={!reducedGroup}
+            limit={limit}
+            withStreams
+          />
           {reducedGroup ? (
             <SessionTimetable
               dataset={dataset}

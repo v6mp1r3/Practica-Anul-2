@@ -13,13 +13,22 @@ export interface ViewFilter {
 }
 
 export function filterLessons(idx: DatasetIndex, lessons: Lesson[], f: ViewFilter): Lesson[] {
+  // "stream:<id>" stands for all the groups of a stream (e.g. FAF-251, FAF-252, FAF-253 together)
+  const groupIds = f.kind === 'group' ? streamGroups(idx, f.id) : [];
   return lessons.filter((l) => {
     const a = idx.assignmentOf(l);
     if (!a) return false;
     if (f.kind === 'teacher') return a.teacherId === f.id;
     if (f.kind === 'room') return l.roomId === f.id;
-    return idx.cohorts(a.audience).some((c) => c.groupId === f.id && (!f.subgroup || c.subgroup === null || c.subgroup === f.subgroup));
+    return idx
+      .cohorts(a.audience)
+      .some((c) => groupIds.includes(c.groupId) && (!f.subgroup || c.subgroup === null || c.subgroup === f.subgroup));
   });
+}
+
+/** The groups behind a group view id: the group itself, or every group of "stream:<id>". */
+export function streamGroups(idx: DatasetIndex, id: string): string[] {
+  return id.startsWith('stream:') ? (idx.streams.get(id.slice(7))?.groupIds ?? []) : [id];
 }
 
 /** Week filter: 'odd' shows weekly + odd lessons, 'even' weekly + even, 'weekly' shows everything. */

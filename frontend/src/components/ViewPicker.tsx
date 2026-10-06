@@ -15,6 +15,7 @@ export function ViewPicker({
   kinds = ['group', 'teacher', 'room'],
   showWeek = true,
   limit,
+  withStreams,
 }: {
   dataset: Dataset;
   view: ViewFilter;
@@ -25,6 +26,8 @@ export function ViewPicker({
   showWeek?: boolean;
   /** Only this faculty's groups and the teachers/rooms it uses. */
   limit?: FacultyView;
+  /** Also offer streams in the group list (all their groups together). */
+  withStreams?: boolean;
 }) {
   const { t } = useI18n();
   const options = {
@@ -53,11 +56,32 @@ export function ViewPicker({
         onChange={(e) => onView({ ...view, id: e.target.value, subgroup: null })}
         aria-label={t(`view.${view.kind}`)}
       >
-        {options[view.kind].map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.name}
-          </option>
-        ))}
+        {view.kind === 'group' && withStreams ? (
+          <>
+            <optgroup label={t('groups.groups')}>
+              {options.group.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label={t('groups.streams')}>
+              {dataset.streams
+                .filter((st) => !limit || st.groupIds.some((g) => limit.groupIds.has(g)))
+                .map((st) => (
+                  <option key={st.id} value={`stream:${st.id}`}>
+                    {st.name}
+                  </option>
+                ))}
+            </optgroup>
+          </>
+        ) : (
+          options[view.kind].map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+            </option>
+          ))
+        )}
       </Select>
       {group && group.subgroups > 1 && (
         <Select
