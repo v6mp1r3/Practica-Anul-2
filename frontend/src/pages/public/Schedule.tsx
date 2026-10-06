@@ -5,7 +5,7 @@ import { ExamCalendar, type CalendarEntry } from '../../components/ExamCalendar'
 import { examEntries } from '../../components/examEntries';
 import { parseDate, toDateString } from '../../domain/changes';
 import { evaluationOf, midtermRange, weeksLabel } from '../../domain/exams';
-import type { ExamEvent } from '../../domain/types';
+import type { ExamEvent, Lesson, StudyCycle } from '../../domain/types';
 import { ChangesCard } from '../../components/ChangesCard';
 import { HolidaysCard, HolidayToday } from '../../components/Holidays';
 import { MyTimetable } from '../../components/MyTimetable';
@@ -25,6 +25,8 @@ interface Choice {
   kind: Kind;
   id: string;
   subgroup: number | null;
+  /** Licență or master's: which groups (students) or which classes (teachers) are shown. */
+  cycle?: StudyCycle;
 }
 
 const keyFor = (kind: Kind) => `eduschedule:public:${kind}`;
@@ -72,11 +74,32 @@ function Schedule({ kind }: { kind: Kind }) {
   const teacher = choice.kind === 'teacher' ? index.teachers.get(choice.id) : undefined;
   const chosen = group ?? stream ?? teacher;
 
-  const groups = [...dataset.groups].sort((a, b) => a.name.localeCompare(b.name));
+  // licență | master's
+  const cycle: StudyCycle = choice.cycle ?? 'licenta';
+  const inCycle = (groupId: string) => (index.groups.get(groupId)?.cycle ?? 'licenta') === cycle;
+  const groups = [...dataset.groups].filter((g) => inCycle(g.id)).sort((a, b) => a.name.localeCompare(b.name));
+  const streams = dataset.streams.filter((st) => st.groupIds.some(inCycle));
   const faculties = [...new Set(groups.map((g) => g.faculty ?? ''))];
-  const teachers = [...dataset.teachers].sort((a, b) => a.name.localeCompare(b.name, lang));
+  // teachers of this cycle's groups
+  const cycleLoads = dataset.assignments.filter((a) => index.cohorts(a.audience).some((c) => inCycle(c.groupId)));
+  const teachers = [...dataset.teachers]
+    .filter((x) => cycleLoads.some((a) => a.teacherId === x.id))
+    .sort((a, b) => a.name.localeCompare(b.name, lang));
+  const setCycle = (c: StudyCycle) => {
+    // keep the choice if it still belongs to the cycle
+    const keep =
+      choice.kind === 'teacher'
+        ? dataset.assignments.some(
+            (a) =>
+              a.teacherId === choice.id && index.cohorts(a.audience).some((x) => (index.groups.get(x.groupId)?.cycle ?? 'licenta') === c),
+          )
+        : streamGroups(index, choice.id).some((g) => (index.groups.get(g)?.cycle ?? 'licenta') === c);
+    setChoice({ ...choice, cycle: c, id: keep ? choice.id : '', subgroup: keep ? choice.subgroup : null });
+  };
+  // a teacher's classes: only those of this cycle
+  const ofCycle = (l: Lesson) => index.cohorts(index.assignmentOf(l)!.audience).some((c) => inCycle(c.groupId));
 
-  const lessons =
+  const chosenLessons =
     published && chosen
       ? filterLessons(
           index,
@@ -86,6 +109,7 @@ function Schedule({ kind }: { kind: Kind }) {
             : { kind: 'teacher', id: teacher!.id },
         )
       : [];
+  const lessons = choice.kind === 'teacher' ? chosenLessons.filter(ofCycle) : chosenLessons;
   const reducedGroup = group?.studyForm === 'reduced' && dataset.settings.reducedSessions.length > 0;
   // is today inside the exam session or the retakes (for this group's form of study)?
   // a master's group follows the master calendar
@@ -142,14 +166,22 @@ function Schedule({ kind }: { kind: Kind }) {
         }
       />
 
-      {/* any group (students' page) or any teacher (teachers' page) — one timetable at a time */}
+      {/* licență or master's, then any group (students' page) or any teacher (teachers' page) */}
       <div className="row wrap" style={{ gap: 8, marginBottom: 18 }}>
+        <Segmented
+          value={cycle}
+          onChange={setCycle}
+          options={[
+            { value: 'licenta', label: t('cycle.licenta') },
+            { value: 'master', label: t('cycle.master') },
+          ]}
+        />
         {choice.kind === 'group' ? (
           <Select
             className="select pill"
             style={{ minWidth: 200 }}
             value={choice.id}
-            onChange={(e) => setChoice({ kind: 'group', id: e.target.value, subgroup: null })}
+            onChange={(e) => setChoice({ ...choice, kind: 'group', id: e.target.value, subgroup: null })}
             aria-label={t('view.group')}
           >
             <option value="">{t('public.chooseGroup')}</option>
@@ -165,9 +197,9 @@ function Schedule({ kind }: { kind: Kind }) {
               </optgroup>
             ))}
             {/* streams: e.g. FAF-251/252/253 when they have classes together */}
-            {dataset.streams.length > 0 && (
+            {streams.length > 0 && (
               <optgroup label={t('groups.streams')}>
-                {[...dataset.streams]
+                {[...streams]
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map((st) => (
                     <option key={st.id} value={`stream:${st.id}`}>
@@ -187,7 +219,7 @@ function Schedule({ kind }: { kind: Kind }) {
             className="select pill"
             style={{ minWidth: 220 }}
             value={choice.id}
-            onChange={(e) => setChoice({ kind: 'teacher', id: e.target.value, subgroup: null })}
+            onChange={(e) => setChoice({ ...choice, kind: 'teacher', id: e.target.value, subgroup: null })}
             aria-label={t('view.teacher')}
           >
             <option value="">{t('public.chooseTeacher')}</option>
@@ -226,7 +258,7 @@ function Schedule({ kind }: { kind: Kind }) {
             <Evaluations
               tab={tab}
               who={group || stream ? { groupId: choice.id, subgroup: group ? choice.subgroup : null } : { teacherId: teacher!.id }}
-              events={exams}
+              events={choice.kind === 'teacher' ? exams.filter((e) => inCycle(e.groupId)) : exams}
             />
           ) : !published ? (
             <div className="card">
