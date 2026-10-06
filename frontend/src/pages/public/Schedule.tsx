@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ExamCalendar, type CalendarEntry } from '../../components/ExamCalendar';
 import { examEntries } from '../../components/examEntries';
 import { parseDate, toDateString } from '../../domain/changes';
-import { evaluationOf, teachingWeek } from '../../domain/exams';
+import { evaluationOf, midtermRange, weeksLabel } from '../../domain/exams';
 import type { ExamEvent } from '../../domain/types';
 import { ChangesCard } from '../../components/ChangesCard';
 import { HolidaysCard, HolidayToday } from '../../components/Holidays';
@@ -309,16 +309,14 @@ function Evaluations({
   return (
     <div className="stack">
       {([1, 2] as const).map((n) => {
-        const week = teachingWeek(ev, ev.midtermWeeks[n - 1]);
+        const week = midtermRange(ev, n);
         const label = t('exams.midterm', { n });
         const mineN = entries.filter((e) => e.label === label);
         return (
           <section key={n} className="stack" style={{ gap: 10 }}>
             <div>
               <h2>{label}</h2>
-              <p className="small muted">
-                {t('exams.weekRange', { week: ev.midtermWeeks[n - 1], from: fmt(week.start), to: fmt(week.end) })}
-              </p>
+              <p className="small muted">{t('exams.weekRange', { week: weeksLabel(ev, n), from: fmt(week.start), to: fmt(week.end) })}</p>
             </div>
             <ExamCalendar
               entries={mineN}

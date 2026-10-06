@@ -6,7 +6,7 @@ import { resetMockData } from '../../api/mock';
 import { Icon } from '../../components/Icon';
 import { Field, PageHeader, Segmented, Switch, TimeInput, useClock } from '../../components/ui';
 import { fmtTime, parseTime, range } from '../../domain/slots';
-import { DEFAULT_EVALUATION, evaluationOf, teachingWeek } from '../../domain/exams';
+import { DEFAULT_EVALUATION, evaluationOf, midtermRange, teachingWeek } from '../../domain/exams';
 import { semesterChoices, semesterOf, semesterStartOf } from '../../domain/holidays';
 import { STUDY_FORMS, type EvaluationSettings, type Settings, type TimeSlot } from '../../domain/types';
 import { UTM_FACULTIES, UTM_NAME } from '../../domain/utm';
@@ -125,8 +125,8 @@ export default function Setup() {
   useEffect(() => setCalRange(spring ? [5, 10] : [0, 5]), [spring]);
   const monthName = (m: number) => new Date(2000, 8 + m, 1).toLocaleDateString(dateLocale(lang), { month: 'long' });
   // what each tab draws on the calendar
-  const midtermPeriods: CalendarPeriod[] = ev.midtermWeeks.map((w, i) => ({
-    ...teachingWeek(ev, w),
+  const midtermPeriods: CalendarPeriod[] = ([1, 2] as const).map((n, i) => ({
+    ...midtermRange(ev, n),
     tone: 'midterm',
     days: ev.examDays,
     label: t('exams.midterm', { n: i + 1 }),
@@ -624,6 +624,16 @@ export default function Setup() {
                         ))}
                       </div>
                     </Field>
+                    <Field label={t('setup.midtermSpanWeeks')} hint={t('setup.default', { value: 2 })}>
+                      <input
+                        className="input"
+                        type="number"
+                        min={1}
+                        max={4}
+                        value={ev.midtermSpanWeeks}
+                        onChange={(e) => setEv({ midtermSpanWeeks: num(e.target.value, 1) })}
+                      />
+                    </Field>
                     <Field label={t('setup.midtermRetakeWeeks')}>
                       <div className="row" style={{ gap: 8 }}>
                         {[0, 1].map((i) => (
@@ -728,7 +738,7 @@ export default function Setup() {
                   ))}
 
                   <div className="form-grid">
-                    <Field label={t('setup.examMinGap')} hint={t('setup.default', { value: 2 })}>
+                    <Field label={t('setup.examMinGap')} hint={t('setup.default', { value: 1 })}>
                       <input
                         className="input"
                         type="number"

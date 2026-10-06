@@ -1,3 +1,4 @@
+import { weeksLabel } from '../../domain/exams';
 import { useAdminScope } from '../../components/FacultyFilter';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -167,8 +168,8 @@ export default function Generate() {
                   : what === 'remidterm1' || what === 'remidterm2'
                     ? t('exams.retakeNote', { w: ev.midtermRetakeWeeks[what === 'remidterm1' ? 0 : 1] })
                     : ev.midtermMode === 'separate'
-                      ? t('exams.separateNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })
-                      : t('exams.inClassNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })}
+                      ? t('exams.separateNote', { w1: weeksLabel(ev, 1), w2: weeksLabel(ev, 2) })
+                      : t('exams.inClassNote', { w1: weeksLabel(ev, 1), w2: weeksLabel(ev, 2) })}
               </p>
               <p className="small muted" style={{ margin: 0 }}>
                 {t('generate.examsHint')}

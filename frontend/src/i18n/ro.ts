@@ -507,7 +507,7 @@ export const ro = {
   'exams.unpublishedToast': 'Publicarea a fost anulată.',
   'exams.none': 'Nu a fost generat încă. Apasă „Generează”.',
   'exams.inClassNote':
-    'Atestările au loc la orele obișnuite (seminar, apoi laborator, apoi curs) din săptămânile {w1} și {w2}, în sala orei. Generează, schimbă sala unde e nevoie, apoi publică.',
+    'Atestările au loc la orele obișnuite (seminar, apoi laborator, apoi curs) din săptămânile {w1} și {w2}, cel mult una pe zi pentru o grupă, în sala orei. Generează, schimbă sala unde e nevoie, apoi publică.',
   'exams.problems': '{count} probleme',
   'exams.noProblems': 'Fără suprapuneri',
   'exams.problem.teacher': 'Profesorul are două evenimente în același timp',
@@ -609,6 +609,7 @@ export const ro = {
   'setup.midtermRetakeWeeks': 'Săptămânile reexaminării atestărilor',
   'calendar.from': 'De la',
   'calendar.to': 'până la',
+  'setup.midtermSpanWeeks': 'Durata unei perioade de atestări (săptămâni)',
 } as const;
 
 export type MessageKey = keyof typeof ro;

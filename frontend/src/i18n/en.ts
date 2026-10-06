@@ -506,7 +506,7 @@ export const en: Record<MessageKey, string> = {
   'exams.unpublishedToast': 'Unpublished.',
   'exams.none': 'Not generated yet. Press “Generate”.',
   'exams.inClassNote':
-    'Midterms take place in the usual class (seminar, else lab, else lecture) of weeks {w1} and {w2}, in that class’s room. Generate, change rooms where needed, then publish.',
+    'Midterms take place in the usual class (seminar, else lab, else lecture) in weeks {w1} and {w2}, at most one a day per group, in that class’s room. Generate, change rooms where needed, then publish.',
   'exams.problems': '{count} problems',
   'exams.noProblems': 'No clashes',
   'exams.problem.teacher': 'The teacher has two entries at once',
@@ -606,4 +606,5 @@ export const en: Record<MessageKey, string> = {
   'setup.midtermRetakeWeeks': 'Midterm retake weeks',
   'calendar.from': 'From',
   'calendar.to': 'to',
+  'setup.midtermSpanWeeks': 'Length of a midterm period (weeks)',
 };

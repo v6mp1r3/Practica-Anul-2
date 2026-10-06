@@ -1,6 +1,7 @@
 // Evaluări: the faculty's atestări, exam session and retakes. Exams and retakes
 // (and atestări, when held after classes) are generated, checked, edited and
 // published here; atestări held in class follow from the published timetable.
+import { weeksLabel } from '../../domain/exams';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api';
@@ -159,8 +160,8 @@ export default function Evaluations() {
         {midterm && (
           <p className="small muted">
             {inClass
-              ? t('exams.inClassNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })
-              : t('exams.separateNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })}
+              ? t('exams.inClassNote', { w1: weeksLabel(ev, 1), w2: weeksLabel(ev, 2) })
+              : t('exams.separateNote', { w1: weeksLabel(ev, 1), w2: weeksLabel(ev, 2) })}
           </p>
         )}
         {(round === 'remidterm1' || round === 'remidterm2') && (
