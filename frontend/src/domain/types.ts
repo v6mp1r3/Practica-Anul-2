@@ -60,6 +60,8 @@ export interface EvaluationSettings {
   semesterStart: string;
   /** Teaching weeks of atestarea 1 and 2. */
   midtermWeeks: [number, number];
+  /** Teaching weeks of the retakes of atestarea 1 and 2 (after classes). */
+  midtermRetakeWeeks: [number, number];
   /**
    * In the subject's own class (UTM regulation), or in a separate timetable
    * after classes (as some faculties publish an "orarul atestărilor").
@@ -421,7 +423,8 @@ export interface Dataset {
   assignments: Assignment[];
 }
 
-export type ExamRound = 'midterm1' | 'midterm2' | 'session' | 'reexam';
+/** Atestarea 1/2, final exams, and the retakes of each (atestarea 1, atestarea 2, final exam). */
+export type ExamRound = 'midterm1' | 'midterm2' | 'session' | 'remidterm1' | 'remidterm2' | 'reexam';
 
 /** One entry of the exam timetable: an exam or its consultation, for one group. */
 export interface ExamEvent {

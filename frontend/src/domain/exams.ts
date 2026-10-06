@@ -14,6 +14,8 @@ import { dayIndexOf } from './views';
 export const DEFAULT_EVALUATION: EvaluationSettings = {
   semesterStart: '2026-08-31',
   midtermWeeks: [7, 14],
+  // retakes of the atestări: a couple of weeks later, after classes
+  midtermRetakeWeeks: [9, 15],
   midtermMode: 'inClass',
   midtermStartTimes: ['15:15', '17:00', '18:45'],
   midtermMinutes: 90,
@@ -394,12 +396,18 @@ export function generateMidterms(
   classes: Lesson[],
   busy: ExamEvent[],
   rng: Rng,
+  /** Retake of the atestare: in its retake week, always after classes, in the retake hours. */
+  retake = false,
 ): ExamResult {
   const ev = evaluationOf(ds);
-  const round = n === 1 ? 'midterm1' : 'midterm2';
-  const week = teachingWeek(ev, ev.midtermWeeks[n - 1]);
-  const parity = ev.midtermWeeks[n - 1] % 2 === 1 ? 'odd' : 'even';
+  const round = retake ? (n === 1 ? 'remidterm1' : 'remidterm2') : n === 1 ? 'midterm1' : 'midterm2';
+  const weekNo = (retake ? ev.midtermRetakeWeeks : ev.midtermWeeks)[n - 1];
+  const week = teachingWeek(ev, weekNo);
+  const parity = weekNo % 2 === 1 ? 'odd' : 'even';
   const dates = sessionDates(week.start, week.end, ev.examDays).filter((d) => !vacationOn(ev, d));
+  const times = retake ? startTimesIn(ev.reexamFrom, ev.reexamTo, ev.midtermMinutes) : ev.midtermStartTimes;
+  // reduced attendance retakes its atestări in its exam session (weekends allowed)
+  const reducedDates = rangeDates(ev.reducedExamSession, ev.reducedExamDays, ev.vacations);
   const placed: ExamEvent[] = [];
   const warnings: ExamResult['warnings'] = [];
   const all = () => [...busy, ...placed];
@@ -420,7 +428,8 @@ export function generateMidterms(
 
   for (const groupId of rng.shuffle(groupIds)) {
     // held in the subject's own class (or a reduced-attendance group's session class): its time and room
-    if (ev.midtermMode === 'inClass' || idx.groups.get(groupId)?.studyForm === 'reduced') {
+    const reduced = idx.groups.get(groupId)?.studyForm === 'reduced';
+    if (!retake && (ev.midtermMode === 'inClass' || reduced)) {
       for (const m of midtermsFor(ds, idx, classes, { groupId }).filter((x) => x.n === n)) {
         const a = idx.assignmentOf(m.lesson)!;
         const slot = ds.settings.slots[m.lesson.slot];
@@ -447,11 +456,12 @@ export function generateMidterms(
       const teacherId = examinerOf(ds, idx, groupId, subjectId);
       if (!teacherId) return;
       // round-robin over the week's days, two a day at most
-      const startAt = Math.floor((i * dates.length) / Math.max(1, subjects.length));
-      const order = [...dates.slice(startAt), ...dates.slice(0, startAt)];
+      const groupDates = reduced ? reducedDates : dates;
+      const startAt = Math.floor((i * groupDates.length) / Math.max(1, subjects.length));
+      const order = [...groupDates.slice(startAt), ...groupDates.slice(0, startAt)];
       for (const date of order) {
         if (all().filter((e) => e.groupId === groupId && e.date === date).length >= 2) continue;
-        for (const start of ev.midtermStartTimes) {
+        for (const start of times) {
           const end = toHHMM(toMin(start) + ev.midtermMinutes);
           const taken = classesAt(date, start, end);
           if (
