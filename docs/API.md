@@ -18,11 +18,10 @@ reference behaviour when something here is unclear.
 
 ## Roles
 
-| Role      | Can do                                                            |
-| --------- | ----------------------------------------------------------------- |
-| `admin`   | Their faculty: data management, generation, editing, publishing   |
-| `teacher` | Read published timetable and dataset; update **own** availability |
-| `student` | Read published timetable and dataset                              |
+Only the administration has accounts (`role: "admin"`). Students and teachers
+don't sign in: the reads they need are **public** (no token) —
+`GET /dataset`, `GET /timetables/published` and `GET /changes`. Everything else
+needs an admin token.
 
 Every `admin` account belongs to one faculty (`User.faculty`); there is no
 administrator above the faculties. An admin generates, edits, publishes and

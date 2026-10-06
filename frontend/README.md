@@ -13,18 +13,21 @@ cp .env.example .env.local   # optional
 npm run dev                  # http://localhost:5173
 ```
 
-Demo accounts (password `demo` for all), shown on the login page in mock mode:
+Only the administration signs in — one or more accounts per faculty. Students and
+teachers use the public pages without an account: **Orar** (`/orar`, pick a group or a
+teacher), **Săli libere** (`/rooms`) and **Profesori disponibili** (`/teachers`).
 
-| User            | Role              |
-| --------------- | ----------------- |
-| `elena.popescu` | administrator     |
-| `daniel.rusu`   | teacher           |
-| `alex.marin`    | student (FAF-251) |
+Demo administrator accounts (password `demo`), shown on the login page in mock mode:
 
-The public landing page is at `/`; the app starts at `/login`.
+| User            | Faculty |
+| --------------- | ------- |
+| `elena.popescu` | FCIM    |
+| `ion.sirbu`     | FET     |
+
+The landing page is at `/`; administrators sign in at `/login`.
 
 Suggested first run: log in as Elena → **Generare** → _Generează_ → keep a variant →
-**Publică**. Then log in as Daniel or Alex to see the published timetable.
+**Publică**. Then open `/orar` (no sign-in) and pick a group or a teacher.
 
 ## Scripts
 
@@ -62,9 +65,8 @@ src/
   components/   shared UI: TimetableGrid, CrudPage, AvailabilityPicker, Logo…
   pages/
     admin/      dashboard, setup, data pages, generate, timetables, editor
-    teacher/    personal timetable + workload, availability
-    student/    personal timetable
-    shared/     institution timetable, free rooms, teacher availability, notifications
+    public/     timetable for a chosen group or teacher (no sign-in)
+    shared/     free rooms and teacher availability (public), institution timetable, notifications
     landing/    public one-page site (copy.ts holds the RO/EN/RU text)
   i18n/         ro.ts (default), en.ts, ru.ts — every visible string lives here
   state/        auth, cached server data, toasts
