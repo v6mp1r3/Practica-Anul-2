@@ -16,7 +16,7 @@ interface NavItem {
   end?: boolean;
 }
 
-const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
+const NAV: Partial<Record<Role, { section?: MessageKey; items: NavItem[] }[]>> = {
   admin: [
     { section: 'nav.menu', items: [{ to: '/admin', label: 'nav.dashboard', icon: 'dashboard', end: true }] },
     {
@@ -41,27 +41,19 @@ const NAV: Record<Role, { section?: MessageKey; items: NavItem[] }[]> = {
       ],
     },
   ],
-  teacher: [
-    {
-      section: 'nav.menu',
-      items: [
-        { to: '/teacher', label: 'nav.timetable', icon: 'calendar', end: true },
-        { to: '/teacher/availability', label: 'nav.availability', icon: 'clock' },
-        { to: '/rooms', label: 'nav.freeRooms', icon: 'door' },
-      ],
-    },
-  ],
-  student: [
-    {
-      section: 'nav.menu',
-      items: [
-        { to: '/student', label: 'nav.timetable', icon: 'calendar', end: true },
-        { to: '/rooms', label: 'nav.freeRooms', icon: 'door' },
-        { to: '/teachers', label: 'nav.teacherAvailability', icon: 'users' },
-      ],
-    },
-  ],
 };
+
+/** Without signing in: the timetable, free rooms and teachers. */
+const PUBLIC_NAV: { section?: MessageKey; items: NavItem[] }[] = [
+  {
+    section: 'nav.menu',
+    items: [
+      { to: '/orar', label: 'nav.timetable', icon: 'calendar' },
+      { to: '/rooms', label: 'nav.freeRooms', icon: 'door' },
+      { to: '/teachers', label: 'nav.teacherAvailability', icon: 'users' },
+    ],
+  },
+];
 
 export function Layout() {
   const { user, logout } = useAuth();
@@ -82,9 +74,8 @@ export function Layout() {
       document.body.classList.remove('menu-open');
     };
   }, [open]);
-  if (!user) return null;
-
-  const unread = notifications.filter((n) => !n.read).length;
+  const unread = user ? notifications.filter((n) => !n.read).length : 0;
+  const nav = (user && NAV[user.role]) || PUBLIC_NAV;
 
   return (
     <div className="shell">
@@ -97,7 +88,7 @@ export function Layout() {
           </button>
         </div>
         <nav className="nav">
-          {NAV[user.role].map((group, i) => (
+          {nav.map((group, i) => (
             <div key={i} style={{ display: 'contents' }}>
               {group.section && <div className="nav-section">{t(group.section)}</div>}
               {group.items.map((item) => (
@@ -108,29 +99,45 @@ export function Layout() {
               ))}
             </div>
           ))}
-          <div className="nav-section" />
-          <NavLink to="/notifications">
-            <Icon name="bell" />
-            {t('nav.notifications')}
-            {unread > 0 && <span className="count">{unread}</span>}
-          </NavLink>
+          {user && (
+            <>
+              <div className="nav-section" />
+              <NavLink to="/notifications">
+                <Icon name="bell" />
+                {t('nav.notifications')}
+                {unread > 0 && <span className="count">{unread}</span>}
+              </NavLink>
+            </>
+          )}
         </nav>
         <div className="sidebar-footer">
-          <div className="nav-section">{t('nav.account')}</div>
-          <NavLink to="/account" className="user-chip" title={t('account.title')}>
-            <Avatar name={user.name} src={user.avatar} />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 600 }}>{user.name}</div>
-              <div className="small muted">{t(`role.${user.role}`)}</div>
-            </div>
-            <Icon name="settings" size={15} />
-          </NavLink>
+          {user ? (
+            <>
+              <div className="nav-section">{t('nav.account')}</div>
+              <NavLink to="/account" className="user-chip" title={t('account.title')}>
+                <Avatar name={user.name} src={user.avatar} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600 }}>{user.name}</div>
+                  <div className="small muted">{t(`role.${user.role}`)}</div>
+                </div>
+                <Icon name="settings" size={15} />
+              </NavLink>
+            </>
+          ) : (
+            // students and teachers don't need an account; only the administration signs in
+            <NavLink to="/login" className="user-chip">
+              <Icon name="lock" size={16} />
+              <span className="small">{t('nav.adminLogin')}</span>
+            </NavLink>
+          )}
           <div className="row">
             <LanguageSwitch />
             <span className="spacer" />
-            <button className="btn ghost sm icon" onClick={logout} title={t('nav.logout')} aria-label={t('nav.logout')}>
-              <Icon name="logout" size={15} />
-            </button>
+            {user && (
+              <button className="btn ghost sm icon" onClick={logout} title={t('nav.logout')} aria-label={t('nav.logout')}>
+                <Icon name="logout" size={15} />
+              </button>
+            )}
           </div>
         </div>
       </aside>
@@ -147,13 +154,19 @@ export function Layout() {
           </button>
           <Logo height={20} />
           <span className="spacer" />
-          <NavLink to="/notifications" className="btn ghost icon topbar-bell" aria-label={t('nav.notifications')}>
-            <Icon name="bell" />
-            {unread > 0 && <span className="count">{unread}</span>}
-          </NavLink>
-          <NavLink to="/account" className="topbar-avatar" aria-label={t('account.title')}>
-            <Avatar name={user.name} src={user.avatar} />
-          </NavLink>
+          {user ? (
+            <>
+              <NavLink to="/notifications" className="btn ghost icon topbar-bell" aria-label={t('nav.notifications')}>
+                <Icon name="bell" />
+                {unread > 0 && <span className="count">{unread}</span>}
+              </NavLink>
+              <NavLink to="/account" className="topbar-avatar" aria-label={t('account.title')}>
+                <Avatar name={user.name} src={user.avatar} />
+              </NavLink>
+            </>
+          ) : (
+            <LanguageSwitch />
+          )}
         </header>
         <div className="panel">
           <Outlet />

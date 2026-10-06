@@ -23,9 +23,7 @@ import FreeRooms from './pages/shared/FreeRooms';
 import Account from './pages/shared/Account';
 import Notifications from './pages/shared/Notifications';
 import TeacherAvailability from './pages/shared/TeacherAvailability';
-import StudentHome from './pages/student/StudentHome';
-import Availability from './pages/teacher/Availability';
-import TeacherHome from './pages/teacher/TeacherHome';
+import Schedule from './pages/public/Schedule';
 import { AuthProvider, useAuth } from './state/auth';
 import { DataProvider, useData } from './state/data';
 import { ToastProvider } from './state/toast';
@@ -42,10 +40,11 @@ function RequireRole({ roles, children }: { roles?: Role[]; children: ReactNode 
   return <>{children}</>;
 }
 
-function Home() {
-  const { user, ready } = useAuth();
-  if (!ready) return <Loading />;
-  return <Navigate to={user ? homeFor(user.role) : '/login'} replace />;
+/** Public pages (timetable, free rooms, teachers): no sign-in, only the data. */
+function RequireData({ children }: { children: ReactNode }) {
+  const { dataset } = useData();
+  if (!dataset) return <Loading />;
+  return <>{children}</>;
 }
 
 function AppRoutes() {
@@ -63,17 +62,18 @@ function AppRoutes() {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/account" element={<Account />} />
         <Route path="/browse" element={<Browse />} />
-        <Route path="/teachers" element={<TeacherAvailability />} />
       </Route>
-      {/* Free rooms: read-only for students and teachers; only the administration changes rooms and the timetable */}
+      {/* Public, no sign-in: students pick their group, teachers pick themselves */}
       <Route
         element={
-          <RequireRole roles={['student', 'teacher', 'admin']}>
+          <RequireData>
             <Layout />
-          </RequireRole>
+          </RequireData>
         }
       >
+        <Route path="/orar" element={<Schedule />} />
         <Route path="/rooms" element={<FreeRooms />} />
+        <Route path="/teachers" element={<TeacherAvailability />} />
       </Route>
       <Route
         path="/admin"
@@ -96,28 +96,10 @@ function AppRoutes() {
         <Route path="timetables/:id" element={<Editor />} />
         <Route path="changes" element={<Changes />} />
       </Route>
-      <Route
-        path="/teacher"
-        element={
-          <RequireRole roles={['teacher']}>
-            <Layout />
-          </RequireRole>
-        }
-      >
-        <Route index element={<TeacherHome />} />
-        <Route path="availability" element={<Availability />} />
-      </Route>
-      <Route
-        path="/student"
-        element={
-          <RequireRole roles={['student']}>
-            <Layout />
-          </RequireRole>
-        }
-      >
-        <Route index element={<StudentHome />} />
-      </Route>
-      <Route path="*" element={<Home />} />
+      {/* old student/teacher pages and anything unknown */}
+      <Route path="/student" element={<Navigate to="/orar" replace />} />
+      <Route path="/teacher/*" element={<Navigate to="/orar" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
