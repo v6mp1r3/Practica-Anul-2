@@ -42,6 +42,7 @@ export default function Evaluations() {
 
   const myGroups = facultyGroupIds(dataset, scope);
   const groups = dataset.groups.filter((g) => myGroups.includes(g.id));
+  const streams = dataset.streams.filter((st) => st.groupIds.some((g) => myGroups.includes(g)));
   const inClass = (round === 'midterm1' || round === 'midterm2') && !separate;
   const midterm = round === 'midterm1' || round === 'midterm2';
 
@@ -99,7 +100,9 @@ export default function Evaluations() {
     await saveEdit({ ...e, date, start, end });
   }
 
-  const shown = (plan?.events ?? []).filter((e) => !groupId || e.groupId === groupId);
+  // the filter is a group, or a stream: all of its groups
+  const stream = groupId.startsWith('stream:') ? dataset.streams.find((st) => `stream:${st.id}` === groupId) : undefined;
+  const shown = (plan?.events ?? []).filter((e) => !groupId || (stream ? stream.groupIds.includes(e.groupId) : e.groupId === groupId));
 
   return (
     <div className="page">
@@ -133,11 +136,28 @@ export default function Evaluations() {
         <RoundPicker value={round} onChange={(r) => setRound(r as ExamRound)} />
         <Select className="select pill" value={groupId} onChange={(e) => setGroupId(e.target.value)} aria-label={t('view.group')}>
           <option value="">{t('exams.allGroups')}</option>
-          {groups.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
+          <optgroup label={t('groups.groups')}>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </optgroup>
+          {/* a stream (e.g. FAF-251/252/253 together) shows all its groups at once */}
+          {streams.length > 0 && (
+            <optgroup label={t('groups.streams')}>
+              {streams.map((st) => (
+                <option key={st.id} value={`stream:${st.id}`}>
+                  {st.name} (
+                  {st.groupIds
+                    .map((g) => index.groups.get(g)?.name)
+                    .filter(Boolean)
+                    .join(', ')}
+                  )
+                </option>
+              ))}
+            </optgroup>
+          )}
         </Select>
         {plan && plan.events.length > 0 && (
           <span className={`badge ${problems.length ? 'danger' : 'success'}`}>
