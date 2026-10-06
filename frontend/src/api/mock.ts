@@ -10,7 +10,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 9;
+const SEED_VERSION = 10;
 
 interface Store {
   dataset: Dataset;
@@ -109,6 +109,8 @@ function mergeSeed(saved: Store) {
   }
   // there is no institution-wide administrator any more: every account belongs to a faculty
   saved.users = saved.users.filter((u) => u.username !== 'natalia.grosu');
+  // students and teachers don't sign in any more: only administrators have accounts
+  saved.users = saved.users.filter((u) => u.role === 'admin');
   if (!saved.users.some((u) => u.id === saved.sessionUserId)) saved.sessionUserId = null;
   // demo accounts added later (faculty administrators)
   const users = new Set(saved.users.map((u) => u.username));
@@ -300,8 +302,8 @@ export function createMockApi(): Api {
       persist();
     },
 
+    // public: anyone can see the timetable, rooms and teachers without signing in
     async getDataset() {
-      currentUser();
       return delay(store.dataset);
     },
     async saveSettings(settings) {
@@ -468,7 +470,6 @@ export function createMockApi(): Api {
       return delay(result);
     },
     async getPublished() {
-      currentUser();
       return delay(store.timetables.find((t) => t.status === 'published') ?? null);
     },
 
@@ -510,7 +511,6 @@ export function createMockApi(): Api {
     },
 
     async listChanges() {
-      currentUser();
       return delay(store.changes, 0);
     },
     async createChange(change) {

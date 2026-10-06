@@ -29,6 +29,7 @@ const DataContext = createContext<Data | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const signedIn = !!user;
   const [raw, setDataset] = useState<Dataset | null>(null);
   const [myTimeFormat, setMyState] = useState<TimeFormat | ''>(() => {
     try {
@@ -69,21 +70,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setDataset(ds);
       setPublished(pub);
       setChanges(ch);
-      await refreshNotifications();
+      if (signedIn) await refreshNotifications();
     } finally {
       setLoading(false);
     }
-  }, [refreshNotifications]);
+  }, [refreshNotifications, signedIn]);
 
+  // the timetable is public: load it for everyone, again after signing in or out
   useEffect(() => {
-    if (user) refresh();
-    else {
-      setDataset(null);
-      setPublished(null);
-      setNotifications([]);
-      setChanges([]);
-    }
-  }, [user, refresh]);
+    if (!signedIn) setNotifications([]);
+    refresh();
+  }, [signedIn, refresh]);
 
   const index = useMemo(() => (dataset ? new DatasetIndex(dataset) : null), [dataset]);
 
