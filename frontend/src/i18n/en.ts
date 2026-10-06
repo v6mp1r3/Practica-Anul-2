@@ -118,8 +118,6 @@ export const en: Record<MessageKey, string> = {
 
   'setup.formMaxPairs': 'Max pairs/day',
   'setup.sessions': 'Reduced-attendance sessions',
-  'setup.sessionsHint':
-    "Reduced-attendance groups are taught compactly in these sessions, on any day of the week, with different subjects from day to day. Their timetable is generated on calendar dates from each subject's pairs per session.",
   'setup.session': 'Session',
   'setup.shifts': 'Shifts by year of study',
   'setup.shiftsHint':

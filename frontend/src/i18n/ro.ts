@@ -118,8 +118,6 @@ export const ro = {
 
   'setup.formMaxPairs': 'Maxim perechi/zi',
   'setup.sessions': 'Sesiuni pentru frecvență redusă',
-  'setup.sessionsHint':
-    'Grupele cu frecvență redusă învață compact în aceste sesiuni, în orice zi a săptămânii, cu discipline diferite de la o zi la alta. Orarul se generează pe date calendaristice, din perechile pe sesiune ale fiecărei discipline.',
   'setup.session': 'Sesiune',
   'setup.shifts': 'Ture pe ani de studiu',
   'setup.shiftsHint':

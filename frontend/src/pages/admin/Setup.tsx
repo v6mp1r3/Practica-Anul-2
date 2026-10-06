@@ -209,7 +209,6 @@ export default function Setup() {
           {/* Reduced attendance meets only during its sessions */}
           <div className="stack" style={{ gap: 8, marginTop: 8 }}>
             <h3>{t('setup.sessions')}</h3>
-            <p className="small muted">{t('setup.sessionsHint')}</p>
             {s.reducedSessions.map((sess, i) => (
               <div key={i} className="row wrap">
                 <span className="small muted" style={{ minWidth: 70 }}>

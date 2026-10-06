@@ -119,8 +119,6 @@ export const ru: Record<MessageKey, string> = {
 
   'setup.formMaxPairs': 'Макс. пар в день',
   'setup.sessions': 'Сессии заочной формы',
-  'setup.sessionsHint':
-    'Заочные группы учатся компактно в эти сессии, в любой день недели, с разными дисциплинами по дням. Расписание составляется по календарным датам из количества пар за сессию по каждой дисциплине.',
   'setup.session': 'Сессия',
   'setup.shifts': 'Смены по курсам',
   'setup.shiftsHint':
