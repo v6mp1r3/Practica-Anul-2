@@ -1126,3 +1126,75 @@ button.holiday-row:hover {
 button.holiday-row.selected {
   background: var(--success-soft);
 }
+
+/* Configurare → Evaluări: settings left, the year's calendar right */
+.eval-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+  gap: 24px;
+  align-items: start;
+}
+.eval-calendar {
+  position: sticky;
+  top: 16px;
+}
+.eval-calendar .card {
+  box-shadow: none;
+}
+.year-cal.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+.year-cal-day.period.session {
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 600;
+}
+.year-cal-day.period.reduced {
+  background: rgba(148, 1, 68, 0.1);
+  color: #940144;
+  font-weight: 600;
+}
+.year-cal-day.period.reexam {
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-weight: 600;
+}
+.year-cal-day.period.midterm {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+.period-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.period-dot.session {
+  background: var(--danger);
+}
+.period-dot.reduced {
+  background: #940144;
+}
+.period-dot.reexam {
+  background: var(--warning);
+}
+.period-dot.midterm {
+  background: var(--primary);
+}
+@media (max-width: 1100px) {
+  .eval-layout {
+    grid-template-columns: 1fr;
+  }
+  .eval-calendar {
+    position: static;
+  }
+}
+.eval-calendar .year-cal-legend {
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.eval-calendar .year-cal-legend span {
+  white-space: nowrap;
+}

@@ -6,10 +6,12 @@ import { resetMockData } from '../../api/mock';
 import { Icon } from '../../components/Icon';
 import { Field, PageHeader, Segmented, Switch, TimeInput, useClock } from '../../components/ui';
 import { fmtTime, parseTime, range } from '../../domain/slots';
-import { DEFAULT_EVALUATION } from '../../domain/exams';
+import { DEFAULT_EVALUATION, teachingWeek } from '../../domain/exams';
 import { semesterChoices, semesterOf, semesterStartOf } from '../../domain/holidays';
 import { STUDY_FORMS, type EvaluationSettings, type Settings, type TimeSlot } from '../../domain/types';
 import { UTM_FACULTIES, UTM_NAME } from '../../domain/utm';
+import { YearCalendar, type CalendarPeriod } from '../../components/YearCalendar';
+import { academicYearOf, type Holiday } from '../../domain/holidays';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../state/auth';
 import { useData, useDataset } from '../../state/data';
@@ -115,6 +117,19 @@ export default function Setup() {
   const shiftYears = Math.min(6, Math.max(4, ...dataset.groups.map((g) => g.programYears ?? g.year)));
   const ev = { ...DEFAULT_EVALUATION, ...s.evaluation };
   const [evalTab, setEvalTab] = useState<'midterms' | 'finals'>('midterms');
+  // what each tab draws on the calendar
+  const midtermPeriods: CalendarPeriod[] = ev.midtermWeeks.map((w, i) => ({
+    ...teachingWeek(ev, w),
+    tone: 'midterm',
+    label: t('exams.midterm', { n: i + 1 }),
+    legend: t('exams.midterms'),
+  }));
+  const filled = (r: { start: string; end: string }) => !!r.start && !!r.end && r.start <= r.end;
+  const examPeriods: CalendarPeriod[] = [
+    ...ev.examSession.filter(filled).map((r) => ({ ...r, tone: 'session' as const, label: t('setup.examSession') })),
+    ...ev.reducedExamSession.filter(filled).map((r) => ({ ...r, tone: 'reduced' as const, label: t('setup.reducedExamSession') })),
+    ...ev.reexamSession.filter(filled).map((r) => ({ ...r, tone: 'reexam' as const, label: t('setup.reexamSession') })),
+  ];
   const setEv = (patch: Partial<EvaluationSettings>) =>
     setS((x) => ({ ...x, evaluation: { ...DEFAULT_EVALUATION, ...x.evaluation, ...patch } }));
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({ ...x, [k]: v }));
@@ -554,140 +569,153 @@ export default function Setup() {
               { value: 'finals', label: t('exams.exams') },
             ]}
           />
-          {evalTab === 'midterms' ? (
+          {/* settings on the left; the year with its holidays (and this tab's periods) on the right */}
+          <div className="eval-layout">
             <div className="stack">
-              <div className="form-grid">
-                <Field label={t('setup.semesterStart')}>
-                  <input
-                    className="input"
-                    type="date"
-                    value={semesterStartOf(ev.semesterStart)}
-                    onChange={(e) => setEv({ semesterStart: e.target.value })}
-                  />
-                </Field>
-                <Field label={t('setup.midtermWeeks')}>
-                  <div className="row" style={{ gap: 8 }}>
-                    {[0, 1].map((i) => (
+              {evalTab === 'midterms' ? (
+                <div className="stack">
+                  <div className="form-grid">
+                    <Field label={t('setup.semesterStart')}>
                       <input
-                        key={i}
                         className="input"
-                        type="number"
-                        min={1}
-                        max={20}
-                        style={{ width: 80 }}
-                        aria-label={t('exams.midterm', { n: i + 1 })}
-                        value={ev.midtermWeeks[i]}
-                        onChange={(e) => {
-                          const w = [...ev.midtermWeeks] as [number, number];
-                          w[i] = num(e.target.value, 1);
-                          setEv({ midtermWeeks: w });
-                        }}
+                        type="date"
+                        value={semesterStartOf(ev.semesterStart)}
+                        onChange={(e) => setEv({ semesterStart: e.target.value })}
                       />
-                    ))}
-                  </div>
-                </Field>
-                <Field label={t('setup.midtermMode')}>
-                  <Select value={ev.midtermMode} onChange={(e) => setEv({ midtermMode: e.target.value as 'inClass' | 'separate' })}>
-                    <option value="inClass">{t('setup.midtermInClass')}</option>
-                    <option value="separate">{t('setup.midtermSeparate')}</option>
-                  </Select>
-                </Field>
-                {ev.midtermMode === 'separate' && (
-                  <Field label={t('setup.midtermTimes')} hint={t('setup.timesHint')}>
-                    <TimesInput value={ev.midtermStartTimes} onChange={(v) => setEv({ midtermStartTimes: v })} />
-                  </Field>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="stack">
-              {(
-                [
-                  ['examSession', 'setup.examSession'],
-                  ['reducedExamSession', 'setup.reducedExamSession'],
-                  ['reexamSession', 'setup.reexamSession'],
-                ] as const
-              ).map(([key, label]) => (
-                <div key={key} className="stack" style={{ gap: 8 }}>
-                  <h3>{t(label)}</h3>
-                  {ev[key].map((r, i) => (
-                    <div key={i} className="row wrap">
-                      <span className="small muted" style={{ minWidth: 70 }}>
-                        {t('setup.period')} {i + 1}
-                      </span>
-                      {(['start', 'end'] as const).map((edge) => (
-                        <input
-                          key={edge}
-                          className="input"
-                          type="date"
-                          style={{ width: 170 }}
-                          value={r[edge]}
-                          min={edge === 'end' ? r.start : undefined}
-                          aria-label={`${t(label)} ${i + 1} — ${t(`setup.${edge}`)}`}
-                          onChange={(e) => setEv({ [key]: ev[key].map((x, j) => (j === i ? { ...x, [edge]: e.target.value } : x)) })}
-                        />
-                      ))}
-                      <button
-                        className="btn ghost sm icon danger"
-                        onClick={() => setEv({ [key]: ev[key].filter((_, j) => j !== i) })}
-                        aria-label={t('common.delete')}
-                      >
-                        <Icon name="trash" size={14} />
-                      </button>
-                    </div>
-                  ))}
-                  <div>
-                    <button className="btn sm" onClick={() => setEv({ [key]: [...ev[key], { start: '', end: '' }] })}>
-                      <Icon name="plus" size={14} />
-                      {t('setup.period')}
-                    </button>
+                    </Field>
+                    <Field label={t('setup.midtermWeeks')}>
+                      <div className="row" style={{ gap: 8 }}>
+                        {[0, 1].map((i) => (
+                          <input
+                            key={i}
+                            className="input"
+                            type="number"
+                            min={1}
+                            max={20}
+                            style={{ width: 80 }}
+                            aria-label={t('exams.midterm', { n: i + 1 })}
+                            value={ev.midtermWeeks[i]}
+                            onChange={(e) => {
+                              const w = [...ev.midtermWeeks] as [number, number];
+                              w[i] = num(e.target.value, 1);
+                              setEv({ midtermWeeks: w });
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </Field>
+                    <Field label={t('setup.midtermMode')}>
+                      <Select value={ev.midtermMode} onChange={(e) => setEv({ midtermMode: e.target.value as 'inClass' | 'separate' })}>
+                        <option value="inClass">{t('setup.midtermInClass')}</option>
+                        <option value="separate">{t('setup.midtermSeparate')}</option>
+                      </Select>
+                    </Field>
+                    {ev.midtermMode === 'separate' && (
+                      <Field label={t('setup.midtermTimes')} hint={t('setup.timesHint')}>
+                        <TimesInput value={ev.midtermStartTimes} onChange={(v) => setEv({ midtermStartTimes: v })} />
+                      </Field>
+                    )}
                   </div>
                 </div>
-              ))}
+              ) : (
+                <div className="stack">
+                  {(
+                    [
+                      ['examSession', 'setup.examSession'],
+                      ['reducedExamSession', 'setup.reducedExamSession'],
+                      ['reexamSession', 'setup.reexamSession'],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <div key={key} className="stack" style={{ gap: 8 }}>
+                      <h3>{t(label)}</h3>
+                      {ev[key].map((r, i) => (
+                        <div key={i} className="row wrap">
+                          <span className="small muted" style={{ minWidth: 70 }}>
+                            {t('setup.period')} {i + 1}
+                          </span>
+                          {(['start', 'end'] as const).map((edge) => (
+                            <input
+                              key={edge}
+                              className="input"
+                              type="date"
+                              style={{ width: 170 }}
+                              value={r[edge]}
+                              min={edge === 'end' ? r.start : undefined}
+                              aria-label={`${t(label)} ${i + 1} — ${t(`setup.${edge}`)}`}
+                              onChange={(e) => setEv({ [key]: ev[key].map((x, j) => (j === i ? { ...x, [edge]: e.target.value } : x)) })}
+                            />
+                          ))}
+                          <button
+                            className="btn ghost sm icon danger"
+                            onClick={() => setEv({ [key]: ev[key].filter((_, j) => j !== i) })}
+                            aria-label={t('common.delete')}
+                          >
+                            <Icon name="trash" size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      <div>
+                        <button className="btn sm" onClick={() => setEv({ [key]: [...ev[key], { start: '', end: '' }] })}>
+                          <Icon name="plus" size={14} />
+                          {t('setup.period')}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
 
-              <div className="form-grid">
-                <Field label={t('setup.examMinGap')} hint={t('setup.default', { value: 2 })}>
-                  <input
-                    className="input"
-                    type="number"
-                    min={0}
-                    max={7}
-                    value={ev.examMinGap}
-                    onChange={(e) => setEv({ examMinGap: num(e.target.value) })}
-                  />
-                </Field>
-                <Field label={t('setup.examHours')} hint={t('setup.hoursHint')}>
-                  <div className="row" style={{ gap: 8 }}>
-                    <TimeInput value={ev.examFrom} format={s.timeFormat} onChange={(v) => setEv({ examFrom: v })} />
-                    <span className="muted">–</span>
-                    <TimeInput value={ev.examTo} format={s.timeFormat} onChange={(v) => setEv({ examTo: v })} />
+                  <div className="form-grid">
+                    <Field label={t('setup.examMinGap')} hint={t('setup.default', { value: 2 })}>
+                      <input
+                        className="input"
+                        type="number"
+                        min={0}
+                        max={7}
+                        value={ev.examMinGap}
+                        onChange={(e) => setEv({ examMinGap: num(e.target.value) })}
+                      />
+                    </Field>
+                    <Field label={t('setup.examHours')} hint={t('setup.hoursHint')}>
+                      <div className="row" style={{ gap: 8 }}>
+                        <TimeInput value={ev.examFrom} format={s.timeFormat} onChange={(v) => setEv({ examFrom: v })} />
+                        <span className="muted">–</span>
+                        <TimeInput value={ev.examTo} format={s.timeFormat} onChange={(v) => setEv({ examTo: v })} />
+                      </div>
+                    </Field>
+                    <Field label={t('setup.examMinutes')} hint={t('setup.default', { value: 135 })}>
+                      <input
+                        className="input"
+                        type="number"
+                        min={30}
+                        value={ev.examMinutes}
+                        onChange={(e) => setEv({ examMinutes: num(e.target.value, 30) })}
+                      />
+                    </Field>
+                    <Field label={t('setup.reexamHours')} hint={t('setup.hoursHint')}>
+                      <div className="row" style={{ gap: 8 }}>
+                        <TimeInput value={ev.reexamFrom} format={s.timeFormat} onChange={(v) => setEv({ reexamFrom: v })} />
+                        <span className="muted">–</span>
+                        <TimeInput value={ev.reexamTo} format={s.timeFormat} onChange={(v) => setEv({ reexamTo: v })} />
+                      </div>
+                    </Field>
+                    <Field label={t('setup.examConsultation')}>
+                      <Select value={ev.consultation} onChange={(e) => setEv({ consultation: e.target.value as 'dayBefore' | 'sameDay' })}>
+                        <option value="dayBefore">{t('setup.consultationDayBefore')}</option>
+                        <option value="sameDay">{t('setup.consultationSameDay')}</option>
+                      </Select>
+                    </Field>
                   </div>
-                </Field>
-                <Field label={t('setup.examMinutes')} hint={t('setup.default', { value: 135 })}>
-                  <input
-                    className="input"
-                    type="number"
-                    min={30}
-                    value={ev.examMinutes}
-                    onChange={(e) => setEv({ examMinutes: num(e.target.value, 30) })}
-                  />
-                </Field>
-                <Field label={t('setup.reexamHours')} hint={t('setup.hoursHint')}>
-                  <div className="row" style={{ gap: 8 }}>
-                    <TimeInput value={ev.reexamFrom} format={s.timeFormat} onChange={(v) => setEv({ reexamFrom: v })} />
-                    <span className="muted">–</span>
-                    <TimeInput value={ev.reexamTo} format={s.timeFormat} onChange={(v) => setEv({ reexamTo: v })} />
-                  </div>
-                </Field>
-                <Field label={t('setup.examConsultation')}>
-                  <Select value={ev.consultation} onChange={(e) => setEv({ consultation: e.target.value as 'dayBefore' | 'sameDay' })}>
-                    <option value="dayBefore">{t('setup.consultationDayBefore')}</option>
-                    <option value="sameDay">{t('setup.consultationSameDay')}</option>
-                  </Select>
-                </Field>
-              </div>
+                </div>
+              )}
             </div>
-          )}
+            <aside className="eval-calendar">
+              <YearCalendar
+                year={academicYearOf(ev.semesterStart)}
+                holidays={ev.vacations as Holiday[]}
+                periods={evalTab === 'midterms' ? midtermPeriods : examPeriods}
+                compact
+              />
+            </aside>
+          </div>
         </Step>
       </div>
     </div>
