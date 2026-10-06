@@ -609,4 +609,10 @@ export const en: Record<MessageKey, string> = {
   'timetables.evaluations': 'Midterms, exams and retakes',
   'timetables.noEvaluations': 'No evaluation timetable generated yet.',
   'groups.stream': 'Stream',
+  'cycle.licenta': 'Bachelor’s',
+  'cycle.master': 'Master’s',
+  'setup.masterOffset': 'Starts after the bachelor’s (weeks)',
+  'setup.masterStartsOn': 'Master’s week 1: {date}',
+  'groups.cycle': 'Cycle',
+  'subjects.cycle': 'Cycle',
 };

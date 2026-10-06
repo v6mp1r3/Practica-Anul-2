@@ -612,6 +612,12 @@ export const ro = {
   'timetables.evaluations': 'Atestări, examene și reexaminări',
   'timetables.noEvaluations': 'Nu a fost generat încă niciun orar de evaluare.',
   'groups.stream': 'Torent',
+  'cycle.licenta': 'Licență',
+  'cycle.master': 'Master',
+  'setup.masterOffset': 'Începe după licență (săptămâni)',
+  'setup.masterStartsOn': 'Săptămâna 1 de master: {date}',
+  'groups.cycle': 'Ciclu',
+  'subjects.cycle': 'Ciclu',
 } as const;
 
 export type MessageKey = keyof typeof ro;

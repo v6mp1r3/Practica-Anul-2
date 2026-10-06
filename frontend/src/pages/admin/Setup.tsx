@@ -6,9 +6,17 @@ import { resetMockData } from '../../api/mock';
 import { Icon } from '../../components/Icon';
 import { Field, PageHeader, Segmented, Switch, TimeInput, useClock } from '../../components/ui';
 import { fmtTime, parseTime, range } from '../../domain/slots';
-import { DEFAULT_EVALUATION, evaluationOf, midtermRange, teachingWeek } from '../../domain/exams';
+import { DEFAULT_EVALUATION, DEFAULT_MASTER, evaluationOf, midtermRange, teachingWeek } from '../../domain/exams';
+import { parseDate, toDateString } from '../../domain/changes';
 import { semesterChoices, semesterOf, semesterStartOf } from '../../domain/holidays';
-import { STUDY_FORMS, type EvaluationSettings, type Settings, type TimeSlot } from '../../domain/types';
+import {
+  STUDY_FORMS,
+  type EvaluationSettings,
+  type MasterEvaluation,
+  type Settings,
+  type StudyCycle,
+  type TimeSlot,
+} from '../../domain/types';
 import { UTM_FACULTIES, UTM_NAME } from '../../domain/utm';
 import { YearCalendar, type CalendarPeriod } from '../../components/YearCalendar';
 import { academicYearOf, type Holiday } from '../../domain/holidays';
@@ -95,7 +103,7 @@ function Step({
 const SECTION_KEYS: Record<number, (keyof Settings)[]> = {
   1: ['semester', 'institutionName'],
   2: ['formDays', 'formMaxPairs', 'reducedSessions'],
-  3: ['workingDays', 'lessonMinutes', 'timeFormat', 'slots', 'yearShifts'],
+  3: ['workingDays', 'lessonMinutes', 'timeFormat', 'slots', 'yearShifts', 'masterYearShifts'],
   4: ['weekParity'],
   5: ['minPairsPerDayGroup', 'maxPairsPerDayGroup', 'maxPairsPerDayTeacher', 'consultationRequired'],
   6: ['evaluation'],
@@ -118,6 +126,21 @@ const tabKeys = (tab: 'midterms' | 'finals') =>
     (k) => !HOLIDAY_KEYS.includes(k) && MIDTERM_KEYS.includes(k) === (tab === 'midterms'),
   );
 
+/** Master's start of semester is "N weeks after licență" (it rolls over with it). */
+const masterOffset = (st: Settings) => ({ ...DEFAULT_MASTER, ...st.masterEvaluation }).startOffsetWeeks ?? 4;
+
+/** The evaluation settings a Configurare tab shows: licență, or licență with the master overrides. */
+function evalFor(st: Settings, cycle: StudyCycle): EvaluationSettings {
+  const lic = { ...DEFAULT_EVALUATION, ...st.evaluation };
+  if (cycle === 'licenta') return lic;
+  const { startOffsetWeeks: _o, ...m } = { ...DEFAULT_MASTER, ...st.masterEvaluation };
+  const start = parseDate(semesterStartOf(lic.semesterStart));
+  start.setDate(start.getDate() + 7 * masterOffset(st));
+  return { ...lic, ...m, semesterStart: toDateString(start) };
+}
+
+const withoutStart = ({ semesterStart: _s, ...rest }: Partial<EvaluationSettings>) => rest;
+
 export default function Setup() {
   const { t, lang } = useI18n();
   const { dataset, refresh } = useDataset();
@@ -132,8 +155,11 @@ export default function Setup() {
   const [justSaved, setJustSaved] = useState<number | string | null>(null);
   // as many years as the longest programme (at least 4, at most 6)
   const shiftYears = Math.min(6, Math.max(4, ...dataset.groups.map((g) => g.programYears ?? g.year)));
-  const ev = { ...DEFAULT_EVALUATION, ...s.evaluation };
   const [evalTab, setEvalTab] = useState<'midterms' | 'finals'>('midterms');
+  // Licență | Master: master's tab shows licență's settings with the master overrides on top
+  const [evCycle, setEvCycle] = useState<StudyCycle>('licenta');
+  const [shiftCycle, setShiftCycle] = useState<StudyCycle>('licenta');
+  const ev = evalFor(s, evCycle);
   // the year's days off, worked out from the semester being edited (green on the calendar)
   const holidays = evaluationOf({ ...dataset, settings: s }).vacations as Holiday[];
   // months on the calendar (0 = September): the semester's six by default, follows the semester picked
@@ -168,7 +194,14 @@ export default function Setup() {
     ...ev.reexamSession.filter(filled).map((r) => ({ ...r, days: ev.examDays, tone: 'reexam' as const, label: t('setup.reexamSession') })),
   ];
   const setEv = (patch: Partial<EvaluationSettings>) =>
-    setS((x) => ({ ...x, evaluation: { ...DEFAULT_EVALUATION, ...x.evaluation, ...patch } }));
+    setS((x) =>
+      evCycle === 'master'
+        ? // master's start is set as an offset from licență, not a date
+          { ...x, masterEvaluation: { ...DEFAULT_MASTER, ...x.masterEvaluation, ...withoutStart(patch) } }
+        : { ...x, evaluation: { ...DEFAULT_EVALUATION, ...x.evaluation, ...patch } },
+    );
+  const setMasterOffset = (weeks: number) =>
+    setS((x) => ({ ...x, masterEvaluation: { ...DEFAULT_MASTER, ...x.masterEvaluation, startOffsetWeeks: weeks } }));
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({ ...x, [k]: v }));
 
   async function save(section: number) {
@@ -189,6 +222,10 @@ export default function Setup() {
           first: Math.min(x.first, s.slots.length - 1),
           last: Math.min(x.last, s.slots.length - 1),
         })),
+        masterYearShifts: s.masterYearShifts?.map((x) => ({
+          first: Math.min(x.first, s.slots.length - 1),
+          last: Math.min(x.last, s.slots.length - 1),
+        })),
       };
       // only this section's settings; the others stay as last saved
       const saved: Settings = { ...dataset.settings, timeFormat: institutionTimeFormat };
@@ -196,11 +233,21 @@ export default function Setup() {
       // days off are edited on their own page (Zile libere și vacanțe): keep them as stored
       const storedEv = { ...DEFAULT_EVALUATION, ...saved.evaluation };
       // Evaluări: only the open tab (atestări or examene finale); the other tab stays as last saved
-      if (section === 6) {
+      if (section === 6 && evCycle === 'licenta') {
         const keys = tabKeys(evalTab);
         own.evaluation = {
           ...storedEv,
           ...(Object.fromEntries(keys.map((k) => [k, clean.evaluation![k]])) as Partial<EvaluationSettings>),
+        };
+      } else if (section === 6) {
+        // master's: only its overrides, for the open tab
+        delete own.evaluation;
+        const keys = tabKeys(evalTab).filter((k) => k !== 'semesterStart');
+        own.masterEvaluation = {
+          ...DEFAULT_MASTER,
+          ...saved.masterEvaluation,
+          ...(Object.fromEntries(keys.map((k) => [k, clean.evaluation![k]])) as MasterEvaluation),
+          ...(evalTab === 'midterms' ? { startOffsetWeeks: masterOffset(s) } : {}),
         };
       }
       await api.saveSettings({ ...saved, ...own });
@@ -219,7 +266,7 @@ export default function Setup() {
         );
       }
       await refresh();
-      setJustSaved(section === 6 ? `6-${evalTab}` : section);
+      setJustSaved(section === 6 ? `6-${evCycle}-${evalTab}` : section);
     } catch {
       toast(t('common.error'), 'error');
     } finally {
@@ -232,21 +279,22 @@ export default function Setup() {
   const norm = (k: keyof Settings, v: Settings[keyof Settings]) =>
     JSON.stringify(k === 'evaluation' ? { ...DEFAULT_EVALUATION, ...(v as Settings['evaluation']) } : (v ?? null));
   // Evaluări compares the open tab's settings only (days off live on their own page)
-  const evPart = (v: Settings['evaluation'], keys: (keyof EvaluationSettings)[]) => {
-    const full = { ...DEFAULT_EVALUATION, ...v };
-    return JSON.stringify(keys.map((k) => full[k]));
+  const evPart = (st: Settings, cycle: StudyCycle, tab: 'midterms' | 'finals') => {
+    const full = evalFor(st, cycle);
+    return JSON.stringify([...tabKeys(tab).map((k) => full[k]), cycle === 'master' && tab === 'midterms' ? masterOffset(st) : 0]);
   };
-  const tabDirty = (tab: 'midterms' | 'finals') => evPart(s.evaluation, tabKeys(tab)) !== evPart(stored.evaluation, tabKeys(tab));
+  const tabDirty = (tab: 'midterms' | 'finals', cycle: StudyCycle = evCycle) => evPart(s, cycle, tab) !== evPart(stored, cycle, tab);
+  const cycleDirty = (cycle: StudyCycle) => tabDirty('midterms', cycle) || tabDirty('finals', cycle);
   const dirty = (section: number) =>
     section === 6
-      ? evPart(s.evaluation, tabKeys(evalTab)) !== evPart(stored.evaluation, tabKeys(evalTab))
+      ? tabDirty(evalTab)
       : SECTION_KEYS[section].some((k) => k !== 'institutionName' && norm(k, s[k]) !== norm(k, stored[k])) ||
         (section === 1 && !!faculty && faculty !== user?.faculty);
   const step = (n: number) => ({
     onSave: () => save(n),
     saving,
     dirty: dirty(n),
-    saved: justSaved === (n === 6 ? `6-${evalTab}` : n) && !dirty(n),
+    saved: justSaved === (n === 6 ? `6-${evCycle}-${evalTab}` : n) && !dirty(n),
   });
 
   const num = (v: string, min = 0) => Math.max(min, Number(v) || 0);
@@ -524,14 +572,25 @@ export default function Setup() {
           <div className="stack" style={{ gap: 8 }}>
             <h3>{t('setup.shifts')}</h3>
             <p className="small muted">{t('setup.shiftsHint')}</p>
-            {range(shiftYears).map((y) => {
-              const shift = s.yearShifts?.[y] ?? { first: 0, last: s.slots.length - 1 };
+            {/* licență's years, or master's (usually evenings) */}
+            <Segmented
+              value={shiftCycle}
+              onChange={setShiftCycle}
+              options={[
+                { value: 'licenta', label: t('cycle.licenta') },
+                { value: 'master', label: t('cycle.master') },
+              ]}
+            />
+            {range(shiftCycle === 'master' ? 2 : shiftYears).map((y) => {
+              const key = shiftCycle === 'master' ? 'masterYearShifts' : 'yearShifts';
+              const years = shiftCycle === 'master' ? 2 : shiftYears;
+              const shift = s[key]?.[y] ?? { first: 0, last: s.slots.length - 1 };
               const setShift = (v: Partial<typeof shift>) => {
-                const next = range(shiftYears).map((i) => s.yearShifts?.[i] ?? { first: 0, last: s.slots.length - 1 });
+                const next = range(years).map((i) => s[key]?.[i] ?? { first: 0, last: s.slots.length - 1 });
                 next[y] = { ...shift, ...v };
                 if (next[y].last < next[y].first)
                   next[y] = v.first !== undefined ? { ...next[y], last: next[y].first } : { ...next[y], first: next[y].last };
-                set('yearShifts', next);
+                set(key, next);
               };
               const pairOption = (i: number, edge: 'start' | 'end') => (
                 <option key={i} value={i}>
@@ -604,7 +663,15 @@ export default function Setup() {
         </Step>
 
         <Step n={6} {...step(6)} title={t('setup.evaluation')}>
-          {/* two tabs: atestări (midterms) and final exams */}
+          {/* licență or master's, then atestări / final exams; a dot marks unsaved changes */}
+          <Segmented
+            value={evCycle}
+            onChange={setEvCycle}
+            options={[
+              { value: 'licenta', label: t('cycle.licenta') + (cycleDirty('licenta') ? ' •' : '') },
+              { value: 'master', label: t('cycle.master') + (cycleDirty('master') ? ' •' : '') },
+            ]}
+          />
           <Segmented
             value={evalTab}
             onChange={setEvalTab}
@@ -620,14 +687,36 @@ export default function Setup() {
               {evalTab === 'midterms' ? (
                 <div className="stack">
                   <div className="form-grid">
-                    <Field label={t('setup.semesterStart')}>
-                      <input
-                        className="input"
-                        type="date"
-                        value={semesterStartOf(ev.semesterStart)}
-                        onChange={(e) => setEv({ semesterStart: e.target.value })}
-                      />
-                    </Field>
+                    {evCycle === 'master' ? (
+                      <Field
+                        label={t('setup.masterOffset')}
+                        hint={t('setup.masterStartsOn', {
+                          date: parseDate(ev.semesterStart).toLocaleDateString(dateLocale(lang), {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          }),
+                        })}
+                      >
+                        <input
+                          className="input"
+                          type="number"
+                          min={0}
+                          max={10}
+                          value={masterOffset(s)}
+                          onChange={(e) => setMasterOffset(num(e.target.value))}
+                        />
+                      </Field>
+                    ) : (
+                      <Field label={t('setup.semesterStart')}>
+                        <input
+                          className="input"
+                          type="date"
+                          value={semesterStartOf(ev.semesterStart)}
+                          onChange={(e) => setEv({ semesterStart: e.target.value })}
+                        />
+                      </Field>
+                    )}
                     <Field label={t('setup.midtermWeeks')}>
                       <div className="row" style={{ gap: 8 }}>
                         {[0, 1].map((i) => (

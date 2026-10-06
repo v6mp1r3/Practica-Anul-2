@@ -613,4 +613,10 @@ export const ru: Record<MessageKey, string> = {
   'timetables.evaluations': 'Аттестации, экзамены и пересдачи',
   'timetables.noEvaluations': 'Расписаний оценивания ещё нет.',
   'groups.stream': 'Поток',
+  'cycle.licenta': 'Бакалавриат',
+  'cycle.master': 'Магистратура',
+  'setup.masterOffset': 'Начинается после бакалавриата (недель)',
+  'setup.masterStartsOn': '1-я неделя магистратуры: {date}',
+  'groups.cycle': 'Цикл',
+  'subjects.cycle': 'Цикл',
 };
