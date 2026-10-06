@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { api, API_MODE } from '../../api';
 import { resetMockData } from '../../api/mock';
+import { useAdminScope } from '../../components/FacultyFilter';
 import { Icon } from '../../components/Icon';
 import { Field, PageHeader, Segmented, Switch, TimeInput, useClock } from '../../components/ui';
 import { fmtTime, parseTime, range } from '../../domain/slots';
@@ -16,6 +17,7 @@ import {
   type Settings,
   type StudyCycle,
   type TimeSlot,
+  type GroupPeriod,
 } from '../../domain/types';
 import { UTM_FACULTIES, UTM_NAME } from '../../domain/utm';
 import { YearCalendar, type CalendarPeriod } from '../../components/YearCalendar';
@@ -107,6 +109,7 @@ const SECTION_KEYS: Record<number, (keyof Settings)[]> = {
   4: ['weekParity'],
   5: ['minPairsPerDayGroup', 'maxPairsPerDayGroup', 'maxPairsPerDayTeacher', 'consultationRequired'],
   6: ['evaluation'],
+  7: ['groupPeriods'],
 };
 
 /** Configurare → Evaluări → Atestări: the settings its own save button stores (the rest is Examene finale). */
@@ -156,6 +159,17 @@ export default function Setup() {
   // as many years as the longest programme (at least 4, at most 6)
   const shiftYears = Math.min(6, Math.max(4, ...dataset.groups.map((g) => g.programYears ?? g.year)));
   const [evalTab, setEvalTab] = useState<'midterms' | 'finals'>('midterms');
+  // Stagii de practică: the faculty's groups, by cycle and year
+  const scope = useAdminScope();
+  const myGroupIds = dataset.groups.filter((g) => !scope || g.faculty === scope).map((g) => g.id);
+  const periodGroupSets = (['licenta', 'master'] as StudyCycle[]).flatMap((cy) => {
+    const inCy = dataset.groups.filter((g) => myGroupIds.includes(g.id) && (g.cycle ?? 'licenta') === cy);
+    return [...new Set(inCy.map((g) => g.year))].sort().map((y) => ({
+      key: `${cy}-${y}`,
+      label: `${t(`cycle.${cy}`)} · ${t('groups.year')} ${y}`,
+      groups: inCy.filter((g) => g.year === y).sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+  });
   // Licență | Master: master's tab shows licență's settings with the master overrides on top
   const [evCycle, setEvCycle] = useState<StudyCycle>('licenta');
   const [shiftCycle, setShiftCycle] = useState<StudyCycle>('licenta');
@@ -222,6 +236,7 @@ export default function Setup() {
           first: Math.min(x.first, s.slots.length - 1),
           last: Math.min(x.last, s.slots.length - 1),
         })),
+        groupPeriods: (s.groupPeriods ?? []).filter((p) => p.start && p.end && p.start <= p.end && p.groupIds.length),
         masterYearShifts: s.masterYearShifts?.map((x) => ({
           first: Math.min(x.first, s.slots.length - 1),
           last: Math.min(x.last, s.slots.length - 1),
@@ -932,10 +947,122 @@ export default function Setup() {
             </aside>
           </div>
         </Step>
+
+        {/* internships (students at their internship, not at university), a final year's own session, VP, licence exam */}
+        <Step n={7} {...step(7)} title={t('periods.title')}>
+          <p className="small muted">{t('periods.hint')}</p>
+          {(s.groupPeriods ?? [])
+            .map((p, i) => ({ p, i }))
+            .filter(({ p }) => !scope || !p.groupIds.length || p.groupIds.some((g) => myGroupIds.includes(g)))
+            .map(({ p, i }) => {
+              const setPeriod = (patch: Partial<GroupPeriod>) =>
+                set(
+                  'groupPeriods',
+                  (s.groupPeriods ?? []).map((x, j) => (j === i ? { ...x, ...patch } : x)),
+                );
+              return (
+                <div key={p.id} className="period-row">
+                  <div className="row wrap">
+                    <Select
+                      style={{ width: 230 }}
+                      value={p.kind}
+                      onChange={(e) => setPeriod({ kind: e.target.value as GroupPeriod['kind'] })}
+                    >
+                      {PERIOD_KINDS.map((k) => (
+                        <option key={k} value={k}>
+                          {t(`periods.kind.${k}`)}
+                        </option>
+                      ))}
+                    </Select>
+                    {(['start', 'end'] as const).map((edge) => (
+                      <input
+                        key={edge}
+                        className="input"
+                        type="date"
+                        style={{ width: 170 }}
+                        value={p[edge]}
+                        min={edge === 'end' ? p.start : undefined}
+                        aria-label={`${t(`periods.kind.${p.kind}`)} — ${t(`setup.${edge}`)}`}
+                        onChange={(e) =>
+                          setPeriod({
+                            [edge]: e.target.value,
+                            ...(edge === 'start' && (!p.end || p.end < e.target.value) ? { end: e.target.value } : {}),
+                          })
+                        }
+                      />
+                    ))}
+                    <span className="spacer" />
+                    <button
+                      className="btn ghost sm icon danger"
+                      onClick={() =>
+                        set(
+                          'groupPeriods',
+                          (s.groupPeriods ?? []).filter((_, j) => j !== i),
+                        )
+                      }
+                      aria-label={t('common.delete')}
+                    >
+                      <Icon name="trash" size={14} />
+                    </button>
+                  </div>
+                  {/* which groups: by cycle and year (other faculties' groups in it stay as they are) */}
+                  <div className="period-groups">
+                    {periodGroupSets.map((set_) => (
+                      <div key={set_.key} className="row wrap" style={{ gap: 8 }}>
+                        <button
+                          type="button"
+                          className="btn ghost sm"
+                          onClick={() => {
+                            const all = set_.groups.every((g) => p.groupIds.includes(g.id));
+                            const ids = set_.groups.map((g) => g.id);
+                            setPeriod({
+                              groupIds: all ? p.groupIds.filter((g) => !ids.includes(g)) : [...new Set([...p.groupIds, ...ids])],
+                            });
+                          }}
+                        >
+                          {set_.label}
+                        </button>
+                        <div className="checks">
+                          {set_.groups.map((g) => (
+                            <label key={g.id} className="check">
+                              <input
+                                type="checkbox"
+                                checked={p.groupIds.includes(g.id)}
+                                onChange={(e) =>
+                                  setPeriod({ groupIds: e.target.checked ? [...p.groupIds, g.id] : p.groupIds.filter((x) => x !== g.id) })
+                                }
+                              />
+                              {g.name}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          <div>
+            <button
+              className="btn sm"
+              onClick={() =>
+                set('groupPeriods', [
+                  ...(s.groupPeriods ?? []),
+                  { id: `gp${Date.now().toString(36)}`, kind: 'internship', start: '', end: '', groupIds: [] },
+                ])
+              }
+            >
+              <Icon name="plus" size={14} />
+              {t('periods.add')}
+            </button>
+          </div>
+        </Step>
       </div>
     </div>
   );
 }
+
+const PERIOD_KINDS: GroupPeriod['kind'][] = ['internship', 'examSession', 'plagiarism', 'licence'];
 
 /** "09:00, 12:00" — a list of start times. */
 function TimesInput({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {

@@ -621,6 +621,16 @@ export const ro = {
   'session.half': '0,5 gr. ({n})',
   'session.day': 'Ziua',
   'session.noClasses': 'Nu sunt ore în această sesiune.',
+  'periods.title': 'Stagii de practică și calendarul grupelor',
+  'periods.hint':
+    'În timpul stagiului de practică studenții sunt la locul de practică, nu la universitate: nu au ore, atestări sau examene, iar atestările se mută în săptămânile în care sunt la universitate.',
+  'periods.add': 'Perioadă',
+  'periods.kind.internship': 'Stagiu de practică',
+  'periods.kind.examSession': 'Sesiune de examene proprie',
+  'periods.kind.plagiarism': 'Verificare la plagiat (VP)',
+  'periods.kind.licence': 'Examen de licență (EL)',
+  'periods.noClasses': 'nu sunt ore: studenții sunt la locul de practică',
+  'periods.groupCalendar': 'Calendarul grupei',
 } as const;
 
 export type MessageKey = keyof typeof ro;

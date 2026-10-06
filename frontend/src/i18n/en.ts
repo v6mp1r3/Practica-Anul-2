@@ -618,4 +618,14 @@ export const en: Record<MessageKey, string> = {
   'session.half': 'half group ({n})',
   'session.day': 'Day',
   'session.noClasses': 'No classes in this session.',
+  'periods.title': 'Internships and group calendar',
+  'periods.hint':
+    'During an internship the students are at their internship, not at university: no classes, midterms or exams, and their midterms move to the weeks they are at university.',
+  'periods.add': 'Period',
+  'periods.kind.internship': 'Internship',
+  'periods.kind.examSession': 'Own exam session',
+  'periods.kind.plagiarism': 'Plagiarism check (VP)',
+  'periods.kind.licence': 'Licence exam (EL)',
+  'periods.noClasses': 'no classes: the students are at their internship',
+  'periods.groupCalendar': 'Group calendar',
 };

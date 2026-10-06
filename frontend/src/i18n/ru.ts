@@ -622,4 +622,14 @@ export const ru: Record<MessageKey, string> = {
   'session.half': '0,5 гр. ({n})',
   'session.day': 'День',
   'session.noClasses': 'В эту сессию занятий нет.',
+  'periods.title': 'Практики и календарь групп',
+  'periods.hint':
+    'Во время практики студенты на месте практики, а не в университете: нет занятий, аттестаций и экзаменов; аттестации переносятся на недели в университете.',
+  'periods.add': 'Период',
+  'periods.kind.internship': 'Практика',
+  'periods.kind.examSession': 'Своя сессия',
+  'periods.kind.plagiarism': 'Проверка на плагиат (VP)',
+  'periods.kind.licence': 'Экзамен на лиценциат (EL)',
+  'periods.noClasses': 'занятий нет: студенты на практике',
+  'periods.groupCalendar': 'Календарь группы',
 };

@@ -1281,3 +1281,34 @@ button.holiday-row.selected {
 .fr-table tr.today .fr-date strong {
   color: var(--primary);
 }
+
+/* Configurare → stagii de practică: one card per period, its groups by year */
+.period-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.period-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.period-groups .btn {
+  min-width: 150px;
+  justify-content: flex-start;
+}
+
+/* a group's calendar periods (internship, own session, VP, licence exam) */
+.holiday.period {
+  background: var(--primary-soft);
+}
+.holiday.period.examSession {
+  background: var(--danger-soft);
+}
+.holiday.period.licence,
+.holiday.period.plagiarism {
+  background: var(--warning-soft);
+}
