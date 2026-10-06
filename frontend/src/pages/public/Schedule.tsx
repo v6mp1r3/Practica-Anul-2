@@ -267,7 +267,6 @@ function Evaluations({
   const fmt = (d: string) => parseDate(d).toLocaleDateString(dateLocale(lang), { day: 'numeric', month: 'short' });
 
   let entries: CalendarEntry[];
-  let note: string | null = null;
   if (tab === 'midterms') {
     const reducedGroup = 'groupId' in who && index.groups.get(who.groupId)?.studyForm === 'reduced';
     if (ev.midtermMode === 'separate' && !reducedGroup) {
@@ -288,12 +287,6 @@ function Evaluations({
       }
       entries = midtermEntries(list, index, dataset.settings, t);
     }
-    note = ev.midtermWeeks
-      .map((w, i) => {
-        const r = teachingWeek(ev, w);
-        return t('exams.midtermWeek', { n: i + 1, week: w, from: fmt(r.start), to: fmt(r.end) });
-      })
-      .join(' · ');
   } else {
     const round = tab === 'exams' ? 'session' : 'reexam';
     entries = examEntries(
@@ -303,9 +296,8 @@ function Evaluations({
     );
   }
 
-  return (
-    <div className="stack">
-      {note && <p className="small muted">{note}</p>}
+  if (tab !== 'midterms')
+    return (
       <ExamCalendar
         entries={entries}
         index={index}
@@ -313,6 +305,33 @@ function Evaluations({
         hide={hide}
         empty={<Empty>{t('exams.notPublished')}</Empty>}
       />
+    );
+
+  // Atestări: atestarea 1 and atestarea 2, each in its own week
+  return (
+    <div className="stack">
+      {([1, 2] as const).map((n) => {
+        const week = teachingWeek(ev, ev.midtermWeeks[n - 1]);
+        const label = t('exams.midterm', { n });
+        const mineN = entries.filter((e) => e.label === label);
+        return (
+          <section key={n} className="stack" style={{ gap: 10 }}>
+            <div>
+              <h2>{label}</h2>
+              <p className="small muted">
+                {t('exams.weekRange', { week: ev.midtermWeeks[n - 1], from: fmt(week.start), to: fmt(week.end) })}
+              </p>
+            </div>
+            <ExamCalendar
+              entries={mineN}
+              index={index}
+              settings={dataset.settings}
+              hide={hide}
+              empty={<Empty>{t('exams.notPublished')}</Empty>}
+            />
+          </section>
+        );
+      })}
     </div>
   );
 }
