@@ -489,7 +489,7 @@ export const ro = {
   'score.preferenceMisses': 'Preferințe nerespectate',
   'exams.consultation': 'Consultație',
   'exams.exam': 'Examen final',
-  'exams.reexam': 'Reexaminare',
+  'exams.reexam': 'Reexaminare examen',
   'exams.midterm': 'Atestarea {n}',
   'exams.midterms': 'Atestări',
   'exams.exams': 'Examene finale',
@@ -603,6 +603,10 @@ export const ro = {
   'generate.examsHint': 'Se generează pentru toate grupele facultății. Apoi le verifici, le muți și le publici în Evaluări.',
   'setup.examDays': 'Zile de examen și consultații — frecvență',
   'setup.reducedExamDays': 'Zile de examen și consultații — frecvență redusă',
+  'exams.remidterm': 'Reexaminare atestarea {n}',
+  'exams.retakeNote':
+    'Reexaminarea atestării se ține după ore, în săptămâna {w}, fără să se suprapună cu orele grupei, ale profesorului sau ale sălii.',
+  'setup.midtermRetakeWeeks': 'Săptămânile reexaminării atestărilor',
 } as const;
 
 export type MessageKey = keyof typeof ro;

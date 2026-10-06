@@ -61,7 +61,11 @@ export function SessionTimetable({
                     {dates.map((d) => {
                       const holiday = vacationOn(ev, d);
                       return (
-                        <div key={d} className={`tt-head ${d === today ? 'today' : holiday ? 'holiday-col' : ''}`} title={holiday ? holidayName(holiday) : undefined}>
+                        <div
+                          key={d}
+                          className={`tt-head ${d === today ? 'today' : holiday ? 'holiday-col' : ''}`}
+                          title={holiday ? holidayName(holiday) : undefined}
+                        >
                           {fmt(d, { weekday: 'short' })} {fmt(d, { day: '2-digit', month: '2-digit' })}
                           {holiday && <div className="small">{t('vacation.short')}</div>}
                         </div>

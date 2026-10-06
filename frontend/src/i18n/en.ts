@@ -488,7 +488,7 @@ export const en: Record<MessageKey, string> = {
   'score.preferenceMisses': 'Missed preferences',
   'exams.consultation': 'Consultation',
   'exams.exam': 'Final exam',
-  'exams.reexam': 'Retake',
+  'exams.reexam': 'Exam retake',
   'exams.midterm': 'Midterm {n}',
   'exams.midterms': 'Midterms',
   'exams.exams': 'Final exams',
@@ -601,4 +601,7 @@ export const en: Record<MessageKey, string> = {
   'generate.examsHint': 'Generated for all of the faculty’s groups. Then check, move and publish them in Evaluations.',
   'setup.examDays': 'Exam and consultation days — full-time',
   'setup.reducedExamDays': 'Exam and consultation days — reduced attendance',
+  'exams.remidterm': 'Midterm {n} retake',
+  'exams.retakeNote': 'The midterm retake is held after classes in week {w}, never over a class of the group, the teacher or the room.',
+  'setup.midtermRetakeWeeks': 'Midterm retake weeks',
 };

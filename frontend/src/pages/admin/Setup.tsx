@@ -6,7 +6,7 @@ import { resetMockData } from '../../api/mock';
 import { Icon } from '../../components/Icon';
 import { Field, PageHeader, Segmented, Switch, TimeInput, useClock } from '../../components/ui';
 import { fmtTime, parseTime, range } from '../../domain/slots';
-import { DEFAULT_EVALUATION, teachingWeek } from '../../domain/exams';
+import { DEFAULT_EVALUATION, evaluationOf, teachingWeek } from '../../domain/exams';
 import { semesterChoices, semesterOf, semesterStartOf } from '../../domain/holidays';
 import { STUDY_FORMS, type EvaluationSettings, type Settings, type TimeSlot } from '../../domain/types';
 import { UTM_FACULTIES, UTM_NAME } from '../../domain/utm';
@@ -117,6 +117,8 @@ export default function Setup() {
   const shiftYears = Math.min(6, Math.max(4, ...dataset.groups.map((g) => g.programYears ?? g.year)));
   const ev = { ...DEFAULT_EVALUATION, ...s.evaluation };
   const [evalTab, setEvalTab] = useState<'midterms' | 'finals'>('midterms');
+  // the year's days off, worked out from the semester being edited (green on the calendar)
+  const holidays = evaluationOf({ ...dataset, settings: s }).vacations as Holiday[];
   // what each tab draws on the calendar
   const midtermPeriods: CalendarPeriod[] = ev.midtermWeeks.map((w, i) => ({
     ...teachingWeek(ev, w),
@@ -124,6 +126,15 @@ export default function Setup() {
     label: t('exams.midterm', { n: i + 1 }),
     legend: t('exams.midterms'),
   }));
+  // the retake weeks of the atestări, on the same calendar
+  midtermPeriods.push(
+    ...ev.midtermRetakeWeeks.map((w, i) => ({
+      ...teachingWeek(ev, w),
+      tone: 'reexam' as const,
+      label: t('exams.remidterm', { n: i + 1 }),
+      legend: t('exams.reexams'),
+    })),
+  );
   const filled = (r: { start: string; end: string }) => !!r.start && !!r.end && r.start <= r.end;
   const examPeriods: CalendarPeriod[] = [
     ...ev.examSession.filter(filled).map((r) => ({ ...r, tone: 'session' as const, label: t('setup.examSession') })),
@@ -570,7 +581,7 @@ export default function Setup() {
             ]}
           />
           {/* settings on the left; the year with its holidays (and this tab's periods) on the right */}
-          <div className="eval-layout">
+          <div className={`eval-layout ${evalTab === 'midterms' ? 'below' : ''}`}>
             <div className="stack">
               {evalTab === 'midterms' ? (
                 <div className="stack">
@@ -599,6 +610,27 @@ export default function Setup() {
                               const w = [...ev.midtermWeeks] as [number, number];
                               w[i] = num(e.target.value, 1);
                               setEv({ midtermWeeks: w });
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </Field>
+                    <Field label={t('setup.midtermRetakeWeeks')}>
+                      <div className="row" style={{ gap: 8 }}>
+                        {[0, 1].map((i) => (
+                          <input
+                            key={i}
+                            className="input"
+                            type="number"
+                            min={1}
+                            max={20}
+                            style={{ width: 80 }}
+                            aria-label={t('exams.remidterm', { n: i + 1 })}
+                            value={ev.midtermRetakeWeeks[i]}
+                            onChange={(e) => {
+                              const w = [...ev.midtermRetakeWeeks] as [number, number];
+                              w[i] = num(e.target.value, 1);
+                              setEv({ midtermRetakeWeeks: w });
                             }}
                           />
                         ))}
@@ -733,9 +765,9 @@ export default function Setup() {
             <aside className="eval-calendar">
               <YearCalendar
                 year={academicYearOf(ev.semesterStart)}
-                holidays={ev.vacations as Holiday[]}
+                holidays={holidays}
                 periods={evalTab === 'midterms' ? midtermPeriods : examPeriods}
-                compact
+                compact={evalTab !== 'midterms'}
               />
             </aside>
           </div>

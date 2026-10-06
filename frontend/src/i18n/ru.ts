@@ -490,7 +490,7 @@ export const ru: Record<MessageKey, string> = {
   'score.preferenceMisses': 'Невыполненные пожелания',
   'exams.consultation': 'Консультация',
   'exams.exam': 'Итоговый экзамен',
-  'exams.reexam': 'Пересдача',
+  'exams.reexam': 'Пересдача экзамена',
   'exams.midterm': 'Аттестация {n}',
   'exams.midterms': 'Аттестации',
   'exams.exams': 'Итоговые экзамены',
@@ -604,4 +604,8 @@ export const ru: Record<MessageKey, string> = {
   'generate.examsHint': 'Генерируется для всех групп факультета. Затем проверьте, перенесите и опубликуйте их в разделе «Оценивание».',
   'setup.examDays': 'Дни экзаменов и консультаций — очное',
   'setup.reducedExamDays': 'Дни экзаменов и консультаций — заочное',
+  'exams.remidterm': 'Пересдача аттестации {n}',
+  'exams.retakeNote':
+    'Пересдача аттестации проходит после занятий в неделю {w}, не пересекаясь с занятиями группы, преподавателя или аудитории.',
+  'setup.midtermRetakeWeeks': 'Недели пересдачи аттестаций',
 };

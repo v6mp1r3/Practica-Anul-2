@@ -1198,3 +1198,11 @@ button.holiday-row.selected {
 .eval-calendar .year-cal-legend span {
   white-space: nowrap;
 }
+
+/* Atestări: the calendar goes under the settings, full width */
+.eval-layout.below {
+  grid-template-columns: 1fr;
+}
+.eval-layout.below .eval-calendar {
+  position: static;
+}
