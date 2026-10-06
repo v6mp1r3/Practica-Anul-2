@@ -36,12 +36,13 @@ export const DEFAULT_EVALUATION: EvaluationSettings = {
   ],
   examDays: [0, 1, 2, 3, 4, 5],
   examMinGap: 2,
-  examStartTimes: ['09:00', '12:00'],
+  examFrom: '08:00',
+  examTo: '18:00',
   examMinutes: 135,
   consultation: 'dayBefore',
-  consultationTime: '10:00',
   consultationMinutes: 90,
-  reexamStartTimes: ['13:30', '15:15', '17:00'],
+  reexamFrom: '13:00',
+  reexamTo: '19:00',
   reexamMinutes: 90,
 };
 
@@ -57,6 +58,13 @@ const addDays = (date: string, n: number) => {
   d.setDate(d.getDate() + n);
   return toDateString(d);
 };
+/** Start times every half hour in [from, to] that still end by `to`. */
+export function startTimesIn(from: string, to: string, minutes: number): string[] {
+  const out: string[] = [];
+  for (let m = toMin(from); m + minutes <= toMin(to); m += 30) out.push(toHHMM(m));
+  return out;
+}
+
 const daysBetween = (a: string, b: string) => Math.round((parseDate(b).getTime() - parseDate(a).getTime()) / 86400000);
 
 /** The holiday a date falls in, if any. */
@@ -123,8 +131,9 @@ export function generateExams(
   const all = () => [...busy, ...placed];
   const free = (e: ExamEvent) => !all().some((o) => clash(o, e));
 
-  const times = round === 'session' ? ev.examStartTimes : ev.reexamStartTimes;
   const minutes = round === 'session' ? ev.examMinutes : ev.reexamMinutes;
+  // any start inside the window — each exam its own time, not a fixed list
+  const window = round === 'session' ? startTimesIn(ev.examFrom, ev.examTo, minutes) : startTimesIn(ev.reexamFrom, ev.reexamTo, minutes);
   const minGap = round === 'session' ? ev.examMinGap : Math.min(1, ev.examMinGap);
 
   // the teacher's exam-period availability (not the weekly one: there are no classes)
@@ -176,7 +185,7 @@ export function generateExams(
         // try from the target date onwards, then the earlier ones
         const fromTarget = [...candidates.filter((d) => d >= dates[target]), ...candidates.filter((d) => d < dates[target])];
         for (const date of fromTarget) {
-          for (const start of times) {
+          for (const start of rng.shuffle(window)) {
             const end = toHHMM(toMin(start) + minutes);
             if (!teacherFree(teacherId, date, start, end)) continue;
             const room = rooms.find((r) =>
@@ -187,6 +196,7 @@ export function generateExams(
             const consultation = consultationFor(
               ev,
               exam,
+              rng,
               rooms,
               (e) => free(e) && !clash(e, exam) && teacherFree(teacherId, e.date, e.start, e.end),
             );
@@ -224,14 +234,23 @@ function previousExamDay(ev: EvaluationSettings, date: string): string {
 }
 
 /** The consultation before an exam: same teacher, its room if free. */
-function consultationFor(ev: EvaluationSettings, exam: ExamEvent, rooms: Room[], free: (e: ExamEvent) => boolean): ExamEvent | null {
+function consultationFor(
+  ev: EvaluationSettings,
+  exam: ExamEvent,
+  rng: Rng,
+  rooms: Room[],
+  free: (e: ExamEvent) => boolean,
+): ExamEvent | null {
   const sameDay = { date: exam.date, start: toHHMM(toMin(exam.start) - 60), minutes: 45 };
   const before = previousExamDay(ev, exam.date);
   // right after a holiday (or on request) the consultation is the same day, just before the exam
   const tries =
     ev.consultation === 'sameDay' || daysBetween(before, exam.date) > 2
       ? [sameDay]
-      : [ev.consultationTime, '12:00', '14:00', '16:00'].map((start) => ({ date: before, start, minutes: ev.consultationMinutes }));
+      : // any time in the exam hours of that day, different from one exam to the next
+        rng
+          .shuffle(startTimesIn(ev.examFrom, ev.examTo, ev.consultationMinutes))
+          .map((start) => ({ date: before, start, minutes: ev.consultationMinutes }));
   for (const t of tries) {
     const end = toHHMM(toMin(t.start) + t.minutes);
     for (const roomId of [exam.roomId, ...rooms.map((r) => r.id).filter((id) => id !== exam.roomId)]) {

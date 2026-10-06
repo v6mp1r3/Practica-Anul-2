@@ -76,13 +76,19 @@ export interface EvaluationSettings {
   examDays: Day[];
   /** Free days at least between two exams of the same group. */
   examMinGap: number;
-  examStartTimes: string[];
+  /**
+   * Hours exams may be held in. Each exam gets its own start time inside the
+   * window (not a fixed list), and the admin can move any of them afterwards.
+   */
+  examFrom: string;
+  examTo: string;
   examMinutes: number;
   /** Consultation the day before the exam, or the same day just before it. */
   consultation: 'dayBefore' | 'sameDay';
-  consultationTime: string;
   consultationMinutes: number;
-  reexamStartTimes: string[];
+  /** Hours retakes may be held in (usually the afternoon). */
+  reexamFrom: string;
+  reexamTo: string;
   reexamMinutes: number;
 }
 

@@ -107,6 +107,7 @@ const SECTION_KEYS: Record<number, (keyof Settings)[]> = {
   4: ['weekParity'],
   5: ['minPairsPerDayGroup', 'maxPairsPerDayGroup', 'maxPairsPerDayTeacher', 'consultationRequired'],
   6: ['evaluation'],
+  7: ['evaluation'],
 };
 
 export default function Setup() {
@@ -154,10 +155,20 @@ export default function Setup() {
       };
       // only this section's settings; the others stay as last saved
       const saved: Settings = { ...dataset.settings, timeFormat: institutionTimeFormat };
-      const own = Object.fromEntries(SECTION_KEYS[section].map((k) => [k, clean[k]]));
+      const own: Partial<Settings> = Object.fromEntries(SECTION_KEYS[section].map((k) => [k, clean[k]]));
+      // Evaluări (6) and Vacanțe (7) share settings.evaluation: each keeps the other's part as stored
+      const storedEv = { ...DEFAULT_EVALUATION, ...saved.evaluation };
+      if (section === 6) own.evaluation = { ...clean.evaluation!, vacations: storedEv.vacations };
+      if (section === 7) own.evaluation = { ...storedEv, vacations: clean.evaluation!.vacations };
       await api.saveSettings({ ...saved, ...own });
       // the form now shows exactly what was stored (e.g. empty rows dropped)
-      setS((x) => ({ ...x, ...own }));
+      setS((x) =>
+        section === 6
+          ? { ...x, evaluation: { ...own.evaluation!, vacations: { ...DEFAULT_EVALUATION, ...x.evaluation }.vacations } }
+          : section === 7
+            ? { ...x, evaluation: { ...DEFAULT_EVALUATION, ...x.evaluation, vacations: own.evaluation!.vacations } }
+            : { ...x, ...own },
+      );
       // the administrator's own faculty is part of their account (section 1)
       if (section === 1 && user && faculty && faculty !== user.faculty) {
         setUser(
@@ -183,9 +194,15 @@ export default function Setup() {
   const stored: Settings = { ...dataset.settings, timeFormat: institutionTimeFormat };
   const norm = (k: keyof Settings, v: Settings[keyof Settings]) =>
     JSON.stringify(k === 'evaluation' ? { ...DEFAULT_EVALUATION, ...(v as Settings['evaluation']) } : (v ?? null));
+  const evPart = (v: Settings['evaluation'], part: 6 | 7) => {
+    const { vacations, ...rest } = { ...DEFAULT_EVALUATION, ...v };
+    return JSON.stringify(part === 7 ? vacations : rest);
+  };
   const dirty = (section: number) =>
-    SECTION_KEYS[section].some((k) => k !== 'institutionName' && norm(k, s[k]) !== norm(k, stored[k])) ||
-    (section === 1 && !!faculty && faculty !== user?.faculty);
+    section === 6 || section === 7
+      ? evPart(s.evaluation, section) !== evPart(stored.evaluation, section)
+      : SECTION_KEYS[section].some((k) => k !== 'institutionName' && norm(k, s[k]) !== norm(k, stored[k])) ||
+        (section === 1 && !!faculty && faculty !== user?.faculty);
   const step = (n: number) => ({
     onSave: () => save(n),
     saving,
@@ -547,7 +564,7 @@ export default function Setup() {
         </Step>
 
         <Step n={6} {...step(6)} title={t('setup.evaluation')}>
-          {/* two tabs: atestări (midterms) and final exams; holidays apply to both */}
+          {/* two tabs: atestări (midterms) and final exams */}
           <Segmented
             value={evalTab}
             onChange={setEvalTab}
@@ -658,8 +675,12 @@ export default function Setup() {
                     onChange={(e) => setEv({ examMinGap: num(e.target.value) })}
                   />
                 </Field>
-                <Field label={t('setup.examTimes')} hint={t('setup.timesHint')}>
-                  <TimesInput value={ev.examStartTimes} onChange={(v) => setEv({ examStartTimes: v })} />
+                <Field label={t('setup.examHours')} hint={t('setup.hoursHint')}>
+                  <div className="row" style={{ gap: 8 }}>
+                    <TimeInput value={ev.examFrom} format={s.timeFormat} onChange={(v) => setEv({ examFrom: v })} />
+                    <span className="muted">–</span>
+                    <TimeInput value={ev.examTo} format={s.timeFormat} onChange={(v) => setEv({ examTo: v })} />
+                  </div>
                 </Field>
                 <Field label={t('setup.examMinutes')} hint={t('setup.default', { value: 135 })}>
                   <input
@@ -670,8 +691,12 @@ export default function Setup() {
                     onChange={(e) => setEv({ examMinutes: num(e.target.value, 30) })}
                   />
                 </Field>
-                <Field label={t('setup.reexamTimes')} hint={t('setup.timesHint')}>
-                  <TimesInput value={ev.reexamStartTimes} onChange={(v) => setEv({ reexamStartTimes: v })} />
+                <Field label={t('setup.reexamHours')} hint={t('setup.hoursHint')}>
+                  <div className="row" style={{ gap: 8 }}>
+                    <TimeInput value={ev.reexamFrom} format={s.timeFormat} onChange={(v) => setEv({ reexamFrom: v })} />
+                    <span className="muted">–</span>
+                    <TimeInput value={ev.reexamTo} format={s.timeFormat} onChange={(v) => setEv({ reexamTo: v })} />
+                  </div>
                 </Field>
                 <Field label={t('setup.examConsultation')}>
                   <Select value={ev.consultation} onChange={(e) => setEv({ consultation: e.target.value as 'dayBefore' | 'sameDay' })}>
@@ -679,18 +704,15 @@ export default function Setup() {
                     <option value="sameDay">{t('setup.consultationSameDay')}</option>
                   </Select>
                 </Field>
-                {ev.consultation === 'dayBefore' && (
-                  <Field label={t('setup.consultationTime')}>
-                    <TimeInput value={ev.consultationTime} format={s.timeFormat} onChange={(v) => setEv({ consultationTime: v })} />
-                  </Field>
-                )}
               </div>
             </div>
           )}
 
-          {/* University holidays: shown on every timetable, nothing is scheduled on them */}
+        </Step>
+
+        {/* University holidays and single days off: shown on every timetable, nothing is scheduled on them */}
+        <Step n={7} {...step(7)} title={t('vacation.title')}>
           <div className="stack" style={{ gap: 8 }}>
-            <h3>{t('vacation.title')}</h3>
             {ev.vacations.map((v, i) => (
               <div key={i} className="row wrap">
                 <input

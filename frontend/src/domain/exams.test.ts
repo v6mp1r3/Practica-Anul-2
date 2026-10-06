@@ -66,7 +66,10 @@ describe('exam session', () => {
   it('retakes avoid the published session and use afternoon times', () => {
     const re = generateExams(seedDataset, idx, fcim, 'reexam', events, createRng(2));
     expect(findExamProblems(seedDataset, [...events, ...re.events]).filter((p) => p.kind === 'clash')).toEqual([]);
-    for (const e of re.events.filter((x) => x.kind === 'exam')) expect(ev.reexamStartTimes).toContain(e.start);
+    for (const e of re.events.filter((x) => x.kind === 'exam')) {
+      expect(e.start >= ev.reexamFrom).toBe(true);
+      expect(e.end <= ev.reexamTo).toBe(true);
+    }
   });
 });
 
