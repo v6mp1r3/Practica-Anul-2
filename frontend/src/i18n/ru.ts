@@ -235,7 +235,6 @@ export const ru: Record<MessageKey, string> = {
   'timetables.status.published': 'Опубликовано',
   'timetables.status.variant': 'Вариант',
 
-  'setup.subtitle': 'Основные данные учреждения. Меняются только в начале семестра.',
   'setup.required': 'Обязательно',
   'setup.default': 'По умолчанию: {value}',
   'setup.institution': 'Учреждение',

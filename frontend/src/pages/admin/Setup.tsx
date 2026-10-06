@@ -115,7 +115,6 @@ export default function Setup() {
     <div className="page">
       <PageHeader
         title={t('nav.setup')}
-        subtitle={t('setup.subtitle')}
         actions={
           <>
             {API_MODE === 'mock' && (

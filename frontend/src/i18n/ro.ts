@@ -234,7 +234,6 @@ export const ro = {
   'timetables.status.published': 'Publicat',
   'timetables.status.variant': 'Variantă',
 
-  'setup.subtitle': 'Datele de bază ale instituției. Se schimbă doar la început de semestru.',
   'setup.required': 'Obligatoriu',
   'setup.default': 'Implicit: {value}',
   'setup.institution': 'Instituția',

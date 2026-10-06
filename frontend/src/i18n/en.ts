@@ -233,7 +233,6 @@ export const en: Record<MessageKey, string> = {
   'timetables.status.published': 'Published',
   'timetables.status.variant': 'Variant',
 
-  'setup.subtitle': 'Basic institution data. Only changes at the start of a semester.',
   'setup.required': 'Required',
   'setup.default': 'Default: {value}',
   'setup.institution': 'Institution',
