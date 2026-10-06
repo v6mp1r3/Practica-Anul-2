@@ -13,7 +13,7 @@ import { Select } from '../../components/Select';
 import { SessionTimetable, SessionsSection } from '../../components/SessionTimetable';
 import { Empty, PageHeader, Segmented } from '../../components/ui';
 import { fmtTime, parseSlotKey } from '../../domain/slots';
-import { filterLessons } from '../../domain/views';
+import { filterLessons, streamGroups } from '../../domain/views';
 import { dateLocale, useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { downloadFile } from '../../utils/download';
@@ -67,8 +67,10 @@ function Schedule({ kind }: { kind: Kind }) {
   };
 
   const group = choice.kind === 'group' ? index.groups.get(choice.id) : undefined;
+  // a stream ("stream:<id>"): its groups' timetables together
+  const stream = choice.kind === 'group' && choice.id.startsWith('stream:') ? index.streams.get(choice.id.slice(7)) : undefined;
   const teacher = choice.kind === 'teacher' ? index.teachers.get(choice.id) : undefined;
-  const chosen = group ?? teacher;
+  const chosen = group ?? stream ?? teacher;
 
   const groups = [...dataset.groups].sort((a, b) => a.name.localeCompare(b.name));
   const faculties = [...new Set(groups.map((g) => g.faculty ?? ''))];
@@ -79,7 +81,9 @@ function Schedule({ kind }: { kind: Kind }) {
       ? filterLessons(
           index,
           published.lessons,
-          group ? { kind: 'group', id: group.id, subgroup: choice.subgroup } : { kind: 'teacher', id: teacher!.id },
+          group || stream
+            ? { kind: 'group', id: choice.id, subgroup: group ? choice.subgroup : null }
+            : { kind: 'teacher', id: teacher!.id },
         )
       : [];
   const reducedGroup = group?.studyForm === 'reduced' && dataset.settings.reducedSessions.length > 0;
@@ -96,9 +100,14 @@ function Schedule({ kind }: { kind: Kind }) {
 
   const subtitle = group
     ? `${group.program} · ${t(`form.${group.studyForm}`)} · ${t('groups.year')} ${group.year}`
-    : teacher
-      ? `${teacher.title} · ${teacher.department}`
-      : undefined;
+    : stream
+      ? `${t('groups.stream')}: ${stream.groupIds
+          .map((g) => index.groups.get(g)?.name)
+          .filter(Boolean)
+          .join(', ')}`
+      : teacher
+        ? `${teacher.title} · ${teacher.department}`
+        : undefined;
 
   return (
     <div className="page">
@@ -154,6 +163,23 @@ function Schedule({ kind }: { kind: Kind }) {
                   ))}
               </optgroup>
             ))}
+            {/* streams: e.g. FAF-251/252/253 when they have classes together */}
+            {dataset.streams.length > 0 && (
+              <optgroup label={t('groups.streams')}>
+                {[...dataset.streams]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((st) => (
+                    <option key={st.id} value={`stream:${st.id}`}>
+                      {st.name} (
+                      {st.groupIds
+                        .map((g) => index.groups.get(g)?.name)
+                        .filter(Boolean)
+                        .join(', ')}
+                      )
+                    </option>
+                  ))}
+              </optgroup>
+            )}
           </Select>
         ) : (
           <Select
@@ -198,7 +224,7 @@ function Schedule({ kind }: { kind: Kind }) {
           {tab !== 'timetable' ? (
             <Evaluations
               tab={tab}
-              who={group ? { groupId: group.id, subgroup: choice.subgroup } : { teacherId: teacher!.id }}
+              who={group || stream ? { groupId: choice.id, subgroup: group ? choice.subgroup : null } : { teacherId: teacher!.id }}
               events={exams}
             />
           ) : !published ? (
@@ -233,7 +259,7 @@ function Schedule({ kind }: { kind: Kind }) {
           </div>
         )}
         <HolidayToday dataset={dataset} />
-        {!sessionNow && <ChangesCard groupId={group?.id} teacherId={teacher?.id} />}
+        {!sessionNow && !stream && <ChangesCard groupId={group?.id} teacherId={teacher?.id} />}
         {sessionNow ? null : reducedGroup ? (
           // reduced attendance: the full calendar of every session, not one week
           <SessionTimetable dataset={dataset} index={index} lessons={lessons} groupId={group!.id} hide={['audience']} />
@@ -243,7 +269,7 @@ function Schedule({ kind }: { kind: Kind }) {
               settings={dataset.settings}
               index={index}
               lessons={lessons}
-              hide={group ? ['audience'] : ['teacher']}
+              hide={group ? ['audience'] : stream ? [] : ['teacher']}
               holidays={evaluationOf(dataset).vacations}
             />
             {teacher && <SessionsSection dataset={dataset} index={index} lessons={lessons} hide={['teacher']} />}
@@ -268,8 +294,10 @@ function Evaluations({
   const { t, lang } = useI18n();
   const { dataset, index } = useDataset();
   const ev = evaluationOf(dataset);
-  const mine = (e: ExamEvent) => ('groupId' in who ? e.groupId === who.groupId : e.teacherId === who.teacherId);
-  const hide: ('teacher' | 'group')[] = 'groupId' in who ? ['group'] : ['teacher'];
+  // a group, or every group of a stream
+  const groupIds = 'groupId' in who ? streamGroups(index, who.groupId) : [];
+  const mine = (e: ExamEvent) => ('groupId' in who ? groupIds.includes(e.groupId) : e.teacherId === who.teacherId);
+  const hide: ('teacher' | 'group')[] = 'groupId' in who ? (groupIds.length > 1 ? [] : ['group']) : ['teacher'];
   const fmt = (d: string) => parseDate(d).toLocaleDateString(dateLocale(lang), { day: 'numeric', month: 'short' });
 
   let entries: CalendarEntry[];

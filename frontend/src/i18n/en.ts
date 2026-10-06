@@ -608,4 +608,5 @@ export const en: Record<MessageKey, string> = {
   'setup.midtermSpanWeeks': 'Length of a midterm period (weeks)',
   'timetables.evaluations': 'Midterms, exams and retakes',
   'timetables.noEvaluations': 'No evaluation timetable generated yet.',
+  'groups.stream': 'Stream',
 };

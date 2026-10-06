@@ -611,6 +611,7 @@ export const ro = {
   'setup.midtermSpanWeeks': 'Durata unei perioade de atestări (săptămâni)',
   'timetables.evaluations': 'Atestări, examene și reexaminări',
   'timetables.noEvaluations': 'Nu a fost generat încă niciun orar de evaluare.',
+  'groups.stream': 'Torent',
 } as const;
 
 export type MessageKey = keyof typeof ro;

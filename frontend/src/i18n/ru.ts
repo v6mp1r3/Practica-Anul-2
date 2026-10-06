@@ -612,4 +612,5 @@ export const ru: Record<MessageKey, string> = {
   'setup.midtermSpanWeeks': 'Длительность периода аттестаций (недели)',
   'timetables.evaluations': 'Аттестации, экзамены и пересдачи',
   'timetables.noEvaluations': 'Расписаний оценивания ещё нет.',
+  'groups.stream': 'Поток',
 };
