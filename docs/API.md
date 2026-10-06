@@ -24,9 +24,12 @@ don't sign in: the reads they need are **public** (no token) —
 needs an admin token.
 
 Every `admin` account belongs to one faculty (`User.faculty`); there is no
-administrator above the faculties. An admin generates, edits, publishes and
-unpublishes only their own faculty's groups; settings (`PUT /settings`) and the
-admin accounts (`/users`) can be changed by any admin. Every group has a `faculty`.
+administrator above the faculties and no accounts page in the app — accounts are
+created on the server. An admin sees and changes only their own faculty's groups,
+subjects, teachers and rooms; another faculty's teacher or room shows up
+(read-only) only when it teaches or hosts this faculty's classes. Generation,
+publishing and unpublishing are per faculty. Settings (`PUT /settings`) are shared.
+Every group has a `faculty`.
 
 ## Auth
 

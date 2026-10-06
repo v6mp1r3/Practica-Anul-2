@@ -1,14 +1,12 @@
-// Faculty filter shared by the data pages (teachers, rooms, groups, subjects).
-// The choice is remembered, so switching pages keeps the same faculty.
-import { useState } from 'react';
-import type { Dataset } from '../domain/types';
-import { useI18n } from '../i18n';
+// Each administrator works on their own faculty only. Other faculties' records
+// appear only where they meet this faculty: a teacher from another faculty who
+// teaches our groups, or another faculty's room our classes use.
+import type { Dataset, Lesson } from '../domain/types';
+import type { DatasetIndex } from '../domain/indexes';
 import { useAuth } from '../state/auth';
-import { Select } from './Select';
+import { useI18n } from '../i18n';
 
-const KEY = 'eduschedule:faculty';
-
-/** The faculty a faculty administrator is limited to ('' = whole institution). */
+/** The administrator's faculty ('' only for an account without one). */
 export function useAdminScope(): string {
   const { user } = useAuth();
   return user?.role === 'admin' ? (user.faculty ?? '') : '';
@@ -18,64 +16,36 @@ export function useAdminScope(): string {
 export const facultyGroupIds = (dataset: Dataset, faculty: string) =>
   dataset.groups.filter((g) => !faculty || g.faculty === faculty).map((g) => g.id);
 
-/** [faculty, setFaculty, locked] — locked for faculty administrators. */
-export function useFacultyFilter(dataset: Dataset): [string, (f: string) => void, boolean] {
-  const scope = useAdminScope();
-  const [faculty, setState] = useState(() => {
-    try {
-      const saved = localStorage.getItem(KEY) ?? '';
-      return dataset.settings.faculties.includes(saved) ? saved : '';
-    } catch {
-      return '';
-    }
-  });
-  const set = (f: string) => {
-    setState(f);
-    try {
-      localStorage.setItem(KEY, f);
-    } catch {
-      /* ignore */
-    }
-  };
-  return scope ? [scope, () => {}, true] : [faculty, set, false];
+export interface FacultyView {
+  scope: string;
+  /** Does a record with this faculty belong to the administrator's faculty? */
+  own: (faculty?: string) => boolean;
+  groupIds: Set<string>;
+  /** Our teachers + other faculties' teachers who teach our groups. */
+  teacherIds: Set<string>;
+  /** Our rooms + other faculties' rooms our classes are placed in. */
+  roomIds: Set<string>;
 }
 
-/** Items with no faculty are shared and stay visible under every filter. */
-export const inFaculty = (faculty: string, itemFaculty?: string) => !faculty || !itemFaculty || itemFaculty === faculty;
+export function facultyView(dataset: Dataset, index: DatasetIndex, scope: string, lessons: Lesson[] = []): FacultyView {
+  const own = (f?: string) => !scope || !f || f === scope;
+  const groupIds = new Set(facultyGroupIds(dataset, scope));
+  const ours = dataset.assignments.filter((a) => [...groupIds].some((g) => index.audienceTouchesGroup(a.audience, g)));
+  const ourIds = new Set(ours.map((a) => a.id));
+  const teacherIds = new Set([...dataset.teachers.filter((x) => own(x.faculty)).map((x) => x.id), ...ours.map((a) => a.teacherId)]);
+  const roomIds = new Set([
+    ...dataset.rooms.filter((r) => own(r.faculty)).map((r) => r.id),
+    ...lessons.filter((l) => ourIds.has(l.assignmentId)).map((l) => l.roomId),
+  ]);
+  return { scope, own, groupIds, teacherIds, roomIds };
+}
 
-export function FacultySelect({
-  dataset,
-  value,
-  onChange,
-  locked,
-}: {
-  dataset: Dataset;
-  value: string;
-  onChange: (f: string) => void;
-  locked?: boolean;
-}) {
+/** Small tag on a record that belongs to another faculty (read-only here). */
+export function OtherFaculty({ faculty }: { faculty?: string }) {
   const { t } = useI18n();
-  if (locked)
-    return (
-      <span className="badge primary" style={{ padding: '7px 14px', fontSize: 13 }}>
-        {value}
-      </span>
-    );
-  if (dataset.settings.faculties.length < 2) return null;
   return (
-    <Select
-      className="select pill"
-      style={{ maxWidth: 280 }}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      aria-label={t('groups.faculty')}
-    >
-      <option value="">{t('faculty.all')}</option>
-      {dataset.settings.faculties.map((f) => (
-        <option key={f} value={f}>
-          {f}
-        </option>
-      ))}
-    </Select>
+    <span className="badge" title={faculty} style={{ marginLeft: 6 }}>
+      {t('faculty.other')}
+    </span>
   );
 }

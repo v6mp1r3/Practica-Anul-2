@@ -30,6 +30,8 @@ export interface CrudProps<K extends CollectionName> {
   /** Render without the page wrapper (to embed several on one page). */
   embedded?: boolean;
   wideForm?: boolean;
+  /** Rows that can't be edited here (e.g. another faculty's teacher or room). */
+  readOnly?: (item: Collections[K]) => boolean;
 }
 
 type Draft<K extends CollectionName> = Omit<Collections[K], 'id'> & { id?: string };
@@ -126,12 +128,16 @@ export function CrudPage<K extends CollectionName>(p: CrudProps<K>) {
                       <td key={c.label}>{c.render(item)}</td>
                     ))}
                     <td className="actions">
-                      <button className="btn ghost sm icon" onClick={() => open(item as Draft<K>)} aria-label={t('common.edit')}>
-                        <Icon name="edit" size={15} />
-                      </button>
-                      <button className="btn ghost sm icon danger" onClick={() => remove(item)} aria-label={t('common.delete')}>
-                        <Icon name="trash" size={15} />
-                      </button>
+                      {!p.readOnly?.(item) && (
+                        <>
+                          <button className="btn ghost sm icon" onClick={() => open(item as Draft<K>)} aria-label={t('common.edit')}>
+                            <Icon name="edit" size={15} />
+                          </button>
+                          <button className="btn ghost sm icon danger" onClick={() => remove(item)} aria-label={t('common.delete')}>
+                            <Icon name="trash" size={15} />
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

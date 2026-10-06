@@ -1,4 +1,4 @@
-import { FacultySelect, inFaculty, useAdminScope, useFacultyFilter } from '../../components/FacultyFilter';
+import { useAdminScope } from '../../components/FacultyFilter';
 import { CrudPage } from '../../components/CrudPage';
 import { Field, PageHeader } from '../../components/ui';
 import { STUDY_FORMS, type Group, type Stream, type StudyForm } from '../../domain/types';
@@ -10,21 +10,17 @@ export default function Groups() {
   const { t } = useI18n();
   const { dataset, index } = useDataset();
   const scope = useAdminScope();
-  const [faculty, setFaculty, locked] = useFacultyFilter(dataset);
+  const faculty = scope;
 
   return (
     <div className="page">
-      <PageHeader
-        title={t('nav.groups')}
-        subtitle={t('groups.subtitle')}
-        actions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} locked={locked} />}
-      />
+      <PageHeader title={t('nav.groups')} subtitle={t('groups.subtitle')} />
       <div className="stack">
         <CrudPage
           embedded
           collection="groups"
           title={t('groups.groups')}
-          items={dataset.groups.filter((x) => inFaculty(faculty, x.faculty))}
+          items={dataset.groups.filter((x) => !faculty || x.faculty === faculty)}
           itemLabel={(x) => x.name}
           searchText={(x) => `${x.name} ${x.program} ${x.faculty ?? ''}`}
           columns={[
@@ -38,7 +34,6 @@ export default function Groups() {
                 </span>
               ),
             },
-            { label: t('groups.faculty'), render: (x) => <span className="small muted">{x.faculty || '—'}</span> },
             {
               label: t('groups.year'),
               render: (x) => (
@@ -99,16 +94,6 @@ export default function Groups() {
               </Field>
               <Field label={t('groups.program')}>
                 <input className="input" value={d.program} onChange={(e) => set({ program: e.target.value })} />
-              </Field>
-              <Field label={t('groups.faculty')}>
-                <Select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
-                  {!dataset.settings.faculties.length && <option value="">—</option>}
-                  {dataset.settings.faculties.map((f) => (
-                    <option key={f} value={f}>
-                      {f}
-                    </option>
-                  ))}
-                </Select>
               </Field>
               <Field label={t('groups.programYears')}>
                 <Select
@@ -190,16 +175,20 @@ export default function Groups() {
               </Field>
               <Field label={t('groups.groups')} hint={t('groups.streamHint')}>
                 <div className="checks">
-                  {dataset.groups.map((g) => (
-                    <label key={g.id} className="check">
-                      <input
-                        type="checkbox"
-                        checked={d.groupIds.includes(g.id)}
-                        onChange={(e) => set({ groupIds: e.target.checked ? [...d.groupIds, g.id] : d.groupIds.filter((x) => x !== g.id) })}
-                      />
-                      {g.name}
-                    </label>
-                  ))}
+                  {dataset.groups
+                    .filter((g) => !faculty || g.faculty === faculty)
+                    .map((g) => (
+                      <label key={g.id} className="check">
+                        <input
+                          type="checkbox"
+                          checked={d.groupIds.includes(g.id)}
+                          onChange={(e) =>
+                            set({ groupIds: e.target.checked ? [...d.groupIds, g.id] : d.groupIds.filter((x) => x !== g.id) })
+                          }
+                        />
+                        {g.name}
+                      </label>
+                    ))}
                 </div>
               </Field>
             </div>

@@ -1,4 +1,4 @@
-import { FacultySelect, inFaculty, useFacultyFilter } from '../../components/FacultyFilter';
+import { OtherFaculty, facultyView, useAdminScope } from '../../components/FacultyFilter';
 import { CrudPage } from '../../components/CrudPage';
 import { TagInput } from '../../components/TagInput';
 import { Field } from '../../components/ui';
@@ -11,8 +11,9 @@ const TYPES: RoomType[] = ['lecture', 'seminar', 'lab'];
 
 export default function Rooms() {
   const { t } = useI18n();
-  const { dataset } = useDataset();
-  const [faculty, setFaculty, locked] = useFacultyFilter(dataset);
+  const { dataset, index, published } = useDataset();
+  const scope = useAdminScope();
+  const view = facultyView(dataset, index, scope, published?.lessons);
   const knownEquipment = [
     ...new Set(dataset.rooms.flatMap((r) => r.equipment).concat(dataset.assignments.flatMap((a) => a.equipment))),
   ].sort();
@@ -23,12 +24,21 @@ export default function Rooms() {
       wideForm
       title={t('nav.rooms')}
       subtitle={t('rooms.subtitle')}
-      items={dataset.rooms.filter((x) => inFaculty(faculty, x.faculty))}
-      headerActions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} locked={locked} />}
+      // our rooms + other faculties' rooms our classes use (those are read-only here)
+      items={dataset.rooms.filter((x) => view.roomIds.has(x.id))}
+      readOnly={(x) => !view.own(x.faculty)}
       itemLabel={(x) => x.name}
       searchText={(x) => `${x.name} ${x.building} ${x.equipment.join(' ')}`}
       columns={[
-        { label: t('rooms.name'), render: (x) => <strong>{x.name}</strong> },
+        {
+          label: t('rooms.name'),
+          render: (x) => (
+            <span>
+              <strong>{x.name}</strong>
+              {!view.own(x.faculty) && <OtherFaculty faculty={x.faculty} />}
+            </span>
+          ),
+        },
         { label: t('rooms.building'), render: (x) => x.building },
         { label: t('rooms.type'), render: (x) => <span className={`badge ${x.type}`}>{t(`roomType.${x.type}`)}</span> },
         { label: t('rooms.capacity'), render: (x) => x.capacity },
@@ -47,7 +57,7 @@ export default function Rooms() {
       newItem={(): Omit<Room, 'id'> => ({
         name: '',
         building: '',
-        faculty: faculty || undefined,
+        faculty: scope || undefined,
         capacity: 30,
         type: 'seminar',
         equipment: [],
@@ -58,16 +68,6 @@ export default function Rooms() {
           <div className="form-grid">
             <Field label={t('rooms.name')}>
               <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} placeholder="3-114" autoFocus />
-            </Field>
-            <Field label={t('groups.faculty')}>
-              <Select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
-                <option value="">—</option>
-                {dataset.settings.faculties.map((f) => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </Select>
             </Field>
             <Field label={t('rooms.building')}>
               <input className="input" value={d.building} onChange={(e) => set({ building: e.target.value })} />

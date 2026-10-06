@@ -20,7 +20,7 @@ import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { downloadFile } from '../../utils/download';
 import { publishSafely, unpublishWithConfirm } from '../../utils/publish';
-import { useAdminScope } from '../../components/FacultyFilter';
+import { facultyView, useAdminScope } from '../../components/FacultyFilter';
 import { timetableToCsv, timetableToIcs } from '../../utils/export';
 import { StatusBadge } from './Dashboard';
 
@@ -51,10 +51,11 @@ export default function Editor() {
       .then((x) => {
         setTt(x);
         setLessons(x.lessons);
-        if (x.groupIds[0]) setView({ kind: 'group', id: x.groupIds[0] });
+        const first = x.groupIds.find((g) => !scope || index.groups.get(g)?.faculty === scope);
+        if (first) setView({ kind: 'group', id: first });
       })
       .catch(() => navigate('/admin/timetables', { replace: true }));
-  }, [id, navigate]);
+  }, [id, navigate, scope, index]);
 
   // Validate against the assignments this timetable is responsible for
   const scoped: Dataset = useMemo(
@@ -64,6 +65,8 @@ export default function Editor() {
   const hard = useMemo(() => findHardConflicts(scoped, lessons, index), [scoped, lessons, index]);
   const warnings = useMemo(() => findWarnings(scoped, lessons, index), [scoped, lessons, index]);
   const score = useMemo(() => scoreTimetable(scoped, lessons, index), [scoped, lessons, index]);
+  // only this faculty's groups, and the teachers/rooms it uses, in the view picker
+  const limit = useMemo(() => (scope ? facultyView(dataset, index, scope, lessons) : undefined), [dataset, index, scope, lessons]);
   const conflictIds = useMemo(() => new Set(hard.flatMap((c) => c.lessonIds)), [hard]);
 
   /** Replace the lessons, remembering the previous state for undo. */
@@ -260,7 +263,7 @@ export default function Editor() {
             {viewName()} — {dataset.settings.semester}
           </h2>
           <div className="row wrap no-print">
-            <ViewPicker dataset={dataset} view={view} onView={setView} week={week} onWeek={setWeek} />
+            <ViewPicker dataset={dataset} view={view} onView={setView} week={week} onWeek={setWeek} limit={limit} />
           </div>
           <TimetableGrid
             settings={dataset.settings}

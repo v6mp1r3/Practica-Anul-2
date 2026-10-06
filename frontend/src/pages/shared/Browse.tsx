@@ -6,7 +6,7 @@ import { Empty, PageHeader } from '../../components/ui';
 import type { Parity } from '../../domain/types';
 import { dayIndexOf, filterLessons, inWeek, type ViewFilter } from '../../domain/views';
 import { useI18n } from '../../i18n';
-import { useAuth } from '../../state/auth';
+import { facultyView, useAdminScope } from '../../components/FacultyFilter';
 import { useDataset } from '../../state/data';
 
 const HIDE: Record<ViewFilter['kind'], LessonField[]> = { group: [], teacher: ['teacher'], room: ['room'] };
@@ -14,15 +14,14 @@ const HIDE: Record<ViewFilter['kind'], LessonField[]> = { group: [], teacher: ['
 /** The whole institution's published timetable, by group, teacher or room. */
 export default function Browse() {
   const { t } = useI18n();
-  const { user } = useAuth();
   const { dataset, index, published } = useDataset();
-  const [view, setView] = useState<ViewFilter>(() =>
-    user?.groupId
-      ? { kind: 'group', id: user.groupId }
-      : user?.teacherId
-        ? { kind: 'teacher', id: user.teacherId }
-        : { kind: 'group', id: dataset.groups[0]?.id ?? '' },
-  );
+  // an administrator sees their own faculty (and the teachers/rooms it shares)
+  const scope = useAdminScope();
+  const limit = scope ? facultyView(dataset, index, scope, published?.lessons) : undefined;
+  const [view, setView] = useState<ViewFilter>(() => ({
+    kind: 'group',
+    id: dataset.groups.find((g) => !limit || limit.groupIds.has(g.id))?.id ?? '',
+  }));
   const [week, setWeek] = useState<Parity>('weekly');
 
   // Reduced-attendance groups are shown session by session (real dates)
@@ -39,7 +38,7 @@ export default function Browse() {
         </div>
       ) : (
         <div className="stack">
-          <ViewPicker dataset={dataset} view={view} onView={setView} week={week} onWeek={setWeek} showWeek={!reducedGroup} />
+          <ViewPicker dataset={dataset} view={view} onView={setView} week={week} onWeek={setWeek} showWeek={!reducedGroup} limit={limit} />
           {reducedGroup ? (
             <SessionTimetable
               dataset={dataset}

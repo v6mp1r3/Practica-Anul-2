@@ -1,4 +1,4 @@
-import { FacultySelect, inFaculty, useFacultyFilter } from '../../components/FacultyFilter';
+import { OtherFaculty, facultyView, useAdminScope } from '../../components/FacultyFilter';
 import { AvailabilityPicker } from '../../components/AvailabilityPicker';
 import { CrudPage } from '../../components/CrudPage';
 import { Field } from '../../components/ui';
@@ -6,14 +6,14 @@ import { parityWeight } from '../../domain/slots';
 import type { ActivityType, Teacher } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
-import { Select } from '../../components/Select';
 
 const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab'];
 
 export default function Teachers() {
   const { t } = useI18n();
-  const { dataset, index } = useDataset();
-  const [faculty, setFaculty, locked] = useFacultyFilter(dataset);
+  const { dataset, index, published } = useDataset();
+  const scope = useAdminScope();
+  const view = facultyView(dataset, index, scope, published?.lessons);
 
   const plannedLoad = (id: string) =>
     dataset.assignments.filter((a) => a.teacherId === id).reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
@@ -23,8 +23,9 @@ export default function Teachers() {
       collection="teachers"
       title={t('nav.teachers')}
       subtitle={t('teachers.subtitle')}
-      items={dataset.teachers.filter((x) => inFaculty(faculty, x.faculty))}
-      headerActions={<FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} locked={locked} />}
+      // our teachers + other faculties' teachers who teach our groups (those are read-only here)
+      items={dataset.teachers.filter((x) => view.teacherIds.has(x.id))}
+      readOnly={(x) => !view.own(x.faculty)}
       itemLabel={(x) => x.name}
       searchText={(x) => `${x.name} ${x.department} ${x.email}`}
       wideForm
@@ -34,6 +35,7 @@ export default function Teachers() {
           render: (x) => (
             <div>
               <strong>{x.name}</strong>
+              {!view.own(x.faculty) && <OtherFaculty faculty={x.faculty} />}
               <div className="small muted">{x.title}</div>
             </div>
           ),
@@ -68,7 +70,7 @@ export default function Teachers() {
         name: '',
         title: 'lect. univ.',
         department: '',
-        faculty: faculty || undefined,
+        faculty: scope || undefined,
         email: '',
         maxPairsPerWeek: 12,
         activityTypes: ['lecture', 'seminar'],
@@ -84,16 +86,6 @@ export default function Teachers() {
             </Field>
             <Field label={t('teachers.title')}>
               <input className="input" value={d.title} onChange={(e) => set({ title: e.target.value })} />
-            </Field>
-            <Field label={t('groups.faculty')}>
-              <Select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
-                <option value="">—</option>
-                {dataset.settings.faculties.map((f) => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </Select>
             </Field>
             <Field label={t('teachers.department')}>
               <input className="input" value={d.department} onChange={(e) => set({ department: e.target.value })} />

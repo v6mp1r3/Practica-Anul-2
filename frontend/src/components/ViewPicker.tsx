@@ -1,4 +1,5 @@
 import type { Dataset, Parity } from '../domain/types';
+import type { FacultyView } from './FacultyFilter';
 import type { ViewFilter, ViewKind } from '../domain/views';
 import { useI18n } from '../i18n';
 import { Segmented } from './ui';
@@ -13,6 +14,7 @@ export function ViewPicker({
   onWeek,
   kinds = ['group', 'teacher', 'room'],
   showWeek = true,
+  limit,
 }: {
   dataset: Dataset;
   view: ViewFilter;
@@ -21,12 +23,17 @@ export function ViewPicker({
   onWeek: (w: Parity) => void;
   kinds?: ViewKind[];
   showWeek?: boolean;
+  /** Only this faculty's groups and the teachers/rooms it uses. */
+  limit?: FacultyView;
 }) {
   const { t } = useI18n();
   const options = {
-    group: dataset.groups.map((g) => ({ id: g.id, name: g.name })),
-    teacher: [...dataset.teachers].sort((a, b) => a.name.localeCompare(b.name)).map((x) => ({ id: x.id, name: x.name })),
-    room: dataset.rooms.map((r) => ({ id: r.id, name: `${r.name} (${r.capacity})` })),
+    group: dataset.groups.filter((g) => !limit || limit.groupIds.has(g.id)).map((g) => ({ id: g.id, name: g.name })),
+    teacher: [...dataset.teachers]
+      .filter((x) => !limit || limit.teacherIds.has(x.id))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((x) => ({ id: x.id, name: x.name })),
+    room: dataset.rooms.filter((r) => !limit || limit.roomIds.has(r.id)).map((r) => ({ id: r.id, name: `${r.name} (${r.capacity})` })),
   };
   const group = view.kind === 'group' ? dataset.groups.find((g) => g.id === view.id) : undefined;
 

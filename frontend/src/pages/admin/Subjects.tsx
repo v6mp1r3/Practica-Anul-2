@@ -1,4 +1,4 @@
-import { FacultySelect, inFaculty, useFacultyFilter } from '../../components/FacultyFilter';
+import { useAdminScope } from '../../components/FacultyFilter';
 import { useRef, useState } from 'react';
 import { api } from '../../api';
 import { CrudPage } from '../../components/CrudPage';
@@ -10,12 +10,11 @@ import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { downloadFile } from '../../utils/download';
-import { Select } from '../../components/Select';
 
 export default function Subjects() {
   const { t } = useI18n();
   const { dataset, refresh } = useDataset();
-  const [faculty, setFaculty, locked] = useFacultyFilter(dataset);
+  const scope = useAdminScope();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<CsvResult | null>(null);
@@ -41,12 +40,11 @@ export default function Subjects() {
         collection="subjects"
         title={t('nav.subjects')}
         subtitle={t('subjects.subtitle')}
-        items={dataset.subjects.filter((x) => inFaculty(faculty, x.faculty))}
+        items={dataset.subjects.filter((x) => !scope || !x.faculty || x.faculty === scope)}
         itemLabel={(x) => `${x.code} — ${x.name}`}
         searchText={(x) => `${x.code} ${x.name}`}
         headerActions={
           <>
-            <FacultySelect dataset={dataset} value={faculty} onChange={setFaculty} locked={locked} />
             <button className="btn" onClick={() => downloadFile('plan-de-studii.csv', STUDY_PLAN_TEMPLATE, 'text/csv')}>
               <Icon name="download" />
               {t('subjects.template')}
@@ -68,7 +66,6 @@ export default function Subjects() {
           { label: t('subjects.code'), render: (x) => <strong>{x.code}</strong>, width: 90 },
           { label: t('common.name'), render: (x) => x.name },
           { label: t('subjects.year'), render: (x) => x.year },
-          { label: t('groups.faculty'), render: (x) => <span className="small muted">{x.faculty || '—'}</span> },
           { label: 'ECTS', render: (x) => x.credits },
           {
             label: '',
@@ -83,7 +80,16 @@ export default function Subjects() {
           { label: t('activity.seminar'), render: (x) => pairs(x.seminarPairs) },
           { label: t('activity.lab'), render: (x) => pairs(x.labPairs) },
         ]}
-        newItem={(): Omit<Subject, 'id'> => ({ code: '', name: '', credits: 5, year: 1, lecturePairs: 1, seminarPairs: 1, labPairs: 0 })}
+        newItem={(): Omit<Subject, 'id'> => ({
+          code: '',
+          name: '',
+          faculty: scope || undefined,
+          credits: 5,
+          year: 1,
+          lecturePairs: 1,
+          seminarPairs: 1,
+          labPairs: 0,
+        })}
         validate={(d) => (!d.code.trim() || !d.name.trim() ? t('subjects.required') : null)}
         renderForm={(d, set) => (
           <div className="stack">
@@ -93,16 +99,6 @@ export default function Subjects() {
               </Field>
               <Field label={t('common.name')}>
                 <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} />
-              </Field>
-              <Field label={t('groups.faculty')}>
-                <Select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
-                  <option value="">—</option>
-                  {dataset.settings.faculties.map((f) => (
-                    <option key={f} value={f}>
-                      {f}
-                    </option>
-                  ))}
-                </Select>
               </Field>
               <Field label={t('subjects.year')}>
                 <input
