@@ -13,7 +13,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 17;
+const SEED_VERSION = 18;
 
 interface Store {
   dataset: Dataset;
@@ -116,6 +116,8 @@ function mergeSeed(saved: Store) {
   if (!st.evaluation) st.evaluation = structuredClone(seedDataset.settings.evaluation);
   // master's settings (own calendar, evening shifts)
   if (!st.masterEvaluation) st.masterEvaluation = structuredClone(seedDataset.settings.masterEvaluation);
+  else if (JSON.stringify(st.masterEvaluation.midtermWeeks) === '[6,12]' && !st.masterEvaluation.midtermRetakeWeeks)
+    Object.assign(st.masterEvaluation, { midtermWeeks: [6, 11], midtermRetakeWeeks: [9, 13] });
   if (!st.masterYearShifts) st.masterYearShifts = structuredClone(seedDataset.settings.masterYearShifts);
   // days off are computed every year now: the old hand-written 2026-27 list is not an "extra"
   if (st.evaluation) {

@@ -59,7 +59,9 @@ export const DEFAULT_EVALUATION: EvaluationSettings = {
 /** Master's defaults (UTM master calendar): starts ~4 weeks later, evening hours, consultation just before. */
 export const DEFAULT_MASTER: MasterEvaluation = {
   startOffsetWeeks: 4,
-  midtermWeeks: [6, 12],
+  // master weeks (from its own week 1): atestări 6–7 and 11–12, retakes 9 and 13 (before the winter break)
+  midtermWeeks: [6, 11],
+  midtermRetakeWeeks: [9, 13],
   examSession: [{ start: '2027-01-11', end: '2027-01-30' }],
   reexamSession: [{ start: '2027-02-01', end: '2027-02-06' }],
   examDays: [0, 1, 2, 3, 4, 5],

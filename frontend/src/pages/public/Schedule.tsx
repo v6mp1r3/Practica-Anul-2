@@ -88,7 +88,8 @@ function Schedule({ kind }: { kind: Kind }) {
       : [];
   const reducedGroup = group?.studyForm === 'reduced' && dataset.settings.reducedSessions.length > 0;
   // is today inside the exam session or the retakes (for this group's form of study)?
-  const ev = evaluationOf(dataset);
+  // a master's group follows the master calendar
+  const ev = evaluationOf(dataset, group?.cycle ?? 'licenta');
   const todayStr = toDateString(new Date());
   const sessionRanges = [
     ...(group?.studyForm === 'reduced' ? ev.reducedExamSession : ev.examSession).map((r) => ({ ...r, round: 'session' as const })),
@@ -293,7 +294,8 @@ function Evaluations({
 }) {
   const { t, lang } = useI18n();
   const { dataset, index } = useDataset();
-  const ev = evaluationOf(dataset);
+  // a single master's group shows the master atestare weeks
+  const ev = evaluationOf(dataset, 'groupId' in who ? (index.groups.get(who.groupId)?.cycle ?? 'licenta') : 'licenta');
   // a group, or every group of a stream
   const groupIds = 'groupId' in who ? streamGroups(index, who.groupId) : [];
   const mine = (e: ExamEvent) => ('groupId' in who ? groupIds.includes(e.groupId) : e.teacherId === who.teacherId);
