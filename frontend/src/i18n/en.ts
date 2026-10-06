@@ -239,7 +239,6 @@ export const en: Record<MessageKey, string> = {
   'setup.institution': 'Institution',
   'setup.institutionName': 'Institution name',
   'setup.myFaculty': 'Faculty',
-  'setup.myFacultyHint': 'The faculty whose timetable you manage. You only see its data.',
   'setup.chooseFaculty': 'Choose the faculty',
   'groups.faculty': 'Faculty',
   'faculty.other': 'Other faculty',

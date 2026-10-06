@@ -240,7 +240,6 @@ export const ro = {
   'setup.institution': 'Instituția',
   'setup.institutionName': 'Denumirea instituției',
   'setup.myFaculty': 'Facultatea',
-  'setup.myFacultyHint': 'Facultatea al cărei orar îl gestionezi. Vezi doar datele ei.',
   'setup.chooseFaculty': 'Alege facultatea',
   'groups.faculty': 'Facultatea',
   'faculty.other': 'Altă facultate',

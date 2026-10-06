@@ -241,7 +241,6 @@ export const ru: Record<MessageKey, string> = {
   'setup.institution': 'Учреждение',
   'setup.institutionName': 'Название учреждения',
   'setup.myFaculty': 'Факультет',
-  'setup.myFacultyHint': 'Факультет, расписанием которого вы управляете. Вы видите только его данные.',
   'setup.chooseFaculty': 'Выберите факультет',
   'groups.faculty': 'Факультет',
   'faculty.other': 'Другой факультет',

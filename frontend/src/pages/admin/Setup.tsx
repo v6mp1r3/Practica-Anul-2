@@ -147,7 +147,7 @@ export default function Setup() {
             <Field label={t('setup.institutionName')}>
               <input className="input" value={UTM_NAME} readOnly disabled />
             </Field>
-            <Field label={t('setup.myFaculty')} hint={t('setup.myFacultyHint')}>
+            <Field label={t('setup.myFaculty')}>
               <Select value={faculty} onChange={(e) => setFaculty(e.target.value)} aria-label={t('setup.myFaculty')}>
                 <option value="">{t('setup.chooseFaculty')}</option>
                 {UTM_FACULTIES.map((f) => (
