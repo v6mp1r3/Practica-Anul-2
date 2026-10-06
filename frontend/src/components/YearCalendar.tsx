@@ -13,6 +13,8 @@ export interface CalendarPeriod {
   label: string;
   /** Legend text (defaults to the label). */
   legend?: string;
+  /** Weekdays it uses (0 = Monday); other days of the range stay plain. */
+  days?: number[];
 }
 
 /** September → August, one small month per cell; days off coloured and clickable. */
@@ -23,11 +25,13 @@ export function YearCalendar({
   onSelect,
   periods = [],
   compact,
-  semester,
+  fromMonth = 0,
+  toMonth = 11,
 }: {
   year: number;
-  /** Only this semester's six months (default: the whole year). */
-  semester?: 'autumn' | 'spring';
+  /** Months shown, counted from September (0) to August (11); default the whole year. */
+  fromMonth?: number;
+  toMonth?: number;
   holidays: Holiday[];
   selected?: string | null;
   onSelect?: (id: string) => void;
@@ -39,11 +43,11 @@ export function YearCalendar({
   const { t, lang } = useI18n();
   const name = useHolidayName();
   const today = toDateString(new Date());
-  // the whole academic year, or one semester: autumn September → February, spring February → July
-  const startMonth = semester === 'spring' ? 13 : 8;
-  const months = Array.from({ length: semester ? 6 : 12 }, (_, i) => new Date(year, startMonth + i, 1));
+  // September → August, or just the chosen months (e.g. one semester)
+  const months = Array.from({ length: Math.max(1, toMonth - fromMonth + 1) }, (_, i) => new Date(year, 8 + fromMonth + i, 1));
   const on = (d: string) => holidays.find((h) => h.start <= d && d <= h.end);
-  const inPeriod = (d: string) => periods.find((p) => p.start <= d && d <= p.end);
+  const inPeriod = (d: string) =>
+    periods.find((p) => p.start <= d && d <= p.end && (!p.days || p.days.includes((parseDate(d).getDay() + 6) % 7)));
   const current = holidays.find((h) => h.id === selected);
   const fmtLong = (d: string) => parseDate(d).toLocaleDateString(dateLocale(lang), { day: 'numeric', month: 'long', year: 'numeric' });
 

@@ -604,4 +604,6 @@ export const en: Record<MessageKey, string> = {
   'exams.remidterm': 'Midterm {n} retake',
   'exams.retakeNote': 'The midterm retake is held after classes in week {w}, never over a class of the group, the teacher or the room.',
   'setup.midtermRetakeWeeks': 'Midterm retake weeks',
+  'calendar.from': 'From',
+  'calendar.to': 'to',
 };

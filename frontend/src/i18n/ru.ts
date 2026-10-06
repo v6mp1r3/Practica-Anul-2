@@ -608,4 +608,6 @@ export const ru: Record<MessageKey, string> = {
   'exams.retakeNote':
     'Пересдача аттестации проходит после занятий в неделю {w}, не пересекаясь с занятиями группы, преподавателя или аудитории.',
   'setup.midtermRetakeWeeks': 'Недели пересдачи аттестаций',
+  'calendar.from': 'С',
+  'calendar.to': 'по',
 };

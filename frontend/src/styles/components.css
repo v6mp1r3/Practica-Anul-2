@@ -1206,3 +1206,26 @@ button.holiday-row.selected {
 .eval-layout.below .eval-calendar {
   position: static;
 }
+
+/* month range above the Evaluări calendar */
+.cal-range {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.cal-range .select {
+  width: 150px;
+}
+/* under the Atestări settings: three months per row */
+.eval-layout.below .year-cal {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 760px) {
+  .eval-layout.below .year-cal {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .eval-layout.below .year-cal {
+    grid-template-columns: 1fr;
+  }
+}

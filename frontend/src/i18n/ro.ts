@@ -607,6 +607,8 @@ export const ro = {
   'exams.retakeNote':
     'Reexaminarea atestării se ține după ore, în săptămâna {w}, fără să se suprapună cu orele grupei, ale profesorului sau ale sălii.',
   'setup.midtermRetakeWeeks': 'Săptămânile reexaminării atestărilor',
+  'calendar.from': 'De la',
+  'calendar.to': 'până la',
 } as const;
 
 export type MessageKey = keyof typeof ro;

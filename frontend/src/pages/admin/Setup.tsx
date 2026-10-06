@@ -1,6 +1,6 @@
 // Institution setup — split into small ranked steps, each field with a
 // default value, so only what differs from the defaults has to be filled in.
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { api, API_MODE } from '../../api';
 import { resetMockData } from '../../api/mock';
 import { Icon } from '../../components/Icon';
@@ -12,7 +12,7 @@ import { STUDY_FORMS, type EvaluationSettings, type Settings, type TimeSlot } fr
 import { UTM_FACULTIES, UTM_NAME } from '../../domain/utm';
 import { YearCalendar, type CalendarPeriod } from '../../components/YearCalendar';
 import { academicYearOf, type Holiday } from '../../domain/holidays';
-import { useI18n } from '../../i18n';
+import { dateLocale, useI18n } from '../../i18n';
 import { useAuth } from '../../state/auth';
 import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
@@ -102,7 +102,7 @@ const SECTION_KEYS: Record<number, (keyof Settings)[]> = {
 };
 
 export default function Setup() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { dataset, refresh } = useDataset();
   const toast = useToast();
   const { institutionTimeFormat } = useData();
@@ -119,10 +119,16 @@ export default function Setup() {
   const [evalTab, setEvalTab] = useState<'midterms' | 'finals'>('midterms');
   // the year's days off, worked out from the semester being edited (green on the calendar)
   const holidays = evaluationOf({ ...dataset, settings: s }).vacations as Holiday[];
+  // months on the calendar (0 = September): the semester's six by default, follows the semester picked
+  const spring = s.semester.startsWith('Primăvara');
+  const [calRange, setCalRange] = useState<[number, number]>(spring ? [5, 10] : [0, 5]);
+  useEffect(() => setCalRange(spring ? [5, 10] : [0, 5]), [spring]);
+  const monthName = (m: number) => new Date(2000, 8 + m, 1).toLocaleDateString(dateLocale(lang), { month: 'long' });
   // what each tab draws on the calendar
   const midtermPeriods: CalendarPeriod[] = ev.midtermWeeks.map((w, i) => ({
     ...teachingWeek(ev, w),
     tone: 'midterm',
+    days: ev.examDays,
     label: t('exams.midterm', { n: i + 1 }),
     legend: t('exams.midterms'),
   }));
@@ -131,15 +137,18 @@ export default function Setup() {
     ...ev.midtermRetakeWeeks.map((w, i) => ({
       ...teachingWeek(ev, w),
       tone: 'reexam' as const,
+      days: ev.examDays,
       label: t('exams.remidterm', { n: i + 1 }),
       legend: t('exams.reexams'),
     })),
   );
   const filled = (r: { start: string; end: string }) => !!r.start && !!r.end && r.start <= r.end;
   const examPeriods: CalendarPeriod[] = [
-    ...ev.examSession.filter(filled).map((r) => ({ ...r, tone: 'session' as const, label: t('setup.examSession') })),
-    ...ev.reducedExamSession.filter(filled).map((r) => ({ ...r, tone: 'reduced' as const, label: t('setup.reducedExamSession') })),
-    ...ev.reexamSession.filter(filled).map((r) => ({ ...r, tone: 'reexam' as const, label: t('setup.reexamSession') })),
+    ...ev.examSession.filter(filled).map((r) => ({ ...r, days: ev.examDays, tone: 'session' as const, label: t('setup.examSession') })),
+    ...ev.reducedExamSession
+      .filter(filled)
+      .map((r) => ({ ...r, days: ev.reducedExamDays, tone: 'reduced' as const, label: t('setup.reducedExamSession') })),
+    ...ev.reexamSession.filter(filled).map((r) => ({ ...r, days: ev.examDays, tone: 'reexam' as const, label: t('setup.reexamSession') })),
   ];
   const setEv = (patch: Partial<EvaluationSettings>) =>
     setS((x) => ({ ...x, evaluation: { ...DEFAULT_EVALUATION, ...x.evaluation, ...patch } }));
@@ -763,12 +772,38 @@ export default function Setup() {
               )}
             </div>
             <aside className="eval-calendar">
+              {/* which months to show: the semester by default (autumn Sep–Feb, spring Feb–Jul) */}
+              <div className="row wrap cal-range">
+                <span className="small muted">{t('calendar.from')}</span>
+                <Select
+                  value={calRange[0]}
+                  onChange={(e) => setCalRange([Number(e.target.value), Math.max(Number(e.target.value), calRange[1])])}
+                >
+                  {range(12).map((m) => (
+                    <option key={m} value={m}>
+                      {monthName(m)}
+                    </option>
+                  ))}
+                </Select>
+                <span className="small muted">{t('calendar.to')}</span>
+                <Select
+                  value={calRange[1]}
+                  onChange={(e) => setCalRange([Math.min(calRange[0], Number(e.target.value)), Number(e.target.value)])}
+                >
+                  {range(12).map((m) => (
+                    <option key={m} value={m}>
+                      {monthName(m)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
               <YearCalendar
                 year={academicYearOf(ev.semesterStart)}
                 holidays={holidays}
                 periods={evalTab === 'midterms' ? midtermPeriods : examPeriods}
                 compact={evalTab !== 'midterms'}
-                semester={s.semester.startsWith('Primăvara') ? 'spring' : 'autumn'}
+                fromMonth={calRange[0]}
+                toMonth={calRange[1]}
               />
             </aside>
           </div>
