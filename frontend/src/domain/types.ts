@@ -107,6 +107,21 @@ export interface EvaluationSettings {
 
 export type StudyCycle = 'licenta' | 'master';
 
+/**
+ * A period of some groups' calendar (UTM academic calendar):
+ * - internship ("sp"): the students are at their internship, not at university — no classes, atestări or exams;
+ * - examSession: the group's own exam session (e.g. final year, right after a short spring);
+ * - plagiarism ("VP"): plagiarism check of the licence theses;
+ * - licence ("EL"): examen de licență.
+ */
+export interface GroupPeriod {
+  id: string;
+  kind: 'internship' | 'examSession' | 'plagiarism' | 'licence';
+  start: string;
+  end: string;
+  groupIds: string[];
+}
+
 export type MasterEvaluation = Partial<Omit<EvaluationSettings, 'semesterStart' | 'vacations' | 'holidayOverrides'>> & {
   startOffsetWeeks?: number;
 };
@@ -148,6 +163,8 @@ export interface Settings {
    * after licență's.
    */
   masterEvaluation?: MasterEvaluation;
+  /** Internships, final-year exam sessions, plagiarism checks and licence exams of particular groups. */
+  groupPeriods?: GroupPeriod[];
   /** Part of the day of master's groups (index 0 = year 1), e.g. evenings. */
   masterYearShifts?: YearShift[];
 }

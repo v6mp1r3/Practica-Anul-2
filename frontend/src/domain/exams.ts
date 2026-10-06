@@ -20,6 +20,7 @@ import type {
   StudyCycle,
 } from './types';
 import { paritiesOverlap } from './slots';
+import { groupMidtermWeek, internshipOn, periodsOf, teachingWeeksOf } from './periods';
 import { dayIndexOf } from './views';
 
 export const DEFAULT_EVALUATION: EvaluationSettings = {
@@ -209,10 +210,25 @@ export function generateExams(
     if (!group) continue;
     const gev = cycleEv[group.cycle ?? 'licenta'];
     const { minutes, window, minGap } = rules(gev);
-    const ranges = round === 'reexam' ? gev.reexamSession : group.studyForm === 'reduced' ? gev.reducedExamSession : gev.examSession;
-    // frecvență: weekdays only; frecvență redusă may also use the weekend
+    // a group with its own exam session (e.g. final year, right after a short spring) uses it
+    // (only one belonging to this semester: from its start to the end of the regular session)
+    const semesterEnd =
+      [...gev.examSession]
+        .map((r) => r.end)
+        .sort()
+        .pop() ?? gev.semesterStart;
+    const ownSession = periodsOf(ds, groupId, 'examSession').filter((p) => p.end >= gev.semesterStart && p.start <= semesterEnd);
+    const ranges =
+      round === 'reexam'
+        ? gev.reexamSession
+        : ownSession.length
+          ? ownSession
+          : group.studyForm === 'reduced'
+            ? gev.reducedExamSession
+            : gev.examSession;
+    // frecvență: weekdays only; frecvență redusă may also use the weekend; never during an internship
     const days = group.studyForm === 'reduced' ? gev.reducedExamDays : gev.examDays;
-    const dates = rangeDates(ranges, days, gev.vacations);
+    const dates = rangeDates(ranges, days, gev.vacations).filter((d) => !internshipOn(ds, groupId, d));
     const subjects = rng
       .shuffle(examSubjects(ds, idx, groupId))
       .sort((a, b) => (idx.subjects.get(b)?.credits ?? 0) - (idx.subjects.get(a)?.credits ?? 0));
@@ -368,6 +384,20 @@ export const weeksLabel = (ev: EvaluationSettings, n: 1 | 2) => {
   return w.length > 1 ? `${w[0]}–${w[w.length - 1]}` : String(w[0]);
 };
 
+/**
+ * A group's atestare period weeks: the usual ones, or — with an internship in the
+ * semester — starting at its own atestare week and kept to the weeks it is at
+ * university. Empty when the group has no such atestare (a single one).
+ */
+export function groupPeriodWeeks(ds: Dataset, ev: EvaluationSettings, groupId: string, n: 1 | 2): number[] {
+  if (!periodsOf(ds, groupId, 'internship').length) return midtermWeeksOf(ev, n);
+  const start = groupMidtermWeek(ds, ev, groupId, n);
+  if (start === null) return [];
+  const teaching = teachingWeeksOf(ds, ev, groupId);
+  const weeks = Array.from({ length: Math.max(1, ev.midtermSpanWeeks) }, (_, i) => start + i).filter((w) => teaching.includes(w));
+  return weeks.length ? weeks : [start];
+}
+
 /** First and last day of an atestare period. */
 export function midtermRange(ev: EvaluationSettings, n: 1 | 2): DateRange {
   const weeks = midtermWeeksOf(ev, n);
@@ -391,6 +421,8 @@ function groupMidterms(
   const key = `${groupId}|${n}`;
   if (cache.has(key)) return cache.get(key)!;
   const ev = evaluationForGroup(ds, idx, groupId);
+  // the group's atestare weeks (moved, or none, when an internship takes part of the semester)
+  const periodWeeks = groupPeriodWeeks(ds, ev, groupId, n);
   const group = idx.groups.get(groupId);
   const views = group && group.subgroups > 1 ? Array.from({ length: group.subgroups }, (_, i) => i + 1) : [0];
   const mine = lessons.filter((l) => !l.date && idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, groupId));
@@ -406,7 +438,7 @@ function groupMidterms(
     }
     for (const list of byAudience.values()) {
       const aud = idx.assignmentOf(list[0])!.audience;
-      const options = midtermWeeksOf(ev, n)
+      const options = periodWeeks
         .flatMap((w) => {
           const start = teachingWeek(ev, w).start;
           const parity = w % 2 === 1 ? 'odd' : 'even';
@@ -418,7 +450,7 @@ function groupMidterms(
       const fallback: MidtermPick[] = [];
       if (aud.kind !== 'subgroup' && type !== 'lecture') {
         const lectures = own.filter((l) => idx.assignmentOf(l)!.type === 'lecture');
-        for (const w of midtermWeeksOf(ev, n)) {
+        for (const w of periodWeeks) {
           const start = teachingWeek(ev, w).start;
           const parity = w % 2 === 1 ? 'odd' : 'even';
           for (const l of lectures.filter((x) => x.parity === 'weekly' || x.parity === parity)) {
@@ -548,8 +580,8 @@ export function generateMidterms(
 ): ExamResult {
   const round = retake ? (n === 1 ? 'remidterm1' : 'remidterm2') : n === 1 ? 'midterm1' : 'midterm2';
   // the period, days and hours of each study cycle (licență, master's)
-  const makeCtx = (ev: EvaluationSettings) => {
-    const weeks = retake ? [ev.midtermRetakeWeeks[n - 1]] : midtermWeeksOf(ev, n);
+  const makeCtx = (ev: EvaluationSettings, groupWeeks?: number[]) => {
+    const weeks = groupWeeks ?? (retake ? [ev.midtermRetakeWeeks[n - 1]] : midtermWeeksOf(ev, n));
     const range = { start: teachingWeek(ev, weeks[0]).start, end: teachingWeek(ev, weeks[weeks.length - 1]).end };
     const parityOn = (date: string) => {
       const w =
@@ -591,7 +623,11 @@ export function generateMidterms(
   for (const groupId of rng.shuffle(groupIds)) {
     // held in the subject's own class (or a reduced-attendance group's session class): its time and room
     const reduced = idx.groups.get(groupId)?.studyForm === 'reduced';
-    const { ev, parityOn, dates, times, reducedDates } = ctxs[idx.groups.get(groupId)?.cycle ?? 'licenta'];
+    const base = ctxs[idx.groups.get(groupId)?.cycle ?? 'licenta'];
+    // a group with an internship this semester: its own atestare weeks (or none)
+    const own = !retake && periodsOf(ds, groupId, 'internship').length ? groupPeriodWeeks(ds, base.ev, groupId, n) : null;
+    if (own && !own.length) continue;
+    const { ev, parityOn, dates, times, reducedDates } = own ? makeCtx(base.ev, own) : base;
     if (!retake && (ev.midtermMode === 'inClass' || reduced)) {
       for (const m of midtermsFor(ds, idx, classes, { groupId }).filter((x) => x.n === n)) {
         const a = idx.assignmentOf(m.lesson)!;
