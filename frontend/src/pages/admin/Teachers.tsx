@@ -1,5 +1,6 @@
 import { OtherFaculty, facultyView, useAdminScope } from '../../components/FacultyFilter';
 import { AvailabilityPicker } from '../../components/AvailabilityPicker';
+import { ExamAvailabilityPicker } from '../../components/ExamAvailabilityPicker';
 import { CrudPage } from '../../components/CrudPage';
 import { Field } from '../../components/ui';
 import { parityWeight } from '../../domain/slots';
@@ -65,6 +66,7 @@ export default function Teachers() {
           },
         },
         { label: t('teachers.unavailable'), render: (x) => (x.unavailable.length ? x.unavailable.length : '—') },
+        { label: t('examAvail.column'), render: (x) => (x.examUnavailable?.length ? x.examUnavailable.length : '—') },
       ]}
       newItem={(): Omit<Teacher, 'id'> => ({
         name: '',
@@ -130,6 +132,14 @@ export default function Teachers() {
               value={{ unavailable: d.unavailable, preferred: d.preferred, consultation: d.consultation }}
               onChange={(v) => set(v)}
             />
+          </div>
+          {/* separate: the exam period has no classes, so the weekly availability doesn't apply */}
+          <div>
+            <h3 style={{ marginBottom: 4 }}>{t('examAvail.title')}</h3>
+            <p className="small muted" style={{ marginBottom: 8 }}>
+              {t('examAvail.hint')}
+            </p>
+            <ExamAvailabilityPicker dataset={dataset} value={d.examUnavailable ?? []} onChange={(v) => set({ examUnavailable: v })} />
           </div>
         </div>
       )}
