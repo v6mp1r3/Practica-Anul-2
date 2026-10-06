@@ -68,7 +68,7 @@ export default function Landing() {
   const { lang } = useI18n();
   const { user } = useAuth();
   const c = copy[lang];
-  const appLink = user ? homeFor(user.role) : '/login';
+  const adminLink = user ? homeFor(user.role) : '/login';
 
   useEffect(() => {
     document.title = `EduSchedule — ${c.hero.title}`;
@@ -90,8 +90,11 @@ export default function Landing() {
           </nav>
           <div className="lp-nav-actions">
             <LanguageSwitch />
-            <Link to={appLink} className="btn primary">
+            <Link to={adminLink} className="btn ghost lp-admin">
               {user ? c.nav.open : c.nav.login}
+            </Link>
+            <Link to="/orar" className="btn primary">
+              {c.nav.schedule}
             </Link>
           </div>
         </div>

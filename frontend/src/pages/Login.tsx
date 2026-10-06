@@ -9,7 +9,8 @@ import type { Role } from '../domain/types';
 import { useI18n } from '../i18n';
 import { useAuth } from '../state/auth';
 
-export const homeFor = (role: Role) => `/${role}`;
+// only administrators sign in; anyone else uses the public timetable
+export const homeFor = (role: Role) => (role === 'admin' ? '/admin' : '/orar');
 
 const INTRO_KEY = 'eduschedule:intro-seen';
 
@@ -94,6 +95,9 @@ export default function Login() {
           <div style={{ alignSelf: 'center' }}>
             <LanguageSwitch />
           </div>
+          <p className="small muted" style={{ textAlign: 'center' }}>
+            {t('login.publicNote')} <Link to="/orar">{t('login.publicLink')}</Link>
+          </p>
 
           {API_MODE === 'mock' && (
             <div className="stack demo-accounts" style={{ gap: 6, marginTop: 12 }}>
@@ -105,7 +109,7 @@ export default function Login() {
                     <br />
                     <span className="small muted">{u.username}</span>
                   </span>
-                  <span className="badge primary">{t(`role.${u.role}`)}</span>
+                  <span className="badge primary">{u.faculty?.replace(/^Facultatea /, '') ?? t(`role.${u.role}`)}</span>
                 </button>
               ))}
             </div>

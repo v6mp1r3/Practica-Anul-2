@@ -398,3 +398,10 @@
   margin-right: 0.27em;
   color: color-mix(in srgb, #1d1d1f calc(var(--t) * 100%), #cdcdd2);
 }
+
+/* phones: the administration link lives in the app menu; keep the header to one button */
+@media (max-width: 560px) {
+  .lp-admin {
+    display: none;
+  }
+}

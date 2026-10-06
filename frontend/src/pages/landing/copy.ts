@@ -3,7 +3,7 @@
 import type { Lang } from '../../i18n';
 
 export interface LandingCopy {
-  nav: { features: string; how: string; login: string; open: string };
+  nav: { features: string; how: string; login: string; open: string; schedule: string };
   hero: { title: string; text: string; preview: string };
   statement: { before: string; word: string; after: string };
   reveal: string;
@@ -17,8 +17,9 @@ export const copy: Record<Lang, LandingCopy> = {
     nav: {
       features: 'Funcții',
       how: 'Cum funcționează',
-      login: 'Intră',
-      open: 'Deschide aplicația',
+      login: 'Administrare',
+      open: 'Administrare',
+      schedule: 'Vezi orarul',
     },
     hero: {
       title: 'Orarul universității, construit automat.',
@@ -82,8 +83,9 @@ export const copy: Record<Lang, LandingCopy> = {
     nav: {
       features: 'Features',
       how: 'How it works',
-      login: 'Sign in',
-      open: 'Open the app',
+      login: 'Administration',
+      open: 'Administration',
+      schedule: 'See the timetable',
     },
     hero: {
       title: 'Your university timetable, built automatically.',
@@ -141,8 +143,9 @@ export const copy: Record<Lang, LandingCopy> = {
     nav: {
       features: 'Возможности',
       how: 'Как это работает',
-      login: 'Войти',
-      open: 'Открыть приложение',
+      login: 'Администрирование',
+      open: 'Администрирование',
+      schedule: 'Смотреть расписание',
     },
     hero: {
       title: 'Расписание университета, составленное автоматически.',
