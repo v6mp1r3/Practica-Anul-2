@@ -37,7 +37,8 @@ describe('exam session', () => {
   });
 
   it('keeps exams inside the session, with the free days between them and no clashes', () => {
-    const regular = rangeDates(ev.examSession, ev.examDays);
+    const regular = rangeDates(ev.examSession, ev.examDays, ev.vacations);
+    expect(regular).not.toContain('2026-12-25'); // Christmas
     for (const e of exams.filter((x) => idx.groups.get(x.groupId)?.studyForm !== 'reduced')) expect(regular).toContain(e.date);
     expect(findExamProblems(seedDataset, events)).toEqual([]);
   });
@@ -46,10 +47,19 @@ describe('exam session', () => {
     for (const e of exams) {
       const c = events.find((x) => x.kind === 'consultation' && x.groupId === e.groupId && x.subjectId === e.subjectId)!;
       expect(c.teacherId).toBe(e.teacherId);
-      // the day before, or Saturday for a Monday exam — never on a Sunday
+      // the working day before (Saturday for a Monday exam), or just before it right after a holiday
       const gap = (new Date(e.date).getTime() - new Date(c.date).getTime()) / 86400000;
-      expect(gap).toBe(new Date(e.date).getDay() === 1 ? 2 : 1);
+      if (gap === 0) expect(c.end <= e.start).toBe(true);
+      else {
+        // every day in between is a Sunday or a holiday
+        for (let d = 1; d < gap; d++) {
+          const between = new Date(new Date(c.date).getTime() + d * 86400000);
+          const iso = between.toISOString().slice(0, 10);
+          expect(between.getDay() === 0 || ev.vacations.some((v) => v.start <= iso && iso <= v.end)).toBe(true);
+        }
+      }
       expect(new Date(c.date).getDay()).not.toBe(0);
+      expect(c.date).not.toBe('2026-12-25');
     }
   });
 

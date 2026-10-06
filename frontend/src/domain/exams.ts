@@ -22,6 +22,18 @@ export const DEFAULT_EVALUATION: EvaluationSettings = {
   ],
   reducedExamSession: [{ start: '2027-01-25', end: '2027-02-06' }],
   reexamSession: [{ start: '2027-01-25', end: '2027-02-06' }],
+  // UTM's breaks (as in the 2025-26 calendar) and Moldova's public holidays, 2026-27
+  vacations: [
+    { name: 'Crăciunul (stil nou)', start: '2026-12-25', end: '2026-12-25' },
+    { name: 'Vacanța de iarnă', start: '2026-12-28', end: '2027-01-10' },
+    { name: 'Ziua Internațională a Femeii', start: '2027-03-08', end: '2027-03-08' },
+    { name: 'Ziua Muncii', start: '2027-05-01', end: '2027-05-01' },
+    { name: 'Vacanța de Paște', start: '2027-05-03', end: '2027-05-08' },
+    { name: 'Ziua Victoriei', start: '2027-05-09', end: '2027-05-09' },
+    { name: 'Paștele Blajinilor', start: '2027-05-10', end: '2027-05-10' },
+    { name: 'Ziua Ocrotirii Copiilor', start: '2027-06-01', end: '2027-06-01' },
+    { name: 'Vacanța de vară', start: '2027-07-01', end: '2027-08-31' },
+  ],
   examDays: [0, 1, 2, 3, 4, 5],
   examMinGap: 2,
   examStartTimes: ['09:00', '12:00'],
@@ -47,9 +59,14 @@ const addDays = (date: string, n: number) => {
 };
 const daysBetween = (a: string, b: string) => Math.round((parseDate(b).getTime() - parseDate(a).getTime()) / 86400000);
 
-/** Every allowed date of the given ranges, sorted. */
-export function rangeDates(ranges: DateRange[], days: Day[]): string[] {
-  return [...new Set(ranges.flatMap((r) => sessionDates(r.start, r.end, days)))].sort();
+/** The holiday a date falls in, if any. */
+export const vacationOn = (ev: EvaluationSettings, date: string) => ev.vacations.find((v) => v.start <= date && date <= v.end);
+
+/** Every allowed date of the given ranges, sorted, without holidays. */
+export function rangeDates(ranges: DateRange[], days: Day[], vacations: EvaluationSettings['vacations'] = []): string[] {
+  return [...new Set(ranges.flatMap((r) => sessionDates(r.start, r.end, days)))]
+    .filter((d) => !vacations.some((v) => v.start <= d && d <= v.end))
+    .sort();
 }
 
 /** Subjects a group ends with an exam (from its teaching loads). */
@@ -124,7 +141,7 @@ export function generateExams(
     const group = idx.groups.get(groupId);
     if (!group) continue;
     const ranges = round === 'reexam' ? ev.reexamSession : group.studyForm === 'reduced' ? ev.reducedExamSession : ev.examSession;
-    const dates = rangeDates(ranges, ev.examDays);
+    const dates = rangeDates(ranges, ev.examDays, ev.vacations);
     const subjects = rng
       .shuffle(examSubjects(ds, idx, groupId))
       .sort((a, b) => (idx.subjects.get(b)?.credits ?? 0) - (idx.subjects.get(a)?.credits ?? 0));
@@ -175,20 +192,19 @@ export function generateExams(
 /** The day before, skipping days without exams (a Monday exam gets its consultation on Saturday). */
 function previousExamDay(ev: EvaluationSettings, date: string): string {
   let d = addDays(date, -1);
-  for (let i = 0; i < 7 && !ev.examDays.includes(dayIndexOf(parseDate(d)) as Day); i++) d = addDays(d, -1);
+  for (let i = 0; i < 21 && (!ev.examDays.includes(dayIndexOf(parseDate(d)) as Day) || vacationOn(ev, d)); i++) d = addDays(d, -1);
   return d;
 }
 
 /** The consultation before an exam: same teacher, its room if free. */
 function consultationFor(ev: EvaluationSettings, exam: ExamEvent, rooms: Room[], free: (e: ExamEvent) => boolean): ExamEvent | null {
+  const sameDay = { date: exam.date, start: toHHMM(toMin(exam.start) - 60), minutes: 45 };
+  const before = previousExamDay(ev, exam.date);
+  // right after a holiday (or on request) the consultation is the same day, just before the exam
   const tries =
-    ev.consultation === 'sameDay'
-      ? [{ date: exam.date, start: toHHMM(toMin(exam.start) - 60), minutes: 45 }]
-      : [ev.consultationTime, '12:00', '14:00', '16:00'].map((start) => ({
-          date: previousExamDay(ev, exam.date),
-          start,
-          minutes: ev.consultationMinutes,
-        }));
+    ev.consultation === 'sameDay' || daysBetween(before, exam.date) > 2
+      ? [sameDay]
+      : [ev.consultationTime, '12:00', '14:00', '16:00'].map((start) => ({ date: before, start, minutes: ev.consultationMinutes }));
   for (const t of tries) {
     const end = toHHMM(toMin(t.start) + t.minutes);
     for (const roomId of [exam.roomId, ...rooms.map((r) => r.id).filter((id) => id !== exam.roomId)]) {
@@ -297,6 +313,7 @@ export function midtermsFor(
         chosen = [...best.values()].map((l) => ({ lesson: l, date: addDays(week.start, l.day) }));
       }
       for (const c of chosen) {
+        if (vacationOn(ev, c.date)) continue; // no class on a holiday
         if ('teacherId' in who && idx.assignmentOf(c.lesson)?.teacherId !== who.teacherId) continue;
         out.set(`${n}|${c.lesson.id}|${c.date}`, { n, date: c.date, lesson: c.lesson });
       }
@@ -329,7 +346,7 @@ export function generateMidterms(
   const round = n === 1 ? 'midterm1' : 'midterm2';
   const week = teachingWeek(ev, ev.midtermWeeks[n - 1]);
   const parity = ev.midtermWeeks[n - 1] % 2 === 1 ? 'odd' : 'even';
-  const dates = sessionDates(week.start, week.end, ev.examDays);
+  const dates = sessionDates(week.start, week.end, ev.examDays).filter((d) => !vacationOn(ev, d));
   const placed: ExamEvent[] = [];
   const warnings: ExamResult['warnings'] = [];
   const all = () => [...busy, ...placed];

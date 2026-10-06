@@ -5,6 +5,7 @@
 // all other pairs (weekly full-time/dual and other dated ones), so a teacher or
 // room shared with full-time groups is never double-booked.
 import { sessionDates } from './changes';
+import { evaluationOf } from './exams';
 import type { DatasetIndex } from './indexes';
 import { lessonsOverlap } from './overlap';
 import type { Rng } from './rng';
@@ -91,7 +92,8 @@ export function placeSessions(ds: Dataset, idx: DatasetIndex, loads: Assignment[
     for (const a of order) {
       const groupIds = idx.cohorts(a.audience).map((c) => c.groupId);
       const days = idx.allowedDays(a);
-      const dates = sessionDates(session.start, session.end, days);
+      const holidays = evaluationOf(ds).vacations;
+      const dates = sessionDates(session.start, session.end, days).filter((d) => !holidays.some((v) => v.start <= d && d <= v.end));
       if (!dates.length) continue;
       const teacher = idx.teachers.get(a.teacherId);
       const size = idx.audienceSize(a.audience);
