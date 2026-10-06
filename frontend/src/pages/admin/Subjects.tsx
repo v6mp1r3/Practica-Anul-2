@@ -6,6 +6,7 @@ import { Icon } from '../../components/Icon';
 import { Field, Modal } from '../../components/ui';
 import { parseStudyPlan, STUDY_PLAN_TEMPLATE, type CsvResult } from '../../domain/csv';
 import type { Subject } from '../../domain/types';
+import { Select } from '../../components/Select';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
@@ -68,6 +69,10 @@ export default function Subjects() {
           { label: t('subjects.year'), render: (x) => x.year },
           { label: 'ECTS', render: (x) => x.credits },
           {
+            label: t('subjects.evaluation'),
+            render: (x) => <span className="small">{t(`subjects.evaluation.${x.evaluation ?? 'exam'}`)}</span>,
+          },
+          {
             label: '',
             render: (x) =>
               x.edgeOfDay ? (
@@ -99,6 +104,12 @@ export default function Subjects() {
               </Field>
               <Field label={t('common.name')}>
                 <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} />
+              </Field>
+              <Field label={t('subjects.evaluation')}>
+                <Select value={d.evaluation ?? 'exam'} onChange={(e) => set({ evaluation: e.target.value as 'exam' | 'atestari' })}>
+                  <option value="exam">{t('subjects.evaluation.exam')}</option>
+                  <option value="atestari">{t('subjects.evaluation.atestari')}</option>
+                </Select>
               </Field>
               <Field label={t('subjects.year')}>
                 <input

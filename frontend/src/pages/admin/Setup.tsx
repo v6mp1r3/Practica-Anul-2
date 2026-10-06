@@ -5,8 +5,9 @@ import { api, API_MODE } from '../../api';
 import { resetMockData } from '../../api/mock';
 import { Icon } from '../../components/Icon';
 import { Field, PageHeader, Switch, TimeInput, useClock } from '../../components/ui';
-import { fmtTime, range } from '../../domain/slots';
-import { STUDY_FORMS, type Settings, type TimeSlot } from '../../domain/types';
+import { fmtTime, parseTime, range } from '../../domain/slots';
+import { DEFAULT_EVALUATION } from '../../domain/exams';
+import { STUDY_FORMS, type EvaluationSettings, type Settings, type TimeSlot } from '../../domain/types';
 import { UTM_FACULTIES, UTM_NAME } from '../../domain/utm';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../state/auth';
@@ -73,6 +74,9 @@ export default function Setup() {
   const [saving, setSaving] = useState(false);
   // as many years as the longest programme (at least 4, at most 6)
   const shiftYears = Math.min(6, Math.max(4, ...dataset.groups.map((g) => g.programYears ?? g.year)));
+  const ev = { ...DEFAULT_EVALUATION, ...s.evaluation };
+  const setEv = (patch: Partial<EvaluationSettings>) =>
+    setS((x) => ({ ...x, evaluation: { ...DEFAULT_EVALUATION, ...x.evaluation, ...patch } }));
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({ ...x, [k]: v }));
 
   async function save() {
@@ -83,6 +87,12 @@ export default function Setup() {
         faculties: s.faculties.map((f) => f.trim()).filter(Boolean),
         reducedSessions: s.reducedSessions.filter((x) => x.start && x.end && x.start <= x.end),
         institutionName: UTM_NAME,
+        evaluation: {
+          ...ev,
+          examSession: ev.examSession.filter((x) => x.start && x.end && x.start <= x.end),
+          reducedExamSession: ev.reducedExamSession.filter((x) => x.start && x.end && x.start <= x.end),
+          reexamSession: ev.reexamSession.filter((x) => x.start && x.end && x.start <= x.end),
+        },
         yearShifts: s.yearShifts?.map((x) => ({
           first: Math.min(x.first, s.slots.length - 1),
           last: Math.min(x.last, s.slots.length - 1),
@@ -465,7 +475,151 @@ export default function Setup() {
             </div>
           </div>
         </Step>
+
+        <Step n={6} title={t('setup.evaluation')}>
+          <div className="form-grid">
+            <Field label={t('setup.semesterStart')}>
+              <input className="input" type="date" value={ev.semesterStart} onChange={(e) => setEv({ semesterStart: e.target.value })} />
+            </Field>
+            <Field label={t('setup.midtermWeeks')}>
+              <div className="row" style={{ gap: 8 }}>
+                {[0, 1].map((i) => (
+                  <input
+                    key={i}
+                    className="input"
+                    type="number"
+                    min={1}
+                    max={20}
+                    style={{ width: 80 }}
+                    aria-label={t('exams.midterm', { n: i + 1 })}
+                    value={ev.midtermWeeks[i]}
+                    onChange={(e) => {
+                      const w = [...ev.midtermWeeks] as [number, number];
+                      w[i] = num(e.target.value, 1);
+                      setEv({ midtermWeeks: w });
+                    }}
+                  />
+                ))}
+              </div>
+            </Field>
+            <Field label={t('setup.midtermMode')}>
+              <Select value={ev.midtermMode} onChange={(e) => setEv({ midtermMode: e.target.value as 'inClass' | 'separate' })}>
+                <option value="inClass">{t('setup.midtermInClass')}</option>
+                <option value="separate">{t('setup.midtermSeparate')}</option>
+              </Select>
+            </Field>
+            {ev.midtermMode === 'separate' && (
+              <Field label={t('setup.midtermTimes')} hint={t('setup.timesHint')}>
+                <TimesInput value={ev.midtermStartTimes} onChange={(v) => setEv({ midtermStartTimes: v })} />
+              </Field>
+            )}
+          </div>
+
+          {(
+            [
+              ['examSession', 'setup.examSession'],
+              ['reducedExamSession', 'setup.reducedExamSession'],
+              ['reexamSession', 'setup.reexamSession'],
+            ] as const
+          ).map(([key, label]) => (
+            <div key={key} className="stack" style={{ gap: 8 }}>
+              <h3>{t(label)}</h3>
+              {ev[key].map((r, i) => (
+                <div key={i} className="row wrap">
+                  <span className="small muted" style={{ minWidth: 70 }}>
+                    {t('setup.period')} {i + 1}
+                  </span>
+                  {(['start', 'end'] as const).map((edge) => (
+                    <input
+                      key={edge}
+                      className="input"
+                      type="date"
+                      style={{ width: 170 }}
+                      value={r[edge]}
+                      min={edge === 'end' ? r.start : undefined}
+                      aria-label={`${t(label)} ${i + 1} — ${t(`setup.${edge}`)}`}
+                      onChange={(e) => setEv({ [key]: ev[key].map((x, j) => (j === i ? { ...x, [edge]: e.target.value } : x)) })}
+                    />
+                  ))}
+                  <button
+                    className="btn ghost sm icon danger"
+                    onClick={() => setEv({ [key]: ev[key].filter((_, j) => j !== i) })}
+                    aria-label={t('common.delete')}
+                  >
+                    <Icon name="trash" size={14} />
+                  </button>
+                </div>
+              ))}
+              <div>
+                <button className="btn sm" onClick={() => setEv({ [key]: [...ev[key], { start: '', end: '' }] })}>
+                  <Icon name="plus" size={14} />
+                  {t('setup.period')}
+                </button>
+              </div>
+            </div>
+          ))}
+
+          <div className="form-grid">
+            <Field label={t('setup.examMinGap')} hint={t('setup.default', { value: 2 })}>
+              <input
+                className="input"
+                type="number"
+                min={0}
+                max={7}
+                value={ev.examMinGap}
+                onChange={(e) => setEv({ examMinGap: num(e.target.value) })}
+              />
+            </Field>
+            <Field label={t('setup.examTimes')} hint={t('setup.timesHint')}>
+              <TimesInput value={ev.examStartTimes} onChange={(v) => setEv({ examStartTimes: v })} />
+            </Field>
+            <Field label={t('setup.examMinutes')} hint={t('setup.default', { value: 135 })}>
+              <input
+                className="input"
+                type="number"
+                min={30}
+                value={ev.examMinutes}
+                onChange={(e) => setEv({ examMinutes: num(e.target.value, 30) })}
+              />
+            </Field>
+            <Field label={t('setup.reexamTimes')} hint={t('setup.timesHint')}>
+              <TimesInput value={ev.reexamStartTimes} onChange={(v) => setEv({ reexamStartTimes: v })} />
+            </Field>
+            <Field label={t('setup.examConsultation')}>
+              <Select value={ev.consultation} onChange={(e) => setEv({ consultation: e.target.value as 'dayBefore' | 'sameDay' })}>
+                <option value="dayBefore">{t('setup.consultationDayBefore')}</option>
+                <option value="sameDay">{t('setup.consultationSameDay')}</option>
+              </Select>
+            </Field>
+            {ev.consultation === 'dayBefore' && (
+              <Field label={t('setup.consultationTime')}>
+                <TimeInput value={ev.consultationTime} format={s.timeFormat} onChange={(v) => setEv({ consultationTime: v })} />
+              </Field>
+            )}
+          </div>
+        </Step>
       </div>
     </div>
+  );
+}
+
+/** "09:00, 12:00" — a list of start times. */
+function TimesInput({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [text, setText] = useState(value.join(', '));
+  return (
+    <input
+      className="input"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        const times = text
+          .split(/[,;]/)
+          .map((x) => parseTime(x))
+          .filter((x): x is string => !!x)
+          .sort();
+        if (times.length) onChange([...new Set(times)]);
+        setText((times.length ? times : value).join(', '));
+      }}
+    />
   );
 }

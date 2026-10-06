@@ -268,3 +268,38 @@ already busy at that slot on that date (`422`).
 - **Who sees it:** `roles: []` means every role. A notification with `groupIds` /
   `teacherIds` (schedule changes: the affected groups and both teachers) reaches
   only those students and teachers; administrators always see everything.
+
+## Exams and atestări
+
+UTM rules (REG-85-OS ECTS, academic calendar): atestări in teaching weeks 7 and
+14 — in the subject's own class, or (if `settings.evaluation.midtermMode` is
+`separate`) in a separate timetable after classes; one exam a day, at least
+`examMinGap` free days between a group's exams, a consultation the day before
+(or just before); retakes after the session in afternoon pairs. Settings live in
+`Settings.evaluation` (`EvaluationSettings`); a subject's `evaluation` is `exam`
+(default) or `atestari`.
+
+| Method | Path                             | Role   | Notes                                                                                                                                                    |
+| ------ | -------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/exams`                         | public | `ExamEvent[]` of every faculty's **published** plans                                                                                                     |
+| GET    | `/exams/plans/{round}`           | admin  | this faculty's `ExamPlan` (`round`: `midterm1`, `midterm2`, `session`, `reexam`) or `null`                                                               |
+| POST   | `/exams/plans/{round}/generate`  | admin  | new draft; other faculties' published events and this faculty's other rounds stay booked; returns the plan + `warnings` (count of exams that didn't fit) |
+| PUT    | `/exams/plans/{round}`           | admin  | save edited events                                                                                                                                       |
+| POST   | `/exams/plans/{round}/publish`   | admin  | make it public                                                                                                                                           |
+| POST   | `/exams/plans/{round}/unpublish` | admin  | back to draft                                                                                                                                            |
+
+```json
+// ExamEvent — an exam or its consultation, for one group
+{
+  "id": "E1",
+  "kind": "exam",
+  "round": "session",
+  "subjectId": "sub1",
+  "groupId": "g1",
+  "teacherId": "t3",
+  "roomId": "r4",
+  "date": "2026-12-14",
+  "start": "12:00",
+  "end": "14:15"
+}
+```
