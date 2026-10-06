@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { API_MODE } from '../api';
-import { IntroVideo } from '../components/IntroVideo';
 import { Logo } from '../components/Logo';
 import { Field, LanguageSwitch } from '../components/ui';
 import { seedUsers } from '../data/seed';
@@ -12,24 +11,6 @@ import { useAuth } from '../state/auth';
 // only administrators sign in; anyone else uses the public timetable
 export const homeFor = (role: Role) => (role === 'admin' ? '/admin' : '/studenti');
 
-const INTRO_KEY = 'eduschedule:intro-seen';
-
-function seenIntro(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(INTRO_KEY) ?? '[]');
-  } catch {
-    return [];
-  }
-}
-const hasSeenIntro = (userId: string) => seenIntro().includes(userId);
-function markIntroSeen(userId: string) {
-  try {
-    localStorage.setItem(INTRO_KEY, JSON.stringify([...new Set([...seenIntro(), userId])]));
-  } catch {
-    /* storage unavailable — the intro may show again, which is harmless */
-  }
-}
-
 export default function Login() {
   const { user, login } = useAuth();
   const { t } = useI18n();
@@ -38,29 +19,16 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  // While signing in we show the intro video before entering the platform;
-  // `entering` keeps the already-signed-in redirect from skipping it.
-  const [entering, setEntering] = useState(false);
-  const [target, setTarget] = useState<string | null>(null);
-
-  if (target) return <IntroVideo onDone={() => navigate(target, { replace: true })} />;
-  if (user && !entering) return <Navigate to={homeFor(user.role)} replace />;
+  if (user) return <Navigate to={homeFor(user.role)} replace />;
 
   async function submit(e: FormEvent, u = username, p = password) {
     e.preventDefault();
     setBusy(true);
     setError('');
-    setEntering(true);
     try {
       const me = await login(u, p);
-      // The intro plays only the first time each user signs in (on this device)
-      if (hasSeenIntro(me.id)) navigate(homeFor(me.role), { replace: true });
-      else {
-        markIntroSeen(me.id);
-        setTarget(homeFor(me.role));
-      }
+      navigate(homeFor(me.role), { replace: true });
     } catch {
-      setEntering(false);
       setError(t('login.invalid'));
     } finally {
       setBusy(false);

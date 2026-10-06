@@ -34,7 +34,6 @@ export const ru: Record<MessageKey, string> = {
   'login.submit': 'Войти',
   'login.invalid': 'Неверное имя пользователя или пароль.',
   'login.demo': 'Демо-аккаунты (пароль: demo)',
-  'intro.skip': 'Пропустить',
 
   'nav.menu': 'Главное меню',
   'nav.menuButton': 'Меню',

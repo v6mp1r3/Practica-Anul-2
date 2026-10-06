@@ -33,7 +33,6 @@ export const ro = {
   'login.submit': 'Intră',
   'login.invalid': 'Utilizator sau parolă greșită.',
   'login.demo': 'Conturi demo (parola: demo)',
-  'intro.skip': 'Sari peste',
 
   'nav.menu': 'Meniu principal',
   'nav.menuButton': 'Meniu',

@@ -34,7 +34,6 @@ export const en: Record<MessageKey, string> = {
   'login.submit': 'Sign in',
   'login.invalid': 'Wrong username or password.',
   'login.demo': 'Demo accounts (password: demo)',
-  'intro.skip': 'Skip',
 
   'nav.menu': 'Main menu',
   'nav.menuButton': 'Menu',
