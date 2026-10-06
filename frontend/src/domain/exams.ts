@@ -172,13 +172,20 @@ export function generateExams(
   return { events: placed, warnings };
 }
 
+/** The day before, skipping days without exams (a Monday exam gets its consultation on Saturday). */
+function previousExamDay(ev: EvaluationSettings, date: string): string {
+  let d = addDays(date, -1);
+  for (let i = 0; i < 7 && !ev.examDays.includes(dayIndexOf(parseDate(d)) as Day); i++) d = addDays(d, -1);
+  return d;
+}
+
 /** The consultation before an exam: same teacher, its room if free. */
 function consultationFor(ev: EvaluationSettings, exam: ExamEvent, rooms: Room[], free: (e: ExamEvent) => boolean): ExamEvent | null {
   const tries =
     ev.consultation === 'sameDay'
       ? [{ date: exam.date, start: toHHMM(toMin(exam.start) - 60), minutes: 45 }]
       : [ev.consultationTime, '12:00', '14:00', '16:00'].map((start) => ({
-          date: addDays(exam.date, -1),
+          date: previousExamDay(ev, exam.date),
           start,
           minutes: ev.consultationMinutes,
         }));

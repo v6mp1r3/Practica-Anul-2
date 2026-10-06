@@ -46,9 +46,10 @@ describe('exam session', () => {
     for (const e of exams) {
       const c = events.find((x) => x.kind === 'consultation' && x.groupId === e.groupId && x.subjectId === e.subjectId)!;
       expect(c.teacherId).toBe(e.teacherId);
-      const before = new Date(e.date);
-      before.setDate(before.getDate() - 1);
-      expect(c.date).toBe(before.toISOString().slice(0, 10));
+      // the day before, or Saturday for a Monday exam — never on a Sunday
+      const gap = (new Date(e.date).getTime() - new Date(c.date).getTime()) / 86400000;
+      expect(gap).toBe(new Date(e.date).getDay() === 1 ? 2 : 1);
+      expect(new Date(c.date).getDay()).not.toBe(0);
     }
   });
 
