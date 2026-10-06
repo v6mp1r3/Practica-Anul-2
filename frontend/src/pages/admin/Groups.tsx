@@ -1,7 +1,7 @@
 import { useAdminScope } from '../../components/FacultyFilter';
 import { CrudPage } from '../../components/CrudPage';
 import { Field, PageHeader } from '../../components/ui';
-import { STUDY_FORMS, type Group, type Stream, type StudyForm } from '../../domain/types';
+import { STUDY_FORMS, type Group, type Stream, type StudyCycle, type StudyForm } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
@@ -24,7 +24,19 @@ export default function Groups() {
           itemLabel={(x) => x.name}
           searchText={(x) => `${x.name} ${x.program} ${x.faculty ?? ''}`}
           columns={[
-            { label: t('groups.name'), render: (x) => <strong>{x.name}</strong> },
+            {
+              label: t('groups.name'),
+              render: (x) => (
+                <span>
+                  <strong>{x.name}</strong>
+                  {x.cycle === 'master' && (
+                    <span className="badge primary" style={{ marginLeft: 6 }}>
+                      {t('cycle.master')}
+                    </span>
+                  )}
+                </span>
+              ),
+            },
             { label: t('groups.program'), render: (x) => x.program },
             {
               label: t('groups.studyForm'),
@@ -84,6 +96,21 @@ export default function Groups() {
                   autoFocus
                 />
               </Field>
+              <Field label={t('groups.cycle')}>
+                <Select
+                  className="select"
+                  value={d.cycle ?? 'licenta'}
+                  onChange={(e) => {
+                    // master's lasts 2 years, licență 4 by default
+                    const cycle = e.target.value as StudyCycle;
+                    const programYears = cycle === 'master' ? 2 : 4;
+                    set({ cycle, programYears, year: Math.min(d.year, programYears) });
+                  }}
+                >
+                  <option value="licenta">{t('cycle.licenta')}</option>
+                  <option value="master">{t('cycle.master')}</option>
+                </Select>
+              </Field>
               <Field label={t('groups.studyForm')}>
                 <Select className="select" value={d.studyForm} onChange={(e) => set({ studyForm: e.target.value as StudyForm })}>
                   {STUDY_FORMS.map((f) => (
@@ -105,7 +132,7 @@ export default function Groups() {
                     set({ programYears, year: Math.min(d.year, programYears) });
                   }}
                 >
-                  {[3, 4, 5, 6].map((n) => (
+                  {(d.cycle === 'master' ? [1, 2] : [3, 4, 5, 6]).map((n) => (
                     <option key={n} value={n}>
                       {t('groups.yearsN', { n })}
                     </option>

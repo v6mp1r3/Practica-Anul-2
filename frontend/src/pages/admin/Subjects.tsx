@@ -5,7 +5,7 @@ import { CrudPage } from '../../components/CrudPage';
 import { Icon } from '../../components/Icon';
 import { Field, Modal } from '../../components/ui';
 import { parseStudyPlan, STUDY_PLAN_TEMPLATE, type CsvResult } from '../../domain/csv';
-import type { Subject } from '../../domain/types';
+import type { Subject, StudyCycle } from '../../domain/types';
 import { Select } from '../../components/Select';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
@@ -64,7 +64,20 @@ export default function Subjects() {
           </>
         }
         columns={[
-          { label: t('subjects.code'), render: (x) => <strong>{x.code}</strong>, width: 90 },
+          {
+            label: t('subjects.code'),
+            render: (x) => (
+              <span>
+                <strong>{x.code}</strong>
+                {x.cycle === 'master' && (
+                  <span className="badge primary" style={{ marginLeft: 6 }}>
+                    {t('cycle.master')}
+                  </span>
+                )}
+              </span>
+            ),
+            width: 120,
+          },
           { label: t('common.name'), render: (x) => x.name },
           { label: t('subjects.year'), render: (x) => x.year },
           { label: 'ECTS', render: (x) => x.credits },
@@ -104,6 +117,12 @@ export default function Subjects() {
               </Field>
               <Field label={t('common.name')}>
                 <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} />
+              </Field>
+              <Field label={t('subjects.cycle')}>
+                <Select value={d.cycle ?? 'licenta'} onChange={(e) => set({ cycle: e.target.value as StudyCycle })}>
+                  <option value="licenta">{t('cycle.licenta')}</option>
+                  <option value="master">{t('cycle.master')}</option>
+                </Select>
               </Field>
               <Field label={t('subjects.evaluation')}>
                 <Select value={d.evaluation ?? 'exam'} onChange={(e) => set({ evaluation: e.target.value as 'exam' | 'atestari' })}>
