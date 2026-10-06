@@ -547,4 +547,9 @@ export const ru: Record<MessageKey, string> = {
   'subjects.evaluation.atestari': 'Только аттестации',
   'nav.evaluations': 'Оценивание',
   'setup.examConsultation': 'Консультация перед экзаменом',
+  'exams.sessionNow': 'Экзаменационная сессия',
+  'exams.reexamNow': 'Сессия пересдач',
+  'exams.noClasses': '{from} – {to}: занятий нет, только консультации и экзамены.',
+  'exams.seeExams': 'Смотреть экзамены',
+  'exams.seeReexams': 'Смотреть пересдачи',
 };

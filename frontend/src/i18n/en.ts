@@ -545,4 +545,9 @@ export const en: Record<MessageKey, string> = {
   'subjects.evaluation.atestari': 'Midterms only',
   'nav.evaluations': 'Evaluations',
   'setup.examConsultation': 'Consultation before the exam',
+  'exams.sessionNow': 'Exam session',
+  'exams.reexamNow': 'Retake session',
+  'exams.noClasses': '{from} – {to}: no classes, only consultations and exams.',
+  'exams.seeExams': 'See the exams',
+  'exams.seeReexams': 'See the retakes',
 };

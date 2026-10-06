@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ExamCalendar, type CalendarEntry } from '../../components/ExamCalendar';
 import { examEntries, midtermEntries } from '../../components/examEntries';
-import { parseDate } from '../../domain/changes';
+import { parseDate, toDateString } from '../../domain/changes';
 import { evaluationOf, midtermsFor, teachingWeek } from '../../domain/exams';
 import type { ExamEvent, Lesson } from '../../domain/types';
 import { ChangesCard } from '../../components/ChangesCard';
@@ -82,6 +82,15 @@ function Schedule({ kind }: { kind: Kind }) {
         )
       : [];
   const reducedGroup = group?.studyForm === 'reduced' && dataset.settings.reducedSessions.length > 0;
+  // is today inside the exam session or the retakes (for this group's form of study)?
+  const ev = evaluationOf(dataset);
+  const todayStr = toDateString(new Date());
+  const sessionRanges = [
+    ...(group?.studyForm === 'reduced' ? ev.reducedExamSession : ev.examSession).map((r) => ({ ...r, round: 'session' as const })),
+    ...ev.reexamSession.map((r) => ({ ...r, round: 'reexam' as const })),
+  ];
+  const sessionNow = sessionRanges.find((r) => r.start <= todayStr && todayStr <= r.end);
+  const fmtShort = (d: string) => parseDate(d).toLocaleDateString(dateLocale(lang), { day: 'numeric', month: 'long' });
   const consultation = teacher?.consultation ? parseSlotKey(teacher.consultation) : null;
 
   const subtitle = group
@@ -207,8 +216,24 @@ function Schedule({ kind }: { kind: Kind }) {
   function TimetableTab() {
     return (
       <div className="stack">
-        <ChangesCard groupId={group?.id} teacherId={teacher?.id} />
-        {reducedGroup ? (
+        {sessionNow && (
+          // exam weeks: no classes, only consultations and exams
+          <div className="card session-banner">
+            <div className="card-body row wrap">
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <strong>{t(sessionNow.round === 'session' ? 'exams.sessionNow' : 'exams.reexamNow')}</strong>
+                <div className="small muted">
+                  {t('exams.noClasses', { from: fmtShort(sessionNow.start), to: fmtShort(sessionNow.end) })}
+                </div>
+              </div>
+              <button className="btn primary" onClick={() => setTab(sessionNow.round === 'session' ? 'exams' : 'reexams')}>
+                {t(sessionNow.round === 'session' ? 'exams.seeExams' : 'exams.seeReexams')}
+              </button>
+            </div>
+          </div>
+        )}
+        {!sessionNow && <ChangesCard groupId={group?.id} teacherId={teacher?.id} />}
+        {sessionNow ? null : reducedGroup ? (
           // reduced attendance: the full calendar of every session, not one week
           <SessionTimetable dataset={dataset} index={index} lessons={lessons} groupId={group!.id} hide={['audience']} />
         ) : (

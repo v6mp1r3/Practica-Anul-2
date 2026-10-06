@@ -546,6 +546,11 @@ export const ro = {
   'subjects.evaluation.atestari': 'Doar atestări',
   'nav.evaluations': 'Evaluări',
   'setup.examConsultation': 'Consultația înainte de examen',
+  'exams.sessionNow': 'Sesiunea de examinare',
+  'exams.reexamNow': 'Sesiunea de reexaminare',
+  'exams.noClasses': '{from} – {to}: nu sunt ore, doar consultații și examene.',
+  'exams.seeExams': 'Vezi examenele',
+  'exams.seeReexams': 'Vezi reexaminările',
 } as const;
 
 export type MessageKey = keyof typeof ro;

@@ -720,3 +720,9 @@ table.table {
     grid-template-columns: 1fr;
   }
 }
+
+/* "No classes: exam session" notice on the public timetable */
+.session-banner {
+  border-color: transparent;
+  background: var(--primary-soft);
+}
