@@ -53,3 +53,17 @@ describe('fmtTime', () => {
     expect(fmtTime('00:15', '12h')).toBe('12:15 AM');
   });
 });
+
+describe('parseTime', () => {
+  it('reads 24-hour and 12-hour times', async () => {
+    const { parseTime } = await import('./slots');
+    expect(parseTime('8:05')).toBe('08:05');
+    expect(parseTime('17.30')).toBe('17:30');
+    expect(parseTime('0945')).toBe('09:45');
+    expect(parseTime('05:30 PM')).toBe('17:30');
+    expect(parseTime('12:15 am')).toBe('00:15');
+    expect(parseTime('5 pm')).toBe('17:00');
+    expect(parseTime('25:00')).toBeNull();
+    expect(parseTime('abc')).toBeNull();
+  });
+});

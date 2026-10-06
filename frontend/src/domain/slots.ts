@@ -27,3 +27,24 @@ export function fmtTime(hhmm: string | undefined, format: '24h' | '12h' = '24h')
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 }
+
+/**
+ * Read a typed time back to "HH:MM": "8:05", "0805", "17.30", "5:30 pm", "5 PM".
+ * Returns null when it isn't a valid time.
+ */
+export function parseTime(text: string): string | null {
+  const m = text
+    .trim()
+    .toLowerCase()
+    .match(/^(\d{1,2})(?:[:.\s]?(\d{2}))?\s*(am|pm|a|p)?$/);
+  if (!m) return null;
+  let h = Number(m[1]);
+  const min = Number(m[2] ?? 0);
+  const ampm = m[3]?.[0];
+  if (ampm) {
+    if (h < 1 || h > 12) return null;
+    h = (h % 12) + (ampm === 'p' ? 12 : 0);
+  }
+  if (h > 23 || min > 59) return null;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}

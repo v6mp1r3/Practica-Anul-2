@@ -1,6 +1,7 @@
 // Small presentational building blocks shared by every page.
 import { useEffect, useState, type ReactNode } from 'react';
 import { LANGS, useI18n } from '../i18n';
+import { fmtTime, parseTime } from '../domain/slots';
 import { Icon } from './Icon';
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
@@ -133,4 +134,45 @@ export function useClock(): string {
     return () => clearInterval(id);
   }, []);
   return time;
+}
+
+/**
+ * Time field in the app's own format (24h "17:30" or 12h "05:30 PM"). The browser's
+ * <input type="time"> follows the computer's clock setting instead, so it isn't used.
+ */
+export function TimeInput({
+  value,
+  onChange,
+  format = '24h',
+  'aria-label': label,
+}: {
+  value: string;
+  onChange: (hhmm: string) => void;
+  format?: '24h' | '12h';
+  'aria-label'?: string;
+}) {
+  const [text, setText] = useState(() => fmtTime(value, format));
+  const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    if (!editing) setText(fmtTime(value, format));
+  }, [value, format, editing]);
+  const commit = () => {
+    setEditing(false);
+    const parsed = parseTime(text);
+    if (parsed && parsed !== value) onChange(parsed);
+    else setText(fmtTime(value, format));
+  };
+  return (
+    <input
+      className="input"
+      inputMode="text"
+      value={text}
+      aria-label={label}
+      placeholder={format === '12h' ? '08:00 AM' : '08:00'}
+      onFocus={() => setEditing(true)}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+    />
+  );
 }
