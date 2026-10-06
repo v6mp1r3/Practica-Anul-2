@@ -106,6 +106,12 @@ export function createHttpApi(baseUrl: string): Api {
     },
 
     listChanges: () => request('GET', '/changes'),
+    listPublishedExams: () => request('GET', '/exams'),
+    getExamPlan: (round) => request('GET', `/exams/plans/${round}`),
+    generateExamPlan: (round) => request('POST', `/exams/plans/${round}/generate`),
+    saveExamPlan: (plan) => request('PUT', `/exams/plans/${plan.round}`, plan),
+    publishExamPlan: (round) => request('POST', `/exams/plans/${round}/publish`),
+    unpublishExamPlan: (round) => request('POST', `/exams/plans/${round}/unpublish`),
     createChange: (change) => request('POST', '/changes', change),
     deleteChange: (id) => request('DELETE', `/changes/${id}`),
 

@@ -4,13 +4,16 @@ import { seedDataset, seedNotifications, seedUsers } from '../data/seed';
 import { generateTimetable } from '../domain/generator';
 import { scoreTimetable } from '../domain/score';
 import { findHardConflicts } from '../domain/validator';
-import type { Dataset, Notification, NotificationKind, Role, ScheduleChange, Timetable, User } from '../domain/types';
+import type { Dataset, ExamPlan, Notification, NotificationKind, Role, ScheduleChange, Timetable, User } from '../domain/types';
+import { generateExams, generateMidterms } from '../domain/exams';
+import { DatasetIndex } from '../domain/indexes';
+import { createRng } from '../domain/rng';
 import { ApiError } from './http';
 import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 11;
+const SEED_VERSION = 12;
 
 interface Store {
   dataset: Dataset;
@@ -18,6 +21,8 @@ interface Store {
   timetables: Timetable[];
   notifications: Notification[];
   changes: ScheduleChange[];
+  /** Exam/atestări timetables, one per faculty and round. */
+  examPlans?: ExamPlan[];
   /** userId -> password; users not listed still use the demo password. */
   passwords?: Record<string, string>;
   readIds: Record<string, string[]>; // userId -> notification ids
@@ -31,6 +36,7 @@ const fresh = (): Store => ({
   timetables: [],
   notifications: structuredClone(seedNotifications),
   changes: [],
+  examPlans: [],
   readIds: {},
   sessionUserId: null,
   seedVersion: SEED_VERSION,
@@ -86,6 +92,7 @@ function mergeSeed(saved: Store) {
   for (const sub of ds.subjects) {
     const seed = seedDataset.subjects.find((x) => x.id === sub.id);
     if (seed?.edgeOfDay && sub.edgeOfDay === undefined) sub.edgeOfDay = true;
+    if (seed?.evaluation && sub.evaluation === undefined) sub.evaluation = seed.evaluation;
   }
   // reduced attendance became session-based: every day of real session dates
   const st = ds.settings;
@@ -105,6 +112,7 @@ function mergeSeed(saved: Store) {
   }
   // parts of the day per year of study, and programme lengths
   if (!st.yearShifts) st.yearShifts = structuredClone(seedDataset.settings.yearShifts);
+  if (!st.evaluation) st.evaluation = structuredClone(seedDataset.settings.evaluation);
   for (const g of ds.groups) {
     const seed = seedDataset.groups.find((x) => x.id === g.id);
     if (g.programYears === undefined) g.programYears = seed?.programYears ?? Math.max(4, g.year);
@@ -220,6 +228,16 @@ function concerns(n: Notification, u: User): boolean {
   if (u.role === 'admin' || (!n.groupIds && !n.teacherIds)) return true;
   if (u.role === 'student') return !!u.groupId && !!n.groupIds?.includes(u.groupId);
   return !!u.teacherId && !!n.teacherIds?.includes(u.teacherId);
+}
+
+function setPlanStatus(round: ExamPlan['round'], status: ExamPlan['status']): ExamPlan {
+  const u = requireRole('admin');
+  const plan = (store.examPlans ?? []).find((p) => p.faculty === (u.faculty ?? '') && p.round === round);
+  if (!plan) throw new ApiError(404, 'Not found');
+  plan.status = status;
+  plan.updatedAt = new Date().toISOString();
+  persist();
+  return plan;
 }
 
 function collection<K extends CollectionName>(name: K): Collections[K][] {
@@ -514,6 +532,53 @@ export function createMockApi(): Api {
       store.timetables = [...out, ...store.timetables.filter((t) => t.status !== 'variant')];
       persist();
       return delay(out, 0);
+    },
+
+    // Exams: public reads, per-faculty plans for administrators
+    async listPublishedExams() {
+      return delay(
+        (store.examPlans ?? []).filter((p) => p.status === 'published').flatMap((p) => p.events),
+        0,
+      );
+    },
+    async getExamPlan(round) {
+      const u = requireRole('admin');
+      return delay((store.examPlans ?? []).find((p) => p.faculty === (u.faculty ?? '') && p.round === round) ?? null);
+    },
+    async generateExamPlan(round) {
+      const u = requireRole('admin');
+      const faculty = u.faculty ?? '';
+      const ds = store.dataset;
+      const idx = new DatasetIndex(ds);
+      const groupIds = ds.groups.filter((g) => !faculty || g.faculty === faculty).map((g) => g.id);
+      const plans = store.examPlans ?? [];
+      // other faculties' published events and this faculty's other rounds stay booked
+      const busy = plans
+        .filter((p) => (p.faculty !== faculty && p.status === 'published') || (p.faculty === faculty && p.round !== round))
+        .flatMap((p) => p.events);
+      const rng = createRng(Date.now() % 100000);
+      const classes = store.timetables.find((t) => t.status === 'published')?.lessons ?? [];
+      const result =
+        round === 'midterm1' || round === 'midterm2'
+          ? generateMidterms(ds, idx, groupIds, round === 'midterm1' ? 1 : 2, classes, busy, rng)
+          : generateExams(ds, idx, groupIds, round, busy, rng);
+      const plan: ExamPlan = { faculty, round, status: 'draft', events: result.events, updatedAt: new Date().toISOString() };
+      store.examPlans = [...plans.filter((p) => !(p.faculty === faculty && p.round === round)), plan];
+      persist();
+      return delay({ ...plan, warnings: result.warnings.length }, 300);
+    },
+    async saveExamPlan(plan) {
+      const u = requireRole('admin');
+      const saved: ExamPlan = { ...plan, faculty: u.faculty ?? '', updatedAt: new Date().toISOString() };
+      store.examPlans = [...(store.examPlans ?? []).filter((p) => !(p.faculty === saved.faculty && p.round === saved.round)), saved];
+      persist();
+      return delay(saved);
+    },
+    async publishExamPlan(round) {
+      return delay(setPlanStatus(round, 'published'));
+    },
+    async unpublishExamPlan(round) {
+      return delay(setPlanStatus(round, 'draft'));
     },
 
     async listChanges() {

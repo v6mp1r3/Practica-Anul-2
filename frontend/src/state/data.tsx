@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../api';
 import { DatasetIndex } from '../domain/indexes';
-import type { Dataset, Notification, ScheduleChange, Timetable } from '../domain/types';
+import type { Dataset, ExamEvent, Notification, ScheduleChange, Timetable } from '../domain/types';
 import { useAuth } from './auth';
 
 interface Data {
@@ -12,6 +12,8 @@ interface Data {
   published: Timetable | null;
   notifications: Notification[];
   changes: ScheduleChange[];
+  /** Published exam, reexamination and separate atestări events (all faculties). */
+  exams: ExamEvent[];
   loading: boolean;
   refresh: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
@@ -57,6 +59,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [published, setPublished] = useState<Timetable | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [changes, setChanges] = useState<ScheduleChange[]>([]);
+  const [exams, setExams] = useState<ExamEvent[]>([]);
   const [loading, setLoading] = useState(false);
 
   const refreshNotifications = useCallback(async () => {
@@ -66,10 +69,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [ds, pub, ch] = await Promise.all([api.getDataset(), api.getPublished(), api.listChanges()]);
+      const [ds, pub, ch, ex] = await Promise.all([api.getDataset(), api.getPublished(), api.listChanges(), api.listPublishedExams()]);
       setDataset(ds);
       setPublished(pub);
       setChanges(ch);
+      setExams(ex);
       if (signedIn) await refreshNotifications();
     } finally {
       setLoading(false);
@@ -91,6 +95,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       published,
       notifications,
       changes,
+      exams,
       loading,
       refresh,
       refreshNotifications,
@@ -104,6 +109,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       published,
       notifications,
       changes,
+      exams,
       loading,
       refresh,
       refreshNotifications,

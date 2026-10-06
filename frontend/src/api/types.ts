@@ -1,6 +1,9 @@
 // The contract between the web client and the backend. Every method here maps
 // to one endpoint in docs/API.md.
 import type {
+  ExamEvent,
+  ExamPlan,
+  ExamRound,
   Assignment,
   Dataset,
   Group,
@@ -102,6 +105,16 @@ export interface Api {
   listChanges(): Promise<ScheduleChange[]>;
   createChange(change: Omit<ScheduleChange, 'id' | 'createdAt'>): Promise<ScheduleChange>;
   deleteChange(id: string): Promise<void>;
+
+  /** Published exam, reexamination and separate atestări timetables of every faculty (public). */
+  listPublishedExams(): Promise<ExamEvent[]>;
+  /** The administrator's faculty's plan for one round, draft or published; null if none yet. */
+  getExamPlan(round: ExamRound): Promise<ExamPlan | null>;
+  /** Generate a new draft for the administrator's faculty (other faculties' published events stay booked). */
+  generateExamPlan(round: ExamRound): Promise<ExamPlan & { warnings: number }>;
+  saveExamPlan(plan: ExamPlan): Promise<ExamPlan>;
+  publishExamPlan(round: ExamRound): Promise<ExamPlan>;
+  unpublishExamPlan(round: ExamRound): Promise<ExamPlan>;
 
   listNotifications(): Promise<Notification[]>;
   markNotificationsRead(ids: string[]): Promise<void>;
