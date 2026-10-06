@@ -110,7 +110,12 @@ function Schedule({ kind }: { kind: Kind }) {
         )
       : [];
   const lessons = choice.kind === 'teacher' ? chosenLessons.filter(ofCycle) : chosenLessons;
-  const reducedGroup = group?.studyForm === 'reduced' && dataset.settings.reducedSessions.length > 0;
+  // reduced attendance (one group, or a torent of FR groups): the session timetable
+  const chosenGroups = group || stream ? streamGroups(index, choice.id) : [];
+  const reducedGroup =
+    chosenGroups.length > 0 &&
+    chosenGroups.every((g) => index.groups.get(g)?.studyForm === 'reduced') &&
+    dataset.settings.reducedSessions.length > 0;
   // is today inside the exam session or the retakes (for this group's form of study)?
   // a master's group follows the master calendar
   const ev = evaluationOf(dataset, group?.cycle ?? 'licenta');
@@ -295,7 +300,14 @@ function Schedule({ kind }: { kind: Kind }) {
         {!sessionNow && !stream && <ChangesCard groupId={group?.id} teacherId={teacher?.id} />}
         {sessionNow ? null : reducedGroup ? (
           // reduced attendance: the full calendar of every session, not one week
-          <SessionTimetable dataset={dataset} index={index} lessons={lessons} groupId={group!.id} hide={['audience']} />
+          <SessionTimetable
+            dataset={dataset}
+            index={index}
+            lessons={lessons}
+            groupId={group?.id}
+            groupIds={chosenGroups}
+            hide={group ? ['audience'] : []}
+          />
         ) : (
           <>
             <MyTimetable

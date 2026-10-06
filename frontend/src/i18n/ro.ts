@@ -618,6 +618,9 @@ export const ro = {
   'setup.masterStartsOn': 'Săptămâna 1 de master: {date}',
   'groups.cycle': 'Ciclu',
   'subjects.cycle': 'Ciclu',
+  'session.half': '0,5 gr. ({n})',
+  'session.day': 'Ziua',
+  'session.noClasses': 'Nu sunt ore în această sesiune.',
 } as const;
 
 export type MessageKey = keyof typeof ro;

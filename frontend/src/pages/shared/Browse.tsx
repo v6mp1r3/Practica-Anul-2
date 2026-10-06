@@ -6,7 +6,7 @@ import { SessionsSection, SessionTimetable } from '../../components/SessionTimet
 import { ViewPicker } from '../../components/ViewPicker';
 import { Empty, PageHeader } from '../../components/ui';
 import type { Parity } from '../../domain/types';
-import { dayIndexOf, filterLessons, inWeek, type ViewFilter } from '../../domain/views';
+import { dayIndexOf, filterLessons, inWeek, streamGroups, type ViewFilter } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { facultyView, useAdminScope } from '../../components/FacultyFilter';
 import { useDataset } from '../../state/data';
@@ -27,8 +27,12 @@ export default function Browse() {
   const [week, setWeek] = useState<Parity>('weekly');
 
   // Reduced-attendance groups are shown session by session (real dates)
+  // (a torent of reduced-attendance groups: the dates × groups table)
+  const viewGroups = view.kind === 'group' ? streamGroups(index, view.id) : [];
   const reducedGroup =
-    view.kind === 'group' && index.groups.get(view.id)?.studyForm === 'reduced' && dataset.settings.reducedSessions.length > 0;
+    viewGroups.length > 0 &&
+    viewGroups.every((g) => index.groups.get(g)?.studyForm === 'reduced') &&
+    dataset.settings.reducedSessions.length > 0;
   const lessons = published ? filterLessons(index, published.lessons, view).filter((l) => inWeek(l, week)) : [];
 
   return (
@@ -58,7 +62,8 @@ export default function Browse() {
               dataset={dataset}
               index={index}
               lessons={filterLessons(index, published.lessons, view)}
-              groupId={view.id}
+              groupId={viewGroups.length === 1 ? view.id : undefined}
+              groupIds={viewGroups}
               hide={HIDE[view.kind]}
             />
           ) : (

@@ -615,4 +615,7 @@ export const en: Record<MessageKey, string> = {
   'setup.masterStartsOn': 'Master’s week 1: {date}',
   'groups.cycle': 'Cycle',
   'subjects.cycle': 'Cycle',
+  'session.half': 'half group ({n})',
+  'session.day': 'Day',
+  'session.noClasses': 'No classes in this session.',
 };

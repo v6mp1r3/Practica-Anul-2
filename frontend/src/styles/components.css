@@ -1229,3 +1229,55 @@ button.holiday-row.selected {
     grid-template-columns: 1fr;
   }
 }
+
+/* Frecvență redusă sessions: blocks of consecutive pairs */
+.fr-day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+.fr-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border-left: 3px solid var(--lecture);
+  background: var(--lecture-soft);
+  font-size: 13px;
+}
+.fr-block.seminar {
+  border-left-color: var(--seminar);
+  background: var(--seminar-soft);
+}
+.fr-block.lab {
+  border-left-color: var(--lab);
+  background: var(--lab-soft);
+}
+.fr-block + .fr-block {
+  margin-top: 6px;
+}
+.fr-day .fr-block + .fr-block {
+  margin-top: 0;
+}
+.fr-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.fr-table td {
+  vertical-align: top;
+  min-width: 190px;
+}
+.fr-table .fr-date {
+  display: flex;
+  flex-direction: column;
+  min-width: 110px;
+  white-space: nowrap;
+}
+.fr-table .fr-date strong {
+  text-transform: capitalize;
+}
+.fr-table tr.today .fr-date strong {
+  color: var(--primary);
+}

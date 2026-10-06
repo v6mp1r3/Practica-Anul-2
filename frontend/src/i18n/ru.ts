@@ -619,4 +619,7 @@ export const ru: Record<MessageKey, string> = {
   'setup.masterStartsOn': '1-я неделя магистратуры: {date}',
   'groups.cycle': 'Цикл',
   'subjects.cycle': 'Цикл',
+  'session.half': '0,5 гр. ({n})',
+  'session.day': 'День',
+  'session.noClasses': 'В эту сессию занятий нет.',
 };
