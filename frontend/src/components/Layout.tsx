@@ -23,7 +23,6 @@ const NAV: Partial<Record<Role, { section?: MessageKey; items: NavItem[] }[]>> =
       section: 'nav.setup',
       items: [
         { to: '/admin/setup', label: 'nav.setup', icon: 'settings' },
-        { to: '/admin/admins', label: 'nav.admins', icon: 'user' },
         { to: '/admin/teachers', label: 'nav.teachers', icon: 'users' },
         { to: '/admin/rooms', label: 'nav.rooms', icon: 'door' },
         { to: '/admin/groups', label: 'nav.groups', icon: 'layers' },

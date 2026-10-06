@@ -120,47 +120,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={2} title={t('setup.faculties')}>
-          <p className="small muted">{t('setup.facultiesHint')}</p>
-          <div className="stack" style={{ gap: 8 }}>
-            {s.faculties.map((f, i) => (
-              <div key={i} className="row">
-                <input
-                  className="input"
-                  value={f}
-                  placeholder={t('setup.facultyPlaceholder')}
-                  onChange={(e) =>
-                    set(
-                      'faculties',
-                      s.faculties.map((x, j) => (j === i ? e.target.value : x)),
-                    )
-                  }
-                  aria-label={`${t('setup.faculties')} ${i + 1}`}
-                />
-                <button
-                  className="btn ghost sm icon danger"
-                  onClick={() =>
-                    set(
-                      'faculties',
-                      s.faculties.filter((_, j) => j !== i),
-                    )
-                  }
-                  aria-label={t('common.delete')}
-                >
-                  <Icon name="trash" size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <div>
-            <button className="btn sm" onClick={() => set('faculties', [...s.faculties, ''])}>
-              <Icon name="plus" size={14} />
-              {t('setup.addFaculty')}
-            </button>
-          </div>
-        </Step>
-
-        <Step n={3} title={t('setup.forms')}>
+        <Step n={2} title={t('setup.forms')}>
           <p className="small muted">{t('setup.formsHint')}</p>
           <div className="stack" style={{ gap: 10 }}>
             {STUDY_FORMS.map((form) => (
@@ -259,7 +219,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={4} title={t('setup.week')} required>
+        <Step n={3} title={t('setup.week')} required>
           <div className="form-grid">
             <Field label={t('setup.workingDays')} hint={t('setup.default', { value: 7 })}>
               <Select className="select" value={s.workingDays} onChange={(e) => set('workingDays', Number(e.target.value))}>
@@ -420,7 +380,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={5} title={t('setup.parity')}>
+        <Step n={4} title={t('setup.parity')}>
           <div className="row">
             <Switch checked={s.weekParity} onChange={(v) => set('weekParity', v)} label={t('setup.parityQuestion')} />
             <div>
@@ -430,7 +390,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={6} title={t('setup.limits')}>
+        <Step n={5} title={t('setup.limits')}>
           <div className="form-grid">
             <Field label={t('setup.minPairsGroup')} hint={t('setup.default', { value: 2 })}>
               <input
