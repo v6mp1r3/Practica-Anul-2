@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
 import {
+  groupPeriodWeeks,
   evaluationForGroup,
   midtermRange,
   evaluationOf,
@@ -116,11 +117,15 @@ describe('separate atestări timetable', () => {
     const separate = { ...seedDataset, settings: { ...seedDataset.settings, evaluation: { ...ev, midtermMode: 'separate' as const } } };
     const { events, warnings } = generateMidterms(separate, idx, fcim, 1, lessons, [], createRng(3));
     expect(warnings).toEqual([]);
-    const week = midtermRange(ev, 1);
     // licență full-time groups (FR sits them in its sessions, master's in its own weeks)
     const reduced = (g: string) => idx.groups.get(g)?.studyForm === 'reduced';
     const regular = events.filter((e) => !reduced(e.groupId) && idx.groups.get(e.groupId)?.cycle !== 'master');
-    expect(regular.every((e) => e.date >= week.start && e.date <= week.end && e.round === 'midterm1')).toBe(true);
+    // each in its group's atestare weeks (moved after an internship, e.g. FAF-241 in week 9)
+    for (const e of regular) {
+      const weeks = groupPeriodWeeks(seedDataset, ev, e.groupId, 1);
+      expect(e.date >= teachingWeek(ev, weeks[0]).start && e.date <= teachingWeek(ev, weeks[weeks.length - 1]).end).toBe(true);
+      expect(e.round).toBe('midterm1');
+    }
     expect(findExamProblems(seedDataset, events)).toEqual([]);
     // never over one of the group's classes that week (week 7 odd, week 8 even)
     for (const e of events) {
@@ -147,14 +152,17 @@ describe('atestări held in class', () => {
   it('turns each subject’s class of week 14 into an atestare, in its room and time', async () => {
     const { lessons } = await generateTimetable(seedDataset, { groupIds: fcim, seed: 6, iterations: 40 });
     const { events } = generateMidterms(seedDataset, idx, fcim, 2, lessons, [], createRng(1));
-    const week = midtermRange(ev, 2); // weeks 14–15
     expect(events.length).toBeGreaterThan(20);
     for (const e of events) {
       const l = lessons.find((x) => x.id === e.lessonId)!;
       expect(l.roomId).toBe(e.roomId);
       expect(seedDataset.settings.slots[l.slot].start).toBe(e.start);
       // FR (g8) sits its atestări in its own sessions; master's in its own weeks
-      const own = idx.groups.get(e.groupId)?.cycle === 'master' ? midtermRange(evaluationOf(seedDataset, 'master'), 2) : week;
+      const gw = groupPeriodWeeks(seedDataset, ev, e.groupId, 2);
+      const own =
+        idx.groups.get(e.groupId)?.cycle === 'master'
+          ? midtermRange(evaluationOf(seedDataset, 'master'), 2)
+          : { start: teachingWeek(ev, gw[0]).start, end: teachingWeek(ev, gw[gw.length - 1]).end };
       if (idx.groups.get(e.groupId)?.studyForm !== 'reduced') expect(e.date >= own.start && e.date <= own.end).toBe(true);
     }
     // a stream lecture shared by groups, or both subgroups' labs, are not clashes

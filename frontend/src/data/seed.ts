@@ -65,6 +65,15 @@ export const seedSettings: Settings = {
   evaluation: DEFAULT_EVALUATION,
   // master's: its own calendar and evening hours (only what differs from licență)
   masterEvaluation: DEFAULT_MASTER,
+  // as FCIM's calendar: year 2 FAF and year 3 on internship in weeks 1–4; the final year (FAF-221)
+  // has a short spring, its own exam session, an internship, then the plagiarism check and the licence exam
+  groupPeriods: [
+    { id: 'gp1', kind: 'internship', start: '2026-08-31', end: '2026-09-27', groupIds: ['g5', 'g6', 'g13'] },
+    { id: 'gp2', kind: 'examSession', start: '2027-03-01', end: '2027-03-06', groupIds: ['g14'] },
+    { id: 'gp3', kind: 'internship', start: '2027-03-08', end: '2027-05-21', groupIds: ['g14'] },
+    { id: 'gp4', kind: 'plagiarism', start: '2027-05-24', end: '2027-05-28', groupIds: ['g14'] },
+    { id: 'gp5', kind: 'licence', start: '2027-06-01', end: '2027-06-12', groupIds: ['g14'] },
+  ],
   masterYearShifts: [
     { first: 4, last: 6 },
     { first: 4, last: 6 },
