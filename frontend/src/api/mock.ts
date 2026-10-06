@@ -13,7 +13,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 15;
+const SEED_VERSION = 16;
 
 interface Store {
   dataset: Dataset;
@@ -149,6 +149,23 @@ function mergeSeed(saved: Store) {
   for (const u of saved.users) {
     const seed = seedUsers.find((x) => x.id === u.id);
     if (seed?.faculty && u.faculty === undefined) u.faculty = seed.faculty;
+  }
+  // v16: subgroups are the exception (only FAF-251, for the small room A01); labs are held with the whole group.
+  // The demo groups, lab rooms and teaching loads are replaced, and timetables built on the old split labs are dropped.
+  if ((saved.seedVersion ?? 1) < 16) {
+    const isSeedLoad = (id: string) => /^a\d+$/.test(id);
+    ds.assignments = [...structuredClone(seedDataset.assignments), ...ds.assignments.filter((a) => !isSeedLoad(a.id))];
+    for (const g of ds.groups) {
+      const seed = seedDataset.groups.find((x) => x.id === g.id);
+      if (seed) g.subgroups = seed.subgroups;
+    }
+    for (const r of ds.rooms) {
+      const seed = seedDataset.rooms.find((x) => x.id === r.id);
+      if (seed && r.type === 'lab') Object.assign(r, { name: seed.name, capacity: seed.capacity, equipment: [...seed.equipment] });
+    }
+    saved.timetables = [];
+    saved.examPlans = [];
+    saved.changes = [];
   }
   saved.seedVersion = SEED_VERSION;
 }
