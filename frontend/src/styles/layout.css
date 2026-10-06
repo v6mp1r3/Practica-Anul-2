@@ -472,3 +472,13 @@ img.avatar {
     grid-template-columns: 1fr;
   }
 }
+
+/* "Autentificare administrație": lined up with the menu items, not pushed right */
+.user-chip.admin-login {
+  gap: 11px;
+  padding: 9px 12px;
+}
+.user-chip.admin-login > svg {
+  margin-left: 0;
+  color: var(--text-2);
+}

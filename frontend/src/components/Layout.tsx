@@ -127,7 +127,7 @@ export function Layout() {
             </>
           ) : (
             // students and teachers don't need an account; only the administration signs in
-            <NavLink to="/login" className="user-chip">
+            <NavLink to="/login" className="user-chip admin-login">
               <Icon name="lock" size={16} />
               <span className="small">{t('nav.adminLogin')}</span>
             </NavLink>
