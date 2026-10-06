@@ -42,6 +42,38 @@ export const academicYearOf = (semesterStart: string) => {
   return d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1;
 };
 
+/** The academic year happening now (from September): October 2026 -> 2026, March 2027 -> 2026. */
+export const currentAcademicYear = (today = new Date()) => today.getFullYear() - (today.getMonth() < 8 ? 1 : 0);
+
+/**
+ * The semester, kept up to date by itself: a stored semester of a past academic
+ * year becomes the autumn semester of the current one ("Toamna 2027/2028").
+ */
+export function semesterOf(stored: string, today = new Date()): string {
+  const y = currentAcademicYear(today);
+  const m = /^(Toamna|Primăvara) (\d{4})\//.exec(stored ?? '');
+  if (m && Number(m[2]) === y) return stored;
+  return `Toamna ${y}/${y + 1}`;
+}
+
+/** The two semesters that can be chosen: those of the current academic year. */
+export const semesterChoices = (today = new Date()) => {
+  const y = currentAcademicYear(today);
+  return [`Toamna ${y}/${y + 1}`, `Primăvara ${y}/${y + 1}`];
+};
+
+/** Monday of the week of 1 September of the current academic year (the first teaching week). */
+export function defaultSemesterStart(today = new Date()): string {
+  const sept = new Date(currentAcademicYear(today), 8, 1);
+  sept.setDate(sept.getDate() - ((sept.getDay() + 6) % 7));
+  return toDateString(sept);
+}
+
+/** The stored semester start, moved to this academic year once that one has begun. */
+export function semesterStartOf(stored: string | undefined, today = new Date()): string {
+  return stored && academicYearOf(stored) >= currentAcademicYear(today) ? stored : defaultSemesterStart(today);
+}
+
 /** The days off the rules give for academic year `y` (September y – August y+1). */
 export function autoHolidays(y: number): Holiday[] {
   const n = y + 1;

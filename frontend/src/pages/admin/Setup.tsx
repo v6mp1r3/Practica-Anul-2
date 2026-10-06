@@ -7,6 +7,7 @@ import { Icon } from '../../components/Icon';
 import { Field, PageHeader, Segmented, Switch, TimeInput, useClock } from '../../components/ui';
 import { fmtTime, parseTime, range } from '../../domain/slots';
 import { DEFAULT_EVALUATION } from '../../domain/exams';
+import { semesterChoices, semesterOf, semesterStartOf } from '../../domain/holidays';
 import { STUDY_FORMS, type EvaluationSettings, type Settings, type TimeSlot } from '../../domain/types';
 import { UTM_FACULTIES, UTM_NAME } from '../../domain/utm';
 import { useI18n } from '../../i18n';
@@ -30,17 +31,6 @@ export function buildSlots(start: string, lessonMinutes: number, breakMinutes: n
     t += lessonMinutes + breakMinutes;
   }
   return out;
-}
-
-/**
- * Autumn and spring semesters from last academic year to five years ahead,
- * stored as "Toamna 2026/2027" / "Primăvara 2026/2027".
- */
-export function semesterOptions(current: string, today = new Date()): string[] {
-  const first = today.getFullYear() - (today.getMonth() < 8 ? 1 : 0) - 1;
-  const out: string[] = [];
-  for (let y = first; y <= first + 6; y++) out.push(`Toamna ${y}/${y + 1}`, `Primăvara ${y}/${y + 1}`);
-  return out.includes(current) || !current ? out : [current, ...out];
 }
 
 /** "Toamna 2026/2027" in the viewer's language. */
@@ -244,8 +234,9 @@ export default function Setup() {
               </Select>
             </Field>
             <Field label={t('setup.semester')}>
-              <Select value={s.semester} onChange={(e) => set('semester', e.target.value)} aria-label={t('setup.semester')}>
-                {semesterOptions(s.semester).map((v) => (
+              {/* only this academic year's two semesters; a new year takes over by itself */}
+              <Select value={semesterOf(s.semester)} onChange={(e) => set('semester', e.target.value)} aria-label={t('setup.semester')}>
+                {semesterChoices().map((v) => (
                   <option key={v} value={v}>
                     {semesterLabel(v, t)}
                   </option>
@@ -570,7 +561,7 @@ export default function Setup() {
                   <input
                     className="input"
                     type="date"
-                    value={ev.semesterStart}
+                    value={semesterStartOf(ev.semesterStart)}
                     onChange={(e) => setEv({ semesterStart: e.target.value })}
                   />
                 </Field>

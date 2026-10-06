@@ -594,6 +594,11 @@ export const ro = {
   'holiday.children': 'Ziua Ocrotirii Copiilor',
   'holiday.independence': 'Ziua Independenței',
   'holiday.language': 'Limba noastră',
+  'exams.prevWeek': 'Săptămâna anterioară',
+  'exams.nextWeek': 'Săptămâna următoare',
+  'exams.weekOf': 'săptămâna {n} din {count}',
+  'exams.dragHint': 'trage un card pentru a-l muta',
+  'exams.midtermShort': 'Atestare',
 } as const;
 
 export type MessageKey = keyof typeof ro;

@@ -4,7 +4,7 @@
 // retakes in afternoon pairs after the session. Atestări 1 and 2 are held in
 // the subject's own classes in teaching weeks 7 and 14.
 import { parseDate, sessionDates, toDateString } from './changes';
-import { holidaysOf } from './holidays';
+import { holidaysOf, semesterStartOf } from './holidays';
 import type { DatasetIndex } from './indexes';
 import type { Rng } from './rng';
 import type { ActivityType, Dataset, DateRange, Day, EvaluationSettings, ExamEvent, Lesson, Room } from './types';
@@ -39,7 +39,9 @@ export const DEFAULT_EVALUATION: EvaluationSettings = {
 
 /** The evaluation settings, with `vacations` = every day off of the year (automatic + added). */
 export const evaluationOf = (ds: Dataset): EvaluationSettings => {
-  const ev = { ...DEFAULT_EVALUATION, ...ds.settings.evaluation };
+  const stored = { ...DEFAULT_EVALUATION, ...ds.settings.evaluation };
+  // a new academic year starts by itself: its first week and its days off
+  const ev = { ...stored, semesterStart: semesterStartOf(stored.semesterStart) };
   return { ...ev, vacations: holidaysOf(ev) };
 };
 

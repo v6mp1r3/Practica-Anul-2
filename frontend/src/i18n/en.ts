@@ -592,4 +592,9 @@ export const en: Record<MessageKey, string> = {
   'holiday.children': 'Children\'s Day',
   'holiday.independence': 'Independence Day',
   'holiday.language': 'National Language Day',
+  'exams.prevWeek': 'Previous week',
+  'exams.nextWeek': 'Next week',
+  'exams.weekOf': 'week {n} of {count}',
+  'exams.dragHint': 'drag a card to move it',
+  'exams.midtermShort': 'Midterm',
 };

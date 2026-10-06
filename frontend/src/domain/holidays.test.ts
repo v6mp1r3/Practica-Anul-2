@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { academicYearOf, autoHolidays, holidaysOf, orthodoxEaster } from './holidays';
+import { academicYearOf, autoHolidays, holidaysOf, orthodoxEaster, semesterChoices, semesterOf, semesterStartOf } from './holidays';
 
 describe('days off, every year', () => {
   it('knows Orthodox Easter', () => {
@@ -39,5 +39,22 @@ describe('days off, every year', () => {
     expect(list.find((h) => h.id === '2026:winter')).toMatchObject({ start: '2026-12-26', end: '2027-01-11' });
     expect(list.some((h) => h.id === '2026:women')).toBe(false);
     expect(list.some((h) => h.name === 'Hramul orașului' && !h.auto)).toBe(true);
+  });
+});
+
+describe('a new academic year takes over by itself', () => {
+  it('offers only this year’s two semesters', () => {
+    expect(semesterChoices(new Date(2026, 9, 6))).toEqual(['Toamna 2026/2027', 'Primăvara 2026/2027']);
+    expect(semesterChoices(new Date(2027, 8, 15))).toEqual(['Toamna 2027/2028', 'Primăvara 2027/2028']);
+  });
+
+  it('moves a past semester to the autumn of the new year', () => {
+    expect(semesterOf('Primăvara 2026/2027', new Date(2027, 2, 1))).toBe('Primăvara 2026/2027');
+    expect(semesterOf('Primăvara 2026/2027', new Date(2027, 8, 2))).toBe('Toamna 2027/2028');
+  });
+
+  it('starts the new year on the Monday of the week of 1 September', () => {
+    expect(semesterStartOf('2026-08-31', new Date(2026, 9, 6))).toBe('2026-08-31');
+    expect(semesterStartOf('2026-08-31', new Date(2027, 8, 10))).toBe('2027-08-30');
   });
 });

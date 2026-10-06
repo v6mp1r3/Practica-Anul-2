@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { HolidaysCard } from '../../components/Holidays';
+import { semesterOf } from '../../domain/holidays';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { SessionsSection, SessionTimetable } from '../../components/SessionTimetable';
 import { ViewPicker } from '../../components/ViewPicker';
@@ -32,7 +33,7 @@ export default function Browse() {
 
   return (
     <div className="page">
-      <PageHeader title={t('nav.browse')} subtitle={published ? `${published.name} · ${dataset.settings.semester}` : undefined} />
+      <PageHeader title={t('nav.browse')} subtitle={published ? `${published.name} · ${semesterOf(dataset.settings.semester)}` : undefined} />
       {!published ? (
         <div className="card">
           <Empty>{t('tt.notPublished')}</Empty>

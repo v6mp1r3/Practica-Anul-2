@@ -1,6 +1,7 @@
 // Timetable editor: view by group / teacher / room, live validation, manual
 // changes, then save as draft or publish.
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { semesterOf } from '../../domain/holidays';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api';
 import { ConflictList } from '../../components/ConflictList';
@@ -261,7 +262,7 @@ export default function Editor() {
       <div className="editor-layout">
         <div className="stack" style={{ minWidth: 0 }}>
           <h2 className="print-only">
-            {viewName()} — {dataset.settings.semester}
+            {viewName()} — {semesterOf(dataset.settings.semester)}
           </h2>
           <div className="row wrap no-print">
             <ViewPicker dataset={dataset} view={view} onView={setView} week={week} onWeek={setWeek} limit={limit} />

@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api';
 import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
-import { ExamCalendar } from '../../components/ExamCalendar';
+import { ExamWeekCalendar } from '../../components/ExamWeekCalendar';
 import { examEntries } from '../../components/examEntries';
 import { Icon } from '../../components/Icon';
 import { Select } from '../../components/Select';
@@ -78,6 +78,15 @@ export default function Evaluations() {
     setPlan(saved);
     setEditing(null);
     if (saved.status === 'published') await refresh();
+  }
+
+  /** Drag & drop: same length, new date and start (atestări held in class stay with their class). */
+  async function move(id: string, date: string, start: string) {
+    const e = plan?.events.find((x) => x.id === id);
+    if (!e || e.lessonId) return;
+    const end = toHHMM(toMin(start) + toMin(e.end) - toMin(e.start));
+    if (e.date === date && e.start === start) return;
+    await saveEdit({ ...e, date, start, end });
   }
 
   const shown = (plan?.events ?? []).filter((e) => !groupId || e.groupId === groupId);
@@ -159,13 +168,14 @@ export default function Evaluations() {
           </p>
         )}
         {!midterm && <p className="small muted">{t('exams.finalsNote')}</p>}
-        <ExamCalendar
+        <ExamWeekCalendar
           entries={examEntries(shown, index, t)}
           index={index}
           settings={dataset.settings}
           highlight={problemIds}
           vacations={ev.vacations}
           onEdit={(id) => setEditing(plan?.events.find((e) => e.id === id) ?? null)}
+          onMove={move}
           empty={<Empty>{midterm && !published ? t('tt.notPublished') : t('exams.none')}</Empty>}
         />
       </div>

@@ -595,4 +595,9 @@ export const ru: Record<MessageKey, string> = {
   'holiday.children': 'День защиты детей',
   'holiday.independence': 'День независимости',
   'holiday.language': 'День национального языка',
+  'exams.prevWeek': 'Предыдущая неделя',
+  'exams.nextWeek': 'Следующая неделя',
+  'exams.weekOf': 'неделя {n} из {count}',
+  'exams.dragHint': 'перетащите карточку, чтобы перенести',
+  'exams.midtermShort': 'Аттестация',
 };

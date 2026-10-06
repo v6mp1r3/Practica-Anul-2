@@ -3,6 +3,7 @@ import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 // today's date and week parity, activity distribution, recent timetables and
 // the data check.
 import { useEffect, useMemo, useState } from 'react';
+import { semesterOf } from '../../domain/holidays';
 import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import { Icon } from '../../components/Icon';
@@ -235,7 +236,7 @@ export default function Dashboard() {
             </div>
             <div className="dash-date-info">
               <span className="dash-date-badge">{t(week === 'odd' ? 'tt.weekOdd' : 'tt.weekEven')}</span>
-              <strong>{dataset.settings.semester}</strong>
+              <strong>{semesterOf(dataset.settings.semester)}</strong>
               <span className="muted small">{dataset.settings.institutionName}</span>
             </div>
           </section>
