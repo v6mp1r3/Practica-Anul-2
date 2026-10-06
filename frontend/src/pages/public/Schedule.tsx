@@ -124,7 +124,11 @@ function Schedule({ kind }: { kind: Kind }) {
     ...(group?.studyForm === 'reduced' ? ev.reducedExamSession : ev.examSession).map((r) => ({ ...r, round: 'session' as const })),
     ...ev.reexamSession.map((r) => ({ ...r, round: 'reexam' as const })),
   ];
+  // the group's own periods (internship, own exam session, VP, licence exam)
+  const myPeriods = group ? (dataset.settings.groupPeriods ?? []).filter((p) => p.groupIds.includes(group.id)) : [];
+  for (const p of myPeriods.filter((x) => x.kind === 'examSession')) sessionRanges.push({ start: p.start, end: p.end, round: 'session' });
   const sessionNow = sessionRanges.find((r) => r.start <= todayStr && todayStr <= r.end);
+  const periodNow = myPeriods.find((p) => p.kind !== 'examSession' && p.start <= todayStr && todayStr <= p.end);
   const fmtShort = (d: string) => parseDate(d).toLocaleDateString(dateLocale(lang), { day: 'numeric', month: 'long' });
   const consultation = teacher?.consultation ? parseSlotKey(teacher.consultation) : null;
 
@@ -296,9 +300,21 @@ function Schedule({ kind }: { kind: Kind }) {
             </div>
           </div>
         )}
+        {periodNow && (
+          // internship: the students are at their internship, not at university
+          <div className="card session-banner">
+            <div className="card-body">
+              <strong>{t(`periods.kind.${periodNow.kind}`)}</strong>
+              <div className="small muted">
+                {fmtShort(periodNow.start)} – {fmtShort(periodNow.end)}
+                {periodNow.kind === 'internship' && ` · ${t('periods.noClasses')}`}
+              </div>
+            </div>
+          </div>
+        )}
         <HolidayToday dataset={dataset} />
-        {!sessionNow && !stream && <ChangesCard groupId={group?.id} teacherId={teacher?.id} />}
-        {sessionNow ? null : reducedGroup ? (
+        {!sessionNow && !periodNow && !stream && <ChangesCard groupId={group?.id} teacherId={teacher?.id} />}
+        {sessionNow || periodNow?.kind === 'internship' ? null : reducedGroup ? (
           // reduced attendance: the full calendar of every session, not one week
           <SessionTimetable
             dataset={dataset}
@@ -319,6 +335,26 @@ function Schedule({ kind }: { kind: Kind }) {
             />
             {teacher && <SessionsSection dataset={dataset} index={index} lessons={lessons} hide={['teacher']} />}
           </>
+        )}
+        {myPeriods.length > 0 && (
+          // the group's calendar: internships, own session, VP, licence exam
+          <section className="card">
+            <div className="card-header">
+              <h2>{t('periods.groupCalendar')}</h2>
+            </div>
+            <div className="card-body holidays-list">
+              {[...myPeriods]
+                .sort((a, b) => a.start.localeCompare(b.start))
+                .map((p) => (
+                  <span key={p.id} className={`holiday period ${p.kind} ${p.end < todayStr ? 'past' : ''}`}>
+                    <strong>{t(`periods.kind.${p.kind}`)}</strong>
+                    <span>
+                      {fmtShort(p.start)} – {fmtShort(p.end)}
+                    </span>
+                  </span>
+                ))}
+            </div>
+          </section>
         )}
         <HolidaysCard dataset={dataset} />
       </div>
