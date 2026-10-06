@@ -245,7 +245,6 @@ function Schedule({ kind }: { kind: Kind }) {
               lessons={lessons}
               hide={group ? ['audience'] : ['teacher']}
               holidays={evaluationOf(dataset).vacations}
-              unavailable={teacher?.unavailable}
             />
             {teacher && <SessionsSection dataset={dataset} index={index} lessons={lessons} hide={['teacher']} />}
           </>
