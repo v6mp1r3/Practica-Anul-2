@@ -36,7 +36,10 @@ describe('forms of study', () => {
   it('schedules reduced attendance on real session dates, in blocks, without gaps', async () => {
     const { lessons, score } = await generateTimetable(seedDataset, { groupIds: ['g8'], seed: 3, iterations: 30 });
     expect(score.hard).toBe(0);
-    const perSession = seedDataset.assignments.filter((a) => a.audience.id === 'g8').reduce((n, a) => n + (a.pairsPerSession ?? 0), 0);
+    // its own loads and the torent's lectures
+    const perSession = seedDataset.assignments
+      .filter((a) => idx.audienceTouchesGroup(a.audience, 'g8'))
+      .reduce((n, a) => n + (a.pairsPerSession ?? 0), 0);
     expect(lessons.length).toBe(perSession * seedDataset.settings.reducedSessions.length);
     const inSession = (d: string) => seedDataset.settings.reducedSessions.some((x) => x.start <= d && d <= x.end);
     expect(lessons.every((l) => l.date && inSession(l.date))).toBe(true);

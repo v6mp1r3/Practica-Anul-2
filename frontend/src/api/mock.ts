@@ -13,7 +13,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 18;
+const SEED_VERSION = 19;
 
 interface Store {
   dataset: Dataset;
@@ -172,6 +172,21 @@ function mergeSeed(saved: Store) {
     saved.timetables = [];
     saved.examPlans = [];
     saved.changes = [];
+  }
+  // FR Anul I as a torent; FR sessions at the start of each semester; FR programmes last 5 years
+  if ((saved.seedVersion ?? 1) < 19) {
+    const isSeedLoad = (id: string) => /^a\d+$/.test(id);
+    ds.assignments = [...structuredClone(seedDataset.assignments), ...ds.assignments.filter((a) => !isSeedLoad(a.id))];
+    const g8 = ds.groups.find((g) => g.id === 'g8');
+    if (g8) g8.programYears = 5;
+    if (
+      JSON.stringify(st.reducedSessions) ===
+      JSON.stringify([
+        { start: '2026-10-12', end: '2026-10-25' },
+        { start: '2027-01-11', end: '2027-01-24' },
+      ])
+    )
+      st.reducedSessions = structuredClone(seedDataset.settings.reducedSessions);
   }
   saved.seedVersion = SEED_VERSION;
 }

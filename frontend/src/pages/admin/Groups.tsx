@@ -112,7 +112,17 @@ export default function Groups() {
                 </Select>
               </Field>
               <Field label={t('groups.studyForm')}>
-                <Select className="select" value={d.studyForm} onChange={(e) => set({ studyForm: e.target.value as StudyForm })}>
+                <Select
+                  className="select"
+                  value={d.studyForm}
+                  onChange={(e) =>
+                    set({
+                      studyForm: e.target.value as StudyForm,
+                      // frecvență redusă licență lasts 5 years
+                      ...(d.cycle !== 'master' ? { programYears: e.target.value === 'reduced' ? 5 : 4 } : {}),
+                    })
+                  }
+                >
                   {STUDY_FORMS.map((f) => (
                     <option key={f} value={f}>
                       {t(`form.${f}`)}

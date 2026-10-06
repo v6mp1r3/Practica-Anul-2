@@ -118,18 +118,20 @@ describe('separate atestări timetable', () => {
     expect(warnings).toEqual([]);
     const week = midtermRange(ev, 1);
     // licență full-time groups (FR sits them in its sessions, master's in its own weeks)
-    const regular = events.filter((e) => e.groupId !== 'g8' && idx.groups.get(e.groupId)?.cycle !== 'master');
+    const reduced = (g: string) => idx.groups.get(g)?.studyForm === 'reduced';
+    const regular = events.filter((e) => !reduced(e.groupId) && idx.groups.get(e.groupId)?.cycle !== 'master');
     expect(regular.every((e) => e.date >= week.start && e.date <= week.end && e.round === 'midterm1')).toBe(true);
     expect(findExamProblems(seedDataset, events)).toEqual([]);
-    // never over one of the group's classes that week (week 7 = odd)
+    // never over one of the group's classes that week (week 7 odd, week 8 even)
     for (const e of events) {
       const day = (new Date(e.date).getDay() + 6) % 7;
       if (e.lessonId) continue; // held in a session class
+      const parity = e.date <= teachingWeek(ev, 7).end ? 'odd' : 'even';
       const overlapping = lessons.filter(
         (l) =>
           !l.date &&
           l.day === day &&
-          l.parity !== 'even' &&
+          (l.parity === 'weekly' || l.parity === parity) &&
           idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, e.groupId) &&
           seedDataset.settings.slots[l.slot].start < e.end &&
           e.start < seedDataset.settings.slots[l.slot].end,
@@ -137,7 +139,7 @@ describe('separate atestări timetable', () => {
       expect(overlapping).toEqual([]);
     }
     // FR keeps its atestări in its session classes
-    expect(events.filter((e) => e.groupId === 'g8').every((e) => e.lessonId)).toBe(true);
+    expect(events.filter((e) => reduced(e.groupId)).every((e) => e.lessonId)).toBe(true);
   });
 });
 
@@ -153,7 +155,7 @@ describe('atestări held in class', () => {
       expect(seedDataset.settings.slots[l.slot].start).toBe(e.start);
       // FR (g8) sits its atestări in its own sessions; master's in its own weeks
       const own = idx.groups.get(e.groupId)?.cycle === 'master' ? midtermRange(evaluationOf(seedDataset, 'master'), 2) : week;
-      if (e.groupId !== 'g8') expect(e.date >= own.start && e.date <= own.end).toBe(true);
+      if (idx.groups.get(e.groupId)?.studyForm !== 'reduced') expect(e.date >= own.start && e.date <= own.end).toBe(true);
     }
     // a stream lecture shared by groups, or both subgroups' labs, are not clashes
     expect(findExamProblems(seedDataset, events)).toEqual([]);
@@ -177,7 +179,7 @@ describe('one atestare a day, one exam every other day', () => {
     const { lessons } = await generateTimetable(seedDataset, { groupIds: fcim, seed: 7, iterations: 40 });
     for (const n of [1, 2] as const) {
       const { events } = generateMidterms(seedDataset, idx, fcim, n, lessons, [], createRng(2));
-      for (const g of fcim.filter((x) => x !== 'g8')) {
+      for (const g of fcim.filter((x) => idx.groups.get(x)?.studyForm !== 'reduced')) {
         const subgroups = idx.groups.get(g)!.subgroups;
         for (let sg = 1; sg <= subgroups; sg++) {
           const days = events.filter((e) => e.groupId === g && (!e.subgroup || e.subgroup === sg)).map((e) => e.date);

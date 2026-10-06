@@ -33,9 +33,10 @@ export const seedSettings: Settings = {
   },
   formMaxPairs: { full: 4, reduced: 6, dual: 4 },
   // teaching sessions for reduced attendance this semester (the exam session is separate)
+  // frecvență redusă: about three weeks of classes at the start of each semester, every day (as FCIM's FR timetables)
   reducedSessions: [
-    { start: '2026-10-12', end: '2026-10-25' },
-    { start: '2027-01-11', end: '2027-01-24' },
+    { start: '2026-09-05', end: '2026-09-25' },
+    { start: '2027-02-08', end: '2027-02-28' },
   ],
   lessonMinutes: 90,
   slots: [
@@ -254,9 +255,33 @@ export const seedGroups: Group[] = [
     faculty: FCIM,
     studyForm: 'reduced',
     year: 1,
-    programYears: 4,
+    // frecvență redusă licență lasts 5 years
+    programYears: 5,
     size: 16,
     subgroups: 1,
+  },
+  {
+    id: 'g17',
+    name: 'TI-252FR',
+    program: 'Tehnologia Informației',
+    faculty: FCIM,
+    studyForm: 'reduced',
+    year: 1,
+    programYears: 5,
+    size: 18,
+    subgroups: 1,
+  },
+  // its lab is in the small room A01: labs in half groups ("0,5 gr.")
+  {
+    id: 'g18',
+    name: 'CR-251FR',
+    program: 'Calculatoare și Rețele',
+    faculty: FCIM,
+    studyForm: 'reduced',
+    year: 1,
+    programYears: 5,
+    size: 22,
+    subgroups: 2,
   },
   // Dual: attends the year-2 lectures with the full-time groups
   // FET (Electronică și Telecomunicații) — group codes are illustrative
@@ -350,6 +375,8 @@ export const seedStreams: Stream[] = [
   { id: 's3', name: 'Anul I', groupIds: ['g1', 'g2', 'g3', 'g4'] },
   { id: 's4', name: 'Anul II', groupIds: ['g5', 'g6', 'g7', 'g9'] },
   { id: 's5', name: 'FET Anul I', groupIds: ['g10', 'g11', 'g12'] },
+  // frecvență redusă year 1: lectures together, seminars per group, a lab in half groups
+  { id: 's6', name: 'FR Anul I', groupIds: ['g8', 'g17', 'g18'] },
 ];
 
 export const seedSubjects: Subject[] = [
@@ -650,12 +677,13 @@ export const seedAssignments: Assignment[] = [
     a('sub13', 'lab', 't16', group(g), 1, 'weekly', ['laborator fizică']),
     a('sub14', 'lab', 't19', group(g), 1, 'weekly', ['electronică']),
   ]),
-  // Reduced attendance (TI-251FR) — pairs per session, placed on session dates
-  { ...a('sub1', 'lecture', 't2', group('g8')), pairsPerSession: 6 },
+  // Reduced attendance (FR Anul I: TI-251FR, TI-252FR, CR-251FR) — pairs per session, on session dates;
+  // lectures for the whole torent
+  { ...a('sub1', 'lecture', 't2', stream('s6')), pairsPerSession: 6 },
   { ...a('sub1', 'seminar', 't4', group('g8')), pairsPerSession: 3 },
-  { ...a('sub3', 'lecture', 't10', group('g8')), pairsPerSession: 4 },
+  { ...a('sub3', 'lecture', 't10', stream('s6')), pairsPerSession: 4 },
   { ...a('sub3', 'lab', 't11', group('g8'), 2), pairsPerSession: 6 },
-  { ...a('sub4', 'lecture', 't14', group('g8')), pairsPerSession: 4 },
+  { ...a('sub4', 'lecture', 't14', stream('s6')), pairsPerSession: 4 },
   { ...a('sub6', 'seminar', 't9', group('g8')), pairsPerSession: 2 },
   // Dual (FAF-241D) — lectures come from the "Anul II" stream
   a('sub10', 'seminar', 't14', group('g9')),
@@ -670,6 +698,14 @@ export const seedAssignments: Assignment[] = [
   a('sub21', 'seminar', 't14', group('g15')),
   a('sub22', 'lecture', 't15', group('g16')),
   a('sub22', 'lab', 't19', group('g16'), 1, 'weekly', ['electronică']),
+  // FR Anul I — the other two groups' seminars and labs (CR-251FR's lab in half groups, room A01)
+  { ...a('sub1', 'seminar', 't4', group('g17')), pairsPerSession: 3 },
+  { ...a('sub3', 'lab', 't11', group('g17'), 2), pairsPerSession: 6 },
+  { ...a('sub6', 'seminar', 't9', group('g17')), pairsPerSession: 2 },
+  { ...a('sub1', 'seminar', 't4', group('g18')), pairsPerSession: 3 },
+  { ...a('sub3', 'lab', 't6', sub('g18', 1), 2, 'weekly', ['calculatoare', 'electronică']), pairsPerSession: 6 },
+  { ...a('sub3', 'lab', 't6', sub('g18', 2), 2, 'weekly', ['calculatoare', 'electronică']), pairsPerSession: 6 },
+  { ...a('sub6', 'seminar', 't9', group('g18')), pairsPerSession: 2 },
 ];
 
 export const seedDataset: Dataset = {
