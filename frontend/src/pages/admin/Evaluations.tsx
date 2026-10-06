@@ -1,3 +1,4 @@
+import { CycleTabs, groupInCycle, useCycle } from '../../components/CycleTabs';
 // Evaluări: the faculty's atestări, exam session and retakes. Exams and retakes
 // (and atestări, when held after classes) are generated, checked, edited and
 // published here; atestări held in class follow from the published timetable.
@@ -41,8 +42,10 @@ export default function Evaluations() {
   const [editing, setEditing] = useState<ExamEvent | null>(null);
 
   const myGroups = facultyGroupIds(dataset, scope);
-  const groups = dataset.groups.filter((g) => myGroups.includes(g.id));
-  const streams = dataset.streams.filter((st) => st.groupIds.some((g) => myGroups.includes(g)));
+  // licență | master's
+  const [cycle, setCycle] = useCycle();
+  const groups = dataset.groups.filter((g) => myGroups.includes(g.id) && groupInCycle(g, cycle));
+  const streams = dataset.streams.filter((st) => st.groupIds.some((g) => groups.some((x) => x.id === g)));
   const inClass = (round === 'midterm1' || round === 'midterm2') && !separate;
   const midterm = round === 'midterm1' || round === 'midterm2';
 
@@ -102,7 +105,11 @@ export default function Evaluations() {
 
   // the filter is a group, or a stream: all of its groups
   const stream = groupId.startsWith('stream:') ? dataset.streams.find((st) => `stream:${st.id}` === groupId) : undefined;
-  const shown = (plan?.events ?? []).filter((e) => !groupId || (stream ? stream.groupIds.includes(e.groupId) : e.groupId === groupId));
+  const shown = (plan?.events ?? []).filter(
+    (e) =>
+      groupInCycle(index.groups.get(e.groupId), cycle) &&
+      (!groupId || (stream ? stream.groupIds.includes(e.groupId) : e.groupId === groupId)),
+  );
 
   return (
     <div className="page">
@@ -133,6 +140,13 @@ export default function Evaluations() {
       />
 
       <div className="row wrap" style={{ gap: 8, marginBottom: 16 }}>
+        <CycleTabs
+          value={cycle}
+          onChange={(c) => {
+            setCycle(c);
+            setGroupId('');
+          }}
+        />
         <RoundPicker value={round} onChange={(r) => setRound(r as ExamRound)} />
         <Select className="select pill" value={groupId} onChange={(e) => setGroupId(e.target.value)} aria-label={t('view.group')}>
           <option value="">{t('exams.allGroups')}</option>

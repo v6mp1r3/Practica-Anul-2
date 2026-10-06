@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { CycleTabs, groupInCycle, useCycle } from '../../components/CycleTabs';
+import { useEffect, useState } from 'react';
 import { HolidaysCard } from '../../components/Holidays';
 import { semesterOf } from '../../domain/holidays';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { SessionsSection, SessionTimetable } from '../../components/SessionTimetable';
 import { ViewPicker } from '../../components/ViewPicker';
 import { Empty, PageHeader } from '../../components/ui';
-import type { Parity } from '../../domain/types';
+import type { Parity, StudyCycle } from '../../domain/types';
 import { dayIndexOf, filterLessons, inWeek, streamGroups, type ViewFilter } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { facultyView, useAdminScope } from '../../components/FacultyFilter';
@@ -25,6 +26,20 @@ export default function Browse() {
     id: dataset.groups.find((g) => !limit || limit.groupIds.has(g.id))?.id ?? '',
   }));
   const [week, setWeek] = useState<Parity>('weekly');
+  // licență | master's: the group list shows that cycle
+  const [cycle, setCycle] = useCycle();
+  // start on a group of the remembered cycle
+  useEffect(() => {
+    if (view.kind === 'group' && !view.id.startsWith('stream:') && !groupInCycle(index.groups.get(view.id), cycle)) changeCycle(cycle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const changeCycle = (c: StudyCycle) => {
+    setCycle(c);
+    if (view.kind === 'group') {
+      const first = dataset.groups.find((g) => groupInCycle(g, c) && (!limit || limit.groupIds.has(g.id)));
+      setView({ kind: 'group', id: first?.id ?? '' });
+    }
+  };
 
   // Reduced-attendance groups are shown session by session (real dates)
   // (a torent of reduced-attendance groups: the dates × groups table)
@@ -47,6 +62,7 @@ export default function Browse() {
         </div>
       ) : (
         <div className="stack">
+          <CycleTabs value={cycle} onChange={changeCycle} />
           <ViewPicker
             dataset={dataset}
             view={view}
@@ -56,6 +72,7 @@ export default function Browse() {
             showWeek={!reducedGroup}
             limit={limit}
             withStreams
+            cycle={cycle}
           />
           {reducedGroup ? (
             <SessionTimetable

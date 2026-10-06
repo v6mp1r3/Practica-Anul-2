@@ -1,4 +1,4 @@
-import type { Dataset, Parity } from '../domain/types';
+import type { Dataset, Parity, StudyCycle } from '../domain/types';
 import type { FacultyView } from './FacultyFilter';
 import type { ViewFilter, ViewKind } from '../domain/views';
 import { useI18n } from '../i18n';
@@ -16,6 +16,7 @@ export function ViewPicker({
   showWeek = true,
   limit,
   withStreams,
+  cycle,
 }: {
   dataset: Dataset;
   view: ViewFilter;
@@ -28,10 +29,14 @@ export function ViewPicker({
   limit?: FacultyView;
   /** Also offer streams in the group list (all their groups together). */
   withStreams?: boolean;
+  /** Only this study cycle's groups and streams. */
+  cycle?: StudyCycle;
 }) {
   const { t } = useI18n();
   const options = {
-    group: dataset.groups.filter((g) => !limit || limit.groupIds.has(g.id)).map((g) => ({ id: g.id, name: g.name })),
+    group: dataset.groups
+      .filter((g) => (!limit || limit.groupIds.has(g.id)) && (!cycle || (g.cycle ?? 'licenta') === cycle))
+      .map((g) => ({ id: g.id, name: g.name })),
     teacher: [...dataset.teachers]
       .filter((x) => !limit || limit.teacherIds.has(x.id))
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -67,7 +72,7 @@ export function ViewPicker({
             </optgroup>
             <optgroup label={t('groups.streams')}>
               {dataset.streams
-                .filter((st) => !limit || st.groupIds.some((g) => limit.groupIds.has(g)))
+                .filter((st) => st.groupIds.some((g) => options.group.some((o) => o.id === g)))
                 .map((st) => (
                   <option key={st.id} value={`stream:${st.id}`}>
                     {st.name}

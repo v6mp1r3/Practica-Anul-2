@@ -1,3 +1,4 @@
+import { CycleTabs, groupInCycle, useCycle } from '../../components/CycleTabs';
 import { weeksLabel } from '../../domain/exams';
 import { useAdminScope } from '../../components/FacultyFilter';
 import { useEffect, useMemo, useState } from 'react';
@@ -90,8 +91,13 @@ export default function Generate() {
   const navigate = useNavigate();
   // Faculty administrators generate only for their own faculty's groups
   const scope = useAdminScope();
-  const scopeGroups = dataset.groups.filter((g) => !scope || g.faculty === scope);
+  // licență | master's: generate one cycle at a time (the other keeps its published pairs)
+  const [cycle, setCycle] = useCycle();
+  const scopeGroups = dataset.groups.filter((g) => (!scope || g.faculty === scope) && groupInCycle(g, cycle));
   const [groupIds, setGroupIds] = useState<string[]>(scopeGroups.map((g) => g.id));
+  useEffect(() => {
+    setGroupIds(dataset.groups.filter((g) => (!scope || g.faculty === scope) && groupInCycle(g, cycle)).map((g) => g.id));
+  }, [cycle, scope, dataset.groups]);
   const [form, setForm] = useState<'all' | StudyForm>('all');
   const [variants, setVariants] = useState(3);
   const [effort, setEffort] = useState<Effort>('normal');
@@ -158,7 +164,10 @@ export default function Generate() {
     <div className="page">
       <PageHeader title={t('nav.generate')} subtitle={t('generate.subtitle')} />
       <div className="stack">
-        <RoundPicker value={what} onChange={setWhat} before={[{ value: 'timetable' as const, label: t('generate.whatTimetable') }]} />
+        <div className="row wrap" style={{ gap: 8 }}>
+          <CycleTabs value={cycle} onChange={setCycle} />
+          <RoundPicker value={what} onChange={setWhat} before={[{ value: 'timetable' as const, label: t('generate.whatTimetable') }]} />
+        </div>
         {what !== 'timetable' ? (
           <div className="card">
             <div className="card-body stack">
