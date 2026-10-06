@@ -138,27 +138,28 @@ export const seedRooms: Room[] = [
     building: 'Blocul 3',
     faculty: FCIM,
     preferredSubjectIds: ['sub3'],
-    capacity: 16,
+    capacity: 30,
     type: 'lab',
     equipment: ['calculatoare'],
   },
-  { id: 'r9', name: '3-405', building: 'Blocul 3', faculty: FCIM, capacity: 16, type: 'lab', equipment: ['calculatoare'] },
+  { id: 'r9', name: '3-405', building: 'Blocul 3', faculty: FCIM, capacity: 30, type: 'lab', equipment: ['calculatoare'] },
   {
     id: 'r10',
     name: '3-406',
     building: 'Blocul 3',
     faculty: FCIM,
-    capacity: 16,
+    capacity: 30,
     type: 'lab',
     equipment: ['calculatoare', 'echipament rețea'],
   },
-  { id: 'r11', name: '3-505', building: 'Blocul 3', faculty: FCIM, capacity: 14, type: 'lab', equipment: ['calculatoare', 'electronică'] },
+  // the one small room: a group whose lab is here is split into subgroups
+  { id: 'r11', name: 'A01', building: 'Blocul 3', faculty: FCIM, capacity: 14, type: 'lab', equipment: ['calculatoare', 'electronică'] },
   { id: 'r16', name: 'Sala de sport', building: 'Blocul 2', faculty: FCIM, capacity: 60, type: 'seminar', equipment: ['sport'] },
   // FET building
   { id: 'r12', name: '9-101', building: 'Blocul 9', faculty: FET, capacity: 90, type: 'lecture', equipment: ['proiector'] },
   { id: 'r13', name: '9-205', building: 'Blocul 9', faculty: FET, capacity: 30, type: 'seminar', equipment: ['tablă'] },
-  { id: 'r14', name: '9-310', building: 'Blocul 9', faculty: FET, capacity: 16, type: 'lab', equipment: ['electronică'] },
-  { id: 'r15', name: '9-311', building: 'Blocul 9', faculty: FET, capacity: 14, type: 'lab', equipment: ['laborator fizică'] },
+  { id: 'r14', name: '9-310', building: 'Blocul 9', faculty: FET, capacity: 30, type: 'lab', equipment: ['electronică'] },
+  { id: 'r15', name: '9-311', building: 'Blocul 9', faculty: FET, capacity: 30, type: 'lab', equipment: ['laborator fizică'] },
 ];
 
 export const seedGroups: Group[] = [
@@ -182,7 +183,7 @@ export const seedGroups: Group[] = [
     year: 1,
     programYears: 4,
     size: 22,
-    subgroups: 2,
+    subgroups: 1,
   },
   {
     id: 'g3',
@@ -193,7 +194,7 @@ export const seedGroups: Group[] = [
     year: 1,
     programYears: 4,
     size: 28,
-    subgroups: 2,
+    subgroups: 1,
   },
   {
     id: 'g4',
@@ -204,7 +205,7 @@ export const seedGroups: Group[] = [
     year: 1,
     programYears: 4,
     size: 26,
-    subgroups: 2,
+    subgroups: 1,
   },
   {
     id: 'g5',
@@ -215,7 +216,7 @@ export const seedGroups: Group[] = [
     year: 2,
     programYears: 4,
     size: 25,
-    subgroups: 2,
+    subgroups: 1,
   },
   {
     id: 'g6',
@@ -226,7 +227,7 @@ export const seedGroups: Group[] = [
     year: 2,
     programYears: 4,
     size: 23,
-    subgroups: 2,
+    subgroups: 1,
   },
   {
     id: 'g7',
@@ -237,7 +238,7 @@ export const seedGroups: Group[] = [
     year: 2,
     programYears: 4,
     size: 20,
-    subgroups: 2,
+    subgroups: 1,
   },
   // Reduced attendance: weekend sessions, fewer contact hours
   {
@@ -262,7 +263,7 @@ export const seedGroups: Group[] = [
     year: 1,
     programYears: 4,
     size: 22,
-    subgroups: 2,
+    subgroups: 1,
   },
   {
     id: 'g11',
@@ -273,9 +274,9 @@ export const seedGroups: Group[] = [
     year: 1,
     programYears: 4,
     size: 20,
-    subgroups: 2,
+    subgroups: 1,
   },
-  { id: 'g12', name: 'ELE-251', program: 'Electronică', faculty: FET, studyForm: 'full', year: 1, programYears: 4, size: 18, subgroups: 2 },
+  { id: 'g12', name: 'ELE-251', program: 'Electronică', faculty: FET, studyForm: 'full', year: 1, programYears: 4, size: 18, subgroups: 1 },
   // Upper years: taught after lunch
   {
     id: 'g13',
@@ -286,7 +287,7 @@ export const seedGroups: Group[] = [
     year: 3,
     programYears: 4,
     size: 22,
-    subgroups: 2,
+    subgroups: 1,
   },
   {
     id: 'g14',
@@ -297,7 +298,7 @@ export const seedGroups: Group[] = [
     year: 4,
     programYears: 4,
     size: 20,
-    subgroups: 2,
+    subgroups: 1,
   },
   {
     id: 'g9',
@@ -541,19 +542,17 @@ export const seedAssignments: Assignment[] = [
   ]),
   // Physical education — first or last pair of the day, in the sports hall
   ...['g1', 'g2', 'g3', 'g4'].map((g) => a('sub15', 'seminar', 't20', group(g), 1, 'weekly', ['sport'])),
-  // Year 1 — labs per subgroup
-  ...['g1', 'g2'].flatMap((g) => [
-    a('sub3', 'lab', 't1', sub(g, 1), 2),
-    a('sub3', 'lab', 't6', sub(g, 2), 2),
-    a('sub5', 'lab', 't8', sub(g, 1), 1, 'odd'),
-    a('sub5', 'lab', 't8', sub(g, 2), 1, 'even'),
-  ]),
-  ...['g3', 'g4'].flatMap((g) => [
-    a('sub3', 'lab', 't11', sub(g, 1), 2),
-    a('sub3', 'lab', 't6', sub(g, 2), 2),
-    a('sub5', 'lab', 't13', sub(g, 1), 1, 'odd'),
-    a('sub5', 'lab', 't13', sub(g, 2), 1, 'even'),
-  ]),
+  // Year 1 — labs with the whole group (30-seat computer labs)
+  a('sub3', 'lab', 't1', group('g1'), 2),
+  a('sub3', 'lab', 't6', group('g2'), 2),
+  a('sub3', 'lab', 't11', group('g3'), 2),
+  a('sub3', 'lab', 't6', group('g4'), 2),
+  // FAF-251's AC labs need A01 (14 seats, electronics): the only group split into subgroups
+  a('sub5', 'lab', 't8', sub('g1', 1), 1, 'odd', ['calculatoare', 'electronică']),
+  a('sub5', 'lab', 't8', sub('g1', 2), 1, 'even', ['calculatoare', 'electronică']),
+  a('sub5', 'lab', 't8', group('g2'), 1, 'odd'),
+  a('sub5', 'lab', 't13', group('g3'), 1, 'odd'),
+  a('sub5', 'lab', 't13', group('g4'), 1, 'even'),
   // Year 2
   a('sub7', 'lecture', 't1', stream('s4')),
   a('sub8', 'lecture', 't10', stream('s4')),
@@ -562,34 +561,29 @@ export const seedAssignments: Assignment[] = [
   a('sub11', 'lecture', 't12', stream('s4')),
   ...['g5', 'g6', 'g7'].flatMap((g) => [
     a('sub10', 'seminar', 't14', group(g)),
-    a('sub7', 'lab', 't6', sub(g, 1)),
-    a('sub7', 'lab', 't1', sub(g, 2)),
-    a('sub8', 'lab', 't11', sub(g, 1)),
-    a('sub8', 'lab', 't11', sub(g, 2)),
-    a('sub9', 'lab', 't13', sub(g, 1), 1, 'odd'),
-    a('sub9', 'lab', 't13', sub(g, 2), 1, 'even'),
-    a('sub11', 'lab', 't8', sub(g, 1), 1, 'weekly', ['calculatoare', 'echipament rețea']),
-    a('sub11', 'lab', 't8', sub(g, 2), 1, 'weekly', ['calculatoare', 'echipament rețea']),
+    a('sub7', 'lab', g === 'g6' ? 't1' : 't6', group(g)),
+    a('sub8', 'lab', 't11', group(g)),
+    a('sub9', 'lab', 't13', group(g), 1, 'odd'),
+    a('sub11', 'lab', 't8', group(g), 1, 'weekly', ['calculatoare', 'echipament rețea']),
   ]),
   // Years 3 and 4 — one group each, after lunch
   a('sub16', 'lecture', 't21', group('g13')),
   a('sub17', 'lecture', 't21', group('g13')),
-  ...[1, 2].flatMap((n) => [a('sub16', 'lab', 't22', sub('g13', n)), a('sub17', 'lab', 't22', sub('g13', n))]),
+  a('sub16', 'lab', 't22', group('g13')),
+  a('sub17', 'lab', 't22', group('g13')),
   a('sub18', 'lecture', 't21', group('g14')),
   a('sub19', 'lecture', 't12', group('g14')),
   a('sub19', 'seminar', 't22', group('g14')),
-  ...[1, 2].map((n) => a('sub18', 'lab', 't22', sub('g14', n))),
-  // FET year 1 — shared lectures, seminars per group, labs per subgroup
+  a('sub18', 'lab', 't22', group('g14')),
+  // FET year 1 — shared lectures, seminars and labs per group
   a('sub12', 'lecture', 't17', stream('s5'), 2),
   a('sub13', 'lecture', 't16', stream('s5')),
   a('sub14', 'lecture', 't15', stream('s5')),
   ...['g10', 'g11', 'g12'].flatMap((g) => [
     a('sub12', 'seminar', 't18', group(g)),
     a('sub14', 'seminar', 't15', group(g)),
-    a('sub13', 'lab', 't16', sub(g, 1), 1, 'weekly', ['laborator fizică']),
-    a('sub13', 'lab', 't16', sub(g, 2), 1, 'weekly', ['laborator fizică']),
-    a('sub14', 'lab', 't19', sub(g, 1), 1, 'weekly', ['electronică']),
-    a('sub14', 'lab', 't19', sub(g, 2), 1, 'weekly', ['electronică']),
+    a('sub13', 'lab', 't16', group(g), 1, 'weekly', ['laborator fizică']),
+    a('sub14', 'lab', 't19', group(g), 1, 'weekly', ['electronică']),
   ]),
   // Reduced attendance (TI-251FR) — pairs per session, placed on session dates
   { ...a('sub1', 'lecture', 't2', group('g8')), pairsPerSession: 6 },
