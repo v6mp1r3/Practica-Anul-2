@@ -53,6 +53,8 @@ function Step({
   required,
   onSave,
   saving,
+  dirty,
+  saved,
   children,
 }: {
   n: number;
@@ -61,6 +63,10 @@ function Step({
   /** Saves this section only. */
   onSave: () => void;
   saving?: boolean;
+  /** This section has unsaved changes (the button only shows then). */
+  dirty: boolean;
+  /** Just saved: shows "Salvat" until the next change. */
+  saved: boolean;
   children: ReactNode;
 }) {
   const { t } = useI18n();
@@ -73,12 +79,21 @@ function Step({
       </div>
       <div className="card-body stack">
         {children}
-        <div className="row" style={{ justifyContent: 'flex-end' }}>
-          <button className="btn primary" onClick={onSave} disabled={saving}>
-            <Icon name="check" />
-            {t('common.save')}
-          </button>
-        </div>
+        {(dirty || saved) && (
+          <div className="row" style={{ justifyContent: 'flex-end' }}>
+            {dirty ? (
+              <button className="btn primary" onClick={onSave} disabled={saving}>
+                <Icon name="check" />
+                {t('common.save')}
+              </button>
+            ) : (
+              <span className="saved-note">
+                <Icon name="check" size={15} />
+                {t('common.saved')}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -105,6 +120,7 @@ export default function Setup() {
   const [faculty, setFaculty] = useState(user?.faculty ?? '');
   const clock = useClock();
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState<number | null>(null);
   // as many years as the longest programme (at least 4, at most 6)
   const shiftYears = Math.min(6, Math.max(4, ...dataset.groups.map((g) => g.programYears ?? g.year)));
   const ev = { ...DEFAULT_EVALUATION, ...s.evaluation };
@@ -140,6 +156,8 @@ export default function Setup() {
       const saved: Settings = { ...dataset.settings, timeFormat: institutionTimeFormat };
       const own = Object.fromEntries(SECTION_KEYS[section].map((k) => [k, clean[k]]));
       await api.saveSettings({ ...saved, ...own });
+      // the form now shows exactly what was stored (e.g. empty rows dropped)
+      setS((x) => ({ ...x, ...own }));
       // the administrator's own faculty is part of their account (section 1)
       if (section === 1 && user && faculty && faculty !== user.faculty) {
         setUser(
@@ -153,13 +171,27 @@ export default function Setup() {
         );
       }
       await refresh();
-      toast(t('common.saved'));
+      setJustSaved(section);
     } catch {
       toast(t('common.error'), 'error');
     } finally {
       setSaving(false);
     }
   }
+
+  // what is stored, to know which sections have unsaved changes
+  const stored: Settings = { ...dataset.settings, timeFormat: institutionTimeFormat };
+  const norm = (k: keyof Settings, v: Settings[keyof Settings]) =>
+    JSON.stringify(k === 'evaluation' ? { ...DEFAULT_EVALUATION, ...(v as Settings['evaluation']) } : (v ?? null));
+  const dirty = (section: number) =>
+    SECTION_KEYS[section].some((k) => k !== 'institutionName' && norm(k, s[k]) !== norm(k, stored[k])) ||
+    (section === 1 && !!faculty && faculty !== user?.faculty);
+  const step = (n: number) => ({
+    onSave: () => save(n),
+    saving,
+    dirty: dirty(n),
+    saved: justSaved === n && !dirty(n),
+  });
 
   const num = (v: string, min = 0) => Math.max(min, Number(v) || 0);
 
@@ -188,7 +220,7 @@ export default function Setup() {
       />
 
       <div className="stack">
-        <Step n={1} onSave={() => save(1)} saving={saving} title={t('setup.institution')} required>
+        <Step n={1} {...step(1)} title={t('setup.institution')} required>
           <div className="form-grid">
             {/* UTM only: the institution is fixed, the administrator picks their faculty */}
             <Field label={t('setup.institutionName')}>
@@ -216,7 +248,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={2} onSave={() => save(2)} saving={saving} title={t('setup.forms')}>
+        <Step n={2} {...step(2)} title={t('setup.forms')}>
           <div className="stack" style={{ gap: 10 }}>
             {STUDY_FORMS.map((form) => (
               <div key={form} className="row wrap" style={{ gap: 12 }}>
@@ -313,7 +345,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={3} onSave={() => save(3)} saving={saving} title={t('setup.week')} required>
+        <Step n={3} {...step(3)} title={t('setup.week')} required>
           <div className="form-grid">
             <Field label={t('setup.workingDays')} hint={t('setup.default', { value: 7 })}>
               <Select className="select" value={s.workingDays} onChange={(e) => set('workingDays', Number(e.target.value))}>
@@ -474,7 +506,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={4} onSave={() => save(4)} saving={saving} title={t('setup.parity')}>
+        <Step n={4} {...step(4)} title={t('setup.parity')}>
           <div className="row">
             <Switch checked={s.weekParity} onChange={(v) => set('weekParity', v)} label={t('setup.parityQuestion')} />
             <div>
@@ -484,7 +516,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={5} onSave={() => save(5)} saving={saving} title={t('setup.limits')}>
+        <Step n={5} {...step(5)} title={t('setup.limits')}>
           <div className="form-grid">
             <Field label={t('setup.minPairsGroup')} hint={t('setup.default', { value: 2 })}>
               <input
@@ -514,7 +546,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={6} onSave={() => save(6)} saving={saving} title={t('setup.evaluation')}>
+        <Step n={6} {...step(6)} title={t('setup.evaluation')}>
           {/* two tabs: atestări (midterms) and final exams; holidays apply to both */}
           <Segmented
             value={evalTab}

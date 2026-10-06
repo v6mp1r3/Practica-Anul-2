@@ -766,3 +766,54 @@ table.table {
   background: var(--success-soft);
   color: var(--success);
 }
+
+/* Teacher availability during the exam period: morning / afternoon per day */
+.exam-avail {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+.exam-avail-day {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.exam-avail-date {
+  grid-column: 1 / -1;
+  padding: 2px 0 4px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+.exam-avail-half {
+  padding: 5px 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--success-soft);
+  color: var(--success);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.exam-avail-half.off {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* "Salvat" after saving a Configurare section */
+.saved-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--success);
+  font-weight: 600;
+  font-size: 14px;
+}

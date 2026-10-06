@@ -507,7 +507,7 @@ export const ro = {
   'exams.unpublishedToast': 'Publicarea a fost anulată.',
   'exams.none': 'Nu a fost generat încă. Apasă „Generează”.',
   'exams.inClassNote':
-    'Atestările au loc la orele obișnuite ale fiecărei discipline (seminar, apoi laborator, apoi curs) în săptămânile {w1} și {w2}. Se văd din orarul publicat; nu trebuie generate.',
+    'Atestările au loc la orele obișnuite (seminar, apoi laborator, apoi curs) din săptămânile {w1} și {w2}, în sala orei. Generează, schimbă sala unde e nevoie, apoi publică.',
   'exams.problems': '{count} probleme',
   'exams.noProblems': 'Fără suprapuneri',
   'exams.problem.teacher': 'Profesorul are două evenimente în același timp',
@@ -557,6 +557,17 @@ export const ro = {
   'vacation.now': '{name}: nu sunt ore',
   'vacation.add': 'Vacanță',
   'vacation.short': 'vacanță',
+  'exams.inClass': 'la oră',
+  'exams.separateNote':
+    'Atestările se țin după ore, în săptămânile {w1} și {w2}, fără să se suprapună cu orele grupei, ale profesorului sau ale sălii.',
+  'exams.finalsNote':
+    'Fără ore: doar examene și consultații. Se ține cont de disponibilitatea profesorilor în sesiune și de sălile în care se predă disciplina.',
+  'examAvail.title': 'Disponibilitate în sesiune',
+  'examAvail.hint':
+    'Separată de cea săptămânală: în sesiune nu sunt ore. Apasă pe jumătatea de zi în care profesorul nu poate examina (sau pe dată pentru toată ziua).',
+  'examAvail.am': 'Dimineața',
+  'examAvail.pm': 'După-amiaza',
+  'examAvail.column': 'Indisponibil în sesiune',
 } as const;
 
 export type MessageKey = keyof typeof ro;

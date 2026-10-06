@@ -506,7 +506,7 @@ export const en: Record<MessageKey, string> = {
   'exams.unpublishedToast': 'Unpublished.',
   'exams.none': 'Not generated yet. Press “Generate”.',
   'exams.inClassNote':
-    'Midterms take place in each subject’s usual class (seminar, else lab, else lecture) in weeks {w1} and {w2}. They follow from the published timetable; nothing to generate.',
+    'Midterms take place in the usual class (seminar, else lab, else lecture) of weeks {w1} and {w2}, in that class’s room. Generate, change rooms where needed, then publish.',
   'exams.problems': '{count} problems',
   'exams.noProblems': 'No clashes',
   'exams.problem.teacher': 'The teacher has two entries at once',
@@ -556,4 +556,14 @@ export const en: Record<MessageKey, string> = {
   'vacation.now': '{name}: no classes',
   'vacation.add': 'Holiday',
   'vacation.short': 'holiday',
+  'exams.inClass': 'in class',
+  'exams.separateNote': 'Midterms are held after classes in weeks {w1} and {w2}, never over a class of the group, the teacher or the room.',
+  'exams.finalsNote':
+    'No classes: only exams and consultations. Uses the teachers’ exam-period availability and the rooms the subject is taught in.',
+  'examAvail.title': 'Exam-period availability',
+  'examAvail.hint':
+    'Separate from the weekly one: there are no classes in the session. Click a half day the teacher can’t examine (or the date for the whole day).',
+  'examAvail.am': 'Morning',
+  'examAvail.pm': 'Afternoon',
+  'examAvail.column': 'Unavailable in session',
 };
