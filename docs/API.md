@@ -31,6 +31,11 @@ subjects, teachers and rooms; another faculty's teacher or room shows up
 publishing and unpublishing are per faculty. Settings (`PUT /settings`) are shared.
 Every group has a `faculty`.
 
+EduSchedule is for UTM only: `Settings.institutionName` is fixed and
+`Settings.faculties` is UTM's 14 faculties. An admin picks their own faculty in
+Configurare, which sends `faculty` in `PUT /auth/me` (it must be one of
+`Settings.faculties`).
+
 ## Auth
 
 | Method | Path           | Body                     | Response          |

@@ -7,7 +7,9 @@ import { Icon } from '../../components/Icon';
 import { Field, PageHeader, Switch, useClock } from '../../components/ui';
 import { fmtTime, range } from '../../domain/slots';
 import { STUDY_FORMS, type Settings, type TimeSlot } from '../../domain/types';
+import { UTM_FACULTIES, UTM_NAME } from '../../domain/utm';
 import { useI18n } from '../../i18n';
+import { useAuth } from '../../state/auth';
 import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { Select } from '../../components/Select';
@@ -50,6 +52,8 @@ export default function Setup() {
   const { institutionTimeFormat } = useData();
   const [s, setS] = useState<Settings>({ ...dataset.settings, timeFormat: institutionTimeFormat });
   const [breakMin, setBreakMin] = useState(15);
+  const { user, setUser } = useAuth();
+  const [faculty, setFaculty] = useState(user?.faculty ?? '');
   const clock = useClock();
   const [saving, setSaving] = useState(false);
   // as many years as the longest programme (at least 4, at most 6)
@@ -63,11 +67,24 @@ export default function Setup() {
         ...s,
         faculties: s.faculties.map((f) => f.trim()).filter(Boolean),
         reducedSessions: s.reducedSessions.filter((x) => x.start && x.end && x.start <= x.end),
+        institutionName: UTM_NAME,
         yearShifts: s.yearShifts?.map((x) => ({
           first: Math.min(x.first, s.slots.length - 1),
           last: Math.min(x.last, s.slots.length - 1),
         })),
       });
+      // the administrator's own faculty is part of their account
+      if (user && faculty && faculty !== user.faculty) {
+        setUser(
+          await api.updateProfile({
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            emailNotifications: user.emailNotifications,
+            faculty,
+          }),
+        );
+      }
       await refresh();
       toast(t('common.saved'));
     } catch {
@@ -111,8 +128,19 @@ export default function Setup() {
       <div className="stack">
         <Step n={1} title={t('setup.institution')} required>
           <div className="form-grid">
+            {/* UTM only: the institution is fixed, the administrator picks their faculty */}
             <Field label={t('setup.institutionName')}>
-              <input className="input" value={s.institutionName} onChange={(e) => set('institutionName', e.target.value)} />
+              <input className="input" value={UTM_NAME} readOnly disabled />
+            </Field>
+            <Field label={t('setup.myFaculty')} hint={t('setup.myFacultyHint')}>
+              <Select value={faculty} onChange={(e) => setFaculty(e.target.value)} aria-label={t('setup.myFaculty')}>
+                <option value="">{t('setup.chooseFaculty')}</option>
+                {UTM_FACULTIES.map((f) => (
+                  <option key={f.code} value={f.name}>
+                    {f.name.replace(/^Facultatea (de )?/, '')} ({f.code})
+                  </option>
+                ))}
+              </Select>
             </Field>
             <Field label={t('setup.semester')}>
               <input className="input" value={s.semester} onChange={(e) => set('semester', e.target.value)} />
