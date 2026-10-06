@@ -78,18 +78,22 @@ export default function Evaluations() {
     toast(t(publish ? 'exams.publishedToast' : 'exams.unpublishedToast'));
   }
 
-  async function saveEdit(e: ExamEvent) {
+  async function saveEdit(edited: ExamEvent) {
     if (!plan) return;
+    const before = plan.events.find((x) => x.id === edited.id);
+    // moved to another day or time: no longer held in its class
+    const { lessonId: _held, ...unlinked } = edited;
+    const e: ExamEvent = before && (before.date !== edited.date || before.start !== edited.start) ? unlinked : edited;
     const saved = await api.saveExamPlan({ ...plan, events: plan.events.map((x) => (x.id === e.id ? e : x)) });
     setPlan(saved);
     setEditing(null);
     if (saved.status === 'published') await refresh();
   }
 
-  /** Drag & drop: same length, new date and start (atestări held in class stay with their class). */
+  /** Drag & drop: same length, new date and start (an atestare moved off its class is unlinked from it). */
   async function move(id: string, date: string, start: string) {
     const e = plan?.events.find((x) => x.id === id);
-    if (!e || e.lessonId) return;
+    if (!e) return;
     const end = toHHMM(toMin(start) + toMin(e.end) - toMin(e.start));
     if (e.date === date && e.start === start) return;
     await saveEdit({ ...e, date, start, end });
