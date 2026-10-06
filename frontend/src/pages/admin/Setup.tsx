@@ -47,7 +47,22 @@ export function semesterOptions(current: string, today = new Date()): string[] {
 const semesterLabel = (value: string, t: (k: 'setup.autumn' | 'setup.spring') => string) =>
   value.replace(/^Toamna/, t('setup.autumn')).replace(/^Primăvara/, t('setup.spring'));
 
-function Step({ n, title, required, children }: { n: number; title: string; required?: boolean; children: ReactNode }) {
+function Step({
+  n,
+  title,
+  required,
+  onSave,
+  saving,
+  children,
+}: {
+  n: number;
+  title: string;
+  required?: boolean;
+  /** Saves this section only. */
+  onSave: () => void;
+  saving?: boolean;
+  children: ReactNode;
+}) {
   const { t } = useI18n();
   return (
     <div className="card">
@@ -56,10 +71,28 @@ function Step({ n, title, required, children }: { n: number; title: string; requ
         <h2>{title}</h2>
         {required && <span className="badge danger">{t('setup.required')}</span>}
       </div>
-      <div className="card-body stack">{children}</div>
+      <div className="card-body stack">
+        {children}
+        <div className="row" style={{ justifyContent: 'flex-end' }}>
+          <button className="btn primary" onClick={onSave} disabled={saving}>
+            <Icon name="check" />
+            {t('common.save')}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
+
+/** The settings each section of Configurare owns (saved by its own button). */
+const SECTION_KEYS: Record<number, (keyof Settings)[]> = {
+  1: ['semester', 'institutionName'],
+  2: ['formDays', 'formMaxPairs', 'reducedSessions'],
+  3: ['workingDays', 'lessonMinutes', 'timeFormat', 'slots', 'yearShifts'],
+  4: ['weekParity'],
+  5: ['minPairsPerDayGroup', 'maxPairsPerDayGroup', 'maxPairsPerDayTeacher', 'consultationRequired'],
+  6: ['evaluation'],
+};
 
 export default function Setup() {
   const { t } = useI18n();
@@ -79,10 +112,10 @@ export default function Setup() {
     setS((x) => ({ ...x, evaluation: { ...DEFAULT_EVALUATION, ...x.evaluation, ...patch } }));
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((x) => ({ ...x, [k]: v }));
 
-  async function save() {
+  async function save(section: number) {
     setSaving(true);
     try {
-      await api.saveSettings({
+      const clean: Settings = {
         ...s,
         faculties: s.faculties.map((f) => f.trim()).filter(Boolean),
         reducedSessions: s.reducedSessions.filter((x) => x.start && x.end && x.start <= x.end),
@@ -92,14 +125,22 @@ export default function Setup() {
           examSession: ev.examSession.filter((x) => x.start && x.end && x.start <= x.end),
           reducedExamSession: ev.reducedExamSession.filter((x) => x.start && x.end && x.start <= x.end),
           reexamSession: ev.reexamSession.filter((x) => x.start && x.end && x.start <= x.end),
+          vacations: ev.vacations
+            .filter((x) => x.name.trim() && x.start && x.end && x.start <= x.end)
+            .map((x) => ({ ...x, name: x.name.trim() }))
+            .sort((a, b) => a.start.localeCompare(b.start)),
         },
         yearShifts: s.yearShifts?.map((x) => ({
           first: Math.min(x.first, s.slots.length - 1),
           last: Math.min(x.last, s.slots.length - 1),
         })),
-      });
-      // the administrator's own faculty is part of their account
-      if (user && faculty && faculty !== user.faculty) {
+      };
+      // only this section's settings; the others stay as last saved
+      const saved: Settings = { ...dataset.settings, timeFormat: institutionTimeFormat };
+      const own = Object.fromEntries(SECTION_KEYS[section].map((k) => [k, clean[k]]));
+      await api.saveSettings({ ...saved, ...own });
+      // the administrator's own faculty is part of their account (section 1)
+      if (section === 1 && user && faculty && faculty !== user.faculty) {
         setUser(
           await api.updateProfile({
             name: user.name,
@@ -141,16 +182,12 @@ export default function Setup() {
                 {t('setup.reset')}
               </button>
             )}
-            <button className="btn primary" onClick={save} disabled={saving}>
-              <Icon name="check" />
-              {t('common.save')}
-            </button>
           </>
         }
       />
 
       <div className="stack">
-        <Step n={1} title={t('setup.institution')} required>
+        <Step n={1} onSave={() => save(1)} saving={saving} title={t('setup.institution')} required>
           <div className="form-grid">
             {/* UTM only: the institution is fixed, the administrator picks their faculty */}
             <Field label={t('setup.institutionName')}>
@@ -178,7 +215,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={2} title={t('setup.forms')}>
+        <Step n={2} onSave={() => save(2)} saving={saving} title={t('setup.forms')}>
           <div className="stack" style={{ gap: 10 }}>
             {STUDY_FORMS.map((form) => (
               <div key={form} className="row wrap" style={{ gap: 12 }}>
@@ -275,7 +312,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={3} title={t('setup.week')} required>
+        <Step n={3} onSave={() => save(3)} saving={saving} title={t('setup.week')} required>
           <div className="form-grid">
             <Field label={t('setup.workingDays')} hint={t('setup.default', { value: 7 })}>
               <Select className="select" value={s.workingDays} onChange={(e) => set('workingDays', Number(e.target.value))}>
@@ -436,7 +473,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={4} title={t('setup.parity')}>
+        <Step n={4} onSave={() => save(4)} saving={saving} title={t('setup.parity')}>
           <div className="row">
             <Switch checked={s.weekParity} onChange={(v) => set('weekParity', v)} label={t('setup.parityQuestion')} />
             <div>
@@ -446,7 +483,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={5} title={t('setup.limits')}>
+        <Step n={5} onSave={() => save(5)} saving={saving} title={t('setup.limits')}>
           <div className="form-grid">
             <Field label={t('setup.minPairsGroup')} hint={t('setup.default', { value: 2 })}>
               <input
@@ -476,7 +513,7 @@ export default function Setup() {
           </div>
         </Step>
 
-        <Step n={6} title={t('setup.evaluation')}>
+        <Step n={6} onSave={() => save(6)} saving={saving} title={t('setup.evaluation')}>
           <div className="form-grid">
             <Field label={t('setup.semesterStart')}>
               <input className="input" type="date" value={ev.semesterStart} onChange={(e) => setEv({ semesterStart: e.target.value })} />
@@ -558,6 +595,60 @@ export default function Setup() {
               </div>
             </div>
           ))}
+
+          {/* University holidays: shown on every timetable, nothing is scheduled on them */}
+          <div className="stack" style={{ gap: 8 }}>
+            <h3>{t('vacation.title')}</h3>
+            {ev.vacations.map((v, i) => (
+              <div key={i} className="row wrap">
+                <input
+                  className="input"
+                  style={{ width: 230 }}
+                  value={v.name}
+                  placeholder={t('vacation.name')}
+                  aria-label={t('vacation.name')}
+                  onChange={(e) => setEv({ vacations: ev.vacations.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)) })}
+                />
+                {(['start', 'end'] as const).map((edge) => (
+                  <input
+                    key={edge}
+                    className="input"
+                    type="date"
+                    style={{ width: 170 }}
+                    value={v[edge]}
+                    min={edge === 'end' ? v.start : undefined}
+                    aria-label={`${v.name} — ${t(`setup.${edge}`)}`}
+                    onChange={(e) =>
+                      setEv({
+                        vacations: ev.vacations.map((x, j) =>
+                          j === i
+                            ? {
+                                ...x,
+                                [edge]: e.target.value,
+                                ...(edge === 'start' && (!x.end || x.end < e.target.value) ? { end: e.target.value } : {}),
+                              }
+                            : x,
+                        ),
+                      })
+                    }
+                  />
+                ))}
+                <button
+                  className="btn ghost sm icon danger"
+                  onClick={() => setEv({ vacations: ev.vacations.filter((_, j) => j !== i) })}
+                  aria-label={t('common.delete')}
+                >
+                  <Icon name="trash" size={14} />
+                </button>
+              </div>
+            ))}
+            <div>
+              <button className="btn sm" onClick={() => setEv({ vacations: [...ev.vacations, { name: '', start: '', end: '' }] })}>
+                <Icon name="plus" size={14} />
+                {t('vacation.add')}
+              </button>
+            </div>
+          </div>
 
           <div className="form-grid">
             <Field label={t('setup.examMinGap')} hint={t('setup.default', { value: 2 })}>
