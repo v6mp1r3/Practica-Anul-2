@@ -301,7 +301,7 @@ export const en: Record<MessageKey, string> = {
   'groups.facultyRequired': 'Choose the group’s faculty.',
   'groups.size': 'Students',
   'groups.subgroups': 'Subgroups',
-  'groups.subgroupsHint': 'The group is split into subgroups for labs.',
+  'groups.subgroupsHint': 'Default 1 (not split). Only when a lab is too small for the whole group (e.g. A01).',
   'groups.streamHint': 'Groups that attend the same lecture together.',
   'groups.streamMin': 'A stream needs at least two groups.',
   'groups.nameRequired': 'Name is required.',

@@ -56,7 +56,8 @@ export default function Groups() {
             year: 1,
             programYears: 4,
             size: 25,
-            subgroups: 2,
+            // not split by default: subgroups are only for small rooms (e.g. A01)
+            subgroups: 1,
             // new groups go to the administrator's own faculty
             faculty: scope || dataset.settings.faculties[0],
           })}

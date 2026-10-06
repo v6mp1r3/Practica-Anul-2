@@ -301,7 +301,7 @@ export const ro = {
   'groups.facultyRequired': 'Alege facultatea grupei.',
   'groups.size': 'Studenți',
   'groups.subgroups': 'Subgrupe',
-  'groups.subgroupsHint': 'Pentru laboratoare grupa se împarte în subgrupe.',
+  'groups.subgroupsHint': 'Implicit 1 (grupa nu se împarte). Doar dacă un laborator e prea mic pentru toată grupa (ex. A01).',
   'groups.streamHint': 'Grupele care ascultă împreună același curs.',
   'groups.streamMin': 'Un torent are cel puțin două grupe.',
   'groups.nameRequired': 'Denumirea este obligatorie.',
