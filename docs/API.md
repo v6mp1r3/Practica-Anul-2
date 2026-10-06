@@ -319,3 +319,13 @@ days and hours, `consultation: "sameDay"`…) — and `Settings.masterYearShifts
 (evening part of the day). A master's group is compared only with master's
 subjects in the study-plan check. Holidays, pair times, rooms and teachers are
 shared, so a teacher who teaches both cycles is checked across both.
+
+## Group calendar (internships, VP, licence exam)
+
+`Settings.groupPeriods: GroupPeriod[]` — `{ id, kind, start, end, groupIds }` with
+`kind`: `internship` (stagiu de practică: the students are at their internship,
+not at university — no classes, atestări or exams; their atestări move to the
+weeks they are at university, e.g. internship in weeks 1–4 → atestări in weeks 9
+and 14, fewer than 8 teaching weeks → a single atestare), `examSession` (the
+group's own exam session, e.g. a final year right after a short spring),
+`plagiarism` (VP) and `licence` (EL, examen de licență).
