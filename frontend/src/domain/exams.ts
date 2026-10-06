@@ -14,6 +14,8 @@ import { dayIndexOf } from './views';
 export const DEFAULT_EVALUATION: EvaluationSettings = {
   semesterStart: '2026-08-31',
   midtermWeeks: [7, 14],
+  // each atestare period lasts two weeks (7–8 and 14–15): one atestare a day per group
+  midtermSpanWeeks: 2,
   // retakes of the atestări: a couple of weeks later, after classes
   midtermRetakeWeeks: [9, 15],
   midtermMode: 'inClass',
@@ -31,7 +33,8 @@ export const DEFAULT_EVALUATION: EvaluationSettings = {
   examDays: [0, 1, 2, 3, 4],
   // frecvență redusă: weekends too
   reducedExamDays: [0, 1, 2, 3, 4, 5, 6],
-  examMinGap: 2,
+  // one day exam, one day off
+  examMinGap: 1,
   examFrom: '08:00',
   examTo: '18:00',
   examMinutes: 135,
@@ -136,7 +139,7 @@ export function generateExams(
   const minutes = round === 'session' ? ev.examMinutes : ev.reexamMinutes;
   // any start inside the window — each exam its own time, not a fixed list
   const window = round === 'session' ? startTimesIn(ev.examFrom, ev.examTo, minutes) : startTimesIn(ev.reexamFrom, ev.reexamTo, minutes);
-  const minGap = round === 'session' ? ev.examMinGap : Math.min(1, ev.examMinGap);
+  const minGap = ev.examMinGap;
 
   // the teacher's exam-period availability (not the weekly one: there are no classes)
   const teacherFree = (teacherId: string, date: string, start: string, end: string) =>
@@ -172,23 +175,19 @@ export function generateExams(
     const size = idx.audienceSize({ kind: 'group', id: groupId });
     let last: string | null = null;
 
-    subjects.forEach((subjectId, i) => {
+    subjects.forEach((subjectId) => {
       const teacherId = examinerOf(ds, idx, groupId, subjectId);
       if (!teacherId || !dates.length) {
         warnings.push({ groupId, subjectId, kind: 'unplaced' });
         return;
       }
-      // spread the exams evenly over the session
-      // (leaving room after the last one, so a late exam still has its free days)
-      const target = Math.floor((i * dates.length) / subjects.length);
       const rooms = roomsFor(size, groupId, subjectId);
       let done: ExamEvent | null = null;
       for (let gap = minGap; gap >= 0 && !done; gap--) {
         const earliest = last ? addDays(last, gap + 1) : dates[0];
+        // one day exam, one day off: the earliest day after the free day(s)
         const candidates = dates.filter((d) => d >= earliest);
-        // try from the target date onwards, then the earlier ones
-        const fromTarget = [...candidates.filter((d) => d >= dates[target]), ...candidates.filter((d) => d < dates[target])];
-        for (const date of fromTarget) {
+        for (const date of candidates) {
           for (const start of rng.shuffle(window)) {
             const end = toHHMM(toMin(start) + minutes);
             if (!teacherFree(teacherId, date, start, end)) continue;
@@ -313,6 +312,119 @@ export interface Midterm {
 
 const TYPE_ORDER: ActivityType[] = ['seminar', 'lab', 'lecture'];
 
+type MidtermPick = { lesson: Lesson; date: string };
+
+/** Teaching weeks of one atestare period (e.g. 7 and 8). */
+export const midtermWeeksOf = (ev: EvaluationSettings, n: 1 | 2) =>
+  Array.from({ length: Math.max(1, ev.midtermSpanWeeks) }, (_, i) => ev.midtermWeeks[n - 1] + i);
+
+/** "7–8": the weeks of an atestare period, for labels. */
+export const weeksLabel = (ev: EvaluationSettings, n: 1 | 2) => {
+  const w = midtermWeeksOf(ev, n);
+  return w.length > 1 ? `${w[0]}–${w[w.length - 1]}` : String(w[0]);
+};
+
+/** First and last day of an atestare period. */
+export function midtermRange(ev: EvaluationSettings, n: 1 | 2): DateRange {
+  const weeks = midtermWeeksOf(ev, n);
+  return { start: teachingWeek(ev, weeks[0]).start, end: teachingWeek(ev, weeks[weeks.length - 1]).end };
+}
+
+/**
+ * A group's atestări in class over the period: for each subject one of its own
+ * classes (seminar, else lab, else lecture; a lab for each subgroup), so that no
+ * student has two atestări on the same day. Falls back to a shared day only if
+ * the classes leave no other choice.
+ */
+function groupMidterms(
+  ds: Dataset,
+  idx: DatasetIndex,
+  lessons: Lesson[],
+  groupId: string,
+  n: 1 | 2,
+  cache: Map<string, (MidtermPick & { subjectId: string })[]>,
+): (MidtermPick & { subjectId: string })[] {
+  const key = `${groupId}|${n}`;
+  if (cache.has(key)) return cache.get(key)!;
+  const ev = evaluationOf(ds);
+  const group = idx.groups.get(groupId);
+  const views = group && group.subgroups > 1 ? Array.from({ length: group.subgroups }, (_, i) => i + 1) : [0];
+  const mine = lessons.filter((l) => !l.date && idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, groupId));
+  // one item per subject and audience (a lab per subgroup), with every date it could be held on
+  const items: { subjectId: string; views: number[]; options: MidtermPick[] }[] = [];
+  for (const subjectId of new Set(mine.map((l) => idx.assignmentOf(l)!.subjectId))) {
+    const own = mine.filter((l) => idx.assignmentOf(l)!.subjectId === subjectId);
+    const type = TYPE_ORDER.find((tp) => own.some((l) => idx.assignmentOf(l)!.type === tp));
+    const byAudience = new Map<string, Lesson[]>();
+    for (const l of own.filter((x) => idx.assignmentOf(x)!.type === type)) {
+      const k = JSON.stringify(idx.assignmentOf(l)!.audience);
+      byAudience.set(k, [...(byAudience.get(k) ?? []), l]);
+    }
+    for (const list of byAudience.values()) {
+      const aud = idx.assignmentOf(list[0])!.audience;
+      const options = midtermWeeksOf(ev, n)
+        .flatMap((w) => {
+          const start = teachingWeek(ev, w).start;
+          const parity = w % 2 === 1 ? 'odd' : 'even';
+          return list.filter((l) => l.parity === 'weekly' || l.parity === parity).map((l) => ({ lesson: l, date: addDays(start, l.day) }));
+        })
+        .filter((o) => !vacationOn(ev, o.date))
+        .sort((a, b) => a.date.localeCompare(b.date) || a.lesson.slot - b.lesson.slot);
+      // a whole-group seminar can fall back to the subject's lecture on another day (one atestare a day comes first)
+      const fallback: MidtermPick[] = [];
+      if (aud.kind !== 'subgroup' && type !== 'lecture') {
+        const lectures = own.filter((l) => idx.assignmentOf(l)!.type === 'lecture');
+        for (const w of midtermWeeksOf(ev, n)) {
+          const start = teachingWeek(ev, w).start;
+          const parity = w % 2 === 1 ? 'odd' : 'even';
+          for (const l of lectures.filter((x) => x.parity === 'weekly' || x.parity === parity)) {
+            const date = addDays(start, l.day);
+            if (!vacationOn(ev, date)) fallback.push({ lesson: l, date });
+          }
+        }
+      }
+      if (options.length || fallback.length)
+        items.push({ subjectId, views: aud.kind === 'subgroup' ? [aud.subgroup] : views, options: [...options, ...fallback] });
+    }
+  }
+  // fewest choices first; backtrack so that no view gets two atestări on one date
+  items.sort((a, b) => a.options.length - b.options.length);
+  const taken = new Map<string, Set<number>>(); // date → views already sitting an atestare
+  const chosen: (MidtermPick | null)[] = items.map(() => null);
+  const fits = (i: number, o: MidtermPick) => !items[i].views.some((v) => taken.get(o.date)?.has(v));
+  const mark = (i: number, o: MidtermPick, on: boolean) => {
+    const set = taken.get(o.date) ?? new Set<number>();
+    for (const v of items[i].views) on ? set.add(v) : set.delete(v);
+    taken.set(o.date, set);
+  };
+  let steps = 0;
+  const solve = (i: number): boolean => {
+    if (i === items.length) return true;
+    if (++steps > 20000) return false;
+    for (const o of items[i].options) {
+      if (!fits(i, o)) continue;
+      mark(i, o, true);
+      chosen[i] = o;
+      if (solve(i + 1)) return true;
+      mark(i, o, false);
+      chosen[i] = null;
+    }
+    return false;
+  };
+  if (!solve(0)) {
+    // no way to keep them all on separate days: place greedily, sharing a day only where needed
+    taken.clear();
+    items.forEach((it, i) => {
+      const o = it.options.find((x) => fits(i, x)) ?? it.options[0];
+      mark(i, o, true);
+      chosen[i] = o;
+    });
+  }
+  const out = items.map((it, i) => ({ ...chosen[i]!, subjectId: it.subjectId }));
+  cache.set(key, out);
+  return out;
+}
+
 /**
  * Atestări held in the subject's own classes: in teaching weeks 7 and 14, the
  * group's first seminar (else lab, else lecture) of each subject. Reduced
@@ -328,6 +440,7 @@ export function midtermsFor(
   const out = new Map<string, Midterm>();
   const groupsOf = (l: Lesson) => idx.cohorts(idx.assignmentOf(l)!.audience).map((c) => c.groupId);
   const pairs = new Set<string>(); // subject|group the atestare is needed for
+  const cache = new Map<string, (MidtermPick & { subjectId: string })[]>();
   for (const l of lessons) {
     const a = idx.assignmentOf(l);
     if (!a) continue;
@@ -353,17 +466,7 @@ export function midtermsFor(
           .slice(-1)
           .map((l) => ({ lesson: l, date: l.date! }));
       } else {
-        const week = teachingWeek(ev, ev.midtermWeeks[n - 1]);
-        const parity = ev.midtermWeeks[n - 1] % 2 === 1 ? 'odd' : 'even';
-        const inWeek = own.filter((l) => !l.date && (l.parity === 'weekly' || l.parity === parity));
-        const type = TYPE_ORDER.find((tp) => inWeek.some((l) => idx.assignmentOf(l)!.type === tp));
-        // one per audience (e.g. a lab for each subgroup), the earliest in the week
-        const best = new Map<string, Lesson>();
-        for (const l of inWeek.filter((x) => idx.assignmentOf(x)!.type === type).sort((x, y) => x.day - y.day || x.slot - y.slot)) {
-          const k = JSON.stringify(idx.assignmentOf(l)!.audience);
-          if (!best.has(k)) best.set(k, l);
-        }
-        chosen = [...best.values()].map((l) => ({ lesson: l, date: addDays(week.start, l.day) }));
+        chosen = groupMidterms(ds, idx, lessons, groupId, n, cache).filter((m) => m.subjectId === subjectId);
       }
       for (const c of chosen) {
         if (vacationOn(ev, c.date)) continue; // no class on a holiday
@@ -401,10 +504,17 @@ export function generateMidterms(
 ): ExamResult {
   const ev = evaluationOf(ds);
   const round = retake ? (n === 1 ? 'remidterm1' : 'remidterm2') : n === 1 ? 'midterm1' : 'midterm2';
-  const weekNo = (retake ? ev.midtermRetakeWeeks : ev.midtermWeeks)[n - 1];
-  const week = teachingWeek(ev, weekNo);
-  const parity = weekNo % 2 === 1 ? 'odd' : 'even';
-  const dates = sessionDates(week.start, week.end, ev.examDays).filter((d) => !vacationOn(ev, d));
+  const weeks = retake ? [ev.midtermRetakeWeeks[n - 1]] : midtermWeeksOf(ev, n);
+  const range = { start: teachingWeek(ev, weeks[0]).start, end: teachingWeek(ev, weeks[weeks.length - 1]).end };
+  const parityOn = (date: string) => {
+    const w =
+      weeks.find((x) => {
+        const r = teachingWeek(ev, x);
+        return r.start <= date && date <= r.end;
+      }) ?? weeks[0];
+    return w % 2 === 1 ? 'odd' : 'even';
+  };
+  const dates = sessionDates(range.start, range.end, ev.examDays).filter((d) => !vacationOn(ev, d));
   const times = retake ? startTimesIn(ev.reexamFrom, ev.reexamTo, ev.midtermMinutes) : ev.midtermStartTimes;
   // reduced attendance retakes its atestări in its exam session (weekends allowed)
   const reducedDates = rangeDates(ev.reducedExamSession, ev.reducedExamDays, ev.vacations);
@@ -415,6 +525,7 @@ export function generateMidterms(
   // what the weekly timetable already occupies on a date
   const classesAt = (date: string, start: string, end: string) => {
     const day = dayIndexOf(parseDate(date));
+    const parity = parityOn(date);
     return classes.filter((l) => {
       if (l.date || l.day !== day || !paritiesOverlap(l.parity, parity)) return false;
       const s = ds.settings.slots[l.slot];
@@ -460,7 +571,8 @@ export function generateMidterms(
       const startAt = Math.floor((i * groupDates.length) / Math.max(1, subjects.length));
       const order = [...groupDates.slice(startAt), ...groupDates.slice(0, startAt)];
       for (const date of order) {
-        if (all().filter((e) => e.groupId === groupId && e.date === date).length >= 2) continue;
+        // one atestare a day per group
+        if (all().some((e) => e.groupId === groupId && e.date === date && e.round === round)) continue;
         for (const start of times) {
           const end = toHHMM(toMin(start) + ev.midtermMinutes);
           const taken = classesAt(date, start, end);

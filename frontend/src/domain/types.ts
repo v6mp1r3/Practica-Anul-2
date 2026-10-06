@@ -60,6 +60,8 @@ export interface EvaluationSettings {
   semesterStart: string;
   /** Teaching weeks of atestarea 1 and 2. */
   midtermWeeks: [number, number];
+  /** How many weeks each atestare period lasts (one atestare a day per group). */
+  midtermSpanWeeks: number;
   /** Teaching weeks of the retakes of atestarea 1 and 2 (after classes). */
   midtermRetakeWeeks: [number, number];
   /**

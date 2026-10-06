@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
 import {
+  midtermRange,
   evaluationOf,
   examSubjects,
   findExamProblems,
@@ -88,7 +89,7 @@ describe('atestări', () => {
   it('places each subject’s atestare in its own seminar or lab of those weeks', async () => {
     const { lessons } = await generateTimetable(seedDataset, { groupIds: ['g1', 'g8'], seed: 4, iterations: 30 });
     const list = midtermsFor(seedDataset, idx, lessons, { groupId: 'g1' });
-    const week7 = teachingWeek(ev, 7);
+    const week7 = midtermRange(ev, 1); // weeks 7–8
     const first = list.filter((m) => m.n === 1);
     expect(first.length).toBeGreaterThan(3);
     for (const m of first) {
@@ -112,7 +113,7 @@ describe('separate atestări timetable', () => {
     const separate = { ...seedDataset, settings: { ...seedDataset.settings, evaluation: { ...ev, midtermMode: 'separate' as const } } };
     const { events, warnings } = generateMidterms(separate, idx, fcim, 1, lessons, [], createRng(3));
     expect(warnings).toEqual([]);
-    const week = teachingWeek(ev, 7);
+    const week = midtermRange(ev, 1);
     const regular = events.filter((e) => e.groupId !== 'g8');
     expect(regular.every((e) => e.date >= week.start && e.date <= week.end && e.round === 'midterm1')).toBe(true);
     expect(findExamProblems(seedDataset, events)).toEqual([]);
@@ -140,7 +141,7 @@ describe('atestări held in class', () => {
   it('turns each subject’s class of week 14 into an atestare, in its room and time', async () => {
     const { lessons } = await generateTimetable(seedDataset, { groupIds: fcim, seed: 6, iterations: 40 });
     const { events } = generateMidterms(seedDataset, idx, fcim, 2, lessons, [], createRng(1));
-    const week = teachingWeek(ev, 14);
+    const week = midtermRange(ev, 2); // weeks 14–15
     expect(events.length).toBeGreaterThan(20);
     for (const e of events) {
       const l = lessons.find((x) => x.id === e.lessonId)!;
@@ -163,5 +164,35 @@ describe('exam-period availability', () => {
     const mine = events.filter((e) => e.teacherId === 't3');
     expect(mine.length).toBeGreaterThan(0);
     expect(mine.some((e) => blocked.includes(e.date))).toBe(false);
+  });
+});
+
+describe('one atestare a day, one exam every other day', () => {
+  it('never gives a student two atestări on the same day', async () => {
+    const { lessons } = await generateTimetable(seedDataset, { groupIds: fcim, seed: 7, iterations: 40 });
+    for (const n of [1, 2] as const) {
+      const { events } = generateMidterms(seedDataset, idx, fcim, n, lessons, [], createRng(2));
+      for (const g of fcim.filter((x) => x !== 'g8')) {
+        const subgroups = idx.groups.get(g)!.subgroups;
+        for (let sg = 1; sg <= subgroups; sg++) {
+          const days = events.filter((e) => e.groupId === g && (!e.subgroup || e.subgroup === sg)).map((e) => e.date);
+          expect(new Set(days).size).toBe(days.length);
+        }
+      }
+    }
+  });
+
+  it('leaves exactly one free day between a group’s exams where it can', () => {
+    const { events } = generateExams(seedDataset, idx, fcim, 'session', [], createRng(9));
+    for (const g of fcim) {
+      const dates = events
+        .filter((e) => e.groupId === g && e.kind === 'exam')
+        .map((e) => e.date)
+        .sort();
+      for (let i = 1; i < dates.length; i++) {
+        const gap = (new Date(dates[i]).getTime() - new Date(dates[i - 1]).getTime()) / 86400000;
+        expect(gap).toBeGreaterThanOrEqual(2); // never two days in a row
+      }
+    }
   });
 });
