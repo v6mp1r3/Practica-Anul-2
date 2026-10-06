@@ -36,6 +36,7 @@ const NAV: Partial<Record<Role, { section?: MessageKey; items: NavItem[] }[]>> =
         { to: '/admin/generate', label: 'nav.generate', icon: 'zap' },
         { to: '/admin/timetables', label: 'nav.timetables', icon: 'calendar' },
         { to: '/admin/changes', label: 'nav.changes', icon: 'swap' },
+        { to: '/admin/evaluations', label: 'nav.evaluations', icon: 'check' },
         { to: '/browse', label: 'nav.browse', icon: 'search' },
       ],
     },

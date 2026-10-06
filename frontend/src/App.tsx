@@ -8,6 +8,7 @@ import Assignments from './pages/admin/Assignments';
 import Changes from './pages/admin/Changes';
 import Dashboard from './pages/admin/Dashboard';
 import Editor from './pages/admin/Editor';
+import Evaluations from './pages/admin/Evaluations';
 import Generate from './pages/admin/Generate';
 import Groups from './pages/admin/Groups';
 import Rooms from './pages/admin/Rooms';
@@ -94,6 +95,7 @@ function AppRoutes() {
         <Route path="timetables" element={<Timetables />} />
         <Route path="timetables/:id" element={<Editor />} />
         <Route path="changes" element={<Changes />} />
+        <Route path="evaluations" element={<Evaluations />} />
       </Route>
       {/* old student/teacher pages and anything unknown */}
       <Route path="/orar" element={<Navigate to="/studenti" replace />} />
