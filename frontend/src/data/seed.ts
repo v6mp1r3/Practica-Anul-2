@@ -606,9 +606,7 @@ export const seedDataset: Dataset = {
 
 /** Demo accounts — password for all of them is "demo". */
 export const seedUsers: User[] = [
-  // Institution administrator: settings and faculty accounts
-  { id: 'u4', username: 'natalia.grosu', name: 'Natalia Grosu', role: 'admin' },
-  // One administrator per faculty
+  // One administrator per faculty — there is no administrator above them
   { id: 'u1', username: 'elena.popescu', name: 'Elena Popescu', role: 'admin', faculty: FCIM },
   { id: 'u5', username: 'ion.sirbu', name: 'Ion Sîrbu', role: 'admin', faculty: FET },
   { id: 'u2', username: 'daniel.rusu', name: 'Daniel Rusu', role: 'teacher', teacherId: 't1' },

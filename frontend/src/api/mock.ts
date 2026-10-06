@@ -10,7 +10,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 8;
+const SEED_VERSION = 9;
 
 interface Store {
   dataset: Dataset;
@@ -107,7 +107,10 @@ function mergeSeed(saved: Store) {
     const seed = seedDataset.groups.find((x) => x.id === g.id);
     if (g.programYears === undefined) g.programYears = seed?.programYears ?? Math.max(4, g.year);
   }
-  // demo accounts added later (institution + faculty administrators)
+  // there is no institution-wide administrator any more: every account belongs to a faculty
+  saved.users = saved.users.filter((u) => u.username !== 'natalia.grosu');
+  if (!saved.users.some((u) => u.id === saved.sessionUserId)) saved.sessionUserId = null;
+  // demo accounts added later (faculty administrators)
   const users = new Set(saved.users.map((u) => u.username));
   for (const u of seedUsers) if (!users.has(u.username)) saved.users.push(structuredClone(u));
   for (const u of saved.users) {
@@ -181,13 +184,6 @@ const uid = (prefix: string) => `${prefix}${Date.now().toString(36)}${Math.rando
 function currentUser(): User {
   const u = store.users.find((x) => x.id === store.sessionUserId);
   if (!u) throw new ApiError(401, 'Not signed in');
-  return u;
-}
-
-/** Institution administrator: an admin without a faculty. */
-function requireInstitutionAdmin(): User {
-  const u = requireRole('admin');
-  if (u.faculty) throw new ApiError(403, 'Only the institution administrator can do this');
   return u;
 }
 
@@ -266,11 +262,11 @@ export function createMockApi(): Api {
       return delay(undefined);
     },
     async listUsers() {
-      requireInstitutionAdmin();
+      requireRole('admin');
       return delay(store.users);
     },
     async createUser(nu) {
-      requireInstitutionAdmin();
+      requireRole('admin');
       const username = nu.username.trim().toLowerCase();
       if (!username || store.users.some((u) => u.username === username)) throw new ApiError(422, 'Username taken');
       if (nu.password.length < 8) throw new ApiError(422, 'Password too short');
@@ -282,7 +278,7 @@ export function createMockApi(): Api {
       return delay(created);
     },
     async updateUser(user) {
-      requireInstitutionAdmin();
+      requireRole('admin');
       const i = store.users.findIndex((u) => u.id === user.id);
       if (i < 0) throw new ApiError(404, 'Not found');
       store.users[i] = { ...store.users[i], ...user };
@@ -290,7 +286,7 @@ export function createMockApi(): Api {
       return delay(store.users[i]);
     },
     async deleteUser(id) {
-      const me = requireInstitutionAdmin();
+      const me = requireRole('admin');
       if (id === me.id) throw new ApiError(422, 'You cannot delete your own account');
       store.users = store.users.filter((u) => u.id !== id);
       persist();
@@ -309,7 +305,7 @@ export function createMockApi(): Api {
       return delay(store.dataset);
     },
     async saveSettings(settings) {
-      requireInstitutionAdmin();
+      requireRole('admin');
       store.dataset.settings = settings;
       persist();
       return delay(settings);

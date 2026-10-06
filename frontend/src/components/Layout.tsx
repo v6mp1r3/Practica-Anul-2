@@ -97,24 +97,17 @@ export function Layout() {
           </button>
         </div>
         <nav className="nav">
-          {NAV[user.role]
-            // faculty administrators: no institution-wide settings or accounts
-            .map((g) =>
-              user.role === 'admin' && user.faculty
-                ? { ...g, items: g.items.filter((i) => i.to !== '/admin/setup' && i.to !== '/admin/admins') }
-                : g,
-            )
-            .map((group, i) => (
-              <div key={i} style={{ display: 'contents' }}>
-                {group.section && <div className="nav-section">{t(group.section)}</div>}
-                {group.items.map((item) => (
-                  <NavLink key={item.to} to={item.to} end={item.end}>
-                    <Icon name={item.icon} />
-                    {t(item.label)}
-                  </NavLink>
-                ))}
-              </div>
-            ))}
+          {NAV[user.role].map((group, i) => (
+            <div key={i} style={{ display: 'contents' }}>
+              {group.section && <div className="nav-section">{t(group.section)}</div>}
+              {group.items.map((item) => (
+                <NavLink key={item.to} to={item.to} end={item.end}>
+                  <Icon name={item.icon} />
+                  {t(item.label)}
+                </NavLink>
+              ))}
+            </div>
+          ))}
           <div className="nav-section" />
           <NavLink to="/notifications">
             <Icon name="bell" />
