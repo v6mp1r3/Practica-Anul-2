@@ -7,6 +7,7 @@ import { PrecheckList } from '../../components/PrecheckList';
 import { Field, PageHeader, Segmented } from '../../components/ui';
 import { precheck } from '../../domain/precheck';
 import { SOFT_WEIGHTS } from '../../domain/score';
+import { RoundPicker } from '../../components/RoundPicker';
 import { STUDY_FORMS, type ExamRound, type ScoreBreakdown, type StudyForm, type Timetable } from '../../domain/types';
 import { evaluationOf } from '../../domain/exams';
 import { useI18n } from '../../i18n';
@@ -156,26 +157,18 @@ export default function Generate() {
     <div className="page">
       <PageHeader title={t('nav.generate')} subtitle={t('generate.subtitle')} />
       <div className="stack">
-        <Segmented
-          value={what}
-          onChange={setWhat}
-          options={[
-            { value: 'timetable', label: t('generate.whatTimetable') },
-            { value: 'midterm1', label: t('exams.midterm', { n: 1 }) },
-            { value: 'midterm2', label: t('exams.midterm', { n: 2 }) },
-            { value: 'session', label: t('exams.exams') },
-            { value: 'reexam', label: t('exams.reexams') },
-          ]}
-        />
+        <RoundPicker value={what} onChange={setWhat} before={[{ value: 'timetable' as const, label: t('generate.whatTimetable') }]} />
         {what !== 'timetable' ? (
           <div className="card">
             <div className="card-body stack">
               <p className="muted" style={{ margin: 0 }}>
                 {what === 'session' || what === 'reexam'
                   ? t('exams.finalsNote')
-                  : ev.midtermMode === 'separate'
-                    ? t('exams.separateNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })
-                    : t('exams.inClassNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })}
+                  : what === 'remidterm1' || what === 'remidterm2'
+                    ? t('exams.retakeNote', { w: ev.midtermRetakeWeeks[what === 'remidterm1' ? 0 : 1] })
+                    : ev.midtermMode === 'separate'
+                      ? t('exams.separateNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })
+                      : t('exams.inClassNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })}
               </p>
               <p className="small muted" style={{ margin: 0 }}>
                 {t('generate.examsHint')}

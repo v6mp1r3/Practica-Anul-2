@@ -286,9 +286,9 @@ function Evaluations({
       entries = entries.filter((e) => !ids.has(e.id));
     }
   } else {
-    const round = tab === 'exams' ? 'session' : 'reexam';
+    const rounds = tab === 'exams' ? ['session'] : ['remidterm1', 'remidterm2', 'reexam'];
     entries = examEntries(
-      events.filter((e) => e.round === round && mine(e)),
+      events.filter((e) => rounds.includes(e.round) && mine(e)),
       index,
       t,
     );

@@ -7,9 +7,10 @@ import { api } from '../../api';
 import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { ExamWeekCalendar } from '../../components/ExamWeekCalendar';
 import { examEntries } from '../../components/examEntries';
+import { ROUNDS, RoundPicker } from '../../components/RoundPicker';
 import { Icon } from '../../components/Icon';
 import { Select } from '../../components/Select';
-import { Empty, Field, Modal, PageHeader, Segmented, TimeInput } from '../../components/ui';
+import { Empty, Field, Modal, PageHeader, TimeInput } from '../../components/ui';
 import { evaluationOf, findExamProblems, type ExamProblem } from '../../domain/exams';
 import type { ExamEvent, ExamPlan, ExamRound } from '../../domain/types';
 import { useI18n } from '../../i18n';
@@ -32,9 +33,7 @@ export default function Evaluations() {
   // Generare sends here with the round it just generated (?round=session)
   const [params] = useSearchParams();
   const asked = params.get('round');
-  const [round, setRound] = useState<ExamRound>(
-    asked === 'midterm1' || asked === 'midterm2' || asked === 'reexam' || asked === 'session' ? asked : 'session',
-  );
+  const [round, setRound] = useState<ExamRound>(ROUNDS.includes(asked as ExamRound) ? (asked as ExamRound) : 'session');
   const [plan, setPlan] = useState<ExamPlan | null>(null);
   const [busy, setBusy] = useState(false);
   const [groupId, setGroupId] = useState('');
@@ -126,16 +125,7 @@ export default function Evaluations() {
       />
 
       <div className="row wrap" style={{ gap: 8, marginBottom: 16 }}>
-        <Segmented
-          value={round}
-          onChange={setRound}
-          options={[
-            { value: 'midterm1', label: t('exams.midterm', { n: 1 }) },
-            { value: 'midterm2', label: t('exams.midterm', { n: 2 }) },
-            { value: 'session', label: t('exams.exams') },
-            { value: 'reexam', label: t('exams.reexams') },
-          ]}
-        />
+        <RoundPicker value={round} onChange={(r) => setRound(r as ExamRound)} />
         <Select className="select pill" value={groupId} onChange={(e) => setGroupId(e.target.value)} aria-label={t('view.group')}>
           <option value="">{t('exams.allGroups')}</option>
           {groups.map((g) => (
@@ -173,7 +163,10 @@ export default function Evaluations() {
               : t('exams.separateNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })}
           </p>
         )}
-        {!midterm && <p className="small muted">{t('exams.finalsNote')}</p>}
+        {(round === 'remidterm1' || round === 'remidterm2') && (
+          <p className="small muted">{t('exams.retakeNote', { w: ev.midtermRetakeWeeks[round === 'remidterm1' ? 0 : 1] })}</p>
+        )}
+        {(round === 'session' || round === 'reexam') && <p className="small muted">{t('exams.finalsNote')}</p>}
         <ExamWeekCalendar
           entries={examEntries(shown, index, t)}
           index={index}

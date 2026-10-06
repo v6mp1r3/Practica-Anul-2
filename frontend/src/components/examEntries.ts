@@ -19,10 +19,12 @@ export function examEntries(events: ExamEvent[], index: DatasetIndex, t: Transla
         ? t('exams.consultation')
         : e.round === 'reexam'
           ? t('exams.reexam')
-          : e.round === 'session'
-            ? t('exams.exam')
-            : t('exams.midterm', { n: e.round === 'midterm1' ? 1 : 2 }),
-    tone: e.kind === 'consultation' ? 'consultation' : e.round.startsWith('midterm') ? 'midterm' : 'exam',
+          : e.round === 'remidterm1' || e.round === 'remidterm2'
+            ? t('exams.remidterm', { n: e.round === 'remidterm1' ? 1 : 2 })
+            : e.round === 'session'
+              ? t('exams.exam')
+              : t('exams.midterm', { n: e.round === 'midterm1' ? 1 : 2 }),
+    tone: e.kind === 'consultation' ? 'consultation' : e.round.includes('midterm') ? 'midterm' : 'exam',
     subjectId: e.subjectId,
     teacherId: e.teacherId,
     roomId: e.roomId,
