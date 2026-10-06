@@ -33,7 +33,10 @@ export default function Browse() {
 
   return (
     <div className="page">
-      <PageHeader title={t('nav.browse')} subtitle={published ? `${published.name} · ${semesterOf(dataset.settings.semester)}` : undefined} />
+      <PageHeader
+        title={t('nav.browse')}
+        subtitle={published ? `${published.name} · ${semesterOf(dataset.settings.semester)}` : undefined}
+      />
       {!published ? (
         <div className="card">
           <Empty>{t('tt.notPublished')}</Empty>

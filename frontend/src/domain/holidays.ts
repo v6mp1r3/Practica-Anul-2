@@ -83,9 +83,33 @@ export function autoHolidays(y: number): Holiday[] {
   const winterStart = addDays(iso(y, 12, 28), -weekday(iso(y, 12, 28)));
   const winterEnd = addDays(iso(n, 1, 8), 6 - weekday(iso(n, 1, 8)));
   const breaks: Holiday[] = [
-    { id: `${y}:winter`, nameKey: 'holiday.winter', name: 'Vacanța de iarnă', start: winterStart, end: winterEnd, auto: true, kind: 'break' },
-    { id: `${y}:easter`, nameKey: 'holiday.easterBreak', name: 'Vacanța de Paște', start: easter, end: addDays(easter, 6), auto: true, kind: 'break' },
-    { id: `${y}:summer`, nameKey: 'holiday.summer', name: 'Vacanța de vară', start: iso(n, 7, 1), end: iso(n, 8, 31), auto: true, kind: 'break' },
+    {
+      id: `${y}:winter`,
+      nameKey: 'holiday.winter',
+      name: 'Vacanța de iarnă',
+      start: winterStart,
+      end: winterEnd,
+      auto: true,
+      kind: 'break',
+    },
+    {
+      id: `${y}:easter`,
+      nameKey: 'holiday.easterBreak',
+      name: 'Vacanța de Paște',
+      start: easter,
+      end: addDays(easter, 6),
+      auto: true,
+      kind: 'break',
+    },
+    {
+      id: `${y}:summer`,
+      nameKey: 'holiday.summer',
+      name: 'Vacanța de vară',
+      start: iso(n, 7, 1),
+      end: iso(n, 8, 31),
+      auto: true,
+      kind: 'break',
+    },
   ];
   const day = (key: string, name: string, date: string, end = date): Holiday => ({
     id: `${y}:${key}`,
@@ -144,5 +168,4 @@ export function hiddenHolidays(ev: Pick<EvaluationSettings, 'semesterStart' | 'h
 }
 
 /** Number of calendar days a holiday spans. */
-export const holidayLength = (h: Vacation) =>
-  Math.round((parseDate(h.end).getTime() - parseDate(h.start).getTime()) / 86400000) + 1;
+export const holidayLength = (h: Vacation) => Math.round((parseDate(h.end).getTime() - parseDate(h.start).getTime()) / 86400000) + 1;

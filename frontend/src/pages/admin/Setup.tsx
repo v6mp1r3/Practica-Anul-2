@@ -688,7 +688,6 @@ export default function Setup() {
               </div>
             </div>
           )}
-
         </Step>
       </div>
     </div>
