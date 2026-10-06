@@ -1,7 +1,6 @@
-// Turns exam events and in-class atestări into rows of the exam calendar.
-import type { Midterm } from '../domain/exams';
+// Turns exam and atestări events into rows of the exam calendar.
 import type { DatasetIndex } from '../domain/indexes';
-import type { ExamEvent, Settings } from '../domain/types';
+import type { ExamEvent } from '../domain/types';
 import type { MessageKey } from '../i18n';
 import type { CalendarEntry } from './ExamCalendar';
 
@@ -9,6 +8,8 @@ type Translate = (key: MessageKey, vars?: Record<string, string | number>) => st
 
 export function examEntries(events: ExamEvent[], index: DatasetIndex, t: Translate): CalendarEntry[] {
   return events.map((e) => ({
+    // an atestare held in a class says so
+    detail: e.lessonId ? t('exams.inClass') : undefined,
     id: e.id,
     date: e.date,
     start: e.start,
@@ -25,27 +26,6 @@ export function examEntries(events: ExamEvent[], index: DatasetIndex, t: Transla
     subjectId: e.subjectId,
     teacherId: e.teacherId,
     roomId: e.roomId,
-    groupLabel: index.groups.get(e.groupId)?.name ?? '',
+    groupLabel: `${index.groups.get(e.groupId)?.name ?? ''}${e.subgroup ? `/${e.subgroup}` : ''}`,
   }));
-}
-
-/** Atestări held in the subject's own class, at that class's time and room. */
-export function midtermEntries(list: Midterm[], index: DatasetIndex, settings: Settings, t: Translate): CalendarEntry[] {
-  return list.map((m) => {
-    const a = index.assignmentOf(m.lesson)!;
-    const slot = settings.slots[m.lesson.slot];
-    return {
-      id: `${m.n}-${m.lesson.id}-${m.date}`,
-      date: m.date,
-      start: slot?.start ?? '',
-      end: slot?.end ?? '',
-      label: t('exams.midterm', { n: m.n }),
-      tone: 'midterm',
-      subjectId: a.subjectId,
-      detail: t(`activity.${a.type}`),
-      teacherId: a.teacherId,
-      roomId: m.lesson.roomId,
-      groupLabel: index.audienceLabel(a.audience),
-    };
-  });
 }

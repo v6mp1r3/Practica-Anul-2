@@ -2,10 +2,10 @@
 // teachers (any teacher); the last choice is remembered on this device.
 import { useState } from 'react';
 import { ExamCalendar, type CalendarEntry } from '../../components/ExamCalendar';
-import { examEntries, midtermEntries } from '../../components/examEntries';
+import { examEntries } from '../../components/examEntries';
 import { parseDate, toDateString } from '../../domain/changes';
-import { evaluationOf, midtermsFor, teachingWeek } from '../../domain/exams';
-import type { ExamEvent, Lesson } from '../../domain/types';
+import { evaluationOf, teachingWeek } from '../../domain/exams';
+import type { ExamEvent } from '../../domain/types';
 import { ChangesCard } from '../../components/ChangesCard';
 import { HolidaysCard, HolidayToday } from '../../components/Holidays';
 import { MyTimetable } from '../../components/MyTimetable';
@@ -199,7 +199,6 @@ function Schedule({ kind }: { kind: Kind }) {
             <Evaluations
               tab={tab}
               who={group ? { groupId: group.id, subgroup: choice.subgroup } : { teacherId: teacher!.id }}
-              lessons={published?.lessons ?? []}
               events={exams}
             />
           ) : !published ? (
@@ -254,12 +253,10 @@ function Schedule({ kind }: { kind: Kind }) {
 function Evaluations({
   tab,
   who,
-  lessons,
   events,
 }: {
   tab: Exclude<Tab, 'timetable'>;
   who: { groupId: string; subgroup: number | null } | { teacherId: string };
-  lessons: Lesson[];
   events: ExamEvent[];
 }) {
   const { t, lang } = useI18n();
@@ -271,24 +268,16 @@ function Evaluations({
 
   let entries: CalendarEntry[];
   if (tab === 'midterms') {
-    const reducedGroup = 'groupId' in who && index.groups.get(who.groupId)?.studyForm === 'reduced';
-    if (ev.midtermMode === 'separate' && !reducedGroup) {
-      entries = examEntries(
-        events.filter((e) => e.round.startsWith('midterm') && mine(e)),
-        index,
-        t,
-      );
-    } else {
-      // held in the subject's own class
-      let list = midtermsFor(dataset, index, lessons, 'groupId' in who ? { groupId: who.groupId } : { teacherId: who.teacherId });
-      if ('groupId' in who && who.subgroup) {
-        const sg = who.subgroup;
-        list = list.filter((m) => {
-          const aud = index.assignmentOf(m.lesson)!.audience;
-          return aud.kind !== 'subgroup' || aud.subgroup === sg;
-        });
-      }
-      entries = midtermEntries(list, index, dataset.settings, t);
+    entries = examEntries(
+      events.filter((e) => e.round.startsWith('midterm') && mine(e)),
+      index,
+      t,
+    );
+    if ('groupId' in who && who.subgroup) {
+      // the other subgroup's lab atestare isn't theirs
+      const sg = who.subgroup;
+      const ids = new Set(events.filter((e) => e.subgroup && e.subgroup !== sg).map((e) => e.id));
+      entries = entries.filter((e) => !ids.has(e.id));
     }
   } else {
     const round = tab === 'exams' ? 'session' : 'reexam';

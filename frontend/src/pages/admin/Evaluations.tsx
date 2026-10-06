@@ -5,11 +5,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../api';
 import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { ExamCalendar } from '../../components/ExamCalendar';
-import { examEntries, midtermEntries } from '../../components/examEntries';
+import { examEntries } from '../../components/examEntries';
 import { Icon } from '../../components/Icon';
 import { Select } from '../../components/Select';
 import { Empty, Field, Modal, PageHeader, Segmented, TimeInput } from '../../components/ui';
-import { evaluationOf, findExamProblems, midtermsFor, type ExamProblem } from '../../domain/exams';
+import { evaluationOf, findExamProblems, type ExamProblem } from '../../domain/exams';
 import type { ExamEvent, ExamPlan, ExamRound } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
@@ -37,11 +37,12 @@ export default function Evaluations() {
   const myGroups = facultyGroupIds(dataset, scope);
   const groups = dataset.groups.filter((g) => myGroups.includes(g.id));
   const inClass = (round === 'midterm1' || round === 'midterm2') && !separate;
+  const midterm = round === 'midterm1' || round === 'midterm2';
 
   useEffect(() => {
     setPlan(null);
-    if (!inClass) api.getExamPlan(round).then(setPlan);
-  }, [round, inClass]);
+    api.getExamPlan(round).then(setPlan);
+  }, [round]);
 
   // clashes with this plan and with other faculties' published events
   const problems = useMemo<ExamProblem[]>(() => {
@@ -80,12 +81,6 @@ export default function Evaluations() {
   }
 
   const shown = (plan?.events ?? []).filter((e) => !groupId || e.groupId === groupId);
-  const midtermList = inClass
-    ? groups
-        .filter((g) => !groupId || g.id === groupId)
-        .flatMap((g) => midtermsFor(dataset, index, published?.lessons ?? [], { groupId: g.id }))
-        .filter((m) => m.n === (round === 'midterm1' ? 1 : 2))
-    : [];
 
   return (
     <div className="page">
@@ -93,27 +88,25 @@ export default function Evaluations() {
         title={t('nav.evaluations')}
         subtitle={t('exams.subtitle')}
         actions={
-          !inClass && (
-            <>
-              {plan && (
-                <span className={`badge ${plan.status === 'published' ? 'success' : 'primary'}`}>{t(`exams.status.${plan.status}`)}</span>
-              )}
-              <button className="btn" onClick={generate} disabled={busy}>
-                <Icon name="zap" size={15} />
-                {plan ? t('exams.regenerate') : t('exams.generate')}
-              </button>
-              {plan &&
-                (plan.status === 'published' ? (
-                  <button className="btn" onClick={() => setStatus(false)}>
-                    {t('exams.unpublish')}
-                  </button>
-                ) : (
-                  <button className="btn primary" onClick={() => setStatus(true)} disabled={!plan.events.length}>
-                    {t('exams.publish')}
-                  </button>
-                ))}
-            </>
-          )
+          <>
+            {plan && (
+              <span className={`badge ${plan.status === 'published' ? 'success' : 'primary'}`}>{t(`exams.status.${plan.status}`)}</span>
+            )}
+            <button className="btn" onClick={generate} disabled={busy}>
+              <Icon name="zap" size={15} />
+              {plan ? t('exams.regenerate') : t('exams.generate')}
+            </button>
+            {plan &&
+              (plan.status === 'published' ? (
+                <button className="btn" onClick={() => setStatus(false)}>
+                  {t('exams.unpublish')}
+                </button>
+              ) : (
+                <button className="btn primary" onClick={() => setStatus(true)} disabled={!plan.events.length}>
+                  {t('exams.publish')}
+                </button>
+              ))}
+          </>
         }
       />
 
@@ -157,17 +150,15 @@ export default function Evaluations() {
         </div>
       )}
 
-      {inClass ? (
-        <div className="stack">
-          <p className="small muted">{t('exams.inClassNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })}</p>
-          <ExamCalendar
-            entries={midtermEntries(midtermList, index, dataset.settings, t)}
-            index={index}
-            settings={dataset.settings}
-            empty={<Empty>{t('tt.notPublished')}</Empty>}
-          />
-        </div>
-      ) : (
+      <div className="stack">
+        {midterm && (
+          <p className="small muted">
+            {inClass
+              ? t('exams.inClassNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })
+              : t('exams.separateNote', { w1: ev.midtermWeeks[0], w2: ev.midtermWeeks[1] })}
+          </p>
+        )}
+        {!midterm && <p className="small muted">{t('exams.finalsNote')}</p>}
         <ExamCalendar
           entries={examEntries(shown, index, t)}
           index={index}
@@ -175,9 +166,9 @@ export default function Evaluations() {
           highlight={problemIds}
           vacations={ev.vacations}
           onEdit={(id) => setEditing(plan?.events.find((e) => e.id === id) ?? null)}
-          empty={<Empty>{t('exams.none')}</Empty>}
+          empty={<Empty>{midterm && !published ? t('tt.notPublished') : t('exams.none')}</Empty>}
         />
-      )}
+      </div>
 
       {editing && <EditEvent event={editing} onClose={() => setEditing(null)} onSave={saveEdit} />}
     </div>
