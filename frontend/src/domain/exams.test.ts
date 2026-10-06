@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
 import {
+  evaluationForGroup,
   midtermRange,
   evaluationOf,
   examSubjects,
@@ -74,8 +75,10 @@ describe('exam session', () => {
     const re = generateExams(seedDataset, idx, fcim, 'reexam', events, createRng(2));
     expect(findExamProblems(seedDataset, [...events, ...re.events]).filter((p) => p.kind === 'clash')).toEqual([]);
     for (const e of re.events.filter((x) => x.kind === 'exam')) {
-      expect(e.start >= ev.reexamFrom).toBe(true);
-      expect(e.end <= ev.reexamTo).toBe(true);
+      // each group in its own cycle's retake hours (master's: evening)
+      const gev = evaluationForGroup(seedDataset, idx, e.groupId);
+      expect(e.start >= gev.reexamFrom).toBe(true);
+      expect(e.end <= gev.reexamTo).toBe(true);
     }
   });
 });
@@ -114,7 +117,8 @@ describe('separate atestări timetable', () => {
     const { events, warnings } = generateMidterms(separate, idx, fcim, 1, lessons, [], createRng(3));
     expect(warnings).toEqual([]);
     const week = midtermRange(ev, 1);
-    const regular = events.filter((e) => e.groupId !== 'g8');
+    // licență full-time groups (FR sits them in its sessions, master's in its own weeks)
+    const regular = events.filter((e) => e.groupId !== 'g8' && idx.groups.get(e.groupId)?.cycle !== 'master');
     expect(regular.every((e) => e.date >= week.start && e.date <= week.end && e.round === 'midterm1')).toBe(true);
     expect(findExamProblems(seedDataset, events)).toEqual([]);
     // never over one of the group's classes that week (week 7 = odd)
@@ -147,8 +151,9 @@ describe('atestări held in class', () => {
       const l = lessons.find((x) => x.id === e.lessonId)!;
       expect(l.roomId).toBe(e.roomId);
       expect(seedDataset.settings.slots[l.slot].start).toBe(e.start);
-      // FR (g8) sits its atestări in its own sessions
-      if (e.groupId !== 'g8') expect(e.date >= week.start && e.date <= week.end).toBe(true);
+      // FR (g8) sits its atestări in its own sessions; master's in its own weeks
+      const own = idx.groups.get(e.groupId)?.cycle === 'master' ? midtermRange(evaluationOf(seedDataset, 'master'), 2) : week;
+      if (e.groupId !== 'g8') expect(e.date >= own.start && e.date <= own.end).toBe(true);
     }
     // a stream lecture shared by groups, or both subgroups' labs, are not clashes
     expect(findExamProblems(seedDataset, events)).toEqual([]);
@@ -194,5 +199,29 @@ describe('one atestare a day, one exam every other day', () => {
         expect(gap).toBeGreaterThanOrEqual(2); // never two days in a row
       }
     }
+  });
+});
+
+describe('master’s', () => {
+  it('uses the master calendar: evening exams, consultation just before, its own atestare weeks', async () => {
+    const mev = evaluationOf(seedDataset, 'master');
+    expect(mev.semesterStart > ev.semesterStart).toBe(true); // starts later than licență
+    const { events } = generateExams(seedDataset, idx, ['g15'], 'session', [], createRng(5));
+    const exams = events.filter((e) => e.kind === 'exam');
+    expect(exams.length).toBeGreaterThan(0);
+    for (const e of exams) {
+      expect(e.start >= mev.examFrom && e.end <= mev.examTo).toBe(true);
+      const c = events.find((x) => x.kind === 'consultation' && x.subjectId === e.subjectId)!;
+      expect(c.date).toBe(e.date); // same day, before the exam
+      expect(c.end <= e.start).toBe(true);
+    }
+    const { lessons } = await generateTimetable(seedDataset, { groupIds: ['g15'], seed: 2, iterations: 30 });
+    const mids = generateMidterms(seedDataset, idx, ['g15'], 1, lessons, [], createRng(1)).events;
+    const r = midtermRange(mev, 1);
+    expect(mids.length).toBeGreaterThan(0);
+    for (const m of mids) expect(m.date >= r.start && m.date <= r.end).toBe(true);
+    // evening classes (master's part of the day)
+    for (const l of lessons.filter((x) => idx.audienceTouchesGroup(idx.assignmentOf(x)!.audience, 'g15')))
+      expect(l.slot).toBeGreaterThanOrEqual(4);
   });
 });

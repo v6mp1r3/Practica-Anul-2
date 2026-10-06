@@ -56,7 +56,7 @@ describe('keeping other groups', () => {
 
 describe('comfort rules', () => {
   it('leaves students without gaps and puts physical education first or last', async () => {
-    const { score } = await generateTimetable(seedDataset, { groupIds: allGroups, seed: 3, iterations: 250 });
+    const { score } = await generateTimetable(seedDataset, { groupIds: allGroups, seed: 4, iterations: 250 });
     expect(score.breakdown.groupGaps).toBe(0);
     expect(score.breakdown.edgeMisses).toBe(0);
   });

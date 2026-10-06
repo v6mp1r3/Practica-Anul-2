@@ -13,7 +13,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 16;
+const SEED_VERSION = 17;
 
 interface Store {
   dataset: Dataset;
@@ -93,6 +93,7 @@ function mergeSeed(saved: Store) {
     const seed = seedDataset.subjects.find((x) => x.id === sub.id);
     if (seed?.edgeOfDay && sub.edgeOfDay === undefined) sub.edgeOfDay = true;
     if (seed?.evaluation && sub.evaluation === undefined) sub.evaluation = seed.evaluation;
+    if (seed?.cycle && sub.cycle === undefined) sub.cycle = seed.cycle;
   }
   // reduced attendance became session-based: every day of real session dates
   const st = ds.settings;
@@ -113,6 +114,9 @@ function mergeSeed(saved: Store) {
   // parts of the day per year of study, and programme lengths
   if (!st.yearShifts) st.yearShifts = structuredClone(seedDataset.settings.yearShifts);
   if (!st.evaluation) st.evaluation = structuredClone(seedDataset.settings.evaluation);
+  // master's settings (own calendar, evening shifts)
+  if (!st.masterEvaluation) st.masterEvaluation = structuredClone(seedDataset.settings.masterEvaluation);
+  if (!st.masterYearShifts) st.masterYearShifts = structuredClone(seedDataset.settings.masterYearShifts);
   // days off are computed every year now: the old hand-written 2026-27 list is not an "extra"
   if (st.evaluation) {
     const auto = new Set([

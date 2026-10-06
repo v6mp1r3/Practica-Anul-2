@@ -14,7 +14,7 @@ import type {
   User,
 } from '../domain/types';
 import { UTM_FACULTIES, UTM_NAME } from '../domain/utm';
-import { DEFAULT_EVALUATION } from '../domain/exams';
+import { DEFAULT_EVALUATION, DEFAULT_MASTER } from '../domain/exams';
 
 const FCIM = 'Facultatea Calculatoare, Informatică și Microelectronică';
 const FET = 'Facultatea Electronică și Telecomunicații';
@@ -62,6 +62,12 @@ export const seedSettings: Settings = {
   maxPairsPerDayTeacher: 5,
   consultationRequired: true,
   evaluation: DEFAULT_EVALUATION,
+  // master's: its own calendar and evening hours (only what differs from licență)
+  masterEvaluation: DEFAULT_MASTER,
+  masterYearShifts: [
+    { first: 4, last: 6 },
+    { first: 4, last: 6 },
+  ],
 };
 
 const t = (
@@ -311,6 +317,31 @@ export const seedGroups: Group[] = [
     size: 15,
     subgroups: 1,
   },
+  // master's (ciclul II): evening classes, own calendar
+  {
+    id: 'g15',
+    name: 'IS-251M',
+    program: 'Ingineria Software (master)',
+    faculty: FCIM,
+    studyForm: 'full',
+    cycle: 'master',
+    year: 1,
+    programYears: 2,
+    size: 18,
+    subgroups: 1,
+  },
+  {
+    id: 'g16',
+    name: 'TLC-251M',
+    program: 'Rețele de telecomunicații (master)',
+    faculty: FET,
+    studyForm: 'full',
+    cycle: 'master',
+    year: 1,
+    programYears: 2,
+    size: 14,
+    subgroups: 1,
+  },
 ];
 
 export const seedStreams: Stream[] = [
@@ -494,6 +525,40 @@ export const seedSubjects: Subject[] = [
     seminarPairs: 0,
     labPairs: 1,
   },
+  // master's
+  {
+    id: 'sub20',
+    code: 'ASA',
+    name: 'Arhitecturi software avansate',
+    credits: 6,
+    year: 1,
+    faculty: FCIM,
+    lecturePairs: 1,
+    seminarPairs: 0,
+    labPairs: 1,
+  },
+  {
+    id: 'sub21',
+    code: 'MCS',
+    name: 'Metodologia cercetării științifice',
+    credits: 4,
+    year: 1,
+    faculty: FCIM,
+    lecturePairs: 1,
+    seminarPairs: 1,
+    labPairs: 0,
+  },
+  {
+    id: 'sub22',
+    code: 'SCM',
+    name: 'Sisteme de comunicații mobile',
+    credits: 6,
+    year: 1,
+    faculty: FET,
+    lecturePairs: 1,
+    seminarPairs: 0,
+    labPairs: 1,
+  },
 ];
 
 let nextAssignment = 1;
@@ -598,6 +663,13 @@ export const seedAssignments: Assignment[] = [
   a('sub8', 'lab', 't1', group('g9')),
   a('sub9', 'lab', 't13', group('g9'), 1, 'odd'),
   a('sub11', 'lab', 't8', group('g9'), 1, 'weekly', ['calculatoare', 'echipament rețea']),
+  // Master's (IS-251M, TLC-251M) — evening classes
+  a('sub20', 'lecture', 't21', group('g15')),
+  a('sub20', 'lab', 't22', group('g15')),
+  a('sub21', 'lecture', 't14', group('g15')),
+  a('sub21', 'seminar', 't14', group('g15')),
+  a('sub22', 'lecture', 't15', group('g16')),
+  a('sub22', 'lab', 't19', group('g16'), 1, 'weekly', ['electronică']),
 ];
 
 export const seedDataset: Dataset = {

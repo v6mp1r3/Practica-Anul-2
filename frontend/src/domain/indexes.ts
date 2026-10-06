@@ -73,8 +73,9 @@ export class DatasetIndex {
 
   /** The part of the day a group's year of study is taught in, if set. */
   groupShift(groupId: string): YearShift | undefined {
-    const year = this.groups.get(groupId)?.year ?? 1;
-    const shifts = this.ds.settings.yearShifts ?? [];
+    const group = this.groups.get(groupId);
+    const year = group?.year ?? 1;
+    const shifts = (group?.cycle === 'master' ? this.ds.settings.masterYearShifts : this.ds.settings.yearShifts) ?? [];
     return shifts.length ? shifts[Math.min(year, shifts.length) - 1] : undefined;
   }
 

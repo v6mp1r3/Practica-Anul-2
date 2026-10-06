@@ -70,7 +70,10 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
 
     // Compare against the study plan, per subject and activity type. Reduced
     // attendance has fewer contact hours by design, so it is not compared.
-    const plan = ds.subjects.filter((x) => x.year === g.year && (!x.faculty || !g.faculty || x.faculty === g.faculty));
+    const plan = ds.subjects.filter(
+      (x) =>
+        x.year === g.year && (x.cycle ?? 'licenta') === (g.cycle ?? 'licenta') && (!x.faculty || !g.faculty || x.faculty === g.faculty),
+    );
     for (const s of g.studyForm === 'reduced' ? [] : plan) {
       for (const type of ['lecture', 'seminar', 'lab'] as ActivityType[]) {
         const expected = s[pairsField[type]];

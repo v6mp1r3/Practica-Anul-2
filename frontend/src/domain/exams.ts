@@ -7,7 +7,18 @@ import { parseDate, sessionDates, toDateString } from './changes';
 import { holidaysOf, semesterStartOf } from './holidays';
 import type { DatasetIndex } from './indexes';
 import type { Rng } from './rng';
-import type { ActivityType, Dataset, DateRange, Day, EvaluationSettings, ExamEvent, Lesson, Room } from './types';
+import type {
+  ActivityType,
+  Dataset,
+  DateRange,
+  Day,
+  EvaluationSettings,
+  ExamEvent,
+  Lesson,
+  MasterEvaluation,
+  Room,
+  StudyCycle,
+} from './types';
 import { paritiesOverlap } from './slots';
 import { dayIndexOf } from './views';
 
@@ -45,13 +56,37 @@ export const DEFAULT_EVALUATION: EvaluationSettings = {
   reexamMinutes: 90,
 };
 
-/** The evaluation settings, with `vacations` = every day off of the year (automatic + added). */
-export const evaluationOf = (ds: Dataset): EvaluationSettings => {
+/** Master's defaults (UTM master calendar): starts ~4 weeks later, evening hours, consultation just before. */
+export const DEFAULT_MASTER: MasterEvaluation = {
+  startOffsetWeeks: 4,
+  midtermWeeks: [6, 12],
+  examSession: [{ start: '2027-01-11', end: '2027-01-30' }],
+  reexamSession: [{ start: '2027-02-01', end: '2027-02-06' }],
+  examDays: [0, 1, 2, 3, 4, 5],
+  examFrom: '16:00',
+  examTo: '20:30',
+  consultation: 'sameDay',
+  reexamFrom: '16:00',
+  reexamTo: '20:30',
+};
+
+/**
+ * The evaluation settings, with `vacations` = every day off of the year (automatic + added).
+ * Master's: licență's, with the master overrides on top (holidays are the same).
+ */
+export const evaluationOf = (ds: Dataset, cycle: StudyCycle = 'licenta'): EvaluationSettings => {
   const stored = { ...DEFAULT_EVALUATION, ...ds.settings.evaluation };
   // a new academic year starts by itself: its first week and its days off
   const ev = { ...stored, semesterStart: semesterStartOf(stored.semesterStart) };
-  return { ...ev, vacations: holidaysOf(ev) };
+  const lic = { ...ev, vacations: holidaysOf(ev) };
+  if (cycle !== 'master') return lic;
+  const { startOffsetWeeks = 4, ...m } = { ...DEFAULT_MASTER, ...ds.settings.masterEvaluation };
+  return { ...lic, ...m, semesterStart: addDays(lic.semesterStart, 7 * startOffsetWeeks), vacations: lic.vacations };
 };
+
+/** The evaluation settings that apply to a group (its study cycle). */
+export const evaluationForGroup = (ds: Dataset, idx: DatasetIndex, groupId: string) =>
+  evaluationOf(ds, idx.groups.get(groupId)?.cycle ?? 'licenta');
 
 const toMin = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -136,10 +171,15 @@ export function generateExams(
   const all = () => [...busy, ...placed];
   const free = (e: ExamEvent) => !all().some((o) => clash(o, e));
 
-  const minutes = round === 'session' ? ev.examMinutes : ev.reexamMinutes;
-  // any start inside the window — each exam its own time, not a fixed list
-  const window = round === 'session' ? startTimesIn(ev.examFrom, ev.examTo, minutes) : startTimesIn(ev.reexamFrom, ev.reexamTo, minutes);
-  const minGap = ev.examMinGap;
+  // licență or master's: each group follows its own cycle's settings
+  const cycleEv = { licenta: ev, master: evaluationOf(ds, 'master') };
+  const rules = (gev: EvaluationSettings) => {
+    const minutes = round === 'session' ? gev.examMinutes : gev.reexamMinutes;
+    // any start inside the window — each exam its own time, not a fixed list
+    const window =
+      round === 'session' ? startTimesIn(gev.examFrom, gev.examTo, minutes) : startTimesIn(gev.reexamFrom, gev.reexamTo, minutes);
+    return { minutes, window, minGap: gev.examMinGap };
+  };
 
   // the teacher's exam-period availability (not the weekly one: there are no classes)
   const teacherFree = (teacherId: string, date: string, start: string, end: string) =>
@@ -165,10 +205,12 @@ export function generateExams(
   for (const groupId of order) {
     const group = idx.groups.get(groupId);
     if (!group) continue;
-    const ranges = round === 'reexam' ? ev.reexamSession : group.studyForm === 'reduced' ? ev.reducedExamSession : ev.examSession;
+    const gev = cycleEv[group.cycle ?? 'licenta'];
+    const { minutes, window, minGap } = rules(gev);
+    const ranges = round === 'reexam' ? gev.reexamSession : group.studyForm === 'reduced' ? gev.reducedExamSession : gev.examSession;
     // frecvență: weekdays only; frecvență redusă may also use the weekend
-    const days = group.studyForm === 'reduced' ? ev.reducedExamDays : ev.examDays;
-    const dates = rangeDates(ranges, days, ev.vacations);
+    const days = group.studyForm === 'reduced' ? gev.reducedExamDays : gev.examDays;
+    const dates = rangeDates(ranges, days, gev.vacations);
     const subjects = rng
       .shuffle(examSubjects(ds, idx, groupId))
       .sort((a, b) => (idx.subjects.get(b)?.credits ?? 0) - (idx.subjects.get(a)?.credits ?? 0));
@@ -197,7 +239,7 @@ export function generateExams(
             if (!room) continue;
             const exam: ExamEvent = { id: newId(), kind: 'exam', round, subjectId, groupId, teacherId, roomId: room.id, date, start, end };
             const consultation = consultationFor(
-              ev,
+              gev,
               days,
               exam,
               rng,
@@ -346,7 +388,7 @@ function groupMidterms(
 ): (MidtermPick & { subjectId: string })[] {
   const key = `${groupId}|${n}`;
   if (cache.has(key)) return cache.get(key)!;
-  const ev = evaluationOf(ds);
+  const ev = evaluationForGroup(ds, idx, groupId);
   const group = idx.groups.get(groupId);
   const views = group && group.subgroups > 1 ? Array.from({ length: group.subgroups }, (_, i) => i + 1) : [0];
   const mine = lessons.filter((l) => !l.date && idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, groupId));
@@ -502,30 +544,37 @@ export function generateMidterms(
   /** Retake of the atestare: in its retake week, always after classes, in the retake hours. */
   retake = false,
 ): ExamResult {
-  const ev = evaluationOf(ds);
   const round = retake ? (n === 1 ? 'remidterm1' : 'remidterm2') : n === 1 ? 'midterm1' : 'midterm2';
-  const weeks = retake ? [ev.midtermRetakeWeeks[n - 1]] : midtermWeeksOf(ev, n);
-  const range = { start: teachingWeek(ev, weeks[0]).start, end: teachingWeek(ev, weeks[weeks.length - 1]).end };
-  const parityOn = (date: string) => {
-    const w =
-      weeks.find((x) => {
-        const r = teachingWeek(ev, x);
-        return r.start <= date && date <= r.end;
-      }) ?? weeks[0];
-    return w % 2 === 1 ? 'odd' : 'even';
+  // the period, days and hours of each study cycle (licență, master's)
+  const makeCtx = (ev: EvaluationSettings) => {
+    const weeks = retake ? [ev.midtermRetakeWeeks[n - 1]] : midtermWeeksOf(ev, n);
+    const range = { start: teachingWeek(ev, weeks[0]).start, end: teachingWeek(ev, weeks[weeks.length - 1]).end };
+    const parityOn = (date: string) => {
+      const w =
+        weeks.find((x) => {
+          const r = teachingWeek(ev, x);
+          return r.start <= date && date <= r.end;
+        }) ?? weeks[0];
+      return w % 2 === 1 ? 'odd' : 'even';
+    };
+    return {
+      ev,
+      parityOn,
+      dates: sessionDates(range.start, range.end, ev.examDays).filter((d) => !vacationOn(ev, d)),
+      times: retake ? startTimesIn(ev.reexamFrom, ev.reexamTo, ev.midtermMinutes) : ev.midtermStartTimes,
+      // reduced attendance retakes its atestări in its exam session (weekends allowed)
+      reducedDates: rangeDates(ev.reducedExamSession, ev.reducedExamDays, ev.vacations),
+    };
   };
-  const dates = sessionDates(range.start, range.end, ev.examDays).filter((d) => !vacationOn(ev, d));
-  const times = retake ? startTimesIn(ev.reexamFrom, ev.reexamTo, ev.midtermMinutes) : ev.midtermStartTimes;
-  // reduced attendance retakes its atestări in its exam session (weekends allowed)
-  const reducedDates = rangeDates(ev.reducedExamSession, ev.reducedExamDays, ev.vacations);
+  const ctxs = { licenta: makeCtx(evaluationOf(ds)), master: makeCtx(evaluationOf(ds, 'master')) };
   const placed: ExamEvent[] = [];
   const warnings: ExamResult['warnings'] = [];
   const all = () => [...busy, ...placed];
 
   // what the weekly timetable already occupies on a date
-  const classesAt = (date: string, start: string, end: string) => {
+  const classesAt = (date: string, start: string, end: string, parityOn: (d: string) => string) => {
     const day = dayIndexOf(parseDate(date));
-    const parity = parityOn(date);
+    const parity = parityOn(date) as 'odd' | 'even';
     return classes.filter((l) => {
       if (l.date || l.day !== day || !paritiesOverlap(l.parity, parity)) return false;
       const s = ds.settings.slots[l.slot];
@@ -540,6 +589,7 @@ export function generateMidterms(
   for (const groupId of rng.shuffle(groupIds)) {
     // held in the subject's own class (or a reduced-attendance group's session class): its time and room
     const reduced = idx.groups.get(groupId)?.studyForm === 'reduced';
+    const { ev, parityOn, dates, times, reducedDates } = ctxs[idx.groups.get(groupId)?.cycle ?? 'licenta'];
     if (!retake && (ev.midtermMode === 'inClass' || reduced)) {
       for (const m of midtermsFor(ds, idx, classes, { groupId }).filter((x) => x.n === n)) {
         const a = idx.assignmentOf(m.lesson)!;
@@ -575,7 +625,7 @@ export function generateMidterms(
         if (all().some((e) => e.groupId === groupId && e.date === date && e.round === round)) continue;
         for (const start of times) {
           const end = toHHMM(toMin(start) + ev.midtermMinutes);
-          const taken = classesAt(date, start, end);
+          const taken = classesAt(date, start, end, parityOn);
           if (
             taken.some(
               (l) => idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, groupId) || idx.assignmentOf(l)!.teacherId === teacherId,

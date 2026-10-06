@@ -105,6 +105,12 @@ export interface EvaluationSettings {
   reexamMinutes: number;
 }
 
+export type StudyCycle = 'licenta' | 'master';
+
+export type MasterEvaluation = Partial<Omit<EvaluationSettings, 'semesterStart' | 'vacations' | 'holidayOverrides'>> & {
+  startOffsetWeeks?: number;
+};
+
 export interface Settings {
   institutionName: string;
   /** Faculties of the institution — as many as needed, none required. */
@@ -136,6 +142,14 @@ export interface Settings {
   maxPairsPerDayTeacher: number;
   consultationRequired: boolean;
   evaluation?: EvaluationSettings;
+  /**
+   * Master's: only what differs from licență (its own calendar, evening hours,
+   * consultation just before the exam…). Its semester starts `startOffsetWeeks`
+   * after licență's.
+   */
+  masterEvaluation?: MasterEvaluation;
+  /** Part of the day of master's groups (index 0 = year 1), e.g. evenings. */
+  masterYearShifts?: YearShift[];
 }
 
 /** "day:slot", e.g. "0:2" = Monday, third pair. */
@@ -183,7 +197,9 @@ export interface Group {
   name: string; // FAF-251
   program: string;
   year: number;
-  /** Length of the study programme in years (3–6); `year` can't exceed it. */
+  /** Licență (default) or master's: master's groups follow the master settings. */
+  cycle?: StudyCycle;
+  /** Length of the study programme in years (3–6; master's 1–2); `year` can't exceed it. */
   programYears?: number;
   size: number;
   /** Form of study; decides which days the group can have pairs on. */
@@ -211,6 +227,8 @@ export interface Subject {
   edgeOfDay?: boolean;
   /** Faculty whose study plan includes it; empty = shared by all faculties. */
   faculty?: string;
+  /** Licență (default) or master's study plan. */
+  cycle?: StudyCycle;
   /** How the subject ends: with an exam in the session, or with the atestări only. Default exam. */
   evaluation?: 'exam' | 'atestari';
   /** Pairs per week by activity type, from the study plan (0.5 = every other week). */
