@@ -10,7 +10,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 10;
+const SEED_VERSION = 11;
 
 interface Store {
   dataset: Dataset;
@@ -46,6 +46,8 @@ function mergeSeed(saved: Store) {
     const have = new Set(list.map((x) => x.id));
     for (const item of seed) if (!have.has(item.id)) list.push(structuredClone(item));
   };
+  // UTM only: the faculty list is UTM's own
+  ds.settings.institutionName = seedDataset.settings.institutionName;
   for (const f of seedDataset.settings.faculties) if (!ds.settings.faculties.includes(f)) ds.settings.faculties.push(f);
   add(ds.teachers, seedDataset.teachers);
   add(ds.rooms, seedDataset.rooms);
@@ -252,6 +254,10 @@ export function createMockApi(): Api {
         emailNotifications: !!update.emailNotifications,
       });
       if (update.avatar !== undefined) u.avatar = update.avatar ?? undefined;
+      if (update.faculty !== undefined && u.role === 'admin') {
+        if (!store.dataset.settings.faculties.includes(update.faculty)) throw new ApiError(422, 'Unknown faculty');
+        u.faculty = update.faculty;
+      }
       persist();
       return delay(u);
     },

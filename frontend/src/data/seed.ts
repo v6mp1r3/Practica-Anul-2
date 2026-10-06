@@ -13,17 +13,15 @@ import type {
   Teacher,
   User,
 } from '../domain/types';
+import { UTM_FACULTIES, UTM_NAME } from '../domain/utm';
 
 const FCIM = 'Facultatea Calculatoare, Informatică și Microelectronică';
 const FET = 'Facultatea Electronică și Telecomunicații';
 
 export const seedSettings: Settings = {
-  institutionName: 'Universitatea Tehnică a Moldovei',
-  faculties: [
-    'Facultatea Calculatoare, Informatică și Microelectronică',
-    'Facultatea Electronică și Telecomunicații',
-    'Facultatea Inginerie Mecanică, Industrială și Transporturi',
-  ],
+  institutionName: UTM_NAME,
+  // every UTM faculty; each administrator picks theirs in Configurare
+  faculties: UTM_FACULTIES.map((f) => f.name),
   semester: 'Toamna 2026/2027',
   workingDays: 7,
   formDays: {

@@ -307,6 +307,8 @@ export interface ProfileUpdate {
   phone?: string;
   avatar?: string | null;
   emailNotifications?: boolean;
+  /** An administrator's own faculty (one of Settings.faculties). */
+  faculty?: string;
 }
 
 export type NotificationKind = 'welcome' | 'published' | 'unpublished' | 'updated' | 'availability' | 'room-change' | 'teacher-change';
