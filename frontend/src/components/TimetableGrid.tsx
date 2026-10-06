@@ -246,6 +246,7 @@ export function Agenda({
   day,
   hide,
   off,
+  unavailable = [],
 }: {
   settings: Settings;
   index: DatasetIndex;
@@ -254,13 +255,16 @@ export function Agenda({
   hide?: LessonField[];
   /** The day is a holiday: no lessons, just its name. */
   off?: string;
+  /** Pairs of that day the teacher is unavailable. */
+  unavailable?: number[];
 }) {
   const { t } = useI18n();
   if (off) return <div className="agenda-free">{t('vacation.now', { name: off })}</div>;
   const dayLessons = lessons.filter((l) => l.day === day);
-  if (!dayLessons.length) return <div className="agenda-free">{t('tt.noLessons')}</div>;
-  const first = Math.min(...dayLessons.map((l) => l.slot));
-  const last = Math.max(...dayLessons.map((l) => l.slot));
+  if (!dayLessons.length && !unavailable.length) return <div className="agenda-free">{t('tt.noLessons')}</div>;
+  const used = [...dayLessons.map((l) => l.slot), ...unavailable];
+  const first = Math.min(...used);
+  const last = Math.max(...used);
 
   return (
     <div className="agenda">
@@ -276,6 +280,8 @@ export function Agenda({
             <div className="stack" style={{ gap: 6 }}>
               {here.length ? (
                 here.map((l) => <LessonCard key={l.id} lesson={l} index={index} hide={hide} />)
+              ) : unavailable.includes(slot) ? (
+                <div className="agenda-free unavailable">{t('availability.unavailable')}</div>
               ) : (
                 <div className="agenda-free">{t('tt.free')}</div>
               )}

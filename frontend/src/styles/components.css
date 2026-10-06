@@ -1229,3 +1229,17 @@ button.holiday-row.selected {
     grid-template-columns: 1fr;
   }
 }
+
+/* A teacher's unavailable pairs on their timetable */
+.tt-cell.unavailable {
+  background: repeating-linear-gradient(135deg, var(--surface-2) 0 6px, transparent 6px 12px);
+}
+.unavailable-label,
+.agenda-free.unavailable {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+.tt-cell.unavailable .unavailable-label {
+  margin: auto;
+}

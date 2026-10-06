@@ -33,6 +33,7 @@ export function MyTimetable({
   lessons,
   hide,
   holidays = [],
+  unavailable = [],
 }: {
   settings: Settings;
   index: DatasetIndex;
@@ -40,6 +41,8 @@ export function MyTimetable({
   hide?: LessonField[];
   /** The year's days off: the days of this week that fall on one show it instead of lessons. */
   holidays?: Vacation[];
+  /** A teacher's unavailable pairs ("day:slot"), shown greyed. */
+  unavailable?: string[];
 }) {
   const { t } = useI18n();
   const holidayName = useHolidayName();
@@ -127,12 +130,33 @@ export function MyTimetable({
             </div>
           </div>
           <div className="card-body">
-            <Agenda settings={settings} index={index} lessons={shown} day={day} hide={hide} off={dayOff[day]} />
+            <Agenda
+              settings={settings}
+              index={index}
+              lessons={shown}
+              day={day}
+              hide={hide}
+              off={dayOff[day]}
+              unavailable={unavailable.filter((k) => k.startsWith(`${day}:`)).map((k) => Number(k.split(':')[1]))}
+            />
           </div>
         </div>
       ) : (
         <>
-          <TimetableGrid settings={settings} index={index} lessons={shown} hide={hide} today={todayIdx} dayOff={dayOff} />
+          <TimetableGrid
+            settings={settings}
+            index={index}
+            lessons={shown}
+            hide={hide}
+            today={todayIdx}
+            dayOff={dayOff}
+            cellClass={(d, s) => (unavailable.includes(`${d}:${s}`) ? 'unavailable' : '')}
+            renderCell={(d, s) =>
+              unavailable.includes(`${d}:${s}`) && !shown.some((l) => l.day === d && l.slot === s) ? (
+                <span className="unavailable-label">{t('availability.unavailable')}</span>
+              ) : null
+            }
+          />
           <Legend />
         </>
       )}
