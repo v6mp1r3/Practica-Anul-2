@@ -35,6 +35,48 @@ export interface YearShift {
   last: number;
 }
 
+/** A date range (local dates, inclusive). */
+export interface DateRange {
+  start: string;
+  end: string;
+}
+
+/**
+ * Atestări, exam session and reexaminations (UTM: atestări in weeks 7 and 14
+ * during the normal classes; at least 2 free days between exams; a consultation
+ * the day before; retakes in afternoon pairs after the session).
+ */
+export interface EvaluationSettings {
+  /** Monday of teaching week 1. */
+  semesterStart: string;
+  /** Teaching weeks of atestarea 1 and 2. */
+  midtermWeeks: [number, number];
+  /**
+   * In the subject's own class (UTM regulation), or in a separate timetable
+   * after classes (as some faculties publish an "orarul atestărilor").
+   */
+  midtermMode: 'inClass' | 'separate';
+  midtermStartTimes: string[];
+  midtermMinutes: number;
+  /** Exam session, possibly in parts (e.g. before and after the winter break). */
+  examSession: DateRange[];
+  /** Exam session of reduced-attendance groups. */
+  reducedExamSession: DateRange[];
+  reexamSession: DateRange[];
+  /** Weekdays exams may be held on (0 = Monday). */
+  examDays: Day[];
+  /** Free days at least between two exams of the same group. */
+  examMinGap: number;
+  examStartTimes: string[];
+  examMinutes: number;
+  /** Consultation the day before the exam, or the same day just before it. */
+  consultation: 'dayBefore' | 'sameDay';
+  consultationTime: string;
+  consultationMinutes: number;
+  reexamStartTimes: string[];
+  reexamMinutes: number;
+}
+
 export interface Settings {
   institutionName: string;
   /** Faculties of the institution — as many as needed, none required. */
@@ -65,6 +107,7 @@ export interface Settings {
   minPairsPerDayGroup: number;
   maxPairsPerDayTeacher: number;
   consultationRequired: boolean;
+  evaluation?: EvaluationSettings;
 }
 
 /** "day:slot", e.g. "0:2" = Monday, third pair. */
@@ -134,6 +177,8 @@ export interface Subject {
   edgeOfDay?: boolean;
   /** Faculty whose study plan includes it; empty = shared by all faculties. */
   faculty?: string;
+  /** How the subject ends: with an exam in the session, or with the atestări only. Default exam. */
+  evaluation?: 'exam' | 'atestari';
   /** Pairs per week by activity type, from the study plan (0.5 = every other week). */
   lecturePairs: number;
   seminarPairs: number;
@@ -344,4 +389,30 @@ export interface Dataset {
   streams: Stream[];
   subjects: Subject[];
   assignments: Assignment[];
+}
+
+export type ExamRound = 'midterm1' | 'midterm2' | 'session' | 'reexam';
+
+/** One entry of the exam timetable: an exam or its consultation, for one group. */
+export interface ExamEvent {
+  id: string;
+  kind: 'exam' | 'consultation';
+  /** Atestarea 1/2 (separate timetable), ordinary session or reexamination. */
+  round: ExamRound;
+  subjectId: string;
+  groupId: string;
+  teacherId: string;
+  roomId: string;
+  date: string;
+  start: string;
+  end: string;
+}
+
+/** A faculty's exam timetable for one round. */
+export interface ExamPlan {
+  faculty: string;
+  round: ExamRound;
+  status: 'draft' | 'published';
+  events: ExamEvent[];
+  updatedAt: string;
 }

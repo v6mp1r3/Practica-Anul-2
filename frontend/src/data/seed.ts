@@ -14,6 +14,7 @@ import type {
   User,
 } from '../domain/types';
 import { UTM_FACULTIES, UTM_NAME } from '../domain/utm';
+import { DEFAULT_EVALUATION } from '../domain/exams';
 
 const FCIM = 'Facultatea Calculatoare, Informatică și Microelectronică';
 const FET = 'Facultatea Electronică și Telecomunicații';
@@ -60,6 +61,7 @@ export const seedSettings: Settings = {
   minPairsPerDayGroup: 2,
   maxPairsPerDayTeacher: 5,
   consultationRequired: true,
+  evaluation: DEFAULT_EVALUATION,
 };
 
 const t = (
@@ -354,7 +356,18 @@ export const seedSubjects: Subject[] = [
     seminarPairs: 0,
     labPairs: 0.5,
   },
-  { id: 'sub6', code: 'LE', name: 'Limba engleză', credits: 2, year: 1, faculty: FCIM, lecturePairs: 0, seminarPairs: 1, labPairs: 0 },
+  {
+    id: 'sub6',
+    code: 'LE',
+    name: 'Limba engleză',
+    credits: 2,
+    year: 1,
+    faculty: FCIM,
+    evaluation: 'atestari',
+    lecturePairs: 0,
+    seminarPairs: 1,
+    labPairs: 0,
+  },
   {
     id: 'sub7',
     code: 'SDA',
@@ -397,6 +410,7 @@ export const seedSubjects: Subject[] = [
     year: 1,
     faculty: FCIM,
     edgeOfDay: true,
+    evaluation: 'atestari',
     lecturePairs: 0,
     seminarPairs: 1,
     labPairs: 0,
