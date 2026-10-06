@@ -482,3 +482,7 @@ img.avatar {
   margin-left: 0;
   color: var(--text-2);
 }
+/* the language switch lines up with the menu items and the sign-in link */
+.sidebar-footer .row {
+  padding-left: 12px;
+}
