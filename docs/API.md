@@ -276,8 +276,12 @@ UTM rules (REG-85-OS ECTS, academic calendar): atestări in teaching weeks 7 and
 `separate`) in a separate timetable after classes; one exam a day, at least
 `examMinGap` free days between a group's exams, a consultation the day before
 (or just before); retakes after the session in afternoon pairs. Settings live in
-`Settings.evaluation` (`EvaluationSettings`); a subject's `evaluation` is `exam`
-(default) or `atestari`.
+`Settings.evaluation` (`EvaluationSettings`, incl. `vacations`); a subject's
+`evaluation` is `exam` (default) or `atestari`. Atestări held in class are
+generated from the published timetable (each event has `lessonId`, labs a
+`subgroup`). Final exams use `Teacher.examUnavailable` (exam-period availability,
+separate from the weekly one: `"2026-12-15"` whole day, `"2026-12-15|am"` before
+13:00, `"|pm"` after) and prefer the rooms the subject is taught in.
 
 | Method | Path                             | Role   | Notes                                                                                                                                                    |
 | ------ | -------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
