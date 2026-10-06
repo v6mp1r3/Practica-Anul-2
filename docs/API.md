@@ -20,9 +20,14 @@ reference behaviour when something here is unclear.
 
 | Role      | Can do                                                            |
 | --------- | ----------------------------------------------------------------- |
-| `admin`   | Everything: data management, generation, editing, publishing      |
+| `admin`   | Their faculty: data management, generation, editing, publishing   |
 | `teacher` | Read published timetable and dataset; update **own** availability |
 | `student` | Read published timetable and dataset                              |
+
+Every `admin` account belongs to one faculty (`User.faculty`); there is no
+administrator above the faculties. An admin generates, edits, publishes and
+unpublishes only their own faculty's groups; settings (`PUT /settings`) and the
+admin accounts (`/users`) can be changed by any admin. Every group has a `faculty`.
 
 ## Auth
 

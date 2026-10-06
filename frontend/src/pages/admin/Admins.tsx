@@ -1,6 +1,5 @@
-// "Administratori": the institution administrator creates one account per
-// faculty (and can add more institution administrators). Each faculty
-// administrator then manages only their own faculty.
+// "Administratori": one or more accounts per faculty, no administrator above
+// them. Each administrator manages their own faculty's groups and timetable.
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../../api';
 import { Icon } from '../../components/Icon';
@@ -44,7 +43,7 @@ export default function Admins() {
   async function save() {
     if (!draft) return;
     setError('');
-    if (!draft.name.trim() || !draft.username.trim()) return setError(t('admins.required'));
+    if (!draft.name.trim() || !draft.username.trim() || !draft.faculty) return setError(t('admins.required'));
     try {
       if (draft.id) {
         const u = users.find((x) => x.id === draft.id)!;
@@ -85,7 +84,10 @@ export default function Admins() {
         title={t('nav.admins')}
         subtitle={t('admins.subtitle')}
         actions={
-          <button className="btn primary" onClick={() => (setError(''), setDraft({ ...empty, faculty: missing[0] ?? '' }))}>
+          <button
+            className="btn primary"
+            onClick={() => (setError(''), setDraft({ ...empty, faculty: missing[0] ?? dataset.settings.faculties[0] ?? '' }))}
+          >
             <Icon name="plus" />
             {t('common.add')}
           </button>
@@ -123,11 +125,7 @@ export default function Admins() {
                       </td>
                       <td className="muted">{u.username}</td>
                       <td>
-                        {u.faculty ? (
-                          <span className="small">{u.faculty}</span>
-                        ) : (
-                          <span className="badge primary">{t('admins.institution')}</span>
-                        )}
+                        <span className="small">{u.faculty || '—'}</span>
                       </td>
                       <td className="small muted">{u.email || '—'}</td>
                       <td className="actions">
@@ -198,9 +196,8 @@ export default function Admins() {
             <Field label={t('account.email')}>
               <input className="input" type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} />
             </Field>
-            <Field label={t('admins.scope')} hint={t('admins.scopeHint')}>
+            <Field label={t('admins.scope')}>
               <Select value={draft.faculty} onChange={(e) => setDraft({ ...draft, faculty: e.target.value })}>
-                <option value="">{t('admins.institution')}</option>
                 {dataset.settings.faculties.map((f) => (
                   <option key={f} value={f}>
                     {f}

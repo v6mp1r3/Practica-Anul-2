@@ -1,4 +1,4 @@
-import { FacultySelect, inFaculty, useFacultyFilter } from '../../components/FacultyFilter';
+import { FacultySelect, inFaculty, useAdminScope, useFacultyFilter } from '../../components/FacultyFilter';
 import { CrudPage } from '../../components/CrudPage';
 import { Field, PageHeader } from '../../components/ui';
 import { STUDY_FORMS, type Group, type Stream, type StudyForm } from '../../domain/types';
@@ -9,6 +9,7 @@ import { Select } from '../../components/Select';
 export default function Groups() {
   const { t } = useI18n();
   const { dataset, index } = useDataset();
+  const scope = useAdminScope();
   const [faculty, setFaculty, locked] = useFacultyFilter(dataset);
 
   return (
@@ -61,6 +62,8 @@ export default function Groups() {
             programYears: 4,
             size: 25,
             subgroups: 2,
+            // new groups go to the administrator's own faculty
+            faculty: scope || dataset.settings.faculties[0],
           })}
           validate={(d) =>
             !d.name.trim()
@@ -69,7 +72,10 @@ export default function Groups() {
                 ? t('groups.sizeRequired')
                 : d.programYears && d.year > d.programYears
                   ? t('groups.yearOver')
-                  : null
+                  : // every group belongs to a faculty, whose administrator schedules it
+                    dataset.settings.faculties.length && !d.faculty
+                    ? t('groups.facultyRequired')
+                    : null
           }
           renderForm={(d, set) => (
             <div className="form-grid">
@@ -96,7 +102,7 @@ export default function Groups() {
               </Field>
               <Field label={t('groups.faculty')}>
                 <Select className="select" value={d.faculty ?? ''} onChange={(e) => set({ faculty: e.target.value || undefined })}>
-                  <option value="">—</option>
+                  {!dataset.settings.faculties.length && <option value="">—</option>}
                   {dataset.settings.faculties.map((f) => (
                     <option key={f} value={f}>
                       {f}
