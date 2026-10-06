@@ -31,6 +31,21 @@ export function buildSlots(start: string, lessonMinutes: number, breakMinutes: n
   return out;
 }
 
+/**
+ * Autumn and spring semesters from last academic year to five years ahead,
+ * stored as "Toamna 2026/2027" / "Primăvara 2026/2027".
+ */
+export function semesterOptions(current: string, today = new Date()): string[] {
+  const first = today.getFullYear() - (today.getMonth() < 8 ? 1 : 0) - 1;
+  const out: string[] = [];
+  for (let y = first; y <= first + 6; y++) out.push(`Toamna ${y}/${y + 1}`, `Primăvara ${y}/${y + 1}`);
+  return out.includes(current) || !current ? out : [current, ...out];
+}
+
+/** "Toamna 2026/2027" in the viewer's language. */
+const semesterLabel = (value: string, t: (k: 'setup.autumn' | 'setup.spring') => string) =>
+  value.replace(/^Toamna/, t('setup.autumn')).replace(/^Primăvara/, t('setup.spring'));
+
 function Step({ n, title, required, children }: { n: number; title: string; required?: boolean; children: ReactNode }) {
   const { t } = useI18n();
   return (
@@ -143,7 +158,13 @@ export default function Setup() {
               </Select>
             </Field>
             <Field label={t('setup.semester')}>
-              <input className="input" value={s.semester} onChange={(e) => set('semester', e.target.value)} />
+              <Select value={s.semester} onChange={(e) => set('semester', e.target.value)} aria-label={t('setup.semester')}>
+                {semesterOptions(s.semester).map((v) => (
+                  <option key={v} value={v}>
+                    {semesterLabel(v, t)}
+                  </option>
+                ))}
+              </Select>
             </Field>
           </div>
         </Step>

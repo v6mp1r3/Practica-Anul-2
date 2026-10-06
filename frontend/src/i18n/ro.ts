@@ -245,6 +245,8 @@ export const ro = {
   'groups.faculty': 'Facultatea',
   'faculty.other': 'Altă facultate',
   'setup.semester': 'Semestrul',
+  'setup.autumn': 'Toamna',
+  'setup.spring': 'Primăvara',
   'setup.week': 'Săptămâna de lucru',
   'setup.workingDays': 'Zile lucrătoare',
   'setup.lessonMinutes': 'Durata perechii (min)',

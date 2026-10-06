@@ -244,6 +244,8 @@ export const en: Record<MessageKey, string> = {
   'groups.faculty': 'Faculty',
   'faculty.other': 'Other faculty',
   'setup.semester': 'Semester',
+  'setup.autumn': 'Autumn',
+  'setup.spring': 'Spring',
   'setup.week': 'Working week',
   'setup.workingDays': 'Working days',
   'setup.lessonMinutes': 'Pair length (min)',

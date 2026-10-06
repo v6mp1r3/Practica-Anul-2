@@ -246,6 +246,8 @@ export const ru: Record<MessageKey, string> = {
   'groups.faculty': 'Факультет',
   'faculty.other': 'Другой факультет',
   'setup.semester': 'Семестр',
+  'setup.autumn': 'Осень',
+  'setup.spring': 'Весна',
   'setup.week': 'Рабочая неделя',
   'setup.workingDays': 'Рабочие дни',
   'setup.lessonMinutes': 'Длительность пары (мин)',
