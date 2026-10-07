@@ -12,7 +12,7 @@ the same pull request.**
 - Errors: non-2xx status with body `{ "message": "human readable text" }`.
   `401` = not signed in, `403` = wrong role or someone else's faculty, `404` = not found,
   `409` = conflict (a publish that clashes, deleting something still in use),
-  `422` = invalid data, `501` = not built yet (generation, see below).
+  `422` = invalid data, `429` = too many failed sign-ins for an account (8 in 10 minutes).
 - Ids are opaque strings. The real backend uses numbers (`"17"`); the mock uses `"t1"`.
   Always use the id a response gives you, never invent one: `PUT /timetables/{id}` with an
   unknown id creates a timetable and the response carries its real id.
@@ -153,6 +153,11 @@ or subject without a `faculty` is shared and any administrator may change it.
   "pairsPerWeek": 2, "parity": "weekly", "roomType": "lecture", "equipment": [] }
 ```
 
+Activity types are `lecture`, `seminar`, `lab` and `project`. A project is held in an ordinary room
+(`roomType: "seminar"`) and has no pairs in the study plan, so it is not compared with it. A teacher's
+`maxPairsPerWeek` is the planned load in pairs and may have halves (`4.5`): a pair held every other week
+counts 0.5.
+
 Extra endpoints:
 
 | Method | Path                          | Role                | Body                                                    |
@@ -214,8 +219,10 @@ Extra endpoints:
 
 Generation can take minutes, so it is a job the client polls.
 
-> **Not built yet.** `POST /generate` and `POST /exams/plans/{round}/generate` answer `501`
-> until the CP-SAT solver exists. Everything else on this page works.
+> **Status.** Everything on this page works. Timetable generation runs CP-SAT with Large Neighborhood Search
+> (`backend/app/solver`): each variant gets `iterations` x 0.1 s (so 80 / 250 / 700 iterations are 8 / 25 / 70
+> seconds), at least 5 s and at most 300 s, and the variants run one after the other. `POST /generate` answers
+> `202`. Reduced-attendance groups get their dated session pairs from a greedy pass after the weekly solve.
 
 ```
 POST /generate            (admin)
@@ -321,7 +328,7 @@ separate from the weekly one: `"2026-12-15"` whole day, `"2026-12-15|am"` before
 | GET    | `/exams/plans`                   | admin  | every plan of this faculty (all rounds, drafts and published)                                                                                            |
 | DELETE | `/exams/plans/{round}`           | admin  | delete this faculty's plan for that round                                                                                                                |
 | GET    | `/exams/plans/{round}`           | admin  | this faculty's `ExamPlan` (`round`: `midterm1`, `midterm2`, `session`, `remidterm1`, `remidterm2`, `reexam`) or `null`                                   |
-| POST   | `/exams/plans/{round}/generate`  | admin  | new draft; other faculties' published events and this faculty's other rounds stay booked; returns the plan + `warnings` (count of exams that didn't fit) |
+| POST   | `/exams/plans/{round}/generate`  | admin  | new draft; other faculties' published events and this faculty's other rounds stay booked; returns the plan + `warnings` (count of exams that didn't fit). Optional body `{ "seed": 42 }` repeats a run; the same seed gives the same plan |
 | PUT    | `/exams/plans/{round}`           | admin  | save edited events                                                                                                                                       |
 | POST   | `/exams/plans/{round}/publish`   | admin  | make it public                                                                                                                                           |
 | POST   | `/exams/plans/{round}/unpublish` | admin  | back to draft                                                                                                                                            |

@@ -51,6 +51,8 @@
   --seminar-soft: rgba(0, 108, 80, 0.1);
   --lab: var(--brand-plum);
   --lab-soft: rgba(148, 1, 68, 0.08);
+  --project: var(--brand-orange);
+  --project-soft: rgba(230, 93, 49, 0.1);
 
   --radius: 18px;
   --radius-md: 12px;

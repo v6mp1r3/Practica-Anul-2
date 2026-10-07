@@ -179,3 +179,18 @@ def test_missing_fields_and_bad_values_are_422(client, admin):
     assert client.post("/api/teachers", json=teacher(faculty="Nonexistent"), headers=admin).status_code == 403
     r = client.post("/api/rooms", json={"name": "X"}, headers=admin)
     assert set(r.json()) == {"message"}
+
+
+def test_project_hours_and_half_pair_loads(client, admin):
+    t = create(client, admin, "teachers", teacher(email="proj@example.md", activityTypes=["seminar", "project"], maxPairsPerWeek=4.5))
+    assert t["activityTypes"] == ["seminar", "project"] and t["maxPairsPerWeek"] == 4.5
+    t["maxPairsPerWeek"] = 0.5
+    assert client.put(f"/api/teachers/{t['id']}", json=t, headers=admin).json()["maxPairsPerWeek"] == 0.5
+    assert client.post("/api/teachers", json=teacher(email="x@example.md", maxPairsPerWeek=0), headers=admin).status_code == 422
+    # whole numbers stay whole numbers
+    assert create(client, admin, "teachers", teacher(email="y@example.md", maxPairsPerWeek=12))["maxPairsPerWeek"] == 12
+    # an assignment can be a project, held in an ordinary room
+    w = World(client, admin)
+    a = create(client, admin, "assignments", assignment(w.s1["id"], t["id"], {"kind": "group", "id": w.g1["id"]}, type="project", roomType="seminar"))
+    assert a["type"] == "project" and a["roomType"] == "seminar"
+    assert client.post("/api/teachers", json=teacher(email="z@example.md", activityTypes=["dance"]), headers=admin).status_code == 422

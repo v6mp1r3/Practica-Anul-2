@@ -129,7 +129,7 @@ export function examSubjects(ds: Dataset, idx: DatasetIndex, groupId: string): s
 /** Who examines: the lecturer of the group, else whoever teaches it the subject. */
 export function examinerOf(ds: Dataset, idx: DatasetIndex, groupId: string, subjectId: string): string | undefined {
   const loads = ds.assignments.filter((a) => a.subjectId === subjectId && idx.audienceTouchesGroup(a.audience, groupId));
-  const order: ActivityType[] = ['lecture', 'seminar', 'lab'];
+  const order: ActivityType[] = ['lecture', 'seminar', 'lab', 'project'];
   return loads.sort((x, y) => order.indexOf(x.type) - order.indexOf(y.type))[0]?.teacherId;
 }
 
@@ -370,7 +370,7 @@ export interface Midterm {
   lesson: Lesson;
 }
 
-const TYPE_ORDER: ActivityType[] = ['seminar', 'lab', 'lecture'];
+const TYPE_ORDER: ActivityType[] = ['seminar', 'lab', 'lecture', 'project']; // project last: only when a subject has nothing else
 
 type MidtermPick = { lesson: Lesson; date: string };
 

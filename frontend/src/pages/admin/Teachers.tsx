@@ -8,7 +8,7 @@ import type { ActivityType, Teacher } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 
-const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab'];
+const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab', 'project'];
 
 export default function Teachers() {
   const { t } = useI18n();
@@ -99,7 +99,8 @@ export default function Teachers() {
               <input
                 className="input"
                 type="number"
-                min={1}
+                min={0.5}
+                step={0.5} // a pair held every other week counts half
                 value={d.maxPairsPerWeek}
                 onChange={(e) => set({ maxPairsPerWeek: Number(e.target.value) || 0 })}
               />

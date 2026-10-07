@@ -58,3 +58,27 @@ def test_update_profile(client, admin):
 
 def test_health(client):
     assert client.get("/api/health").json() == {"status": "ok"}
+
+
+def test_too_many_failed_sign_ins_lock_the_account_for_a_while(client, admin):
+    login = lambda pw, user="elena": client.post("/api/auth/login", json={"username": user, "password": pw})
+    for _ in range(8):
+        assert login("wrong").status_code == 401
+    r = login("secret-pass-1")  # even the right password is refused now
+    assert r.status_code == 429 and "Too many" in r.json()["message"]
+    # other accounts, and unknown names that were never tried, are not affected
+    assert login("x", "somebody-else").status_code == 401
+    # a unknown account is limited the same way (the answer must not reveal which names exist)
+    for _ in range(8):
+        login("x", "ghost")
+    assert login("x", "ghost").status_code == 429
+
+
+def test_a_good_sign_in_clears_the_count(client, admin):
+    login = lambda pw: client.post("/api/auth/login", json={"username": "elena", "password": pw})
+    for _ in range(7):
+        assert login("wrong").status_code == 401
+    assert login("secret-pass-1").status_code == 200
+    for _ in range(7):
+        assert login("wrong").status_code == 401
+    assert login("secret-pass-1").status_code == 200

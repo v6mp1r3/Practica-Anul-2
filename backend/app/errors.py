@@ -53,6 +53,7 @@ def install(app: FastAPI) -> None:
     async def db_error(_: Request, exc: DBAPIError):
         code = getattr(exc.orig, "sqlstate", "") or ""
         detail = (getattr(getattr(exc.orig, "diag", None), "message_primary", None)) or "Database error"
+        logging.getLogger("eduschedule").warning("Database error %s: %s", code, detail)
         # raise exception / check_violation from our own triggers and functions
         if code in ("P0001", "23514", "22P02", "22007", "22008", "22003"):
             return _json(422, detail)

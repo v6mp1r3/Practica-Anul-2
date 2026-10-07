@@ -453,6 +453,7 @@ export const ru: Record<MessageKey, string> = {
   'activity.lecture': 'Лекция',
   'activity.seminar': 'Семинар',
   'activity.lab': 'Лабораторная',
+  'activity.project': 'Проект',
   'parity.weekly': 'Еженедельно',
   'parity.odd': 'Нечётная',
   'parity.even': 'Чётная',

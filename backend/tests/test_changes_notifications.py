@@ -104,11 +104,3 @@ def test_read_state_is_per_user(client, admin, other_admin):
     first = client.get("/api/notifications", headers=admin).json()[0]["id"]
     client.post("/api/notifications/read", json={"ids": [first]}, headers=admin)
     assert client.get("/api/notifications", headers=other_admin).json()[0]["read"] is False
-
-
-def test_generation_is_not_available_yet(client, admin):
-    w = World(client, admin)
-    r = client.post("/api/generate", json={"groupIds": [w.g1["id"]], "variants": 3, "iterations": 250}, headers=admin)
-    assert r.status_code == 501 and "solver" in r.json()["message"]
-    assert client.post("/api/generate", json={"groupIds": []}).status_code == 401
-    assert client.get("/api/generate/job_1", headers=admin).status_code == 404

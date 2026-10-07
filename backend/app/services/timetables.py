@@ -268,3 +268,19 @@ def unpublish(conn: Connection, path_id: str, user: CurrentUser) -> dict:
     notify(conn, "unpublished", {"name": t["name"]}, group_ids=sorted(mine), teacher_ids=sorted(teachers))
     conn.commit()
     return load_timetable(conn, result_id)
+
+
+def create_timetable(conn: Connection, semester_id: int, name: str, status: str, algorithm: str, group_ids: list[int], lessons: list[dict], score: dict | None, user_id: int | None) -> int:
+    """Insert a whole timetable (used for the variants the solver makes). The score is stored as given."""
+    tid = conn.execute(
+        text("insert into timetable (semester_id, name, algorithm, status, created_by) values (:s, :n, :a, cast(:st as timetable_status), :u) returning id"),
+        {"s": semester_id, "n": name, "a": algorithm, "st": status, "u": user_id},
+    ).scalar_one()
+    _set_groups(conn, tid, group_ids)
+    _copy_lessons(conn, tid, lessons)
+    if score:
+        conn.execute(
+            text("update timetable set score_hard = :h, score_soft = :s, score_breakdown = cast(:b as jsonb) where id = :t"),
+            {"t": tid, "h": score["hard"], "s": score["soft"], "b": json.dumps(score["breakdown"])},
+        )
+    return tid

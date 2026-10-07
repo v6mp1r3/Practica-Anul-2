@@ -27,12 +27,18 @@ end $$;
 -- Design: see docs/DATABASE.md. 43 tables, every table linked to the others by foreign keys.
 -- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
 
+-- EduSchedule database schema
+-- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
+-- Design: Database_Design.pdf (next to the internship report). 43 tables, every table linked to the others by foreign keys.
+-- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
+
 begin;
 
 -- ---------------------------------------------------------------- enums
 create type study_cycle        as enum ('licenta', 'master');
 create type study_form         as enum ('full', 'reduced', 'dual');
-create type activity_type      as enum ('lecture', 'seminar', 'lab');
+create type activity_type      as enum ('lecture', 'seminar', 'lab', 'project');
 create type room_type          as enum ('lecture', 'seminar', 'lab');
 create type parity             as enum ('weekly', 'odd', 'even');
 create type study_language     as enum ('ro', 'ru', 'en');
@@ -226,7 +232,7 @@ create table teacher (
   department         text,
   faculty_id         bigint references faculty (id) on delete set null,   -- NULL = teaches across faculties
   email              text unique,
-  max_pairs_per_week smallint not null check (max_pairs_per_week >= 1)
+  max_pairs_per_week numeric(4, 1) not null check (max_pairs_per_week > 0)   -- planned load in pairs; an odd/even-week pair counts 0.5
 );
 create index teacher_faculty_idx on teacher (faculty_id);
 

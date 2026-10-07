@@ -1,13 +1,18 @@
-"""Exam and atestări timetables, one plan per faculty and round (docs/API.md, Exams).
-Generating a plan needs the solver, so that endpoint answers 501 for now."""
+"""Exam and atestări timetables, one plan per faculty and round (docs/API.md, Exams)."""
+import time
 from typing import Literal
 
 from fastapi import APIRouter, Body, Depends, Response
 from sqlalchemy import Connection, text
 
+from ..dataset import build_dataset
 from ..deps import CurrentUser, get_conn, require_admin
+from ..domain.indexes import DatasetIndex
 from ..errors import ApiError
+from ..services.timetables import get_published
 from ..settings_io import current_semester
+from ..solver.exams import generate_exams, generate_midterms
+from ..solver.rng import Rng
 from ..util import hhmm, iso_date, iso_ts, maybe_pid, pid, sid
 
 router = APIRouter(prefix="/exams", tags=["exams"])
@@ -71,19 +76,22 @@ def get_plan(round_: Round, user: CurrentUser = Depends(require_admin), conn: Co
     return _plan(conn, plan_id) if plan_id else None
 
 
-@router.put("/plans/{round_}")
-def save_plan(round_: Round, data: dict = Body(...), user: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+def _plan_row(conn: Connection, user: CurrentUser, round_: str) -> int:
+    """The faculty's plan for the round: found, or created as a draft."""
     plan_id = _find(conn, user, round_)
     if plan_id is None:
         sem = current_semester(conn)
-        plan_id = conn.execute(
+        return conn.execute(
             text("insert into exam_plan (semester_id, faculty_id, round) values (:s, :f, cast(:r as exam_round)) returning id"), {"s": sem.id, "f": user.faculty_id, "r": round_}
         ).scalar_one()
-    else:
-        conn.execute(text("update exam_plan set updated_at = now() where id = :id"), {"id": plan_id})
+    conn.execute(text("update exam_plan set updated_at = now() where id = :id"), {"id": plan_id})
+    return plan_id
+
+
+def _replace_events(conn: Connection, plan_id: int, events: list[dict]) -> None:
     conn.execute(text("delete from exam_event where plan_id = :p"), {"p": plan_id})
     rows = []
-    for e in data.get("events") or []:
+    for e in events:
         lesson = maybe_pid(e.get("lessonId"))
         if lesson is not None and not conn.execute(text("select 1 from lesson where id = :id"), {"id": lesson}).first():
             lesson = None
@@ -97,6 +105,12 @@ def save_plan(round_: Round, data: dict = Body(...), user: CurrentUser = Depends
             ),
             rows,
         )
+
+
+@router.put("/plans/{round_}")
+def save_plan(round_: Round, data: dict = Body(...), user: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    plan_id = _plan_row(conn, user, round_)
+    _replace_events(conn, plan_id, data.get("events") or [])
     conn.commit()
     return _plan(conn, plan_id)
 
@@ -111,8 +125,31 @@ def delete_plan(round_: Round, user: CurrentUser = Depends(require_admin), conn:
 
 
 @router.post("/plans/{round_}/generate")
-def generate_plan(round_: Round, _: CurrentUser = Depends(require_admin)):
-    raise ApiError(501, "Exam generation is not available yet: the solver is not built")
+def generate_plan(round_: Round, data: dict | None = Body(default=None), user: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    """A new draft for the administrator's faculty. Other faculties' published events and this faculty's other
+    rounds stay booked. Optional body: {"seed": n} to repeat a run."""
+    ds = build_dataset(conn)
+    idx = DatasetIndex(ds)
+    group_ids = [g["id"] for g in ds["groups"] if g.get("faculty") == user.faculty]
+    sem = current_semester(conn)
+    busy = _events(
+        conn,
+        "p.semester_id = :s and ((p.faculty_id <> :f and p.status = 'published') or (p.faculty_id = :f and p.round <> cast(:r as exam_round)))",
+        {"s": sem.id, "f": user.faculty_id, "r": round_},
+    )
+    published = get_published(conn)
+    classes = published["lessons"] if published else []
+    seed = (data or {}).get("seed")
+    rng = Rng(seed if isinstance(seed, int) else int(time.time() * 1000) % 100000)
+    if round_ in ("midterm1", "midterm2", "remidterm1", "remidterm2"):
+        result = generate_midterms(ds, idx, group_ids, 1 if round_.endswith("1") else 2, classes, busy, rng, retake=round_.startswith("re"))
+    else:
+        result = generate_exams(ds, idx, group_ids, round_, busy, rng, classes)
+    plan_id = _plan_row(conn, user, round_)
+    conn.execute(text("update exam_plan set status = 'draft' where id = :id"), {"id": plan_id})
+    _replace_events(conn, plan_id, result["events"])
+    conn.commit()
+    return {**_plan(conn, plan_id), "warnings": len(result["warnings"])}
 
 
 def _set_status(conn: Connection, user: CurrentUser, round_: str, status: str) -> dict:

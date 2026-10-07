@@ -18,6 +18,10 @@ TEST_URL = os.environ.get("TEST_DATABASE_URL")
 if TEST_URL:
     os.environ["DATABASE_URL"] = TEST_URL
     os.environ["JWT_SECRET"] = "test-secret-with-at-least-32-characters-ok"
+    # the solver gets one second per variant and four cores in tests
+    os.environ["GENERATION_SECONDS_PER_ITERATION"] = "0.001"
+    os.environ["GENERATION_MIN_SECONDS"] = "1"
+    os.environ["SOLVER_WORKERS"] = "4"
 
 
 def _plain(url: str) -> str:
@@ -37,6 +41,9 @@ def db():
     """A rebuilt database; yields a psycopg connection for direct checks."""
     from app.db import reset_engine
 
+    from app import throttle
+
+    throttle.reset_all()
     reset_engine()
     with psycopg.connect(_plain(TEST_URL), autocommit=True) as conn:
         conn.execute("drop schema public cascade; create schema public;")

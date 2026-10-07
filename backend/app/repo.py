@@ -107,7 +107,7 @@ def load_teachers(conn: Connection, ids: Iterable[int] | None = None) -> list[di
             "title": r["title"] or "",
             "department": r["department"] or "",
             "email": r["email"] or "",
-            "maxPairsPerWeek": r["max_pairs_per_week"],
+            "maxPairsPerWeek": num(r["max_pairs_per_week"]),
             "activityTypes": types[r["id"]],
             "unavailable": prefs[(r["id"], "unavailable")],
             "preferred": prefs[(r["id"], "preferred")],

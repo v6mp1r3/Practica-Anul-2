@@ -252,6 +252,10 @@ a.dash-block:hover {
 .dash-mix-bars i.lab {
   background: #b94676;
 }
+.tl-legend i.project,
+.dash-mix-bars i.project {
+  background: #e65d31;
+}
 
 /* Date card */
 .dash-date {

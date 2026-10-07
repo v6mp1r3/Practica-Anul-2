@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy import Connection, text
 
 from .. import repo
+from .. import throttle
 from ..deps import CurrentUser, current_user, get_conn
 from ..errors import ApiError
 from ..security import check_new_password, create_token, hash_password, verify_password
@@ -35,9 +36,13 @@ def user_json(conn: Connection, user_id: int) -> dict:
 
 @router.post("/login")
 def login(body: Login, conn: Connection = Depends(get_conn)):
-    row = conn.execute(text("select id, password_hash from app_user where lower(username) = :u"), {"u": body.username.strip().lower()}).first()
-    if not row or not verify_password(body.password, row[1]):
+    key = body.username.strip().lower()
+    throttle.check(key)  # also for unknown names, so the answer does not tell which accounts exist
+    row = conn.execute(text("select id, password_hash from app_user where lower(username) = :u"), {"u": key}).first()
+    if not verify_password(body.password, row[1] if row else None) or not row:
+        throttle.failed(key)
         raise ApiError(401, "Invalid credentials")
+    throttle.succeeded(key)
     return {"token": create_token(row[0]), "user": user_json(conn, row[0])}
 
 

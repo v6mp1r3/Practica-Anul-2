@@ -22,8 +22,15 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
+_dummy_hash: str | None = None
+
+
 def verify_password(password: str, hashed: str | None) -> bool:
     if not hashed:
+        # an unknown account (or one without a password) still costs one bcrypt check, so timing reveals nothing
+        global _dummy_hash
+        _dummy_hash = _dummy_hash or hash_password("not-a-real-password")
+        bcrypt.checkpw(password.encode()[:72], _dummy_hash.encode())
         return False
     try:
         return bcrypt.checkpw(password.encode(), hashed.encode())

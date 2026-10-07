@@ -13,6 +13,12 @@ class Config(BaseSettings):
     jwt_secret: str = DEV_SECRET
     jwt_expire_hours: int = 12
     cors_origins: str = "http://localhost:5173"
+    # time the solver gets per variant = iterations x seconds_per_iteration, kept between min and max
+    # (the frontend asks for 80 / 250 / 700 iterations, which is 8 / 25 / 70 seconds)
+    generation_seconds_per_iteration: float = 0.1
+    generation_min_seconds: float = 5.0
+    generation_max_seconds: float = 300.0
+    solver_workers: int = 0  # 0 = use up to 8 CPU cores
 
     @property
     def sqlalchemy_url(self) -> str:

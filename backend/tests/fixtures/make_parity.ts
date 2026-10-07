@@ -1,12 +1,17 @@
 // Regenerates parity.json: the frontend's own demo dataset with timetables scored by the TypeScript code.
 // tests/test_parity.py checks that the Python port in app/domain gives the same numbers.
 // The frontend generator is not deterministic, so every run gives different timetables; the port must match on all.
+// It also records exam and atestari generation runs (exam_parity.json) with fixed seeds: tests/test_exam_parity.py
+// checks that the Python port in app/solver/exams.py gives the same events.
 // Run from the frontend folder:  ./node_modules/.bin/vite-node ../backend/tests/fixtures/make_parity.ts
 import { writeFileSync } from 'node:fs';
 import { seedDataset } from '../../../frontend/src/data/seed';
 import { generateTimetable } from '../../../frontend/src/domain/generator';
 import { scoreTimetable } from '../../../frontend/src/domain/score';
 import { findHardConflicts } from '../../../frontend/src/domain/validator';
+import { generateExams, generateMidterms } from '../../../frontend/src/domain/exams';
+import { DatasetIndex } from '../../../frontend/src/domain/indexes';
+import { createRng } from '../../../frontend/src/domain/rng';
 
 const ds = seedDataset;
 let seed = 12345;
@@ -42,6 +47,31 @@ async function main() {
   }
   record('empty', []);
   writeFileSync(new URL('./parity.json', import.meta.url), JSON.stringify({ dataset: ds, cases }));
+
+  // exam and atestari generation with fixed seeds, on the timetable above
+  const idx = new DatasetIndex(ds);
+  const classes = base.lessons;
+  const strip = (e: any) => ({ ...e, id: undefined });
+  const runs: any[] = [];
+  const keep = (events: any[]) => events.map(strip);
+  const run = (round: string, seedN: number, ids: string[], busy: any[]) => {
+    const rng = createRng(seedN);
+    const res =
+      round === 'session' || round === 'reexam'
+        ? generateExams(ds, idx, ids, round, busy, rng, classes)
+        : generateMidterms(ds, idx, ids, round.endsWith('1') ? 1 : 2, classes, busy, rng, round.startsWith('re'));
+    runs.push({ round, seed: seedN, groupIds: ids, busy: keep(busy), events: keep(res.events), warnings: res.warnings });
+    return res.events;
+  };
+  const session = run('session', 5, groupIds, []);
+  run('reexam', 6, groupIds, session);
+  const m1 = run('midterm1', 7, groupIds, []);
+  run('midterm2', 8, groupIds, m1);
+  run('remidterm1', 9, groupIds, []);
+  run('remidterm2', 10, groupIds, []);
+  run('session', 11, groupIds.slice(0, 6), session.slice(0, 10));
+  writeFileSync(new URL('./exam_parity.json', import.meta.url), JSON.stringify({ classes, runs }));
+  console.log('exam runs', runs.map((r) => `${r.round}:${r.events.length}/${r.warnings.length}`).join(' '));
   console.log('wrote', cases.length, 'cases');
 }
 main();
