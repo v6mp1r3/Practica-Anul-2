@@ -3,7 +3,7 @@
 
 export type Role = 'admin' | 'teacher' | 'student';
 
-export type ActivityType = 'lecture' | 'seminar' | 'lab';
+export type ActivityType = 'lecture' | 'seminar' | 'lab' | 'project';
 
 /** Odd/even week support ("Contează paritatea săptămânii?"). */
 export type Parity = 'weekly' | 'odd' | 'even';

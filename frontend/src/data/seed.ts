@@ -618,7 +618,7 @@ function a(
     audience,
     pairsPerWeek,
     parity,
-    roomType: type,
+    roomType: type === 'project' ? 'seminar' : type, // project hours use ordinary rooms
     equipment: type === 'lab' && equipment.length === 0 ? ['calculatoare'] : equipment,
   };
 }

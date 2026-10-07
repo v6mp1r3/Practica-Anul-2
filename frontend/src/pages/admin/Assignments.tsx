@@ -9,7 +9,7 @@ import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
 
-const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab'];
+const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab', 'project'];
 const PARITIES: Parity[] = ['weekly', 'odd', 'even'];
 
 export default function Assignments() {
@@ -156,7 +156,7 @@ export default function Assignments() {
                     const type = e.target.value as ActivityType;
                     set({
                       type,
-                      roomType: type as RoomType,
+                      roomType: (type === 'project' ? 'seminar' : type) as RoomType, // project hours use ordinary rooms
                       equipment: type === 'lab' && !d.equipment.length ? ['calculatoare'] : d.equipment,
                     });
                   }}
@@ -276,7 +276,7 @@ export default function Assignments() {
               )}
               <Field label={t('assignments.roomType')}>
                 <Select className="select" value={d.roomType} onChange={(e) => set({ roomType: e.target.value as RoomType })}>
-                  {TYPES.map((type) => (
+                  {(['lecture', 'seminar', 'lab'] as RoomType[]).map((type) => (
                     <option key={type} value={type}>
                       {t(`roomType.${type}`)}
                     </option>

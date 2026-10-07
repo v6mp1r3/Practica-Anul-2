@@ -37,7 +37,7 @@ export function sessionBlocks(lessons: Lesson[], index: DatasetIndex): SessionBl
   return out;
 }
 
-const TYPE_PREFIX = { lecture: 'c.', seminar: 'sem.', lab: 'lab.' } as const;
+const TYPE_PREFIX = { lecture: 'c.', seminar: 'sem.', lab: 'lab.', project: 'pr.' } as const;
 
 function BlockLine({ block, index, dataset, hide }: { block: SessionBlock; index: DatasetIndex; dataset: Dataset; hide: LessonField[] }) {
   const { t } = useI18n();

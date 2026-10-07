@@ -23,7 +23,8 @@ export interface PrecheckIssue {
   vars: Record<string, string | number>;
 }
 
-const pairsField: Record<ActivityType, 'lecturePairs' | 'seminarPairs' | 'labPairs'> = {
+// the study plan has no pairs for projects, so they are not compared with it
+const pairsField: Record<Exclude<ActivityType, 'project'>, 'lecturePairs' | 'seminarPairs' | 'labPairs'> = {
   lecture: 'lecturePairs',
   seminar: 'seminarPairs',
   lab: 'labPairs',
@@ -75,7 +76,7 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
         x.year === g.year && (x.cycle ?? 'licenta') === (g.cycle ?? 'licenta') && (!x.faculty || !g.faculty || x.faculty === g.faculty),
     );
     for (const s of g.studyForm === 'reduced' ? [] : plan) {
-      for (const type of ['lecture', 'seminar', 'lab'] as ActivityType[]) {
+      for (const type of ['lecture', 'seminar', 'lab'] as Exclude<ActivityType, 'project'>[]) {
         const expected = s[pairsField[type]];
         const relevant = touching.filter((a) => a.subjectId === s.id && a.type === type);
         // Labs are per subgroup: every subgroup must receive the full amount

@@ -452,6 +452,7 @@ export const ro = {
   'activity.lecture': 'Curs',
   'activity.seminar': 'Seminar',
   'activity.lab': 'Laborator',
+  'activity.project': 'Proiect',
   'parity.weekly': 'Săptămânal',
   'parity.odd': 'Impar',
   'parity.even': 'Par',

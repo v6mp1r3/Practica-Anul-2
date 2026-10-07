@@ -451,6 +451,7 @@ export const en: Record<MessageKey, string> = {
   'activity.lecture': 'Lecture',
   'activity.seminar': 'Seminar',
   'activity.lab': 'Lab',
+  'activity.project': 'Project',
   'parity.weekly': 'Weekly',
   'parity.odd': 'Odd',
   'parity.even': 'Even',

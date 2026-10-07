@@ -114,9 +114,9 @@ export default function Dashboard() {
   const groupLessons = shown ? filterLessons(index, shown.lessons, { kind: 'group', id: groupId }).filter((l) => !l.date) : [];
   const slots = dataset.settings.slots;
 
-  const totals = { lecture: 0, seminar: 0, lab: 0 } as Record<ActivityType, number>;
+  const totals = { lecture: 0, seminar: 0, lab: 0, project: 0 } as Record<ActivityType, number>;
   for (const a of dataset.assignments) totals[a.type] += a.pairsPerWeek;
-  const totalPairs = totals.lecture + totals.seminar + totals.lab;
+  const totalPairs = totals.lecture + totals.seminar + totals.lab + totals.project;
 
   const now = new Date();
   const upcoming = changes.filter((c) => c.date >= toDateString(now)).length;
@@ -215,7 +215,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="tl-legend">
-                  {(['lecture', 'seminar', 'lab'] as ActivityType[]).map((a) => (
+                  {(['lecture', 'seminar', 'lab', 'project'] as ActivityType[]).map((a) => (
                     <span key={a}>
                       <i className={a} />
                       {t(`activity.${a}`)}
@@ -248,7 +248,7 @@ export default function Dashboard() {
               <strong>{totalPairs}</strong>
             </div>
             <div className="dash-mix-bars">
-              {(['lecture', 'seminar', 'lab'] as ActivityType[]).map((a) => {
+              {(['lecture', 'seminar', 'lab', 'project'] as ActivityType[]).map((a) => {
                 const pct = totalPairs ? Math.round((totals[a] / totalPairs) * 100) : 0;
                 return (
                   <div key={a} style={{ flex: Math.max(pct, 8) }}>

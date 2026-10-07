@@ -12,7 +12,7 @@ function csvCell(v: string | number): string {
 
 export function timetableToCsv(lessons: Lesson[], idx: DatasetIndex, settings: Settings): string {
   const header = ['Ziua', 'Perechea', 'Început', 'Sfârșit', 'Cod', 'Disciplina', 'Tip', 'Profesor', 'Studenți', 'Sala', 'Paritate', 'Data'];
-  const typeName = { lecture: 'Curs', seminar: 'Seminar', lab: 'Laborator' };
+  const typeName = { lecture: 'Curs', seminar: 'Seminar', lab: 'Laborator', project: 'Proiect' };
   const parityName = { weekly: '', odd: 'impar', even: 'par' };
   const rows = [...lessons]
     // weekly pairs first, then reduced-attendance session pairs by date
@@ -75,7 +75,7 @@ export function timetableToIcs(
       `DTSTART:${icsDate(start, slot.start)}`,
       `DTEND:${icsDate(start, slot.end)}`,
       ...(rrule ? [rrule] : []),
-      `SUMMARY:${icsText(`${subject?.code ?? ''} ${a.type === 'lecture' ? 'Curs' : a.type === 'lab' ? 'Laborator' : 'Seminar'}`)}`,
+      `SUMMARY:${icsText(`${subject?.code ?? ''} ${a.type === 'lecture' ? 'Curs' : a.type === 'lab' ? 'Laborator' : a.type === 'project' ? 'Proiect' : 'Seminar'}`)}`,
       `LOCATION:${icsText(idx.rooms.get(l.roomId)?.name ?? '')}`,
       `DESCRIPTION:${icsText(`${subject?.name ?? ''}\n${idx.teachers.get(a.teacherId)?.name ?? ''}\n${idx.audienceLabel(a.audience)}`)}`,
       'END:VEVENT',

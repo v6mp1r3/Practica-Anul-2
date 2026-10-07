@@ -232,6 +232,10 @@ export function Legend() {
         {t('activity.lab')}
       </span>
       <span>
+        <i style={{ background: 'var(--project)' }} />
+        {t('activity.project')}
+      </span>
+      <span>
         {t('tt.oddShort')} / {t('tt.evenShort')} — {t('parity.odd')} / {t('parity.even')}
       </span>
     </div>

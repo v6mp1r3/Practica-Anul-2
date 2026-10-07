@@ -263,6 +263,10 @@ table.table {
   background: var(--lab-soft);
   color: var(--lab);
 }
+.badge.project {
+  background: var(--project-soft);
+  color: var(--warning);
+}
 .badge.danger {
   background: var(--danger-soft);
   color: var(--danger);
@@ -1254,6 +1258,10 @@ button.holiday-row.selected {
 .fr-block.lab {
   border-left-color: var(--lab);
   background: var(--lab-soft);
+}
+.fr-block.project {
+  border-left-color: var(--project);
+  background: var(--project-soft);
 }
 .fr-block + .fr-block {
   margin-top: 6px;

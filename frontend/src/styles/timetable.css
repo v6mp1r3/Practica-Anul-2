@@ -117,6 +117,9 @@
 .lesson.lab {
   background: rgba(224, 123, 165, 0.18);
 }
+.lesson.project {
+  background: rgba(230, 93, 49, 0.16);
+}
 .lesson.parity {
   outline: 1.5px dashed rgba(15, 26, 31, 0.18);
   outline-offset: -1.5px;
