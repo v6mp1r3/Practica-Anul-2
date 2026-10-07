@@ -138,9 +138,9 @@ select pg_temp.must_fail('lesson in a room that does not exist',
   $q$ insert into lesson (timetable_id, assignment_id, day, slot_index, room_id) select t.id, a.id, 2, 1, -1 from timetable t, assignment a limit 1 $q$);
 select pg_temp.must_fail('lesson on day 7', $q$ insert into lesson (timetable_id, assignment_id, day, slot_index, room_id) select t.id, a.id, 7, 1, r.id from timetable t, assignment a, room r limit 1 $q$);
 select pg_temp.must_fail('lesson in a slot that is not in the grid', $q$ insert into lesson (timetable_id, assignment_id, day, slot_index, room_id) select t.id, a.id, 1, 9, r.id from timetable t, assignment a, room r limit 1 $q$);
-select pg_temp.must_fail('two weekly lessons in one room at one time',
-  $q$ insert into lesson (timetable_id, assignment_id, day, slot_index, room_id)
-      select t.id, a.id, 1, 2, r.id from timetable t, assignment a, room r where a.audience_kind = 'subgroup' and r.name = '3-404' $q$);
+-- two lessons in one room at one time are allowed in a draft (the backend validator reports and blocks them)
+insert into lesson (timetable_id, assignment_id, day, slot_index, room_id)
+  select t.id, a.id, 1, 2, r.id from timetable t, assignment a, room r where a.audience_kind = 'subgroup' and r.name = '3-404';
 select pg_temp.must_fail('second published timetable in a semester',
   $q$ insert into timetable (semester_id, name, status) select id, 'altul', 'published' from semester where is_current $q$);
 select pg_temp.must_fail('room change without a new room',

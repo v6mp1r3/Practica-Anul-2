@@ -1,7 +1,7 @@
 -- EduSchedule database schema
 -- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: see docs/DATABASE.md. 41 tables, every table linked to the others by foreign keys.
+-- Design: Database_Design.pdf (next to the internship report). 43 tables, every table linked to the others by foreign keys.
 -- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
 
 begin;
@@ -269,6 +269,23 @@ create table student_group (
 );
 create index student_group_faculty_idx on student_group (faculty_id);
 
+-- internships, final-year exam sessions, plagiarism checks and licence exams of particular groups
+create table group_period (
+  id          bigint generated always as identity primary key,
+  semester_id bigint not null references semester (id) on delete cascade,
+  kind        text not null check (kind in ('internship', 'examSession', 'plagiarism', 'licence')),
+  start_date  date not null,
+  end_date    date not null,
+  check (end_date >= start_date)
+);
+
+create table group_period_group (
+  period_id bigint not null references group_period (id) on delete cascade,
+  group_id  bigint not null references student_group (id) on delete cascade,
+  primary key (period_id, group_id)
+);
+create index group_period_group_idx on group_period_group (group_id);
+
 create table subject (
   id            bigint generated always as identity primary key,
   code          text not null check (code = upper(code)),
@@ -443,9 +460,8 @@ create table lesson (
 create index lesson_timetable_idx  on lesson (timetable_id, day, slot_index);
 create index lesson_room_idx       on lesson (room_id, day, slot_index);
 create index lesson_assignment_idx on lesson (assignment_id);
--- cheap backstop; the validator checks all clashes with odd/even weeks and dated lessons
-create unique index lesson_room_weekly_unique on lesson (timetable_id, room_id, day, slot_index)
-  where lesson_date is null and parity = 'weekly';
+-- No uniqueness rule on room + time: a draft may hold clashes, the editor shows them and the backend
+-- validator (publish) refuses a timetable that has them.
 
 create table schedule_change (
   id            bigint generated always as identity primary key,

@@ -28,3 +28,5 @@ venv/
 Thumbs.db
 *.log
 npm-debug.log*
+
+.pytest_cache/
