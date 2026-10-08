@@ -1,7 +1,7 @@
 // Helpers to slice a timetable by group, teacher, room or day.
 import type { DatasetIndex } from './indexes';
 import { paritiesOverlap } from './slots';
-import type { Day, Lesson, Parity, SlotIndex } from './types';
+import type { Day, Lesson, Parity, SlotIndex, Stream } from './types';
 
 export type ViewKind = 'group' | 'teacher' | 'room';
 
@@ -59,4 +59,31 @@ export const dayIndexOf = (date: Date) => (date.getDay() + 6) % 7;
 /** Teacher load in pairs per week (biweekly pairs count as half). */
 export function teacherLoad(idx: DatasetIndex, lessons: Lesson[], teacherId: string): number {
   return lessons.filter((l) => idx.assignmentOf(l)?.teacherId === teacherId).reduce((n, l) => n + (l.parity === 'weekly' ? 1 : 0.5), 0);
+}
+
+/**
+ * Torente to offer in a "view by torent" list: every lecture has its own torent, so the
+ * same groups come up many times — keep one per set of groups, labelled by its groups
+ * (or by a predefined torent's name, like FAF).
+ */
+export function streamChoices(
+  groups: { id: string; name: string }[],
+  streams: Stream[],
+): { id: string; label: string; groupIds: string[] }[] {
+  const nameOf = new Map(groups.map((g) => [g.id, g.name]));
+  const byKey = new Map<string, Stream>();
+  for (const st of streams) {
+    const key = [...st.groupIds].sort().join(',');
+    const have = byKey.get(key);
+    if (!have || (have.subjectId && !st.subjectId)) byKey.set(key, st);
+  }
+  return [...byKey.values()]
+    .map((st) => {
+      const names = st.groupIds
+        .map((g) => nameOf.get(g))
+        .filter(Boolean)
+        .join(', ');
+      return { id: st.id, label: st.subjectId ? names : `${st.name} (${names})`, groupIds: st.groupIds };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label));
 }

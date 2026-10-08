@@ -13,7 +13,7 @@ import { Select } from '../../components/Select';
 import { SessionTimetable, SessionsSection } from '../../components/SessionTimetable';
 import { Empty, PageHeader, Segmented } from '../../components/ui';
 import { fmtTime, parseSlotKey } from '../../domain/slots';
-import { filterLessons, streamGroups } from '../../domain/views';
+import { filterLessons, streamChoices, streamGroups } from '../../domain/views';
 import { dateLocale, useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { downloadFile } from '../../utils/download';
@@ -208,18 +208,11 @@ function Schedule({ kind }: { kind: Kind }) {
             {/* streams: e.g. FAF-251/252/253 when they have classes together */}
             {streams.length > 0 && (
               <optgroup label={t('groups.streams')}>
-                {[...streams]
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map((st) => (
-                    <option key={st.id} value={`stream:${st.id}`}>
-                      {st.name} (
-                      {st.groupIds
-                        .map((g) => index.groups.get(g)?.name)
-                        .filter(Boolean)
-                        .join(', ')}
-                      )
-                    </option>
-                  ))}
+                {streamChoices(dataset.groups, streams).map((st) => (
+                  <option key={st.id} value={`stream:${st.id}`}>
+                    {st.label}
+                  </option>
+                ))}
               </optgroup>
             )}
           </Select>
