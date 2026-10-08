@@ -25,7 +25,6 @@ export default function Assignments() {
   const visibleGroups = dataset.groups.filter((g) => scopeGroups.includes(g.id) && groupInCycle(g, cycle));
   // the form offers this cycle's subjects, groups and streams
   const cycleSubjects = dataset.subjects.filter((x) => (x.cycle ?? 'licenta') === cycle);
-  const cycleStreams = dataset.streams.filter((st) => st.groupIds.some((g) => visibleGroups.some((v) => v.id === g)));
   const inScope = dataset.assignments.filter(
     (a) => (!scope || scopeGroups.some((g) => index.audienceTouchesGroup(a.audience, g))) && audienceInCycle(index, a.audience, cycle),
   );
@@ -117,15 +116,19 @@ export default function Assignments() {
         subjectId: cycleSubjects[0]?.id ?? '',
         type: 'lecture',
         teacherId: dataset.teachers[0]?.id ?? '',
-        audience: cycleStreams[0] ? { kind: 'stream', id: cycleStreams[0].id } : { kind: 'group', id: visibleGroups[0]?.id ?? '' },
+        audience: { kind: 'stream', id: '', groupIds: [] },
         pairsPerWeek: 1,
         parity: 'weekly',
         roomType: 'lecture',
         equipment: [],
       })}
       validate={(d) =>
-        !d.subjectId || !d.teacherId || !d.audience.id
-          ? t('assignments.required')
+        !d.subjectId ||
+        !d.teacherId ||
+        (d.audience.kind === 'stream' ? !d.audience.id && (d.audience.groupIds?.length ?? 0) < 2 : !d.audience.id)
+          ? d.audience.kind === 'stream'
+            ? t('assignments.streamMin')
+            : t('assignments.required')
           : (index.isReduced(d) ? (d.pairsPerSession ?? d.pairsPerWeek) : d.pairsPerWeek) < 1
             ? t('assignments.pairsMin')
             : null
@@ -134,6 +137,11 @@ export default function Assignments() {
         const teacher = index.teachers.get(d.teacherId);
         const setAudience = (aud: Audience) => set({ audience: aud });
         const subgroupsOf = (id: string) => index.groups.get(id)?.subgroups ?? 1;
+        // a lecture's torent is chosen per subject, by its groups (an existing one is shown with its groups)
+        const streamGroups = d.audience.kind === 'stream' ? (d.audience.groupIds ?? index.streams.get(d.audience.id)?.groupIds ?? []) : [];
+        const setStreamGroups = (groupIds: string[]) => setAudience({ kind: 'stream', id: '', groupIds: [...new Set(groupIds)] });
+        const predefined = dataset.streams.filter((st) => !st.subjectId && st.groupIds.some((g) => visibleGroups.some((v) => v.id === g)));
+        const groupYears = [...new Set(visibleGroups.map((g) => g.year))].sort();
         // reduced attendance is counted per session, not per week (no odd/even weeks either)
         const reduced = index.isReduced(d);
         return (
@@ -195,7 +203,7 @@ export default function Assignments() {
                   onChange={(kind) =>
                     setAudience(
                       kind === 'stream'
-                        ? { kind, id: cycleStreams[0]?.id ?? '' }
+                        ? { kind, id: '', groupIds: [] }
                         : kind === 'group'
                           ? { kind, id: visibleGroups[0]?.id ?? '' }
                           : { kind, id: visibleGroups[0]?.id ?? '', subgroup: 1 },
@@ -207,18 +215,20 @@ export default function Assignments() {
                     { value: 'subgroup', label: t('assignments.kind.subgroup') },
                   ]}
                 />
-                <Select
-                  className="select"
-                  style={{ width: 180 }}
-                  value={d.audience.id}
-                  onChange={(e) => setAudience({ ...d.audience, id: e.target.value } as Audience)}
-                >
-                  {(d.audience.kind === 'stream' ? cycleStreams : visibleGroups).map((x) => (
-                    <option key={x.id} value={x.id}>
-                      {x.name}
-                    </option>
-                  ))}
-                </Select>
+                {d.audience.kind !== 'stream' && (
+                  <Select
+                    className="select"
+                    style={{ width: 180 }}
+                    value={d.audience.id}
+                    onChange={(e) => setAudience({ ...d.audience, id: e.target.value } as Audience)}
+                  >
+                    {visibleGroups.map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
                 {d.audience.kind === 'subgroup' && (
                   <Select
                     className="select"
@@ -237,6 +247,45 @@ export default function Assignments() {
                   {index.audienceSize(d.audience)} {t('groups.size').toLowerCase()}
                 </span>
               </div>
+              {/* the torent of this subject's lecture: tick the groups that attend it together */}
+              {d.audience.kind === 'stream' && (
+                <div className="stream-picker">
+                  {predefined.length > 0 && (
+                    <div className="row wrap" style={{ gap: 6 }}>
+                      <span className="small muted">{t('assignments.streamFrom')}</span>
+                      {predefined.map((st) => (
+                        <button key={st.id} type="button" className="btn ghost sm" onClick={() => setStreamGroups(st.groupIds)}>
+                          {st.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {groupYears.map((y) => (
+                    <div key={y} className="row wrap" style={{ gap: 8 }}>
+                      <strong className="small" style={{ minWidth: 60 }}>
+                        {t('groups.year')} {y}
+                      </strong>
+                      <div className="checks">
+                        {visibleGroups
+                          .filter((g) => g.year === y)
+                          .map((g) => (
+                            <label key={g.id} className="check">
+                              <input
+                                type="checkbox"
+                                checked={streamGroups.includes(g.id)}
+                                onChange={(e) =>
+                                  setStreamGroups(e.target.checked ? [...streamGroups, g.id] : streamGroups.filter((x) => x !== g.id))
+                                }
+                              />
+                              {g.name}
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+                  ))}
+                  {streamGroups.length < 2 && <span className="small muted">{t('assignments.streamMin')}</span>}
+                </div>
+              )}
             </Field>
 
             <div className="form-grid">

@@ -1340,3 +1340,14 @@ button.holiday-row.selected {
 .form-grid > .field > .hint {
   align-self: start;
 }
+
+/* Sarcina didactică: the groups of a lecture's torent */
+.stream-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}

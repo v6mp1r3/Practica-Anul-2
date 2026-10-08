@@ -633,4 +633,8 @@ export const ru: Record<MessageKey, string> = {
   'periods.kind.licence': 'Экзамен на лиценциат (EL)',
   'periods.noClasses': 'занятий нет: студенты на практике',
   'periods.groupCalendar': 'Календарь группы',
+  'assignments.streamFrom': 'Заполнить из:',
+  'assignments.streamMin': 'Отметьте минимум 2 группы, которые слушают лекцию вместе.',
+  'groups.streamsPerSubject':
+    'Потоки задаются по дисциплине: группы, которые слушают лекцию вместе, выбираются для каждой лекции в учебной нагрузке.',
 };

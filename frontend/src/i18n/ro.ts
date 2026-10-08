@@ -632,6 +632,10 @@ export const ro = {
   'periods.kind.licence': 'Examen de licență (EL)',
   'periods.noClasses': 'nu sunt ore: studenții sunt la locul de practică',
   'periods.groupCalendar': 'Calendarul grupei',
+  'assignments.streamFrom': 'Completează din:',
+  'assignments.streamMin': 'Bifează cel puțin 2 grupe care au cursul împreună.',
+  'groups.streamsPerSubject':
+    'Torentele se stabilesc pe disciplină: grupele care au cursul împreună se aleg la fiecare curs în Sarcina didactică.',
 } as const;
 
 export type MessageKey = keyof typeof ro;

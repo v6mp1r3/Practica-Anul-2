@@ -629,4 +629,8 @@ export const en: Record<MessageKey, string> = {
   'periods.kind.licence': 'Licence exam (EL)',
   'periods.noClasses': 'no classes: the students are at their internship',
   'periods.groupCalendar': 'Group calendar',
+  'assignments.streamFrom': 'Fill from:',
+  'assignments.streamMin': 'Tick at least 2 groups that attend the lecture together.',
+  'groups.streamsPerSubject':
+    'Streams are set per subject: the groups that attend a lecture together are chosen for each lecture in Teaching load.',
 };
