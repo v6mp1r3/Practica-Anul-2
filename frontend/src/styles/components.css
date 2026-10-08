@@ -1475,3 +1475,26 @@ button.holiday-row.selected {
   cursor: grab;
   pointer-events: auto;
 }
+
+/* Language of instruction tags */
+.badge.lang {
+  margin-left: 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+.badge.lang-ro {
+  background: #e8f0fe;
+  color: #1f4fa8;
+}
+.badge.lang-ru {
+  background: #fdecea;
+  color: #a8321f;
+}
+.badge.lang-en {
+  background: #e7f6ec;
+  color: #1d7a3e;
+}
+.badge.lang-fr {
+  background: #f3eafd;
+  color: #6b2fb0;
+}

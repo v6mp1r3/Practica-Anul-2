@@ -23,6 +23,9 @@ export type SlotIndex = number;
  */
 export type StudyForm = 'full' | 'reduced' | 'dual';
 export const STUDY_FORMS: StudyForm[] = ['full', 'reduced', 'dual'];
+/** Language of instruction: a subject taught in Russian is separate from the same subject in Romanian. */
+export type Language = 'ro' | 'ru' | 'en' | 'fr';
+export const LANGUAGES: Language[] = ['ro', 'ru', 'en', 'fr'];
 
 export interface TimeSlot {
   start: string; // "08:00"
@@ -225,6 +228,8 @@ export interface Group {
   faculty?: string;
   /** Number of subgroups used for labs (1 = not split). */
   subgroups: number;
+  /** Language of instruction (default Romanian). */
+  language?: Language;
 }
 
 /** A stream ("torentă") joins several groups for one lecture. */
@@ -252,6 +257,8 @@ export interface Subject {
   faculty?: string;
   /** Licență (default) or master's study plan. */
   cycle?: StudyCycle;
+  /** Language it is taught in, i.e. which groups it is for (default Romanian). */
+  language?: Language;
   /** How the subject ends: with an exam in the session, or with the atestări only. Default exam. */
   evaluation?: 'exam' | 'atestari';
   /** Pairs per week by activity type, from the study plan (0.5 = every other week). */
