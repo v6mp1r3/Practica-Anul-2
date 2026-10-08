@@ -27,6 +27,8 @@ export interface CrudProps<K extends CollectionName> {
   /** Returns an error message, or null when the draft is valid. */
   validate?: (draft: Omit<Collections[K], 'id'>) => string | null;
   headerActions?: ReactNode;
+  /** Filters shown under the search (the page passes the items already filtered). */
+  filters?: ReactNode;
   /** Render without the page wrapper (to embed several on one page). */
   embedded?: boolean;
   wideForm?: boolean;
@@ -106,6 +108,7 @@ export function CrudPage<K extends CollectionName>(p: CrudProps<K>) {
             </button>
           )}
         </div>
+        {p.filters && <div className="filter-bar">{p.filters}</div>}
         {filtered.length === 0 ? (
           <Empty />
         ) : (

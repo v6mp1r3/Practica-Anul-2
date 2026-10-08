@@ -1395,3 +1395,83 @@ button.holiday-row.selected {
   background: var(--primary);
   border-color: var(--primary);
 }
+
+/* Filters above a list (Săli, Profesori, Discipline) */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0 22px 14px;
+}
+.filter-bar .select.pill {
+  min-width: 0;
+}
+.range-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 13.5px;
+}
+.range2 {
+  position: relative;
+  width: 160px;
+  height: 20px;
+}
+.range2::before,
+.range2::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+.range2::before {
+  left: 0;
+  right: 0;
+  background: var(--border);
+}
+.range2::after {
+  left: var(--lo);
+  right: calc(100% - var(--hi));
+  background: var(--primary);
+}
+.range2 input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.range2 input::-webkit-slider-runnable-track {
+  background: none;
+}
+.range2 input::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  background: #fff;
+  cursor: grab;
+  pointer-events: auto;
+  -webkit-appearance: none;
+}
+.range2 input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  background: #fff;
+  cursor: grab;
+  pointer-events: auto;
+}
