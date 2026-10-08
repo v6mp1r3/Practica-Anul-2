@@ -294,7 +294,10 @@ def load_streams(conn: Connection, ids: Iterable[int] | None = None) -> list[dic
     members: dict[int, list[str]] = defaultdict(list)
     for r in _all(conn, "select stream_id, group_id from stream_group where stream_id = any(cast(:k as bigint[])) order by group_id", {"k": [r["id"] for r in rows]}):
         members[r["stream_id"]].append(sid(r["group_id"]))
-    return [{"id": sid(r["id"]), "name": r["name"] or "", "groupIds": members[r["id"]]} for r in rows]
+    # subjectId: the subject an automatic stream belongs to (None for a predefined stream like FAF)
+    return [
+        {"id": sid(r["id"]), "name": r["name"] or "", "groupIds": members[r["id"]], "subjectId": sid(r["subject_id"])} for r in rows
+    ]
 
 
 def save_stream(conn: Connection, data: dict, faculty_id: int | None, stream_id: int | None = None) -> int:

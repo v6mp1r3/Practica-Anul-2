@@ -141,7 +141,8 @@ or subject without a `faculty` is shared and any administrator may change it.
 { "id": "g1", "name": "FAF-251", "program": "Ingineria Software", "faculty": "Facultatea Calculatoare, Informatică și Microelectronică", "year": 1, "size": 24, "subgroups": 2, "language": "ro" }
 
 // Stream (groups that attend a lecture together)
-{ "id": "s1", "name": "FAF-25", "groupIds": ["g1", "g2"] }
+{ "id": "s1", "name": "FAF-25", "groupIds": ["g1", "g2"], "subjectId": null }
+// subjectId: the subject an automatic stream belongs to; null for a predefined stream
 
 // Subject — pairs per week from the study plan; 0.5 = every other week
 { "id": "sub1", "code": "AM", "name": "Analiză matematică", "credits": 6, "year": 1,
