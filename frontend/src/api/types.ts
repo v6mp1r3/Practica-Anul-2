@@ -5,6 +5,7 @@ import type {
   ExamPlan,
   ExamRound,
   Assignment,
+  Cluster,
   Dataset,
   Group,
   Notification,
@@ -82,6 +83,9 @@ export interface Api {
   update<K extends CollectionName>(name: K, item: Collections[K]): Promise<Collections[K]>;
   remove(name: CollectionName, id: string): Promise<void>;
   importSubjects(subjects: Omit<Subject, 'id'>[]): Promise<Subject[]>;
+  /** Creates (no id) or renames a custom cluster and sets its groups. The automatic clusters follow the groups and cannot be saved. */
+  saveCluster(cluster: { id?: string; name: string; groupIds: string[] }): Promise<Cluster>;
+  deleteCluster(id: string): Promise<void>;
 
   updateAvailability(teacherId: string, data: AvailabilityUpdate): Promise<Teacher>;
 

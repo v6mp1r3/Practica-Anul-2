@@ -77,6 +77,8 @@ export function createHttpApi(baseUrl: string): Api {
     update: (name, item) => request('PUT', `/${name}/${item.id}`, item),
     remove: (name, id) => request('DELETE', `/${name}/${id}`),
     importSubjects: (subjects) => request('POST', '/subjects/import', { subjects }),
+    saveCluster: (c) => (c.id ? request('PUT', `/clusters/${c.id}`, c) : request('POST', '/clusters', c)),
+    deleteCluster: (id) => request('DELETE', `/clusters/${id}`),
 
     updateAvailability: (teacherId, data) => request('PUT', `/teachers/${teacherId}/availability`, data),
 

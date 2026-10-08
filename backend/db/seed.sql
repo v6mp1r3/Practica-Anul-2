@@ -88,10 +88,13 @@ from semester s, (values ('licenta'), ('master')) cy (c), (values ('15:15'), ('1
 where s.is_current;
 
 -- the year clusters that always exist (licență 1-4, master's 1-2); the others are made from the groups
-insert into cluster (cycle, year)
-select 'licenta'::study_cycle, y from generate_series(1, 4) y
+insert into cluster (kind, cycle, year)
+select 'year', 'licenta'::study_cycle, y from generate_series(1, 4) y
 union all
-select 'master'::study_cycle, y from generate_series(1, 2) y
+select 'year', 'master'::study_cycle, y from generate_series(1, 2) y
 on conflict do nothing;
+-- the languages and forms of study
+insert into cluster (kind, language) select 'language', l from unnest(enum_range(null::study_language)) l on conflict do nothing;
+insert into cluster (kind, study_form) select 'form', f from unnest(enum_range(null::study_form)) f on conflict do nothing;
 
 commit;

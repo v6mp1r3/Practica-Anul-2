@@ -5,7 +5,6 @@ import { CrudPage } from '../../components/CrudPage';
 import { useState } from 'react';
 import { Select } from '../../components/Select';
 import { Field } from '../../components/ui';
-import { parityWeight } from '../../domain/slots';
 import type { ActivityType, Teacher } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
@@ -37,8 +36,7 @@ export default function Teachers() {
     .sort((a, b) => (order === 'az' ? 1 : -1) * a.name.localeCompare(b.name, 'ro'));
   const filtering = !!(title || department || activity);
 
-  const plannedLoad = (id: string) =>
-    dataset.assignments.filter((a) => a.teacherId === id).reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
+  const plannedLoad = (id: string) => dataset.assignments.filter((a) => a.teacherId === id).reduce((n, a) => n + a.pairsPerWeek, 0);
 
   return (
     <CrudPage

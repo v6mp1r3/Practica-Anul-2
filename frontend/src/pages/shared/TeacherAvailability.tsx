@@ -8,6 +8,7 @@ import { dayIndexOf, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
+import { subjectLabel } from '../../domain/subjects';
 
 const CELL: Record<TeacherSlotState, string> = {
   free: 'state-free',
@@ -47,7 +48,7 @@ export default function TeacherAvailability() {
       return (
         <div key={l.id} className="busy-lesson">
           <strong>
-            {index.subjects.get(a.subjectId)?.code} · {t(`activity.${a.type}`)}
+            {subjectLabel(index.subjects.get(a.subjectId))} · {t(`activity.${a.type}`)}
           </strong>
           <span>{index.audienceLabel(a.audience)}</span>
           <span>{index.rooms.get(l.roomId)?.name}</span>

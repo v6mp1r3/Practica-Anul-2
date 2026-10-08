@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from ..domain.indexes import DatasetIndex
 from ..domain.slots import slot_key
-from .model import WEEKS, Placement, _weeks_of
+from .model import WEEKS, Placement
 
 
 def _difficulty(a: dict, idx: DatasetIndex) -> float:
@@ -32,7 +32,7 @@ class _Busy:
         self.subject_days: set[tuple[str, int, str]] = set()
 
     def _keys(self, a: dict, d: int, s: int, room_id: str):
-        for w in _weeks_of(a["parity"]):
+        for w in WEEKS:
             yield ("t", a["teacherId"], d, s, w)
             yield ("r", room_id, d, s, w)
             for g, sub in self.idx.cohorts(a["audience"]):
@@ -112,5 +112,5 @@ def construct(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dic
                 break
             _, d, s, room_id = best
             busy.add(a, d, s, room_id)
-            out.append(Placement(a["id"], d, s, room_id, a["parity"]))
+            out.append(Placement(a["id"], d, s, room_id, "weekly"))
     return out

@@ -16,6 +16,8 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
+import { matches, SEARCH_FROM } from './searchText';
+import { useI18n } from '../i18n';
 
 interface Item {
   value: string;
@@ -61,10 +63,15 @@ function collect(children: ReactNode, group?: string, out: Item[] = []): Item[] 
 }
 
 export function Select({ value, onChange, children, className = 'select', style, disabled, id, ...rest }: Props) {
-  const items = collect(children);
+  const { t } = useI18n();
+  const all = collect(children);
   const current = String(value ?? '');
-  const selected = items.find((i) => i.value === current) ?? items[0];
+  const selected = all.find((i) => i.value === current) ?? all[0];
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const searchable = all.length > SEARCH_FROM;
+  const items = query ? all.filter((i) => matches(i.label, query)) : all;
+  const input = useRef<HTMLInputElement>(null);
   const [active, setActive] = useState(0);
   const [pos, setPos] = useState<{ left: number; top: number; width: number; up: boolean } | null>(null);
   const btn = useRef<HTMLButtonElement>(null);
@@ -84,13 +91,17 @@ export function Select({ value, onChange, children, className = 'select', style,
     place();
     const i = items.findIndex((x) => x.value === current);
     setActive(i < 0 ? 0 : i);
+    if (searchable) setTimeout(() => input.current?.focus(), 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
-      if (!btn.current?.contains(e.target as Node) && !list.current?.contains(e.target as Node)) setOpen(false);
+      if (!btn.current?.contains(e.target as Node) && !list.current?.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery('');
+      }
     };
     const reflow = () => place();
     document.addEventListener('mousedown', close);
@@ -110,12 +121,14 @@ export function Select({ value, onChange, children, className = 'select', style,
   const choose = (item: Item) => {
     if (item.disabled) return;
     setOpen(false);
+    setQuery('');
     btn.current?.focus();
     if (item.value !== current)
       onChange?.({ target: { value: item.value }, currentTarget: { value: item.value } } as ChangeEvent<HTMLSelectElement>);
   };
 
   const move = (dir: 1 | -1) => {
+    if (!items.length) return;
     let i = active;
     for (let n = 0; n < items.length; n++) {
       i = (i + dir + items.length) % items.length;
@@ -126,18 +139,28 @@ export function Select({ value, onChange, children, className = 'select', style,
 
   const onKey = (e: React.KeyboardEvent) => {
     if (disabled) return;
+    const typing = e.target === input.current;
+    // typing on a closed list opens it with those letters in the search box
+    if (!open && searchable && e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey) {
+      setQuery(e.key);
+      setOpen(true);
+      e.preventDefault();
+      return;
+    }
     if (!open && ['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) {
       e.preventDefault();
       setOpen(true);
       return;
     }
     if (!open) return;
+    if (typing && e.key === ' ') return;
     if (e.key === 'ArrowDown') (e.preventDefault(), move(1));
     else if (e.key === 'ArrowUp') (e.preventDefault(), move(-1));
     else if (e.key === 'Enter' || e.key === ' ') (e.preventDefault(), items[active] && choose(items[active]));
     else if (e.key === 'Escape') {
       e.stopPropagation(); // close only the list, not a surrounding dialog
       setOpen(false);
+      setQuery('');
     } else if (e.key === 'Tab') setOpen(false);
   };
 
@@ -174,6 +197,21 @@ export function Select({ value, onChange, children, className = 'select', style,
               ...(pos.up ? { bottom: window.innerHeight - pos.top } : { top: pos.top }),
             }}
           >
+            {searchable && (
+              <input
+                ref={input}
+                className="select-search"
+                value={query}
+                placeholder={t('common.search')}
+                aria-label={t('common.search')}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActive(0);
+                }}
+                onKeyDown={onKey}
+              />
+            )}
+            {items.length === 0 && <div className="select-empty">{t('common.noResults')}</div>}
             {items.map((item, i) => {
               const header = item.group !== lastGroup && item.group ? <div className="select-group">{item.group}</div> : null;
               lastGroup = item.group;

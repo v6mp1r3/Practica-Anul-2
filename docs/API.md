@@ -145,34 +145,47 @@ or subject without a `faculty` is shared and any administrator may change it.
 // subjectId: the subject an automatic stream belongs to; null for a predefined stream
 
 // Subject — pairs per week from the study plan; 0.5 = every other week.
-// `language` ("ro" default, "ru", "en", "fr"): the groups it is for; AM in "ru" is a separate subject from AM in "ro"
-{ "id": "sub1", "code": "AM", "name": "Analiză matematică", "credits": 6, "year": 1,
+{ "id": "sub1", "code": "AM", "name": "Analiză matematică", "abbreviation": "AM", "credits": 6, "year": 1,
   "semester": 1, "hasMidterm1": true, "hasMidterm2": true, "hasExam": true,
-  "lecturePairs": 2, "seminarPairs": 1, "labPairs": 0, "language": "ro", "clusterIds": ["c1", "c5"] }
+  "lecturePairs": 2, "seminarPairs": 1, "labPairs": 0, "clusterIds": ["c1", "c5"] }
 
 // Assignment (teaching load). audience.kind is "stream" | "group" | "subgroup"
 { "id": "a1", "subjectId": "sub1", "type": "lecture", "teacherId": "t3",
   "audience": { "kind": "stream", "id": "s3" },
-  "pairsPerWeek": 2, "parity": "weekly", "roomType": "lecture", "equipment": [] }
+  "pairsPerWeek": 2, "roomType": "lecture", "equipment": [] }
 ```
 
 **Clusters.** A cluster is a year of study ("Year 1") or a speciality within a year ("FAF, year 1"). They are
 made automatically from the groups: a group `FAF-261` of year 1 is in "Year 1" and in "FAF, year 1" (the speciality
 is the group name without its number). The years (licență 1-4, master's 1-2) always exist, the others appear with
 the first group that needs them, and a cluster is never deleted by itself, so tags stay when its last group is
-removed. Clusters are read-only: `GET /clusters` (signed in) and `clusters` in `GET /dataset`.
+removed. Besides the year and the speciality there is a cluster for each language (`kind: "language"`, field `language`) and
+for each form of study (`kind: "form"`, field `studyForm`: full-time, reduced attendance, dual); they follow the groups
+too. An administrator can also make **custom** clusters (`kind: "custom"`, just a `name` and `groupIds`), for example
+"Frecvență redusă 2026".
+
+`GET /clusters` (signed in) and `clusters` in `GET /dataset` list all of them. Only custom clusters can be changed:
+`POST /clusters` `{ "name", "groupIds" }` (201), `PUT /clusters/{id}` (leaving `groupIds` out keeps the groups),
+`DELETE /clusters/{id}` (204; takes the tag off the subjects). A repeated name is a `409`, an empty name or an
+unknown group a `422`, changing an automatic cluster a `400`.
 
 ```json
 { "id": "c5", "kind": "speciality", "cycle": "licenta", "year": 1, "speciality": "FAF",
   "name": "FAF · Year 1", "groupIds": ["g1", "g2"] }
 ```
 
+`abbreviation` (optional) is what the timetable shows instead of the `code`; empty or missing = the code.
 `semester` is 1 or 2 (the semester of the year, default 1). `hasMidterm1`, `hasMidterm2` and `hasExam` are the
 assessment, all `true` by default; `evaluation` (`exam` / `atestari`) is still returned and follows `hasExam`, and a
 client that sends only `evaluation` still works.
 
 A subject is tagged with the clusters it is taught to by `clusterIds` (on `POST` and `PUT /subjects`; leaving the
-field out of a `PUT` keeps the tags, `[]` clears them; an unknown id is a `422`).
+field out of a `PUT` keeps the tags, `[]` clears them; an unknown id is a `422`; an unknown id is a `422`). When a subject is tagged with every speciality of a year (those that
+have groups), the server stores the year's tag instead ("Year 1").
+
+Tags also limit where a subject can be taught: `POST` / `PUT /assignments` is a `422` when the audience has a group the
+subject's tags do not allow (a subject tagged "Year 1" is not for a group of year 2; tags of one kind add up, tags of
+different kinds all have to fit). A subject without tags has no such limit.
 
 Activity types are `lecture`, `seminar`, `lab` and `project`. A project is held in an ordinary room
 (`roomType: "seminar"`) and has no pairs in the study plan, so it is not compared with it. A teacher's

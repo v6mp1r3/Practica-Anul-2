@@ -2,16 +2,14 @@ import { CycleTabs, useCycle } from '../../components/CycleTabs';
 import { useAdminScope } from '../../components/FacultyFilter';
 import { useMemo, useRef, useState } from 'react';
 import { api } from '../../api';
-import { ClusterPicker, useClusterLabel } from '../../components/ClusterPicker';
+import { ClusterManager, ClusterPicker, useClusterLabel } from '../../components/ClusterPicker';
 import { CrudPage } from '../../components/CrudPage';
 import { Icon } from '../../components/Icon';
 import { Field, Modal } from '../../components/ui';
-import { deriveClusters } from '../../domain/clusters';
+import { deriveClusters, subjectInSpeciality } from '../../domain/clusters';
 import { parseStudyPlan, STUDY_PLAN_TEMPLATE, type CsvResult } from '../../domain/csv';
 import type { Subject, StudyCycle } from '../../domain/types';
 import { Select } from '../../components/Select';
-import { LanguageField, LanguageTag, languageOf } from '../../components/Language';
-import { MultiSelect } from '../../components/MultiSelect';
 import { specialtyOf } from '../../domain/specialty';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
@@ -35,6 +33,7 @@ export default function Subjects() {
   const clusterLabel = useClusterLabel();
   const clusterById = useMemo(() => new Map(clusters.map((c) => [c.id, c])), [clusters]);
   const [clusterFilter, setClusterFilter] = useState('');
+  const [managing, setManaging] = useState(false);
 
   async function onFile(file: File) {
     setPreview(parseStudyPlan(await file.text()));
@@ -55,7 +54,6 @@ export default function Subjects() {
   const [evaluation, setEvaluation] = useState('');
   const [activity, setActivity] = useState('');
   const [load, setLoad] = useState('');
-  const [language, setLanguage] = useState('');
   const [specialty, setSpecialty] = useState('');
   // the faculty's specialties, from its group names (TI-251 → TI)
   const specialties = [...new Set(dataset.groups.filter((g) => !scope || g.faculty === scope).map((g) => specialtyOf(g.name)))].sort(
@@ -70,12 +68,11 @@ export default function Subjects() {
       (!evaluation || (hasExam(x) ? 'exam' : 'atestari') === evaluation) &&
       (!activity || pairsOf(x, activity) > 0) &&
       (!load || (load === 'planned') === planned(x)) &&
-      (!language || languageOf(x) === language) &&
-      // a specialty's subjects: its own and those for every specialty
-      (!specialty || !x.specialties?.length || x.specialties.includes(specialty)) &&
+      // a specialty's subjects: those tagged with it or with its whole year, and those for every specialty
+      (!specialty || subjectInSpeciality(x.clusterIds, specialty, clusters)) &&
       (!clusterFilter || !!x.clusterIds?.includes(clusterFilter)),
   );
-  const filtering = !!(year || evaluation || activity || load || language || specialty);
+  const filtering = !!(year || evaluation || activity || load || specialty);
 
   const pairs = (n: number) => (n ? String(n).replace('.', ',') : '—');
 
@@ -98,14 +95,6 @@ export default function Subjects() {
               {specialties.map((x) => (
                 <option key={x} value={x}>
                   {x}
-                </option>
-              ))}
-            </Select>
-            <Select className="select pill" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label={t('language.label')}>
-              <option value="">{t('language.all')}</option>
-              {(['ro', 'ru', 'en', 'fr'] as const).map((l) => (
-                <option key={l} value={l}>
-                  {t(`language.${l}`)}
                 </option>
               ))}
             </Select>
@@ -148,7 +137,6 @@ export default function Subjects() {
                   setEvaluation('');
                   setActivity('');
                   setLoad('');
-                  setLanguage('');
                   setSpecialty('');
                 }}
               >
@@ -158,7 +146,7 @@ export default function Subjects() {
           </>
         }
         itemLabel={(x) => `${x.code} — ${x.name}`}
-        searchText={(x) => `${x.code} ${x.name}`}
+        searchText={(x) => `${x.code} ${x.abbreviation ?? ''} ${x.name}`}
         headerActions={
           <>
             <CycleTabs
@@ -171,13 +159,17 @@ export default function Subjects() {
             <Select value={clusterFilter} onChange={(e) => setClusterFilter(e.target.value)} aria-label={t('subjects.clusters')}>
               <option value="">{t('subjects.allClusters')}</option>
               {clusters
-                .filter((c) => c.cycle === cycle && (c.kind === 'year' || c.groupIds.length > 0))
+                .filter((c) => (!c.cycle || c.cycle === cycle) && (c.kind === 'year' || c.kind === 'custom' || c.groupIds.length > 0))
                 .map((c) => (
                   <option key={c.id} value={c.id}>
                     {clusterLabel(c)}
                   </option>
                 ))}
             </Select>
+            <button className="btn" onClick={() => setManaging(true)}>
+              <Icon name="plus" />
+              {t('clusters.manage')}
+            </button>
             <button className="btn" onClick={() => downloadFile('plan-de-studii.csv', STUDY_PLAN_TEMPLATE, 'text/csv')}>
               <Icon name="download" />
               {t('subjects.template')}
@@ -201,7 +193,7 @@ export default function Subjects() {
             render: (x) => (
               <span>
                 <strong>{x.code}</strong>
-                <LanguageTag language={x.language} />
+                {x.abbreviation && x.abbreviation !== x.code && <span className="small muted"> ({x.abbreviation})</span>}
                 {x.cycle === 'master' && (
                   <span className="badge primary" style={{ marginLeft: 6 }}>
                     {t('cycle.master')}
@@ -212,21 +204,6 @@ export default function Subjects() {
             width: 120,
           },
           { label: t('common.name'), render: (x) => x.name },
-          {
-            label: t('subjects.specialties'),
-            render: (x) =>
-              x.specialties?.length ? (
-                <span className="row wrap" style={{ gap: 4 }}>
-                  {x.specialties.map((sp) => (
-                    <span key={sp} className="badge">
-                      {sp}
-                    </span>
-                  ))}
-                </span>
-              ) : (
-                <span className="small muted">{t('subjects.allSpecialties')}</span>
-              ),
-          },
           { label: t('subjects.year'), render: (x) => x.year },
           {
             label: t('subjects.clusters'),
@@ -276,8 +253,6 @@ export default function Subjects() {
           cycle,
           code: '',
           name: '',
-          language: 'ro',
-          specialties: [],
           faculty: scope || undefined,
           credits: 5,
           year: 1,
@@ -297,24 +272,18 @@ export default function Subjects() {
               <Field label={t('subjects.code')}>
                 <input className="input" value={d.code} onChange={(e) => set({ code: e.target.value.toUpperCase() })} autoFocus />
               </Field>
+              <Field label={t('subjects.abbreviation')} hint={t('subjects.abbreviationHint')}>
+                <input
+                  className="input"
+                  value={d.abbreviation ?? ''}
+                  placeholder={d.code}
+                  maxLength={12}
+                  onChange={(e) => set({ abbreviation: e.target.value })}
+                />
+              </Field>
               <Field label={t('common.name')}>
                 <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} />
               </Field>
-              <Field label={t('subjects.specialties')} hint={t('subjects.specialtiesHint')}>
-                <MultiSelect
-                  value={d.specialties ?? []}
-                  onChange={(v) => set({ specialties: v })}
-                  options={specialties.map((x) => ({ value: x, label: x }))}
-                  placeholder={t('subjects.allSpecialties')}
-                  aria-label={t('subjects.specialties')}
-                />
-              </Field>
-              <LanguageField
-                value={d.language}
-                onChange={(language) => set({ language })}
-                label={t('language.label')}
-                hint={t('language.subjectHint')}
-              />
               <Field label={t('subjects.cycle')}>
                 <Select value={d.cycle ?? 'licenta'} onChange={(e) => set({ cycle: e.target.value as StudyCycle })}>
                   <option value="licenta">{t('cycle.licenta')}</option>
@@ -467,6 +436,7 @@ export default function Subjects() {
           </div>
         </Modal>
       )}
+      {managing && <ClusterManager dataset={dataset} onClose={() => setManaging(false)} />}
     </>
   );
 }

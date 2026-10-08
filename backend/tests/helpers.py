@@ -19,7 +19,7 @@ def subject(code="AM", **kw):
 
 
 def assignment(subject_id, teacher_id, audience, **kw):
-    return {"subjectId": subject_id, "type": "lecture", "teacherId": teacher_id, "audience": audience, "pairsPerWeek": 1, "parity": "weekly", "roomType": "lecture", "equipment": [], **kw}
+    return {"subjectId": subject_id, "type": "lecture", "teacherId": teacher_id, "audience": audience, "pairsPerWeek": 1, "roomType": "lecture", "equipment": [], **kw}
 
 
 def create(client, headers, collection, payload):

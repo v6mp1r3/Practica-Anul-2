@@ -1,5 +1,6 @@
 import { CycleTabs, groupInCycle, useCycle } from '../../components/CycleTabs';
 import { useAdminScope } from '../../components/FacultyFilter';
+import { ClusterManager, useClusterLabel } from '../../components/ClusterPicker';
 import { CrudPage } from '../../components/CrudPage';
 import { Empty, Field, PageHeader } from '../../components/ui';
 import { STUDY_FORMS, type Group, type StudyCycle, type StudyForm } from '../../domain/types';
@@ -12,7 +13,7 @@ import { specialtyOf as prefixOf } from '../../domain/specialty';
 
 export default function Groups() {
   const { t } = useI18n();
-  const { dataset, index } = useDataset();
+  const { dataset } = useDataset();
   const scope = useAdminScope();
   const faculty = scope;
   // licență | master's
@@ -23,17 +24,15 @@ export default function Groups() {
   const [prefix, setPrefix] = useState('');
   const ourGroups = dataset.groups.filter((x) => (!faculty || x.faculty === faculty) && mine(x));
   const prefixes = [...new Set(ourGroups.map((g) => prefixOf(g.name)))].sort((a, b) => a.localeCompare(b, 'ro'));
-  // each lecture taught to several groups: its subject's torent
-  const subjectStreams = dataset.assignments
-    .filter(
-      (a) =>
-        a.audience.kind === 'stream' &&
-        index.cohorts(a.audience).some((c) => {
-          const g = index.groups.get(c.groupId);
-          return !!g && (!faculty || g.faculty === faculty) && mine(g);
-        }),
-    )
-    .sort((a, b) => (index.subjects.get(a.subjectId)?.code ?? '').localeCompare(index.subjects.get(b.subjectId)?.code ?? ''));
+  // the clusters (year, speciality, language, form of study, own) with the groups of this faculty and cycle in them
+  const { clusters: all = [] } = dataset;
+  const clusterLabel = useClusterLabel();
+  const [managing, setManaging] = useState(false);
+  const visible = new Set(ourGroups.map((g) => g.id));
+  const clusters = all
+    .map((c) => ({ c, groups: c.groupIds.filter((id) => visible.has(id)) }))
+    .filter(({ c, groups }) => groups.length > 0 || c.kind === 'custom');
+  const groupName = (id: string) => dataset.groups.find((g) => g.id === id)?.name ?? id;
 
   return (
     <div className="page">
@@ -220,47 +219,49 @@ export default function Groups() {
           )}
         />
 
-        {/* torente are defined per subject: each lecture's groups (set in Sarcina didactică) */}
+        {/* clusters follow the groups; the own ones are made here */}
         <section className="card">
           <div className="card-header">
-            <h2>{t('groups.streams')}</h2>
+            <h2>{t('clusters.title')}</h2>
             <span className="spacer" />
-            <span className="small muted">{subjectStreams.length}</span>
+            <span className="small muted">{clusters.length}</span>
+            <button className="btn" onClick={() => setManaging(true)}>
+              {t('clusters.manage')}
+            </button>
           </div>
           <p className="small muted" style={{ margin: 0, padding: '0 22px 8px' }}>
-            {t('groups.streamsPerSubject')}
+            {t('clusters.hint')}
           </p>
-          {subjectStreams.length === 0 ? (
+          {clusters.length === 0 ? (
             <Empty />
           ) : (
             <div className="table-wrap">
               <table className="table">
                 <thead>
                   <tr>
-                    <th>{t('assignments.subject')}</th>
-                    <th>{t('assignments.teacher')}</th>
+                    <th>{t('clusters.title')}</th>
+                    <th>{t('clusters.type')}</th>
                     <th>{t('groups.groups')}</th>
                     <th>{t('groups.size')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {subjectStreams.map((a) => (
-                    <tr key={a.id}>
+                  {clusters.map(({ c, groups }) => (
+                    <tr key={c.id}>
                       <td>
-                        <strong>{index.subjects.get(a.subjectId)?.code}</strong>{' '}
-                        <span className="small muted">{index.subjects.get(a.subjectId)?.name}</span>
+                        <strong>{clusterLabel(c)}</strong>
                       </td>
-                      <td className="small">{index.teachers.get(a.teacherId)?.name}</td>
+                      <td className="small">{t(`clusters.kind.${c.kind}`)}</td>
                       <td>
                         <div className="row wrap" style={{ gap: 4 }}>
-                          {index.cohorts(a.audience).map((c) => (
-                            <span key={c.groupId} className="badge">
-                              {index.groups.get(c.groupId)?.name}
+                          {groups.map((id) => (
+                            <span key={id} className="badge">
+                              {groupName(id)}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td>{index.audienceSize(a.audience)}</td>
+                      <td>{groups.length}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -268,6 +269,7 @@ export default function Groups() {
             </div>
           )}
         </section>
+        {managing && <ClusterManager dataset={dataset} onClose={() => setManaging(false)} />}
       </div>
     </div>
   );

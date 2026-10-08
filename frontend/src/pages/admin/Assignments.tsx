@@ -1,21 +1,21 @@
 import { CycleTabs, audienceInCycle, groupInCycle, useCycle } from '../../components/CycleTabs';
 import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { api } from '../../api';
 import { CrudPage } from '../../components/CrudPage';
 import { needsSplit } from '../../domain/rooms';
-import { subjectForGroup } from '../../domain/specialty';
+import { GroupPicker } from '../../components/GroupPicker';
+import { useClusterLabel } from '../../components/ClusterPicker';
+import { deriveClusters, groupsForSubject } from '../../domain/clusters';
 import { MultiSelect } from '../../components/MultiSelect';
-import { LanguageTag, languageOf } from '../../components/Language';
 import { useEquipment } from '../../components/useEquipment';
-import { Field, Segmented } from '../../components/ui';
-import type { ActivityType, Assignment, Audience, Parity, RoomType } from '../../domain/types';
+import { Field } from '../../components/ui';
+import type { ActivityType, Assignment, Audience, RoomType } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
 
 const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab', 'project'];
-const PARITIES: Parity[] = ['weekly', 'odd', 'even'];
 
 export default function Assignments() {
   const { t } = useI18n();
@@ -30,17 +30,15 @@ export default function Assignments() {
   const visibleGroups = dataset.groups.filter((g) => scopeGroups.includes(g.id) && groupInCycle(g, cycle));
   // the form offers this cycle's subjects, groups and streams
   const cycleSubjects = dataset.subjects.filter((x) => (x.cycle ?? 'licenta') === cycle);
-  // the same subject can be taught in several languages: then the list says which one
-  const manyLanguages = new Set(cycleSubjects.map(languageOf)).size > 1;
   // a code used by several study plans (MD for FAF in year 1, for SI in year 2): the list names the plan
   const sharedCodes = new Set(cycleSubjects.filter((x, i) => cycleSubjects.findIndex((y) => y.code === x.code) !== i).map((x) => x.code));
-  const planOf = (x: (typeof cycleSubjects)[number]) =>
-    [x.specialties?.length ? x.specialties.join(', ') : null, `${t('groups.year')} ${x.year}`].filter(Boolean).join(', ');
-  // the groups offered are those of the subject's year; this shows the other years too
-  const [otherYears, setOtherYears] = useState(false);
+  const planOf = (x: (typeof cycleSubjects)[number]) => `${t('groups.year')} ${x.year}`;
+  // the groups offered for a subject follow its tags: "Year 1" is not for a group of year 2
+  const clusters = useMemo(() => dataset.clusters ?? deriveClusters(dataset.groups), [dataset]);
+  const clusterLabel = useClusterLabel();
   const groupsFor = (subjectId: string) => {
     const subject = index.subjects.get(subjectId);
-    return visibleGroups.filter((g) => !subject || (subjectForGroup(subject, g) && (otherYears || g.year === subject.year)));
+    return subject ? groupsForSubject(subject, visibleGroups, clusters) : visibleGroups;
   };
   const inScope = dataset.assignments.filter(
     (a) => (!scope || scopeGroups.some((g) => index.audienceTouchesGroup(a.audience, g))) && audienceInCycle(index, a.audience, cycle),
@@ -83,8 +81,7 @@ export default function Assignments() {
           label: t('assignments.subject'),
           render: (x) => (
             <div>
-              <strong>{index.subjects.get(x.subjectId)?.code}</strong>
-              <LanguageTag language={index.subjects.get(x.subjectId)?.language} />{' '}
+              <strong>{index.subjects.get(x.subjectId)?.code}</strong>{' '}
               <span className="small muted">{index.subjects.get(x.subjectId)?.name}</span>
             </div>
           ),
@@ -125,18 +122,13 @@ export default function Assignments() {
               x.pairsPerWeek
             ),
         },
-        {
-          label: t('assignments.parity'),
-          render: (x) => (x.parity === 'weekly' || index.isReduced(x) ? '—' : <span className="badge">{t(`parity.${x.parity}`)}</span>),
-        },
       ]}
       newItem={(): Omit<Assignment, 'id'> => ({
         subjectId: cycleSubjects[0]?.id ?? '',
         type: 'lecture',
         teacherId: dataset.teachers[0]?.id ?? '',
-        audience: { kind: 'stream', id: '', groupIds: [] },
+        audience: { kind: 'group', id: '' },
         pairsPerWeek: 1,
-        parity: 'weekly',
         roomType: 'lecture',
         equipment: [],
       })}
@@ -166,18 +158,18 @@ export default function Assignments() {
       }
       renderForm={(d, set) => {
         const teacher = index.teachers.get(d.teacherId);
-        // a subject is taught to the groups of its language and specialties (AM in Russian to the Russian groups), in its year
+        // the groups this subject can be given to, from its tags
         const formGroups = groupsFor(d.subjectId);
         const split = needsSplit(index, dataset.rooms, d);
         const setAudience = (aud: Audience) => set({ audience: aud });
         const subgroupsOf = (id: string) => index.groups.get(id)?.subgroups ?? 1;
-        // a lecture's torent is chosen per subject, by its groups (an existing one is shown with its groups)
-        const streamGroups = d.audience.kind === 'stream' ? (d.audience.groupIds ?? index.streams.get(d.audience.id)?.groupIds ?? []) : [];
-        const setStreamGroups = (groupIds: string[]) => setAudience({ kind: 'stream', id: '', groupIds: [...new Set(groupIds)] });
-        const predefined = dataset.streams
-          .filter((st) => !st.subjectId && st.groupIds.some((g) => formGroups.some((v) => v.id === g)))
-          .sort((a, b) => a.name.localeCompare(b.name));
-        const groupYears = [...new Set(formGroups.map((g) => g.year))].sort();
+        // no torent to define: the groups chosen here have the class together; one group is just that group
+        const chosen = d.audience.kind === 'subgroup' ? [] : index.cohorts(d.audience).map((c) => c.groupId);
+        const audienceOf = (ids: string[]): Audience =>
+          ids.length >= 2 ? { kind: 'stream', id: '', groupIds: ids } : { kind: 'group', id: ids[0] ?? '' };
+        const subjectTags = (index.subjects.get(d.subjectId)?.clusterIds ?? [])
+          .map((id) => clusters.find((c) => c.id === id))
+          .filter((c): c is NonNullable<typeof c> => !!c);
         // reduced attendance is counted per session, not per week (no odd/even weeks either)
         const reduced = index.isReduced(d);
         return (
@@ -188,29 +180,15 @@ export default function Assignments() {
                   className="select"
                   value={d.subjectId}
                   onChange={(e) => {
+                    // the groups chosen so far that the new subject is not for are dropped
                     const offered = groupsFor(e.target.value);
-                    const fits = index.cohorts(d.audience).every((c) => offered.some((g) => g.id === c.groupId));
-                    const first = offered[0]?.id ?? '';
-                    // another language, specialty or year: the groups chosen so far don't take it
-                    set({
-                      subjectId: e.target.value,
-                      ...(fits
-                        ? {}
-                        : {
-                            audience:
-                              d.audience.kind === 'stream'
-                                ? { kind: 'stream', id: '', groupIds: [] }
-                                : d.audience.kind === 'group'
-                                  ? { kind: 'group', id: first }
-                                  : { kind: 'subgroup', id: first, subgroup: 1 },
-                          }),
-                    });
+                    const kept = chosen.filter((id) => offered.some((g) => g.id === id));
+                    set({ subjectId: e.target.value, ...(d.audience.kind === 'subgroup' ? {} : { audience: audienceOf(kept) }) });
                   }}
                 >
                   {cycleSubjects.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.code} — {s.name}
-                      {manyLanguages ? ` (${languageOf(s).toUpperCase()})` : ''}
                       {sharedCodes.has(s.code) ? ` · ${planOf(s)}` : ''}
                     </option>
                   ))}
@@ -257,27 +235,15 @@ export default function Assignments() {
               </Field>
             </div>
 
-            <Field label={t('assignments.audience')}>
-              <div className="row wrap">
-                <Segmented
-                  value={d.audience.kind}
-                  onChange={(kind) =>
-                    setAudience(
-                      kind === 'stream'
-                        ? { kind, id: '', groupIds: [] }
-                        : kind === 'group'
-                          ? { kind, id: formGroups[0]?.id ?? '' }
-                          : { kind, id: formGroups[0]?.id ?? '', subgroup: 1 },
-                    )
-                  }
-                  options={[
-                    { value: 'stream', label: t('assignments.kind.stream') },
-                    { value: 'group', label: t('assignments.kind.group') },
-                    // subgroups come by themselves (see the split note); kept only on a class already split
-                    ...(d.audience.kind === 'subgroup' ? [{ value: 'subgroup' as const, label: t('assignments.kind.subgroup') }] : []),
-                  ]}
-                />
-                {d.audience.kind !== 'stream' && (
+            <Field label={t('assignments.audience')} hint={t('assignments.groupsHint')}>
+              {subjectTags.length > 0 && (
+                <p className="small muted" style={{ margin: '0 0 8px' }}>
+                  {t('assignments.groupsLimited', { tags: subjectTags.map(clusterLabel).join(', ') })}
+                </p>
+              )}
+              {d.audience.kind === 'subgroup' ? (
+                // a class already split in subgroups keeps its group and subgroup
+                <div className="row wrap">
                   <Select
                     className="select"
                     style={{ width: 180 }}
@@ -290,8 +256,6 @@ export default function Assignments() {
                       </option>
                     ))}
                   </Select>
-                )}
-                {d.audience.kind === 'subgroup' && (
                   <Select
                     className="select"
                     style={{ width: 90 }}
@@ -304,58 +268,14 @@ export default function Assignments() {
                       </option>
                     ))}
                   </Select>
-                )}
-                <span className="small muted">
-                  {index.audienceSize(d.audience)} {t('groups.size').toLowerCase()}
-                </span>
-              </div>
-              <label className="check small" style={{ marginTop: 8 }}>
-                <input type="checkbox" checked={otherYears} onChange={(e) => setOtherYears(e.target.checked)} />
-                {t('assignments.otherYears', { year: index.subjects.get(d.subjectId)?.year ?? '' })}
-              </label>
+                </div>
+              ) : (
+                <GroupPicker groups={formGroups} value={chosen} onChange={(ids) => setAudience(audienceOf(ids))} />
+              )}
               {split && (
                 <p className="small" style={{ margin: '8px 0 0', color: 'var(--warning)' }}>
                   {t('assignments.autoSplit', { size: split.size, largest: split.largest })}
                 </p>
-              )}
-              {/* the torent of this subject's lecture: tick the groups that attend it together */}
-              {d.audience.kind === 'stream' && (
-                <div className="stream-picker">
-                  {predefined.length > 0 && (
-                    <div className="row wrap" style={{ gap: 6 }}>
-                      <span className="small muted">{t('assignments.streamFrom')}</span>
-                      {predefined.map((st) => (
-                        <button key={st.id} type="button" className="btn ghost sm" onClick={() => setStreamGroups(st.groupIds)}>
-                          {st.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {groupYears.map((y) => (
-                    <div key={y} className="row wrap" style={{ gap: 8 }}>
-                      <strong className="small" style={{ minWidth: 60 }}>
-                        {t('groups.year')} {y}
-                      </strong>
-                      <div className="checks">
-                        {formGroups
-                          .filter((g) => g.year === y)
-                          .map((g) => (
-                            <label key={g.id} className="check">
-                              <input
-                                type="checkbox"
-                                checked={streamGroups.includes(g.id)}
-                                onChange={(e) =>
-                                  setStreamGroups(e.target.checked ? [...streamGroups, g.id] : streamGroups.filter((x) => x !== g.id))
-                                }
-                              />
-                              {g.name}
-                            </label>
-                          ))}
-                      </div>
-                    </div>
-                  ))}
-                  {streamGroups.length < 2 && <span className="small muted">{t('assignments.streamMin')}</span>}
-                </div>
               )}
             </Field>
 
@@ -368,7 +288,7 @@ export default function Assignments() {
                     min={1}
                     max={30}
                     value={d.pairsPerSession ?? d.pairsPerWeek}
-                    onChange={(e) => set({ pairsPerSession: Number(e.target.value) || 0, parity: 'weekly' })}
+                    onChange={(e) => set({ pairsPerSession: Number(e.target.value) || 0 })}
                   />
                 </Field>
               ) : (
@@ -381,17 +301,6 @@ export default function Assignments() {
                     value={d.pairsPerWeek}
                     onChange={(e) => set({ pairsPerWeek: Number(e.target.value) || 0 })}
                   />
-                </Field>
-              )}
-              {dataset.settings.weekParity && !reduced && (
-                <Field label={t('assignments.parity')}>
-                  <Select className="select" value={d.parity} onChange={(e) => set({ parity: e.target.value as Parity })}>
-                    {PARITIES.map((p) => (
-                      <option key={p} value={p}>
-                        {t(`parity.${p}`)}
-                      </option>
-                    ))}
-                  </Select>
                 </Field>
               )}
             </div>
