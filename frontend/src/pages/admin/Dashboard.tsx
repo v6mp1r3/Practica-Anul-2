@@ -12,7 +12,7 @@ import { PageHeader } from '../../components/ui';
 import { toDateString } from '../../domain/changes';
 import { scopeAssignments } from '../../domain/generator';
 import { precheck } from '../../domain/precheck';
-import { fmtTime, range } from '../../domain/slots';
+import { fmtTime, range, weekDays } from '../../domain/slots';
 import type { ActivityType, Lesson, Timetable } from '../../domain/types';
 import { filterLessons, weekParityOf } from '../../domain/views';
 import { dateLocale, useI18n } from '../../i18n';
@@ -190,7 +190,7 @@ export default function Dashboard() {
             ) : (
               <>
                 <div className="tl" style={{ ['--cols' as string]: slots.length }}>
-                  {range(dataset.settings.workingDays).map((d) => (
+                  {weekDays(dataset.settings).map((d) => (
                     <div key={d} className="tl-row">
                       <span className="tl-day">{t(`dayShort.${d}` as 'dayShort.0')}</span>
                       <div className="tl-track">

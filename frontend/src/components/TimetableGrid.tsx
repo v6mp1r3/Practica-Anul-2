@@ -1,6 +1,6 @@
 import { useEffect, useState, type DragEvent, type ReactNode } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
-import { fmtTime, range } from '../domain/slots';
+import { fmtTime, range, weekDays } from '../domain/slots';
 import type { Day, Lesson, Settings, SlotIndex } from '../domain/types';
 import { lessonsAt } from '../domain/views';
 import { useI18n } from '../i18n';
@@ -82,6 +82,8 @@ export interface GridProps {
   cellClass?: (day: Day, slot: SlotIndex) => string;
   onCellClick?: (day: Day, slot: SlotIndex) => void;
   renderCell?: (day: Day, slot: SlotIndex) => ReactNode;
+  /** The day columns; the weekly days by default (weekDays). */
+  days?: Day[];
   className?: string;
 }
 
@@ -101,18 +103,21 @@ export function TimetableGrid({
   cellClass,
   onCellClick,
   renderCell,
+  days: shownDays,
   className = '',
 }: GridProps) {
   const { t } = useI18n();
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
-  const days = range(settings.workingDays);
+  // the weekly days, plus any day a shown lesson was still put on
+  const days =
+    shownDays ?? [...new Set([...weekDays(settings), ...lessons.filter((l) => !l.date).map((l) => l.day)])].sort((a, b) => a - b);
   const now = useNow(today !== undefined);
   const nowAt = today !== undefined && now ? nowPosition(settings, now) : null;
 
   return (
     <div className="tt-scroll">
-      <div className={`tt ${className}`} style={{ ['--days' as string]: settings.workingDays }}>
+      <div className={`tt ${className}`} style={{ ['--days' as string]: days.length }}>
         <div className="tt-head" />
         {days.map((d) => (
           <div key={d} className={`tt-head ${d === today ? 'today' : ''} ${dayOff?.[d] ? 'holiday-col' : ''}`}>

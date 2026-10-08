@@ -1320,3 +1320,181 @@ button.holiday-row.selected {
 .holiday.period.plagiarism {
   background: var(--warning-soft);
 }
+
+/* Form rows: label / input / hint share rows across the row (subgrid), so inputs line up
+   even when one label wraps onto two lines */
+.form-grid {
+  row-gap: 14px;
+}
+.form-grid > * {
+  grid-row: span 3;
+}
+.form-grid > .field {
+  display: grid;
+  grid-template-rows: subgrid;
+  row-gap: 4px;
+}
+.form-grid > .field > span {
+  align-self: end;
+}
+.form-grid > .field > .hint {
+  align-self: start;
+}
+
+/* Sarcina didactică: the groups of a lecture's torent */
+.stream-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* MultiSelect: chosen options as chips in the field, tick boxes in the list */
+.select-btn.multi-select {
+  height: auto;
+  min-height: 38px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.multi-select:focus {
+  outline: none;
+  border-bottom-color: var(--primary);
+  box-shadow: 0 1px 0 0 var(--primary);
+}
+.select-btn > .multi-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  white-space: normal;
+  overflow: visible;
+}
+.chip-x {
+  display: inline-flex;
+  margin-left: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.select-option > .multi-box {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 4px;
+  color: #fff;
+}
+.multi-box.on {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Filters above a list (Săli, Profesori, Discipline) */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0 22px 14px;
+}
+.filter-bar .select.pill {
+  min-width: 0;
+}
+.range-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 13.5px;
+}
+.range2 {
+  position: relative;
+  width: 160px;
+  height: 20px;
+}
+.range2::before,
+.range2::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+.range2::before {
+  left: 0;
+  right: 0;
+  background: var(--border);
+}
+.range2::after {
+  left: var(--lo);
+  right: calc(100% - var(--hi));
+  background: var(--primary);
+}
+.range2 input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.range2 input::-webkit-slider-runnable-track {
+  background: none;
+}
+.range2 input::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  background: #fff;
+  cursor: grab;
+  pointer-events: auto;
+  -webkit-appearance: none;
+}
+.range2 input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  background: #fff;
+  cursor: grab;
+  pointer-events: auto;
+}
+
+/* Language of instruction tags */
+.badge.lang {
+  margin-left: 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+.badge.lang-ro {
+  background: #e8f0fe;
+  color: #1f4fa8;
+}
+.badge.lang-ru {
+  background: #fdecea;
+  color: #a8321f;
+}
+.badge.lang-en {
+  background: #e7f6ec;
+  color: #1d7a3e;
+}
+.badge.lang-fr {
+  background: #f3eafd;
+  color: #6b2fb0;
+}

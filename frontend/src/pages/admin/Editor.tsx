@@ -12,6 +12,7 @@ import { HolidaysCard } from '../../components/Holidays';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { ViewPicker } from '../../components/ViewPicker';
 import { Loading, PageHeader } from '../../components/ui';
+import { ExportDialog, downloadTimetable } from '../../components/ExportDialog';
 import { scopeAssignments } from '../../domain/generator';
 import { findWarnings, scoreTimetable } from '../../domain/score';
 import type { Conflict, Dataset, Lesson, Parity, Timetable } from '../../domain/types';
@@ -20,10 +21,8 @@ import { filterLessons, inWeek, type ViewFilter } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
-import { downloadFile } from '../../utils/download';
 import { publishSafely, unpublishWithConfirm } from '../../utils/publish';
 import { facultyView, useAdminScope } from '../../components/FacultyFilter';
-import { timetableToCsv, timetableToIcs } from '../../utils/export';
 import { StatusBadge } from './Dashboard';
 
 const HIDE: Record<ViewFilter['kind'], LessonField[]> = { group: [], teacher: ['teacher'], room: ['room'] };
@@ -45,6 +44,7 @@ export default function Editor() {
   const [selectedConflict, setSelectedConflict] = useState<Conflict | null>(null);
   const [history, setHistory] = useState<Lesson[][]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -137,6 +137,8 @@ export default function Editor() {
   }
 
   const visible = filterLessons(index, lessons, view).filter((l) => inWeek(l, week));
+  // "all groups": the groups of this timetable (only this faculty's, for a faculty administrator)
+  const allGroupIds = tt.groupIds.filter((g) => !scope || index.groups.get(g)?.faculty === scope);
   const highlightIds = selectedConflict ? new Set(selectedConflict.lessonIds) : undefined;
 
   function selectConflict(c: Conflict) {
@@ -197,13 +199,6 @@ export default function Editor() {
     return index.groups.get(view.id)?.name ?? 'grupa';
   }
 
-  const fileBase = () =>
-    `orar-${viewName()}`
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9-]+/g, '-');
-
   return (
     <div className="page">
       <PageHeader
@@ -220,20 +215,9 @@ export default function Editor() {
               <Icon name="edit" size={15} />
               {t('editor.rename')}
             </button>
-            <button
-              className="btn"
-              onClick={() => downloadFile(`${fileBase()}.csv`, timetableToCsv(visible, index, dataset.settings), 'text/csv')}
-            >
+            <button className="btn" onClick={() => setExporting(true)}>
               <Icon name="download" size={15} />
-              CSV
-            </button>
-            <button
-              className="btn"
-              onClick={() => downloadFile(`${fileBase()}.ics`, timetableToIcs(visible, index, dataset.settings), 'text/calendar')}
-              title={t('editor.icsHint')}
-            >
-              <Icon name="calendar" size={15} />
-              iCal
+              {t('editor.export')}
             </button>
             <button className="btn" onClick={() => window.print()}>
               <Icon name="printer" size={15} />
@@ -258,6 +242,27 @@ export default function Editor() {
           </>
         }
       />
+
+      {exporting && (
+        <ExportDialog
+          viewName={viewName()}
+          groupCount={allGroupIds.length}
+          onClose={() => setExporting(false)}
+          onExport={(what, format) => {
+            downloadTimetable({
+              what,
+              format,
+              index,
+              settings: dataset.settings,
+              viewName: viewName(),
+              viewLessons: visible,
+              allLessons: lessons.filter((l) => inWeek(l, week)),
+              groupIds: allGroupIds,
+            });
+            setExporting(false);
+          }}
+        />
+      )}
 
       <div className="editor-layout">
         <div className="stack" style={{ minWidth: 0 }}>

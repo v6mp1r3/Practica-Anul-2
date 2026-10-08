@@ -4,7 +4,7 @@ import { seedDataset, seedNotifications, seedUsers } from '../data/seed';
 import { generateTimetable } from '../domain/generator';
 import { scoreTimetable } from '../domain/score';
 import { findHardConflicts } from '../domain/validator';
-import type { Dataset, ExamPlan, Notification, NotificationKind, Role, ScheduleChange, Timetable, User } from '../domain/types';
+import type { Assignment, Dataset, ExamPlan, Notification, NotificationKind, Role, ScheduleChange, Timetable, User } from '../domain/types';
 import { generateExams, generateMidterms } from '../domain/exams';
 import { DatasetIndex } from '../domain/indexes';
 import { createRng } from '../domain/rng';
@@ -301,6 +301,25 @@ function setPlanStatus(round: ExamPlan['round'], status: ExamPlan['status']): Ex
   return plan;
 }
 
+/**
+ * A lecture saved with its groups (audience { kind: 'stream', groupIds }): the subject's own torent
+ * with exactly those groups — reused if it exists, created otherwise (like the backend).
+ */
+function withSubjectStream<T extends Pick<Assignment, 'audience' | 'subjectId'>>(a: T): T {
+  if (a.audience.kind !== 'stream' || !a.audience.groupIds?.length) return a;
+  const groupIds = [...new Set(a.audience.groupIds)].sort();
+  if (groupIds.length < 2) throw new ApiError(422, 'A stream needs at least 2 groups');
+  const key = groupIds.join(',');
+  let stream = store.dataset.streams.find((s) => s.subjectId === a.subjectId && [...s.groupIds].sort().join(',') === key);
+  if (!stream) {
+    const code = store.dataset.subjects.find((s) => s.id === a.subjectId)?.code ?? '';
+    const names = groupIds.map((g) => store.dataset.groups.find((x) => x.id === g)?.name ?? g).join(', ');
+    stream = { id: uid('s'), name: `${code}: ${names}`, groupIds, subjectId: a.subjectId };
+    store.dataset.streams.push(stream);
+  }
+  return { ...a, audience: { kind: 'stream', id: stream.id } };
+}
+
 function collection<K extends CollectionName>(name: K): Collections[K][] {
   return store.dataset[name] as Collections[K][];
 }
@@ -404,6 +423,7 @@ export function createMockApi(): Api {
     },
     async create(name, item) {
       requireRole('admin');
+      if (name === 'assignments') item = withSubjectStream(item as unknown as Assignment) as unknown as typeof item;
       const created = { ...item, id: uid(name[0]) } as Collections[typeof name];
       collection(name).push(created);
       persist();
@@ -414,6 +434,7 @@ export function createMockApi(): Api {
       const list = collection(name);
       const i = list.findIndex((x) => x.id === item.id);
       if (i < 0) throw new ApiError(404, 'Not found');
+      if (name === 'assignments') item = withSubjectStream(item as unknown as Assignment) as unknown as typeof item;
       list[i] = item;
       persist();
       return delay(item);

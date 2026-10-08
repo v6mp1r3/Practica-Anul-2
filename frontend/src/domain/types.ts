@@ -23,6 +23,9 @@ export type SlotIndex = number;
  */
 export type StudyForm = 'full' | 'reduced' | 'dual';
 export const STUDY_FORMS: StudyForm[] = ['full', 'reduced', 'dual'];
+/** Language of instruction: a subject taught in Russian is separate from the same subject in Romanian. */
+export type Language = 'ro' | 'ru' | 'en' | 'fr';
+export const LANGUAGES: Language[] = ['ro', 'ru', 'en', 'fr'];
 
 export interface TimeSlot {
   start: string; // "08:00"
@@ -225,13 +228,21 @@ export interface Group {
   faculty?: string;
   /** Number of subgroups used for labs (1 = not split). */
   subgroups: number;
+  /** Language of instruction (default Romanian). */
+  language?: Language;
 }
 
 /** A stream ("torentă") joins several groups for one lecture. */
+/**
+ * A torent: the groups that attend a lecture together. Usually defined per subject
+ * (each lecture has its own groups); a predefined one (like FAF) has no subjectId.
+ */
 export interface Stream {
   id: string;
   name: string;
   groupIds: string[];
+  /** The subject whose lecture this torent belongs to; empty for a predefined torent. */
+  subjectId?: string | null;
 }
 
 export interface Subject {
@@ -246,6 +257,10 @@ export interface Subject {
   faculty?: string;
   /** Licență (default) or master's study plan. */
   cycle?: StudyCycle;
+  /** Language it is taught in, i.e. which groups it is for (default Romanian). */
+  language?: Language;
+  /** Specialties (group name prefixes: FAF, TI…) whose study plan has it; empty = all. */
+  specialties?: string[];
   /** How the subject ends: with an exam in the session, or with the atestări only. Default exam. */
   evaluation?: 'exam' | 'atestari';
   /** Pairs per week by activity type, from the study plan (0.5 = every other week). */
@@ -254,7 +269,9 @@ export interface Subject {
   labPairs: number;
 }
 
-export type Audience = { kind: 'stream'; id: string } | { kind: 'group'; id: string } | { kind: 'subgroup'; id: string; subgroup: number };
+export type Audience =
+  /** A torent: an existing one (`id`), or — when saving a lecture — just its groups (`groupIds`, id ''). */
+  { kind: 'stream'; id: string; groupIds?: string[] } | { kind: 'group'; id: string } | { kind: 'subgroup'; id: string; subgroup: number };
 
 /** One teaching load: who teaches what to whom, how often. */
 export interface Assignment {

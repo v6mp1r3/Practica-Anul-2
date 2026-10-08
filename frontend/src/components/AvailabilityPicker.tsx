@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
-import { slotKey } from '../domain/slots';
+import { range, slotKey } from '../domain/slots';
 import type { Settings, SlotKey } from '../domain/types';
 import { useI18n } from '../i18n';
 import { TimetableGrid } from './TimetableGrid';
@@ -80,6 +80,8 @@ export function AvailabilityPicker({
         settings={settings}
         index={index}
         lessons={[]}
+        // also frecvență redusă's weekend sessions: every working day
+        days={range(settings.workingDays)}
         cellClass={(d, s) => `state-${stateOf(slotKey(d, s))}`}
         onCellClick={readOnly ? undefined : paint}
         renderCell={(d, s) => {

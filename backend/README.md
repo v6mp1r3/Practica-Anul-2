@@ -45,6 +45,7 @@ in `db/migrations/` you have not run yet, in order:
 | `001_supabase_admin.sql` | Supabase only: links `app_user` to a Supabase Auth user. **Not needed by this backend** (it has its own login). |
 | `002_group_periods.sql` | Adds the group-period tables (internships, licence exams, …). **Needed.** |
 | `003_allow_draft_room_clashes.sql` | Drops a rule that stopped drafts with room clashes from being saved. **Needed.** |
+| `005_subject_language.sql` | Adds French and gives every subject a language of instruction (AM in Russian is separate from AM in Romanian). **Needed.** |
 
 The backend connects with the database password and bypasses row-level security; every table has RLS on with no
 policies, so Supabase's own public API can read nothing.

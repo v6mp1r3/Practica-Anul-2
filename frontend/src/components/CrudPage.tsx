@@ -27,9 +27,13 @@ export interface CrudProps<K extends CollectionName> {
   /** Returns an error message, or null when the draft is valid. */
   validate?: (draft: Omit<Collections[K], 'id'>) => string | null;
   headerActions?: ReactNode;
+  /** Filters shown under the search (the page passes the items already filtered). */
+  filters?: ReactNode;
   /** Render without the page wrapper (to embed several on one page). */
   embedded?: boolean;
   wideForm?: boolean;
+  /** Saves a draft in place of the plain create / update (e.g. one class saved as two subgroups). */
+  onSave?: (draft: Omit<Collections[K], 'id'> & { id?: string }) => Promise<void>;
   /** Rows that can't be edited here (e.g. another faculty's teacher or room). */
   readOnly?: (item: Collections[K]) => boolean;
 }
@@ -59,7 +63,8 @@ export function CrudPage<K extends CollectionName>(p: CrudProps<K>) {
     }
     setSaving(true);
     try {
-      if (draft.id) await api.update(p.collection, draft as Collections[K]);
+      if (p.onSave) await p.onSave(draft);
+      else if (draft.id) await api.update(p.collection, draft as Collections[K]);
       else await api.create(p.collection, draft);
       await refresh();
       setDraft(null);
@@ -106,6 +111,7 @@ export function CrudPage<K extends CollectionName>(p: CrudProps<K>) {
             </button>
           )}
         </div>
+        {p.filters && <div className="filter-bar">{p.filters}</div>}
         {filtered.length === 0 ? (
           <Empty />
         ) : (

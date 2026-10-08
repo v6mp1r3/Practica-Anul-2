@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
 import { DatasetIndex } from '../domain/indexes';
 import type { Lesson } from '../domain/types';
-import { readCsvRows, timetableToCsv, timetableToIcs } from './export';
+import { readCsvRows, timetableToCsv, timetableToCsvAllGroups, timetableToIcs } from './export';
 
 const idx = new DatasetIndex(seedDataset);
 const lessons: Lesson[] = [
@@ -18,6 +18,26 @@ describe('timetableToCsv', () => {
     expect(rows[1].slice(0, 4)).toEqual(['Luni', '1', '08:00', '09:30']);
     expect(rows[1][10]).toBe('impar');
     expect(rows[2][5]).toBe('Analiză matematică');
+  });
+});
+
+describe('timetableToCsvAllGroups', () => {
+  it('lists every group with its own classes, the group in the first column', () => {
+    const groupIds = seedDataset.groups.map((g) => g.id);
+    const rows = readCsvRows(timetableToCsvAllGroups(lessons, idx, seedDataset.settings, groupIds));
+    expect(rows[0].slice(0, 2)).toEqual(['Grupa', 'Ziua']);
+    // each row belongs to its group
+    for (const r of rows.slice(1)) {
+      const g = seedDataset.groups.find((x) => x.name === r[0])!;
+      const l = lessons.find((x) => idx.subjects.get(idx.assignmentOf(x)!.subjectId)?.code === r[5])!;
+      expect(idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, g.id)).toBe(true);
+    }
+    // a class shared by several groups is listed under each of them
+    const perLesson = lessons.map((l) => groupIds.filter((g) => idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, g)).length);
+    expect(rows).toHaveLength(1 + perLesson.reduce((a, b) => a + b, 0));
+    // groups in name order
+    const names = rows.slice(1).map((r) => r[0]);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'ro', { numeric: true })));
   });
 });
 

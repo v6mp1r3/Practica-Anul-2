@@ -8,6 +8,9 @@ import { Field, Modal } from '../../components/ui';
 import { parseStudyPlan, STUDY_PLAN_TEMPLATE, type CsvResult } from '../../domain/csv';
 import type { Subject, StudyCycle } from '../../domain/types';
 import { Select } from '../../components/Select';
+import { LanguageField, LanguageTag, languageOf } from '../../components/Language';
+import { MultiSelect } from '../../components/MultiSelect';
+import { specialtyOf } from '../../domain/specialty';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
@@ -36,6 +39,33 @@ export default function Subjects() {
     setPreview(null);
   }
 
+  // filters: year, evaluation, activity in the study plan, whether it is in Sarcina didactică yet
+  const subjects = dataset.subjects.filter((x) => (!scope || !x.faculty || x.faculty === scope) && (x.cycle ?? 'licenta') === cycle);
+  const [year, setYear] = useState('');
+  const [evaluation, setEvaluation] = useState('');
+  const [activity, setActivity] = useState('');
+  const [load, setLoad] = useState('');
+  const [language, setLanguage] = useState('');
+  const [specialty, setSpecialty] = useState('');
+  // the faculty's specialties, from its group names (TI-251 → TI)
+  const specialties = [...new Set(dataset.groups.filter((g) => !scope || g.faculty === scope).map((g) => specialtyOf(g.name)))].sort(
+    (a, b) => a.localeCompare(b, 'ro'),
+  );
+  const years = [...new Set(subjects.map((x) => x.year))].sort((a, b) => a - b);
+  const planned = (x: Subject) => dataset.assignments.some((a) => a.subjectId === x.id);
+  const pairsOf = (x: Subject, a: string) => (a === 'lecture' ? x.lecturePairs : a === 'seminar' ? x.seminarPairs : x.labPairs);
+  const shown = subjects.filter(
+    (x) =>
+      (!year || x.year === Number(year)) &&
+      (!evaluation || (x.evaluation ?? 'exam') === evaluation) &&
+      (!activity || pairsOf(x, activity) > 0) &&
+      (!load || (load === 'planned') === planned(x)) &&
+      (!language || languageOf(x) === language) &&
+      // a specialty's subjects: its own and those for every specialty
+      (!specialty || !x.specialties?.length || x.specialties.includes(specialty)),
+  );
+  const filtering = !!(year || evaluation || activity || load || language || specialty);
+
   const pairs = (n: number) => (n ? String(n).replace('.', ',') : '—');
 
   return (
@@ -44,7 +74,78 @@ export default function Subjects() {
         collection="subjects"
         title={t('nav.subjects')}
         subtitle={t('subjects.subtitle')}
-        items={dataset.subjects.filter((x) => (!scope || !x.faculty || x.faculty === scope) && (x.cycle ?? 'licenta') === cycle)}
+        items={shown}
+        filters={
+          <>
+            <Select
+              className="select pill"
+              value={specialty}
+              onChange={(e) => setSpecialty(e.target.value)}
+              aria-label={t('groups.prefix')}
+            >
+              <option value="">{t('groups.allPrefixes')}</option>
+              {specialties.map((x) => (
+                <option key={x} value={x}>
+                  {x}
+                </option>
+              ))}
+            </Select>
+            <Select className="select pill" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label={t('language.label')}>
+              <option value="">{t('language.all')}</option>
+              {(['ro', 'ru', 'en', 'fr'] as const).map((l) => (
+                <option key={l} value={l}>
+                  {t(`language.${l}`)}
+                </option>
+              ))}
+            </Select>
+            <Select className="select pill" value={year} onChange={(e) => setYear(e.target.value)} aria-label={t('subjects.year')}>
+              <option value="">{t('subjects.allYears')}</option>
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {t('groups.year')} {y}
+                </option>
+              ))}
+            </Select>
+            <Select
+              className="select pill"
+              value={evaluation}
+              onChange={(e) => setEvaluation(e.target.value)}
+              aria-label={t('subjects.evaluation')}
+            >
+              <option value="">{t('subjects.anyEvaluation')}</option>
+              <option value="exam">{t('subjects.evaluation.exam')}</option>
+              <option value="atestari">{t('subjects.evaluation.atestari')}</option>
+            </Select>
+            <Select className="select pill" value={activity} onChange={(e) => setActivity(e.target.value)} aria-label={t('teachers.types')}>
+              <option value="">{t('subjects.anyActivity')}</option>
+              {(['lecture', 'seminar', 'lab'] as const).map((a) => (
+                <option key={a} value={a}>
+                  {t('subjects.withActivity', { what: t(`activity.${a}`).toLowerCase() })}
+                </option>
+              ))}
+            </Select>
+            <Select className="select pill" value={load} onChange={(e) => setLoad(e.target.value)} aria-label={t('nav.assignments')}>
+              <option value="">{t('subjects.anyLoad')}</option>
+              <option value="planned">{t('subjects.planned')}</option>
+              <option value="unplanned">{t('subjects.unplanned')}</option>
+            </Select>
+            {filtering && (
+              <button
+                className="btn ghost sm"
+                onClick={() => {
+                  setYear('');
+                  setEvaluation('');
+                  setActivity('');
+                  setLoad('');
+                  setLanguage('');
+                  setSpecialty('');
+                }}
+              >
+                {t('filters.reset')}
+              </button>
+            )}
+          </>
+        }
         itemLabel={(x) => `${x.code} — ${x.name}`}
         searchText={(x) => `${x.code} ${x.name}`}
         headerActions={
@@ -73,6 +174,7 @@ export default function Subjects() {
             render: (x) => (
               <span>
                 <strong>{x.code}</strong>
+                <LanguageTag language={x.language} />
                 {x.cycle === 'master' && (
                   <span className="badge primary" style={{ marginLeft: 6 }}>
                     {t('cycle.master')}
@@ -83,6 +185,21 @@ export default function Subjects() {
             width: 120,
           },
           { label: t('common.name'), render: (x) => x.name },
+          {
+            label: t('subjects.specialties'),
+            render: (x) =>
+              x.specialties?.length ? (
+                <span className="row wrap" style={{ gap: 4 }}>
+                  {x.specialties.map((sp) => (
+                    <span key={sp} className="badge">
+                      {sp}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span className="small muted">{t('subjects.allSpecialties')}</span>
+              ),
+          },
           { label: t('subjects.year'), render: (x) => x.year },
           { label: 'ECTS', render: (x) => x.credits },
           {
@@ -106,6 +223,8 @@ export default function Subjects() {
           cycle,
           code: '',
           name: '',
+          language: 'ro',
+          specialties: [],
           faculty: scope || undefined,
           credits: 5,
           year: 1,
@@ -123,6 +242,21 @@ export default function Subjects() {
               <Field label={t('common.name')}>
                 <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} />
               </Field>
+              <Field label={t('subjects.specialties')} hint={t('subjects.specialtiesHint')}>
+                <MultiSelect
+                  value={d.specialties ?? []}
+                  onChange={(v) => set({ specialties: v })}
+                  options={specialties.map((x) => ({ value: x, label: x }))}
+                  placeholder={t('subjects.allSpecialties')}
+                  aria-label={t('subjects.specialties')}
+                />
+              </Field>
+              <LanguageField
+                value={d.language}
+                onChange={(language) => set({ language })}
+                label={t('language.label')}
+                hint={t('language.subjectHint')}
+              />
               <Field label={t('subjects.cycle')}>
                 <Select value={d.cycle ?? 'licenta'} onChange={(e) => set({ cycle: e.target.value as StudyCycle })}>
                   <option value="licenta">{t('cycle.licenta')}</option>

@@ -294,7 +294,10 @@ def load_streams(conn: Connection, ids: Iterable[int] | None = None) -> list[dic
     members: dict[int, list[str]] = defaultdict(list)
     for r in _all(conn, "select stream_id, group_id from stream_group where stream_id = any(cast(:k as bigint[])) order by group_id", {"k": [r["id"] for r in rows]}):
         members[r["stream_id"]].append(sid(r["group_id"]))
-    return [{"id": sid(r["id"]), "name": r["name"] or "", "groupIds": members[r["id"]]} for r in rows]
+    # subjectId: the subject an automatic stream belongs to (None for a predefined stream like FAF)
+    return [
+        {"id": sid(r["id"]), "name": r["name"] or "", "groupIds": members[r["id"]], "subjectId": sid(r["subject_id"])} for r in rows
+    ]
 
 
 def save_stream(conn: Connection, data: dict, faculty_id: int | None, stream_id: int | None = None) -> int:
@@ -327,7 +330,7 @@ def load_subjects(conn: Connection, ids: Iterable[int] | None = None) -> list[di
     rows = _all(
         conn,
         "select s.id, s.code, s.name, s.credits, s.year, s.edge_of_day, f.name as faculty, s.cycle::text as cycle, s.evaluation::text as evaluation, "
-        f"s.lecture_pairs, s.seminar_pairs, s.lab_pairs from subject s left join faculty f on f.id = s.faculty_id{where} order by s.id",
+        f"s.language::text as language, s.lecture_pairs, s.seminar_pairs, s.lab_pairs from subject s left join faculty f on f.id = s.faculty_id{where} order by s.id",
         p,
     )
     out = []
@@ -335,6 +338,7 @@ def load_subjects(conn: Connection, ids: Iterable[int] | None = None) -> list[di
         s = {
             "id": sid(r["id"]), "code": r["code"], "name": r["name"], "credits": num(r["credits"]), "year": r["year"], "edgeOfDay": r["edge_of_day"],
             "cycle": r["cycle"], "evaluation": r["evaluation"], "lecturePairs": num(r["lecture_pairs"]), "seminarPairs": num(r["seminar_pairs"]), "labPairs": num(r["lab_pairs"]),
+            "language": r["language"],
         }
         if r["faculty"]:
             s["faculty"] = r["faculty"]
@@ -347,16 +351,17 @@ def save_subject(conn: Connection, data: dict, sub_id: int | None = None) -> int
         "code": data["code"].strip().upper(), "name": data["name"], "credits": data["credits"], "year": data["year"],
         "fid": faculty_id_by_name(conn, data.get("faculty")), "cycle": data.get("cycle") or "licenta", "ev": data.get("evaluation") or "exam",
         "edge": bool(data.get("edgeOfDay")), "lec": data.get("lecturePairs") or 0, "sem": data.get("seminarPairs") or 0, "lab": data.get("labPairs") or 0,
+        "lang": data.get("language") or "ro",
     }
     if sub_id is None:
         return conn.execute(
-            text("insert into subject (code, name, credits, year, faculty_id, cycle, evaluation, edge_of_day, lecture_pairs, seminar_pairs, lab_pairs) "
-                 "values (:code, :name, :credits, :year, :fid, cast(:cycle as study_cycle), cast(:ev as evaluation_kind), :edge, :lec, :sem, :lab) returning id"),
+            text("insert into subject (code, name, credits, year, faculty_id, cycle, evaluation, edge_of_day, lecture_pairs, seminar_pairs, lab_pairs, language) "
+                 "values (:code, :name, :credits, :year, :fid, cast(:cycle as study_cycle), cast(:ev as evaluation_kind), :edge, :lec, :sem, :lab, cast(:lang as study_language)) returning id"),
             params,
         ).scalar_one()
     n = conn.execute(
         text("update subject set code=:code, name=:name, credits=:credits, year=:year, faculty_id=:fid, cycle=cast(:cycle as study_cycle), "
-             "evaluation=cast(:ev as evaluation_kind), edge_of_day=:edge, lecture_pairs=:lec, seminar_pairs=:sem, lab_pairs=:lab where id=:id"),
+             "evaluation=cast(:ev as evaluation_kind), edge_of_day=:edge, lecture_pairs=:lec, seminar_pairs=:sem, lab_pairs=:lab, language=cast(:lang as study_language) where id=:id"),
         {**params, "id": sub_id},
     ).rowcount
     if not n:

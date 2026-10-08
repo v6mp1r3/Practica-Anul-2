@@ -1,4 +1,4 @@
-import type { Day, Parity, SlotIndex, SlotKey } from './types';
+import type { Day, Parity, Settings, SlotIndex, SlotKey } from './types';
 
 export const slotKey = (day: Day, slot: SlotIndex): SlotKey => `${day}:${slot}`;
 
@@ -17,6 +17,18 @@ export const parityWeight = (p: Parity) => (p === 'weekly' ? 1 : 0.5);
 
 export function range(n: number): number[] {
   return Array.from({ length: n }, (_, i) => i);
+}
+
+/**
+ * The days of the weekly timetable: those of the forms taught every week
+ * (frecvență, dual), Monday–Friday by default. Frecvență redusă meets on
+ * weekends too, but only in its sessions, by date (SessionTimetable).
+ */
+export function weekDays(settings: Pick<Settings, 'workingDays' | 'formDays'>): Day[] {
+  const days = [...new Set([...(settings.formDays?.full ?? []), ...(settings.formDays?.dual ?? [])])]
+    .filter((d) => d < settings.workingDays)
+    .sort((a, b) => a - b);
+  return days.length ? days : range(Math.min(settings.workingDays, 5));
 }
 
 /** Format a stored "HH:MM" time for display in the institution's time format. */

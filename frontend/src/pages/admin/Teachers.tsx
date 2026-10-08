@@ -2,6 +2,8 @@ import { OtherFaculty, facultyView, useAdminScope } from '../../components/Facul
 import { AvailabilityPicker } from '../../components/AvailabilityPicker';
 import { ExamAvailabilityPicker } from '../../components/ExamAvailabilityPicker';
 import { CrudPage } from '../../components/CrudPage';
+import { useState } from 'react';
+import { Select } from '../../components/Select';
 import { Field } from '../../components/ui';
 import { parityWeight } from '../../domain/slots';
 import type { ActivityType, Teacher } from '../../domain/types';
@@ -16,6 +18,25 @@ export default function Teachers() {
   const scope = useAdminScope();
   const view = facultyView(dataset, index, scope, published?.lessons);
 
+  // sort A→Z / Z→A, filter by grad didactic, department and activity types
+  const teachers = dataset.teachers.filter((x) => view.teacherIds.has(x.id));
+  const [order, setOrder] = useState<'az' | 'za'>('az');
+  const [title, setTitle] = useState('');
+  const [department, setDepartment] = useState('');
+  const [activity, setActivity] = useState('');
+  const distinct = (values: string[]) => [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ro'));
+  const titles = distinct(teachers.map((x) => x.title));
+  const departments = distinct(teachers.map((x) => x.department));
+  const shown = teachers
+    .filter(
+      (x) =>
+        (!title || x.title === title) &&
+        (!department || x.department === department) &&
+        (!activity || x.activityTypes.includes(activity as ActivityType)),
+    )
+    .sort((a, b) => (order === 'az' ? 1 : -1) * a.name.localeCompare(b.name, 'ro'));
+  const filtering = !!(title || department || activity);
+
   const plannedLoad = (id: string) =>
     dataset.assignments.filter((a) => a.teacherId === id).reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
 
@@ -25,7 +46,61 @@ export default function Teachers() {
       title={t('nav.teachers')}
       subtitle={t('teachers.subtitle')}
       // our teachers + other faculties' teachers who teach our groups (those are read-only here)
-      items={dataset.teachers.filter((x) => view.teacherIds.has(x.id))}
+      items={shown}
+      filters={
+        <>
+          <Select
+            className="select pill"
+            value={order}
+            onChange={(e) => setOrder(e.target.value as 'az' | 'za')}
+            aria-label={t('filters.sort')}
+          >
+            <option value="az">{t('filters.az')}</option>
+            <option value="za">{t('filters.za')}</option>
+          </Select>
+          <Select className="select pill" value={title} onChange={(e) => setTitle(e.target.value)} aria-label={t('teachers.title')}>
+            <option value="">{t('teachers.allTitles')}</option>
+            {titles.map((x) => (
+              <option key={x} value={x}>
+                {x}
+              </option>
+            ))}
+          </Select>
+          <Select
+            className="select pill"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            aria-label={t('teachers.department')}
+          >
+            <option value="">{t('teachers.allDepartments')}</option>
+            {departments.map((x) => (
+              <option key={x} value={x}>
+                {x}
+              </option>
+            ))}
+          </Select>
+          <Select className="select pill" value={activity} onChange={(e) => setActivity(e.target.value)} aria-label={t('teachers.types')}>
+            <option value="">{t('teachers.allTypes')}</option>
+            {TYPES.map((a) => (
+              <option key={a} value={a}>
+                {t(`activity.${a}`)}
+              </option>
+            ))}
+          </Select>
+          {filtering && (
+            <button
+              className="btn ghost sm"
+              onClick={() => {
+                setTitle('');
+                setDepartment('');
+                setActivity('');
+              }}
+            >
+              {t('filters.reset')}
+            </button>
+          )}
+        </>
+      }
       readOnly={(x) => !view.own(x.faculty)}
       itemLabel={(x) => x.name}
       searchText={(x) => `${x.name} ${x.department} ${x.email}`}

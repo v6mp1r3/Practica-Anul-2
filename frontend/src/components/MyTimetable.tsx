@@ -2,7 +2,7 @@
 // and the full week — the agenda is the default on phones.
 import { useEffect, useState } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
-import { fmtTime, range } from '../domain/slots';
+import { fmtTime, range, weekDays } from '../domain/slots';
 import type { Lesson, Parity, Settings, Vacation } from '../domain/types';
 import { toDateString } from '../domain/changes';
 import { useHolidayName } from './Holidays';
@@ -54,7 +54,7 @@ export function MyTimetable({
   });
   const [mode, setMode] = useState<'week' | 'day'>(isPhone() ? 'day' : 'week');
   const [week, setWeek] = useState<Parity>(settings.weekParity ? thisWeek : 'weekly');
-  const [day, setDay] = useState(todayIdx < settings.workingDays ? todayIdx : 0);
+  const [day, setDay] = useState(weekDays(settings).includes(todayIdx) ? todayIdx : weekDays(settings)[0]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 720px)');
@@ -118,7 +118,7 @@ export function MyTimetable({
         <div className="card">
           <div className="card-header" style={{ overflowX: 'auto' }}>
             <div className="segmented">
-              {range(settings.workingDays).map((d) => (
+              {weekDays(settings).map((d) => (
                 <button key={d} type="button" aria-pressed={d === day} onClick={() => setDay(d)}>
                   {t(`dayShort.${d}` as 'dayShort.0')}
                   {d === todayIdx ? ' •' : ''}

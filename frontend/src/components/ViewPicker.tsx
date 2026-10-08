@@ -1,6 +1,6 @@
 import type { Dataset, Parity, StudyCycle } from '../domain/types';
 import type { FacultyView } from './FacultyFilter';
-import type { ViewFilter, ViewKind } from '../domain/views';
+import { streamChoices, type ViewFilter, type ViewKind } from '../domain/views';
 import { useI18n } from '../i18n';
 import { Segmented } from './ui';
 import { Select } from './Select';
@@ -71,13 +71,14 @@ export function ViewPicker({
               ))}
             </optgroup>
             <optgroup label={t('groups.streams')}>
-              {dataset.streams
-                .filter((st) => st.groupIds.some((g) => options.group.some((o) => o.id === g)))
-                .map((st) => (
-                  <option key={st.id} value={`stream:${st.id}`}>
-                    {st.name}
-                  </option>
-                ))}
+              {streamChoices(
+                dataset.groups,
+                dataset.streams.filter((st) => st.groupIds.some((g) => options.group.some((o) => o.id === g))),
+              ).map((st) => (
+                <option key={st.id} value={`stream:${st.id}`}>
+                  {st.label}
+                </option>
+              ))}
             </optgroup>
           </>
         ) : (

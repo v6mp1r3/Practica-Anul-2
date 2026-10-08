@@ -15,6 +15,7 @@ import { Select } from '../../components/Select';
 import { Empty, Field, Modal, PageHeader, TimeInput } from '../../components/ui';
 import { evaluationOf, findExamProblems, type ExamProblem } from '../../domain/exams';
 import type { ExamEvent, ExamPlan, ExamRound } from '../../domain/types';
+import { streamChoices } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
@@ -160,14 +161,9 @@ export default function Evaluations() {
           {/* a stream (e.g. FAF-251/252/253 together) shows all its groups at once */}
           {streams.length > 0 && (
             <optgroup label={t('groups.streams')}>
-              {streams.map((st) => (
+              {streamChoices(dataset.groups, streams).map((st) => (
                 <option key={st.id} value={`stream:${st.id}`}>
-                  {st.name} (
-                  {st.groupIds
-                    .map((g) => index.groups.get(g)?.name)
-                    .filter(Boolean)
-                    .join(', ')}
-                  )
+                  {st.label}
                 </option>
               ))}
             </optgroup>

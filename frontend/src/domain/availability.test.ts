@@ -20,7 +20,9 @@ describe('freeRooms', () => {
       '3-114',
     ]);
     expect(freeRooms(seedDataset.rooms, lessons, 0, 2, 'odd', { minCapacity: 70 }).map((r) => r.name)).toEqual(['9-101', '3-114']);
-    expect(freeRooms(seedDataset.rooms, [], 0, 0, 'weekly', { type: 'lab' }).every((r) => r.type === 'lab')).toBe(true);
+    expect(
+      freeRooms(seedDataset.rooms, [], 0, 0, 'weekly', { equipment: 'calculatoare' }).every((r) => r.equipment.includes('calculatoare')),
+    ).toBe(true);
   });
 });
 

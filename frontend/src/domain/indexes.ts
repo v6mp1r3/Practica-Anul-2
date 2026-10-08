@@ -29,7 +29,10 @@ export class DatasetIndex {
   cohorts(aud: Audience): Cohort[] {
     switch (aud.kind) {
       case 'stream':
-        return (this.streams.get(aud.id)?.groupIds ?? []).map((groupId) => ({ groupId, subgroup: null }));
+        return (aud.groupIds?.length ? aud.groupIds : (this.streams.get(aud.id)?.groupIds ?? [])).map((groupId) => ({
+          groupId,
+          subgroup: null,
+        }));
       case 'group':
         return [{ groupId: aud.id, subgroup: null }];
       case 'subgroup':
@@ -47,7 +50,17 @@ export class DatasetIndex {
   }
 
   audienceLabel(aud: Audience): string {
-    if (aud.kind === 'stream') return this.streams.get(aud.id)?.name ?? '?';
+    if (aud.kind === 'stream') {
+      const st = this.streams.get(aud.id);
+      if (st?.name) return st.name;
+      // a lecture's own torent: its groups
+      return (
+        this.cohorts(aud)
+          .map((c) => this.groups.get(c.groupId)?.name)
+          .filter(Boolean)
+          .join(', ') || '?'
+      );
+    }
     const name = this.groups.get(aud.id)?.name ?? '?';
     return aud.kind === 'group' ? name : `${name}/${aud.subgroup}`;
   }
@@ -126,10 +139,14 @@ export class DatasetIndex {
     return this.assignments.get(lesson.assignmentId);
   }
 
-  /** Room types an activity may use. Seminars can fall back to lecture halls. */
+  /**
+   * Lectures and seminars can use any ordinary room that is big enough; a lab
+   * needs a laboratory. A laboratory is kept for labs, unless the class needs
+   * equipment (hasEquipment checks it is there).
+   */
   roomFits(assignment: Assignment, room: Room): boolean {
-    if (assignment.roomType === 'seminar') return room.type === 'seminar' || room.type === 'lecture';
-    return room.type === assignment.roomType;
+    if (assignment.roomType === 'lab') return room.type === 'lab';
+    return room.type !== 'lab' || assignment.equipment.length > 0;
   }
 
   hasEquipment(assignment: Assignment, room: Room): boolean {
