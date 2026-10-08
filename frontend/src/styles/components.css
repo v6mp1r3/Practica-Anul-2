@@ -1320,3 +1320,23 @@ button.holiday-row.selected {
 .holiday.period.plagiarism {
   background: var(--warning-soft);
 }
+
+/* Form rows: label / input / hint share rows across the row (subgrid), so inputs line up
+   even when one label wraps onto two lines */
+.form-grid {
+  row-gap: 14px;
+}
+.form-grid > * {
+  grid-row: span 3;
+}
+.form-grid > .field {
+  display: grid;
+  grid-template-rows: subgrid;
+  row-gap: 4px;
+}
+.form-grid > .field > span {
+  align-self: end;
+}
+.form-grid > .field > .hint {
+  align-self: start;
+}
