@@ -13,6 +13,7 @@ import { dateLocale, useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { Select } from '../../components/Select';
+import { useEquipment } from '../../components/useEquipment';
 
 /** Next working day (today if it is one). */
 function nextWorkingDay(workingDays: number): string {
@@ -160,6 +161,7 @@ function ChangeForm({
   defaultDate: string;
 }) {
   const { t } = useI18n();
+  const equipment = useEquipment();
   const { dataset, index } = useDataset();
   const scope = useAdminScope();
   const [date, setDate] = useState(defaultDate);
@@ -307,7 +309,7 @@ function ChangeForm({
                     <option value="">—</option>
                     {rooms.map((r) => (
                       <option key={r.id} value={r.id}>
-                        {r.name} · {r.capacity} · {t(`roomType.${r.type}`)}
+                        {[r.name, r.capacity, equipment.list(r.equipment)].filter(Boolean).join(' · ')}
                       </option>
                     ))}
                   </Select>

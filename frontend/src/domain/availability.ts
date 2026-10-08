@@ -1,7 +1,7 @@
 // "Who/what is free when?" queries used by the student and teacher pages.
 import type { DatasetIndex } from './indexes';
 import { paritiesOverlap, slotKey } from './slots';
-import type { Day, Lesson, Parity, Room, RoomType, SlotIndex } from './types';
+import type { Day, Lesson, Parity, Room, SlotIndex } from './types';
 
 export function freeRooms(
   rooms: Room[],
@@ -9,13 +9,13 @@ export function freeRooms(
   day: Day,
   slot: SlotIndex,
   week: Parity,
-  opts: { minCapacity?: number; type?: RoomType | '' } = {},
+  opts: { minCapacity?: number; equipment?: string } = {},
 ): Room[] {
   const busy = new Set(
     lessons.filter((l) => !l.date && l.day === day && l.slot === slot && paritiesOverlap(l.parity, week)).map((l) => l.roomId),
   );
   return rooms
-    .filter((r) => !busy.has(r.id) && r.capacity >= (opts.minCapacity ?? 0) && (!opts.type || r.type === opts.type))
+    .filter((r) => !busy.has(r.id) && r.capacity >= (opts.minCapacity ?? 0) && (!opts.equipment || r.equipment.includes(opts.equipment)))
     .sort((a, b) => a.capacity - b.capacity);
 }
 

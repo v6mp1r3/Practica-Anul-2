@@ -3,7 +3,8 @@ import { TimetableGrid } from '../../components/TimetableGrid';
 import { Empty, Field, PageHeader, Segmented } from '../../components/ui';
 import { freeRooms } from '../../domain/availability';
 import { fmtTime, weekDays } from '../../domain/slots';
-import type { Parity, RoomType } from '../../domain/types';
+import type { Parity } from '../../domain/types';
+import { useEquipment } from '../../components/useEquipment';
 import { dayIndexOf, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
@@ -19,10 +20,11 @@ export default function FreeRooms() {
   const [slot, setSlot] = useState(0);
   const [week, setWeek] = useState<Parity>(dataset.settings.weekParity ? weekParityOf(new Date()) : 'weekly');
   const [minCapacity, setMinCapacity] = useState(0);
-  const [type, setType] = useState<RoomType | ''>('');
+  const [equipment, setEquipment] = useState('');
+  const eq = useEquipment();
 
   const lessons = published?.lessons ?? [];
-  const opts = { minCapacity, type };
+  const opts = { minCapacity, equipment };
   const list = freeRooms(dataset.rooms, lessons, day, slot, week, opts);
 
   return (
@@ -61,12 +63,12 @@ export default function FreeRooms() {
                 onChange={(e) => setMinCapacity(Number(e.target.value) || 0)}
               />
             </Field>
-            <Field label={t('rooms.type')}>
-              <Select className="select" value={type} onChange={(e) => setType(e.target.value as RoomType | '')}>
-                <option value="">{t('common.all')}</option>
-                {(['lecture', 'seminar', 'lab'] as RoomType[]).map((r) => (
-                  <option key={r} value={r}>
-                    {t(`roomType.${r}`)}
+            <Field label={t('freeRooms.equipment')}>
+              <Select className="select" value={equipment} onChange={(e) => setEquipment(e.target.value)}>
+                <option value="">{t('freeRooms.anyEquipment')}</option>
+                {eq.options.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
                   </option>
                 ))}
               </Select>
@@ -98,9 +100,9 @@ export default function FreeRooms() {
                 <div key={r.id} className="card" style={{ padding: '10px 14px', minWidth: 150 }}>
                   <strong>{r.name}</strong>
                   <div className="small muted">
-                    {t(`roomType.${r.type}`)} · {r.capacity} {t('rooms.capacity').toLowerCase()}
+                    {r.capacity} {t('rooms.capacity').toLowerCase()}
                   </div>
-                  {r.equipment.length > 0 && <div className="small muted">{r.equipment.join(', ')}</div>}
+                  {r.equipment.length > 0 && <div className="small muted">{eq.list(r.equipment)}</div>}
                 </div>
               ))}
             </div>
