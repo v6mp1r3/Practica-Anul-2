@@ -29,7 +29,10 @@ export class DatasetIndex {
   cohorts(aud: Audience): Cohort[] {
     switch (aud.kind) {
       case 'stream':
-        return (this.streams.get(aud.id)?.groupIds ?? []).map((groupId) => ({ groupId, subgroup: null }));
+        return (aud.groupIds?.length ? aud.groupIds : (this.streams.get(aud.id)?.groupIds ?? [])).map((groupId) => ({
+          groupId,
+          subgroup: null,
+        }));
       case 'group':
         return [{ groupId: aud.id, subgroup: null }];
       case 'subgroup':
@@ -47,7 +50,17 @@ export class DatasetIndex {
   }
 
   audienceLabel(aud: Audience): string {
-    if (aud.kind === 'stream') return this.streams.get(aud.id)?.name ?? '?';
+    if (aud.kind === 'stream') {
+      const st = this.streams.get(aud.id);
+      if (st?.name) return st.name;
+      // a lecture's own torent: its groups
+      return (
+        this.cohorts(aud)
+          .map((c) => this.groups.get(c.groupId)?.name)
+          .filter(Boolean)
+          .join(', ') || '?'
+      );
+    }
     const name = this.groups.get(aud.id)?.name ?? '?';
     return aud.kind === 'group' ? name : `${name}/${aud.subgroup}`;
   }

@@ -228,10 +228,16 @@ export interface Group {
 }
 
 /** A stream ("torentă") joins several groups for one lecture. */
+/**
+ * A torent: the groups that attend a lecture together. Usually defined per subject
+ * (each lecture has its own groups); a predefined one (like FAF) has no subjectId.
+ */
 export interface Stream {
   id: string;
   name: string;
   groupIds: string[];
+  /** The subject whose lecture this torent belongs to; empty for a predefined torent. */
+  subjectId?: string | null;
 }
 
 export interface Subject {
@@ -254,7 +260,9 @@ export interface Subject {
   labPairs: number;
 }
 
-export type Audience = { kind: 'stream'; id: string } | { kind: 'group'; id: string } | { kind: 'subgroup'; id: string; subgroup: number };
+export type Audience =
+  /** A torent: an existing one (`id`), or — when saving a lecture — just its groups (`groupIds`, id ''). */
+  { kind: 'stream'; id: string; groupIds?: string[] } | { kind: 'group'; id: string } | { kind: 'subgroup'; id: string; subgroup: number };
 
 /** One teaching load: who teaches what to whom, how often. */
 export interface Assignment {
