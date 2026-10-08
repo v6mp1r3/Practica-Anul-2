@@ -87,4 +87,11 @@ select s.id, c::study_cycle, t::time
 from semester s, (values ('licenta'), ('master')) cy (c), (values ('15:15'), ('17:00'), ('18:45')) tt (t)
 where s.is_current;
 
+-- the year clusters that always exist (licență 1-4, master's 1-2); the others are made from the groups
+insert into cluster (cycle, year)
+select 'licenta'::study_cycle, y from generate_series(1, 4) y
+union all
+select 'master'::study_cycle, y from generate_series(1, 2) y
+on conflict do nothing;
+
 commit;

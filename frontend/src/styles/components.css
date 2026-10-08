@@ -1498,3 +1498,49 @@ button.holiday-row.selected {
   background: #f3eafd;
   color: #6b2fb0;
 }
+
+/* Tags: toggle the clusters (years, specialities) a subject belongs to */
+.tag-picker {
+  display: grid;
+  gap: 8px;
+}
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.tag-label {
+  min-width: 64px;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.tag {
+  padding: 3px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.tag:hover {
+  border-color: var(--primary);
+}
+.tag[aria-pressed='true'] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+.tag:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.tag-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
