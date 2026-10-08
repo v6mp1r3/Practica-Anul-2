@@ -105,10 +105,6 @@ export default function Groups() {
               ),
             },
             { label: t('groups.size'), render: (x) => x.size },
-            {
-              label: t('groups.subgroups'),
-              render: (x) => (x.subgroups > 1 ? `${x.subgroups} × ${Math.ceil(x.size / x.subgroups)}` : '—'),
-            },
           ]}
           newItem={(): Omit<Group, 'id'> => ({
             name: '',
@@ -120,7 +116,7 @@ export default function Groups() {
             cycle,
             programYears: cycle === 'master' ? 2 : 4,
             size: 25,
-            // not split by default: subgroups are only for small rooms (e.g. A01)
+            // never set by hand: a class splits the group by itself when no suitable room is big enough (Sarcina didactică)
             subgroups: 1,
             // new groups go to the administrator's own faculty
             faculty: scope || dataset.settings.faculties[0],
@@ -218,16 +214,6 @@ export default function Groups() {
                   min={1}
                   value={d.size}
                   onChange={(e) => set({ size: Number(e.target.value) || 0 })}
-                />
-              </Field>
-              <Field label={t('groups.subgroups')} hint={t('groups.subgroupsHint')}>
-                <input
-                  className="input"
-                  type="number"
-                  min={1}
-                  max={4}
-                  value={d.subgroups}
-                  onChange={(e) => set({ subgroups: Math.max(1, Number(e.target.value) || 1) })}
                 />
               </Field>
             </div>
