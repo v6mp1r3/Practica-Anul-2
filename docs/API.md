@@ -137,16 +137,17 @@ or subject without a `faculty` is shared and any administrator may change it.
 // Room
 { "id": "r8", "name": "3-404", "building": "Blocul 3", "capacity": 16, "type": "lab", "equipment": ["calculatoare"] }
 
-// Group — `language` is the language of instruction: "ro" (default), "ru" or "en"
+// Group — `language` is the language of instruction: "ro" (default), "ru", "en" or "fr"
 { "id": "g1", "name": "FAF-251", "program": "Ingineria Software", "faculty": "Facultatea Calculatoare, Informatică și Microelectronică", "year": 1, "size": 24, "subgroups": 2, "language": "ro" }
 
 // Stream (groups that attend a lecture together)
 { "id": "s1", "name": "FAF-25", "groupIds": ["g1", "g2"], "subjectId": null }
 // subjectId: the subject an automatic stream belongs to; null for a predefined stream
 
-// Subject — pairs per week from the study plan; 0.5 = every other week
+// Subject — pairs per week from the study plan; 0.5 = every other week.
+// `language` ("ro" default, "ru", "en", "fr"): the groups it is for; AM in "ru" is a separate subject from AM in "ro"
 { "id": "sub1", "code": "AM", "name": "Analiză matematică", "credits": 6, "year": 1,
-  "lecturePairs": 2, "seminarPairs": 1, "labPairs": 0 }
+  "lecturePairs": 2, "seminarPairs": 1, "labPairs": 0, "language": "ro" }
 
 // Assignment (teaching load). audience.kind is "stream" | "group" | "subgroup"
 { "id": "a1", "subjectId": "sub1", "type": "lecture", "teacherId": "t3",

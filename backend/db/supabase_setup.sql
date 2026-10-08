@@ -41,7 +41,7 @@ create type study_form         as enum ('full', 'reduced', 'dual');
 create type activity_type      as enum ('lecture', 'seminar', 'lab', 'project');
 create type room_type          as enum ('lecture', 'seminar', 'lab');
 create type parity             as enum ('weekly', 'odd', 'even');
-create type study_language     as enum ('ro', 'ru', 'en');
+create type study_language     as enum ('ro', 'ru', 'en', 'fr');
 create type stream_origin      as enum ('predefined', 'auto');
 create type audience_kind      as enum ('stream', 'group', 'subgroup');
 create type evaluation_kind    as enum ('exam', 'atestari');
@@ -323,13 +323,14 @@ create table subject (
   year          smallint not null check (year between 1 and 6),
   faculty_id    bigint references faculty (id) on delete set null,    -- NULL = shared by all faculties
   cycle         study_cycle not null default 'licenta',
+  language      study_language not null default 'ro',                -- language it is taught in (for the groups of that language)
   evaluation    evaluation_kind not null default 'exam',
   edge_of_day   boolean not null default false,                       -- first or last pair of the day (e.g. sport)
   lecture_pairs numeric(3, 1) not null default 0 check (lecture_pairs >= 0),   -- pairs per week, 0.5 = every other week
   seminar_pairs numeric(3, 1) not null default 0 check (seminar_pairs >= 0),
   lab_pairs     numeric(3, 1) not null default 0 check (lab_pairs >= 0)
 );
-create unique index subject_code_unique on subject (code, cycle, coalesce(faculty_id, 0));
+create unique index subject_code_unique on subject (code, cycle, coalesce(faculty_id, 0), language);
 create index subject_faculty_idx on subject (faculty_id);
 
 -- A stream (torent) is the set of groups that attend one lecture together.
