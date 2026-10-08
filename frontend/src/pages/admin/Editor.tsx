@@ -11,7 +11,8 @@ import { SessionsSection } from '../../components/SessionTimetable';
 import { HolidaysCard } from '../../components/Holidays';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { ViewPicker } from '../../components/ViewPicker';
-import { Field, Loading, Modal, PageHeader, Segmented } from '../../components/ui';
+import { Loading, PageHeader } from '../../components/ui';
+import { ExportDialog, downloadTimetable } from '../../components/ExportDialog';
 import { scopeAssignments } from '../../domain/generator';
 import { findWarnings, scoreTimetable } from '../../domain/score';
 import type { Conflict, Dataset, Lesson, Parity, Timetable } from '../../domain/types';
@@ -20,10 +21,8 @@ import { filterLessons, inWeek, type ViewFilter } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
-import { downloadFile } from '../../utils/download';
 import { publishSafely, unpublishWithConfirm } from '../../utils/publish';
 import { facultyView, useAdminScope } from '../../components/FacultyFilter';
-import { timetableToCsv, timetableToCsvAllGroups, timetableToIcs } from '../../utils/export';
 import { StatusBadge } from './Dashboard';
 
 const HIDE: Record<ViewFilter['kind'], LessonField[]> = { group: [], teacher: ['teacher'], room: ['room'] };
@@ -200,18 +199,6 @@ export default function Editor() {
     return index.groups.get(view.id)?.name ?? 'grupa';
   }
 
-  const touches = (l: Lesson, groupId: string) => {
-    const a = index.assignmentOf(l);
-    return !!a && index.audienceTouchesGroup(a.audience, groupId);
-  };
-
-  const fileBase = () =>
-    `orar-${viewName()}`
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9-]+/g, '-');
-
   return (
     <div className="page">
       <PageHeader
@@ -262,15 +249,16 @@ export default function Editor() {
           groupCount={allGroupIds.length}
           onClose={() => setExporting(false)}
           onExport={(what, format) => {
-            const all = what === 'all';
-            const shown = all ? lessons.filter((l) => inWeek(l, week) && allGroupIds.some((g) => touches(l, g))) : visible;
-            const base = all ? 'orar-toate-grupele' : fileBase();
-            if (format === 'csv') {
-              const csv = all
-                ? timetableToCsvAllGroups(shown, index, dataset.settings, allGroupIds)
-                : timetableToCsv(shown, index, dataset.settings);
-              downloadFile(`${base}.csv`, csv, 'text/csv');
-            } else downloadFile(`${base}.ics`, timetableToIcs(shown, index, dataset.settings), 'text/calendar');
+            downloadTimetable({
+              what,
+              format,
+              index,
+              settings: dataset.settings,
+              viewName: viewName(),
+              viewLessons: visible,
+              allLessons: lessons.filter((l) => inWeek(l, week)),
+              groupIds: allGroupIds,
+            });
             setExporting(false);
           }}
         />
@@ -348,65 +336,5 @@ export default function Editor() {
         </aside>
       </div>
     </div>
-  );
-}
-
-/** Export the timetable: the view shown or every group, as a spreadsheet or a calendar. */
-function ExportDialog({
-  viewName,
-  groupCount,
-  onClose,
-  onExport,
-}: {
-  viewName: string;
-  groupCount: number;
-  onClose: () => void;
-  onExport: (what: 'view' | 'all', format: 'csv' | 'ics') => void;
-}) {
-  const { t } = useI18n();
-  const [what, setWhat] = useState<'view' | 'all'>('all');
-  const [format, setFormat] = useState<'csv' | 'ics'>('csv');
-  return (
-    <Modal
-      title={t('editor.exportTitle')}
-      onClose={onClose}
-      footer={
-        <>
-          <button className="btn" onClick={onClose}>
-            {t('common.cancel')}
-          </button>
-          <button className="btn primary" onClick={() => onExport(what, format)}>
-            <Icon name="download" size={15} />
-            {t('editor.exportDownload')}
-          </button>
-        </>
-      }
-    >
-      <div className="stack">
-        <Field label={t('editor.exportWhat')}>
-          <Segmented
-            value={what}
-            onChange={setWhat}
-            options={[
-              { value: 'all', label: t('editor.exportAll', { count: groupCount }) },
-              { value: 'view', label: t('editor.exportView', { name: viewName }) },
-            ]}
-          />
-        </Field>
-        <Field
-          label={t('editor.exportFormat')}
-          hint={format === 'csv' ? t(what === 'all' ? 'editor.csvAllHint' : 'editor.csvHint') : t('editor.icsHint')}
-        >
-          <Segmented
-            value={format}
-            onChange={setFormat}
-            options={[
-              { value: 'csv', label: 'CSV (Excel)' },
-              { value: 'ics', label: 'iCal' },
-            ]}
-          />
-        </Field>
-      </div>
-    </Modal>
   );
 }
