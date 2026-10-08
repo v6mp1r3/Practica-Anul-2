@@ -1,22 +1,19 @@
 import { OtherFaculty, facultyView, useAdminScope } from '../../components/FacultyFilter';
 import { CrudPage } from '../../components/CrudPage';
-import { TagInput } from '../../components/TagInput';
+import { MultiSelect } from '../../components/MultiSelect';
+import { useEquipment } from '../../components/useEquipment';
 import { Field } from '../../components/ui';
-import type { Room, RoomType } from '../../domain/types';
+import { roomTypeOf } from '../../domain/equipment';
+import type { Room } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
-import { Select } from '../../components/Select';
-
-const TYPES: RoomType[] = ['lecture', 'seminar', 'lab'];
 
 export default function Rooms() {
   const { t } = useI18n();
   const { dataset, index, published } = useDataset();
   const scope = useAdminScope();
   const view = facultyView(dataset, index, scope, published?.lessons);
-  const knownEquipment = [
-    ...new Set(dataset.rooms.flatMap((r) => r.equipment).concat(dataset.assignments.flatMap((a) => a.equipment))),
-  ].sort();
+  const equipment = useEquipment();
 
   return (
     <CrudPage
@@ -28,7 +25,7 @@ export default function Rooms() {
       items={dataset.rooms.filter((x) => view.roomIds.has(x.id))}
       readOnly={(x) => !view.own(x.faculty)}
       itemLabel={(x) => x.name}
-      searchText={(x) => `${x.name} ${x.building} ${x.equipment.join(' ')}`}
+      searchText={(x) => `${x.name} ${x.building} ${equipment.list(x.equipment)}`}
       columns={[
         {
           label: t('rooms.name'),
@@ -40,9 +37,8 @@ export default function Rooms() {
           ),
         },
         { label: t('rooms.building'), render: (x) => x.building },
-        { label: t('rooms.type'), render: (x) => <span className={`badge ${x.type}`}>{t(`roomType.${x.type}`)}</span> },
         { label: t('rooms.capacity'), render: (x) => x.capacity },
-        { label: t('rooms.equipment'), render: (x) => <span className="small muted">{x.equipment.join(', ') || '—'}</span> },
+        { label: t('rooms.equipment'), render: (x) => <span className="small muted">{equipment.list(x.equipment) || '—'}</span> },
         {
           label: t('rooms.preferredCount'),
           render: (x) => {
@@ -72,27 +68,28 @@ export default function Rooms() {
             <Field label={t('rooms.building')}>
               <input className="input" value={d.building} onChange={(e) => set({ building: e.target.value })} />
             </Field>
-            <Field label={t('rooms.type')}>
-              <Select className="select" value={d.type} onChange={(e) => set({ type: e.target.value as RoomType })}>
-                {TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {t(`roomType.${type}`)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
             <Field label={t('rooms.capacity')}>
               <input
                 className="input"
                 type="number"
                 min={1}
                 value={d.capacity}
-                onChange={(e) => set({ capacity: Number(e.target.value) || 0 })}
+                onChange={(e) => {
+                  const capacity = Number(e.target.value) || 0;
+                  // no type to pick: any room fits a lecture or a seminar if it is big enough
+                  set({ capacity, type: roomTypeOf({ capacity, equipment: d.equipment }) });
+                }}
               />
             </Field>
           </div>
           <Field label={t('rooms.equipment')} hint={t('rooms.equipmentHint')}>
-            <TagInput value={d.equipment} onChange={(equipment) => set({ equipment })} suggestions={knownEquipment} />
+            <MultiSelect
+              value={d.equipment}
+              onChange={(eq) => set({ equipment: eq, type: roomTypeOf({ capacity: d.capacity, equipment: eq }) })}
+              options={equipment.options}
+              placeholder={t('equipment.placeholder')}
+              aria-label={t('rooms.equipment')}
+            />
           </Field>
           <div>
             <h3>{t('rooms.preferred')}</h3>
