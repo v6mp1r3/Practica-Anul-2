@@ -3,6 +3,7 @@ import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
 import { MultiSelect } from '../../components/MultiSelect';
+import { LanguageTag, languageOf } from '../../components/Language';
 import { useEquipment } from '../../components/useEquipment';
 import { Field, Segmented } from '../../components/ui';
 import type { ActivityType, Assignment, Audience, Parity, RoomType } from '../../domain/types';
@@ -26,6 +27,8 @@ export default function Assignments() {
   const visibleGroups = dataset.groups.filter((g) => scopeGroups.includes(g.id) && groupInCycle(g, cycle));
   // the form offers this cycle's subjects, groups and streams
   const cycleSubjects = dataset.subjects.filter((x) => (x.cycle ?? 'licenta') === cycle);
+  // the same subject can be taught in several languages: then the list says which one
+  const manyLanguages = new Set(cycleSubjects.map(languageOf)).size > 1;
   const inScope = dataset.assignments.filter(
     (a) => (!scope || scopeGroups.some((g) => index.audienceTouchesGroup(a.audience, g))) && audienceInCycle(index, a.audience, cycle),
   );
@@ -67,7 +70,8 @@ export default function Assignments() {
           label: t('assignments.subject'),
           render: (x) => (
             <div>
-              <strong>{index.subjects.get(x.subjectId)?.code}</strong>{' '}
+              <strong>{index.subjects.get(x.subjectId)?.code}</strong>
+              <LanguageTag language={index.subjects.get(x.subjectId)?.language} />{' '}
               <span className="small muted">{index.subjects.get(x.subjectId)?.name}</span>
             </div>
           ),
@@ -136,25 +140,51 @@ export default function Assignments() {
       }
       renderForm={(d, set) => {
         const teacher = index.teachers.get(d.teacherId);
+        // a subject is taught to the groups of its language (AM in Russian to the Russian groups)
+        const subjectLanguage = languageOf(index.subjects.get(d.subjectId) ?? {});
+        const formGroups = visibleGroups.filter((g) => languageOf(g) === subjectLanguage);
         const setAudience = (aud: Audience) => set({ audience: aud });
         const subgroupsOf = (id: string) => index.groups.get(id)?.subgroups ?? 1;
         // a lecture's torent is chosen per subject, by its groups (an existing one is shown with its groups)
         const streamGroups = d.audience.kind === 'stream' ? (d.audience.groupIds ?? index.streams.get(d.audience.id)?.groupIds ?? []) : [];
         const setStreamGroups = (groupIds: string[]) => setAudience({ kind: 'stream', id: '', groupIds: [...new Set(groupIds)] });
         const predefined = dataset.streams
-          .filter((st) => !st.subjectId && st.groupIds.some((g) => visibleGroups.some((v) => v.id === g)))
+          .filter((st) => !st.subjectId && st.groupIds.some((g) => formGroups.some((v) => v.id === g)))
           .sort((a, b) => a.name.localeCompare(b.name));
-        const groupYears = [...new Set(visibleGroups.map((g) => g.year))].sort();
+        const groupYears = [...new Set(formGroups.map((g) => g.year))].sort();
         // reduced attendance is counted per session, not per week (no odd/even weeks either)
         const reduced = index.isReduced(d);
         return (
           <div className="stack">
             <div className="form-grid">
               <Field label={t('assignments.subject')}>
-                <Select className="select" value={d.subjectId} onChange={(e) => set({ subjectId: e.target.value })}>
+                <Select
+                  className="select"
+                  value={d.subjectId}
+                  onChange={(e) => {
+                    const lang = languageOf(index.subjects.get(e.target.value) ?? {});
+                    const fits = index.cohorts(d.audience).every((c) => languageOf(index.groups.get(c.groupId) ?? {}) === lang);
+                    const first = visibleGroups.find((g) => languageOf(g) === lang)?.id ?? '';
+                    // another language: the groups chosen so far don't take it
+                    set({
+                      subjectId: e.target.value,
+                      ...(fits
+                        ? {}
+                        : {
+                            audience:
+                              d.audience.kind === 'stream'
+                                ? { kind: 'stream', id: '', groupIds: [] }
+                                : d.audience.kind === 'group'
+                                  ? { kind: 'group', id: first }
+                                  : { kind: 'subgroup', id: first, subgroup: 1 },
+                          }),
+                    });
+                  }}
+                >
                   {cycleSubjects.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.code} — {s.name}
+                      {manyLanguages ? ` (${languageOf(s).toUpperCase()})` : ''}
                     </option>
                   ))}
                 </Select>
@@ -209,8 +239,8 @@ export default function Assignments() {
                       kind === 'stream'
                         ? { kind, id: '', groupIds: [] }
                         : kind === 'group'
-                          ? { kind, id: visibleGroups[0]?.id ?? '' }
-                          : { kind, id: visibleGroups[0]?.id ?? '', subgroup: 1 },
+                          ? { kind, id: formGroups[0]?.id ?? '' }
+                          : { kind, id: formGroups[0]?.id ?? '', subgroup: 1 },
                     )
                   }
                   options={[
@@ -226,7 +256,7 @@ export default function Assignments() {
                     value={d.audience.id}
                     onChange={(e) => setAudience({ ...d.audience, id: e.target.value } as Audience)}
                   >
-                    {visibleGroups.map((x) => (
+                    {formGroups.map((x) => (
                       <option key={x.id} value={x.id}>
                         {x.name}
                       </option>
@@ -270,7 +300,7 @@ export default function Assignments() {
                         {t('groups.year')} {y}
                       </strong>
                       <div className="checks">
-                        {visibleGroups
+                        {formGroups
                           .filter((g) => g.year === y)
                           .map((g) => (
                             <label key={g.id} className="check">
