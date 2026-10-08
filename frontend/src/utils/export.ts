@@ -10,32 +10,60 @@ function csvCell(v: string | number): string {
   return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+const HEADER = ['Ziua', 'Perechea', 'Început', 'Sfârșit', 'Cod', 'Disciplina', 'Tip', 'Profesor', 'Studenți', 'Sala', 'Paritate', 'Data'];
+const typeName = { lecture: 'Curs', seminar: 'Seminar', lab: 'Laborator', project: 'Proiect' };
+const parityName = { weekly: '', odd: 'impar', even: 'par' };
+
+function csvRows(lessons: Lesson[], idx: DatasetIndex, settings: Settings): (string | number)[][] {
+  return (
+    [...lessons]
+      // weekly pairs first, then reduced-attendance session pairs by date
+      .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || a.day - b.day || a.slot - b.slot)
+      .map((l) => {
+        const a = idx.assignmentOf(l)!;
+        const s = idx.subjects.get(a.subjectId);
+        return [
+          DAY_NAMES[l.day],
+          l.slot + 1,
+          settings.slots[l.slot]?.start ?? '',
+          settings.slots[l.slot]?.end ?? '',
+          s?.code ?? '',
+          s?.name ?? '',
+          typeName[a.type],
+          idx.teachers.get(a.teacherId)?.name ?? '',
+          idx.audienceLabel(a.audience),
+          idx.rooms.get(l.roomId)?.name ?? '',
+          l.date ? '' : parityName[l.parity],
+          l.date ?? '',
+        ];
+      })
+  );
+}
+
+const toCsv = (rows: (string | number)[][]) => rows.map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
+
 export function timetableToCsv(lessons: Lesson[], idx: DatasetIndex, settings: Settings): string {
-  const header = ['Ziua', 'Perechea', 'Început', 'Sfârșit', 'Cod', 'Disciplina', 'Tip', 'Profesor', 'Studenți', 'Sala', 'Paritate', 'Data'];
-  const typeName = { lecture: 'Curs', seminar: 'Seminar', lab: 'Laborator', project: 'Proiect' };
-  const parityName = { weekly: '', odd: 'impar', even: 'par' };
-  const rows = [...lessons]
-    // weekly pairs first, then reduced-attendance session pairs by date
-    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || a.day - b.day || a.slot - b.slot)
-    .map((l) => {
-      const a = idx.assignmentOf(l)!;
-      const s = idx.subjects.get(a.subjectId);
-      return [
-        DAY_NAMES[l.day],
-        l.slot + 1,
-        settings.slots[l.slot]?.start ?? '',
-        settings.slots[l.slot]?.end ?? '',
-        s?.code ?? '',
-        s?.name ?? '',
-        typeName[a.type],
-        idx.teachers.get(a.teacherId)?.name ?? '',
-        idx.audienceLabel(a.audience),
-        idx.rooms.get(l.roomId)?.name ?? '',
-        l.date ? '' : parityName[l.parity],
-        l.date ?? '',
-      ];
+  return toCsv([HEADER, ...csvRows(lessons, idx, settings)]);
+}
+
+/**
+ * Every group's timetable in one sheet: the group in the first column, group
+ * after group (by name), so it can be filtered or sorted in Excel. A lecture
+ * shared by a torent is listed under each of its groups.
+ */
+export function timetableToCsvAllGroups(lessons: Lesson[], idx: DatasetIndex, settings: Settings, groupIds: string[]): string {
+  const groups = groupIds
+    .map((id) => idx.groups.get(id))
+    .filter((g) => !!g)
+    .sort((a, b) => a.name.localeCompare(b.name, 'ro', { numeric: true }));
+  const rows = groups.flatMap((g) => {
+    const mine = lessons.filter((l) => {
+      const a = idx.assignmentOf(l);
+      return a && idx.audienceTouchesGroup(a.audience, g.id);
     });
-  return [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
+    return csvRows(mine, idx, settings).map((r) => [g.name, ...r]);
+  });
+  return toCsv([['Grupa', ...HEADER], ...rows]);
 }
 
 /** First day of the academic year's autumn semester (1 September). */
