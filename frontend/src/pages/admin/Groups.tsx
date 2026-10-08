@@ -1,8 +1,8 @@
 import { CycleTabs, groupInCycle, useCycle } from '../../components/CycleTabs';
 import { useAdminScope } from '../../components/FacultyFilter';
 import { CrudPage } from '../../components/CrudPage';
-import { Field, PageHeader } from '../../components/ui';
-import { STUDY_FORMS, type Group, type Stream, type StudyCycle, type StudyForm } from '../../domain/types';
+import { Empty, Field, PageHeader } from '../../components/ui';
+import { STUDY_FORMS, type Group, type StudyCycle, type StudyForm } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
@@ -15,6 +15,17 @@ export default function Groups() {
   // licență | master's
   const [cycle, setCycle] = useCycle();
   const mine = (g: { cycle?: StudyCycle }) => groupInCycle(g, cycle);
+  // each lecture taught to several groups: its subject's torent
+  const subjectStreams = dataset.assignments
+    .filter(
+      (a) =>
+        a.audience.kind === 'stream' &&
+        index.cohorts(a.audience).some((c) => {
+          const g = index.groups.get(c.groupId);
+          return !!g && (!faculty || g.faculty === faculty) && mine(g);
+        }),
+    )
+    .sort((a, b) => (index.subjects.get(a.subjectId)?.code ?? '').localeCompare(index.subjects.get(b.subjectId)?.code ?? ''));
 
   return (
     <div className="page">
@@ -187,61 +198,54 @@ export default function Groups() {
           )}
         />
 
-        <CrudPage
-          embedded
-          collection="streams"
-          title={t('groups.streams')}
-          items={dataset.streams.filter(
-            (x) =>
-              (!faculty || x.groupIds.some((g) => index.groups.get(g)?.faculty === faculty)) &&
-              x.groupIds.some((g) => mine(index.groups.get(g) ?? {})),
-          )}
-          itemLabel={(x) => x.name}
-          searchText={(x) => `${x.name} ${x.groupIds.map((g) => index.groups.get(g)?.name).join(' ')}`}
-          columns={[
-            { label: t('groups.name'), render: (x) => <strong>{x.name}</strong> },
-            {
-              label: t('groups.groups'),
-              render: (x) => (
-                <div className="row wrap" style={{ gap: 4 }}>
-                  {x.groupIds.map((g) => (
-                    <span key={g} className="badge">
-                      {index.groups.get(g)?.name}
-                    </span>
+        {/* torente are defined per subject: each lecture's groups (set in Sarcina didactică) */}
+        <section className="card">
+          <div className="card-header">
+            <h2>{t('groups.streams')}</h2>
+            <span className="spacer" />
+            <span className="small muted">{subjectStreams.length}</span>
+          </div>
+          <p className="small muted" style={{ margin: 0, padding: '0 22px 8px' }}>
+            {t('groups.streamsPerSubject')}
+          </p>
+          {subjectStreams.length === 0 ? (
+            <Empty />
+          ) : (
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>{t('assignments.subject')}</th>
+                    <th>{t('assignments.teacher')}</th>
+                    <th>{t('groups.groups')}</th>
+                    <th>{t('groups.size')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subjectStreams.map((a) => (
+                    <tr key={a.id}>
+                      <td>
+                        <strong>{index.subjects.get(a.subjectId)?.code}</strong>{' '}
+                        <span className="small muted">{index.subjects.get(a.subjectId)?.name}</span>
+                      </td>
+                      <td className="small">{index.teachers.get(a.teacherId)?.name}</td>
+                      <td>
+                        <div className="row wrap" style={{ gap: 4 }}>
+                          {index.cohorts(a.audience).map((c) => (
+                            <span key={c.groupId} className="badge">
+                              {index.groups.get(c.groupId)?.name}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td>{index.audienceSize(a.audience)}</td>
+                    </tr>
                   ))}
-                </div>
-              ),
-            },
-            { label: t('groups.size'), render: (x) => index.audienceSize({ kind: 'stream', id: x.id }) },
-          ]}
-          newItem={(): Omit<Stream, 'id'> => ({ name: '', groupIds: [] })}
-          validate={(d) => (!d.name.trim() ? t('groups.nameRequired') : d.groupIds.length < 2 ? t('groups.streamMin') : null)}
-          renderForm={(d, set) => (
-            <div className="stack">
-              <Field label={t('groups.name')}>
-                <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} placeholder="FAF-25" autoFocus />
-              </Field>
-              <Field label={t('groups.groups')} hint={t('groups.streamHint')}>
-                <div className="checks">
-                  {dataset.groups
-                    .filter((g) => !faculty || g.faculty === faculty)
-                    .map((g) => (
-                      <label key={g.id} className="check">
-                        <input
-                          type="checkbox"
-                          checked={d.groupIds.includes(g.id)}
-                          onChange={(e) =>
-                            set({ groupIds: e.target.checked ? [...d.groupIds, g.id] : d.groupIds.filter((x) => x !== g.id) })
-                          }
-                        />
-                        {g.name}
-                      </label>
-                    ))}
-                </div>
-              </Field>
+                </tbody>
+              </table>
             </div>
           )}
-        />
+        </section>
       </div>
     </div>
   );
