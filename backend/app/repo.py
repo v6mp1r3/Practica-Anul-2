@@ -3,6 +3,7 @@
 Loaders return the JSON shapes of docs/API.md (ids are strings). Savers take that same JSON and return the
 database id. Faculties are sent by name, so they are translated to ids here.
 """
+import re
 from collections import defaultdict
 from decimal import Decimal
 from typing import Any, Iterable
@@ -329,15 +330,20 @@ def load_subjects(conn: Connection, ids: Iterable[int] | None = None) -> list[di
     where, p = _ids_clause("s.id", ids)
     rows = _all(
         conn,
-        "select s.id, s.code, s.name, s.credits, s.year, s.edge_of_day, f.name as faculty, s.cycle::text as cycle, s.evaluation::text as evaluation, "
+        "select s.id, s.code, s.name, s.credits, s.year, s.semester, s.edge_of_day, f.name as faculty, s.cycle::text as cycle, s.has_midterm1, s.has_midterm2, s.has_exam, "
         f"s.language::text as language, s.lecture_pairs, s.seminar_pairs, s.lab_pairs from subject s left join faculty f on f.id = s.faculty_id{where} order by s.id",
         p,
     )
+    tags: dict[int, list[str]] = defaultdict(list)
+    if rows:
+        for r in _all(conn, "select subject_id, cluster_id from subject_cluster where subject_id = any(cast(:k as bigint[])) order by cluster_id", {"k": [r["id"] for r in rows]}):
+            tags[r["subject_id"]].append(sid(r["cluster_id"]))
     out = []
     for r in rows:
         s = {
-            "id": sid(r["id"]), "code": r["code"], "name": r["name"], "credits": num(r["credits"]), "year": r["year"], "edgeOfDay": r["edge_of_day"],
-            "cycle": r["cycle"], "evaluation": r["evaluation"], "lecturePairs": num(r["lecture_pairs"]), "seminarPairs": num(r["seminar_pairs"]), "labPairs": num(r["lab_pairs"]),
+            "id": sid(r["id"]), "code": r["code"], "name": r["name"], "credits": num(r["credits"]), "year": r["year"], "semester": r["semester"], "edgeOfDay": r["edge_of_day"], "clusterIds": tags[r["id"]],
+            "cycle": r["cycle"], "hasMidterm1": r["has_midterm1"], "hasMidterm2": r["has_midterm2"], "hasExam": r["has_exam"],
+            "evaluation": "exam" if r["has_exam"] else "atestari", "lecturePairs": num(r["lecture_pairs"]), "seminarPairs": num(r["seminar_pairs"]), "labPairs": num(r["lab_pairs"]),
             "language": r["language"],
         }
         if r["faculty"]:
@@ -347,26 +353,69 @@ def load_subjects(conn: Connection, ids: Iterable[int] | None = None) -> list[di
 
 
 def save_subject(conn: Connection, data: dict, sub_id: int | None = None) -> int:
+    # the assessment: all three by default; an older client that only sends "evaluation" still works
+    has_exam = data["hasExam"] if data.get("hasExam") is not None else data.get("evaluation") != "atestari"
     params = {
+        "sm": data.get("semester") or 1, "m1": data.get("hasMidterm1") is not False, "m2": data.get("hasMidterm2") is not False, "hx": bool(has_exam),
         "code": data["code"].strip().upper(), "name": data["name"], "credits": data["credits"], "year": data["year"],
-        "fid": faculty_id_by_name(conn, data.get("faculty")), "cycle": data.get("cycle") or "licenta", "ev": data.get("evaluation") or "exam",
+        "fid": faculty_id_by_name(conn, data.get("faculty")), "cycle": data.get("cycle") or "licenta", "ev": "exam" if has_exam else "atestari",
         "edge": bool(data.get("edgeOfDay")), "lec": data.get("lecturePairs") or 0, "sem": data.get("seminarPairs") or 0, "lab": data.get("labPairs") or 0,
         "lang": data.get("language") or "ro",
     }
     if sub_id is None:
-        return conn.execute(
-            text("insert into subject (code, name, credits, year, faculty_id, cycle, evaluation, edge_of_day, lecture_pairs, seminar_pairs, lab_pairs, language) "
-                 "values (:code, :name, :credits, :year, :fid, cast(:cycle as study_cycle), cast(:ev as evaluation_kind), :edge, :lec, :sem, :lab, cast(:lang as study_language)) returning id"),
+        sub_id = conn.execute(
+            text("insert into subject (code, name, credits, year, semester, faculty_id, cycle, evaluation, has_midterm1, has_midterm2, has_exam, edge_of_day, lecture_pairs, seminar_pairs, lab_pairs, language) "
+                 "values (:code, :name, :credits, :year, :sm, :fid, cast(:cycle as study_cycle), cast(:ev as evaluation_kind), :m1, :m2, :hx, :edge, :lec, :sem, :lab, cast(:lang as study_language)) returning id"),
             params,
         ).scalar_one()
+        _save_tags(conn, sub_id, data.get("clusterIds") or [])
+        return sub_id
     n = conn.execute(
-        text("update subject set code=:code, name=:name, credits=:credits, year=:year, faculty_id=:fid, cycle=cast(:cycle as study_cycle), "
-             "evaluation=cast(:ev as evaluation_kind), edge_of_day=:edge, lecture_pairs=:lec, seminar_pairs=:sem, lab_pairs=:lab, language=cast(:lang as study_language) where id=:id"),
+        text("update subject set code=:code, name=:name, credits=:credits, year=:year, semester=:sm, faculty_id=:fid, cycle=cast(:cycle as study_cycle), "
+             "evaluation=cast(:ev as evaluation_kind), has_midterm1=:m1, has_midterm2=:m2, has_exam=:hx, edge_of_day=:edge, lecture_pairs=:lec, seminar_pairs=:sem, lab_pairs=:lab, "
+             "language=cast(:lang as study_language) where id=:id"),
         {**params, "id": sub_id},
     ).rowcount
     if not n:
         raise ApiError(404, "Not found")
+    if "clusterIds" in data:  # an update that does not mention the tags leaves them as they are
+        _save_tags(conn, sub_id, data["clusterIds"] or [])
     return sub_id
+
+
+def _save_tags(conn: Connection, subject_id: int, cluster_ids: list) -> None:
+    _replace(conn, "subject_cluster", "subject_id", subject_id, ["cluster_id"], [(pid(c),) for c in sorted({str(c) for c in cluster_ids}, key=lambda x: (len(x), x))])
+
+
+# ---------------------------------------------------------------- clusters
+
+
+def _speciality(group_name: str) -> str:
+    """FAF-261 -> FAF (the same rule as speciality_of() in the database and specOf() in the frontend)."""
+    return re.sub(r"-\d+$", "", group_name).upper()
+
+
+def cluster_name(cycle: str, year: int, speciality: str | None) -> str:
+    prefix = "Master · " if cycle == "master" else ""
+    return f"{prefix}{speciality} · Year {year}" if speciality else f"{prefix}Year {year}"
+
+
+def load_clusters(conn: Connection) -> list[dict]:
+    """The clusters (made automatically from the groups) with the groups that belong to each."""
+    rows = _all(conn, "select id, kind, cycle::text as cycle, year, speciality from cluster", {})
+    members: dict[tuple, list[str]] = defaultdict(list)
+    for g in _all(conn, "select id, name, cycle::text as cycle, year from student_group order by id", {}):
+        members[(g["cycle"], g["year"], None)].append(sid(g["id"]))
+        members[(g["cycle"], g["year"], _speciality(g["name"]))].append(sid(g["id"]))
+    rows.sort(key=lambda r: (r["cycle"] != "licenta", r["year"], r["speciality"] is not None, r["speciality"] or ""))
+    out = []
+    for r in rows:
+        c = {"id": sid(r["id"]), "kind": r["kind"], "cycle": r["cycle"], "year": r["year"], "name": cluster_name(r["cycle"], r["year"], r["speciality"]),
+             "groupIds": members[(r["cycle"], r["year"], r["speciality"])]}
+        if r["speciality"]:
+            c["speciality"] = r["speciality"]
+        out.append(c)
+    return out
 
 
 # ---------------------------------------------------------------- assignments

@@ -13,5 +13,6 @@ def build_dataset(conn: Connection) -> dict:
         "groups": repo.load_groups(conn),
         "streams": repo.load_streams(conn),
         "subjects": repo.load_subjects(conn),
+        "clusters": repo.load_clusters(conn),
         "assignments": repo.load_assignments(conn),
     }
