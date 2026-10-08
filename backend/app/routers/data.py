@@ -167,6 +167,12 @@ for _name in repo.LOADERS:
     _register(_name)
 
 
+@router.get("/clusters")
+def list_clusters(_: CurrentUser = Depends(current_user), conn: Connection = Depends(get_conn)):
+    """The year and speciality clusters. They are made automatically from the groups, so they are read-only."""
+    return repo.load_clusters(conn)
+
+
 # ---------------------------------------------------------------- extra endpoints
 
 

@@ -1,7 +1,7 @@
 -- EduSchedule database schema
 -- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: Database_Design.pdf (next to the internship report). 43 tables, every table linked to the others by foreign keys.
+-- Design: Database_Design.pdf (next to the internship report). 45 tables, every table linked to the others by foreign keys.
 -- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
 
 begin;
@@ -292,9 +292,13 @@ create table subject (
   name          text not null,
   credits       numeric(4, 1) not null check (credits >= 0),
   year          smallint not null check (year between 1 and 6),
+  semester      smallint not null default 1 check (semester in (1, 2)),   -- semester of the year
   faculty_id    bigint references faculty (id) on delete set null,    -- NULL = shared by all faculties
   cycle         study_cycle not null default 'licenta',
-  evaluation    evaluation_kind not null default 'exam',
+  evaluation    evaluation_kind not null default 'exam',            -- kept in step with has_exam
+  has_midterm1  boolean not null default true,                        -- assessment: Midterm 1, Midterm 2, Exam
+  has_midterm2  boolean not null default true,
+  has_exam      boolean not null default true,
   edge_of_day   boolean not null default false,                       -- first or last pair of the day (e.g. sport)
   lecture_pairs numeric(3, 1) not null default 0 check (lecture_pairs >= 0),   -- pairs per week, 0.5 = every other week
   seminar_pairs numeric(3, 1) not null default 0 check (seminar_pairs >= 0),
@@ -364,6 +368,40 @@ begin
   end if;
   return sid;
 end $$;
+
+-- Clusters: the year (Year 1..4) and the speciality within a year (FAF year 1, TI year 3...). They are made
+-- automatically from the groups (trigger below): FAF-261 gives "year 1" and "FAF, year 1". A subject is tagged
+-- with the clusters it belongs to (subject_cluster). A cluster is never deleted automatically, so tags stay when
+-- the last group of a speciality is removed.
+create table cluster (
+  id         bigint generated always as identity primary key,
+  cycle      study_cycle not null default 'licenta',
+  year       smallint not null check (year >= 1),
+  speciality text check (speciality is null or speciality = upper(speciality)),     -- NULL = the whole year
+  kind       text generated always as (case when speciality is null then 'year' else 'speciality' end) stored
+);
+create unique index cluster_unique on cluster (cycle, year, coalesce(speciality, ''));
+
+create table subject_cluster (
+  subject_id bigint not null references subject (id) on delete cascade,
+  cluster_id bigint not null references cluster (id) on delete cascade,
+  primary key (subject_id, cluster_id)
+);
+create index subject_cluster_cluster_idx on subject_cluster (cluster_id);
+
+-- FAF-261 -> FAF (the group name without its number)
+create function speciality_of(group_name text) returns text language sql immutable as
+  $$ select upper(regexp_replace(group_name, '-\d+$', '')) $$;
+
+create function ensure_group_clusters() returns trigger language plpgsql as $$
+begin
+  insert into cluster (cycle, year, speciality)
+  values (new.cycle, new.year, null), (new.cycle, new.year, speciality_of(new.name))
+  on conflict (cycle, year, coalesce(speciality, '')) do nothing;
+  return new;
+end $$;
+create trigger student_group_clusters after insert or update of name, year, cycle on student_group
+  for each row execute function ensure_group_clusters();
 
 create table room_preferred_subject (
   room_id    bigint not null references room (id) on delete cascade,

@@ -76,7 +76,7 @@ Accounts are created on the server with `python -m app.cli create-admin` (see
 
 ```json
 // Dataset
-{ "settings": Settings, "teachers": [], "rooms": [], "groups": [], "streams": [], "subjects": [], "assignments": [] }
+{ "settings": Settings, "teachers": [], "rooms": [], "groups": [], "streams": [], "subjects": [], "assignments": [], "clusters": [] }
 
 // Settings
 {
@@ -145,13 +145,32 @@ or subject without a `faculty` is shared and any administrator may change it.
 
 // Subject — pairs per week from the study plan; 0.5 = every other week
 { "id": "sub1", "code": "AM", "name": "Analiză matematică", "credits": 6, "year": 1,
-  "lecturePairs": 2, "seminarPairs": 1, "labPairs": 0 }
+  "semester": 1, "hasMidterm1": true, "hasMidterm2": true, "hasExam": true,
+  "lecturePairs": 2, "seminarPairs": 1, "labPairs": 0, "clusterIds": ["c1", "c5"] }
 
 // Assignment (teaching load). audience.kind is "stream" | "group" | "subgroup"
 { "id": "a1", "subjectId": "sub1", "type": "lecture", "teacherId": "t3",
   "audience": { "kind": "stream", "id": "s3" },
   "pairsPerWeek": 2, "parity": "weekly", "roomType": "lecture", "equipment": [] }
 ```
+
+**Clusters.** A cluster is a year of study ("Year 1") or a speciality within a year ("FAF, year 1"). They are
+made automatically from the groups: a group `FAF-261` of year 1 is in "Year 1" and in "FAF, year 1" (the speciality
+is the group name without its number). The years (licență 1-4, master's 1-2) always exist, the others appear with
+the first group that needs them, and a cluster is never deleted by itself, so tags stay when its last group is
+removed. Clusters are read-only: `GET /clusters` (signed in) and `clusters` in `GET /dataset`.
+
+```json
+{ "id": "c5", "kind": "speciality", "cycle": "licenta", "year": 1, "speciality": "FAF",
+  "name": "FAF · Year 1", "groupIds": ["g1", "g2"] }
+```
+
+`semester` is 1 or 2 (the semester of the year, default 1). `hasMidterm1`, `hasMidterm2` and `hasExam` are the
+assessment, all `true` by default; `evaluation` (`exam` / `atestari`) is still returned and follows `hasExam`, and a
+client that sends only `evaluation` still works.
+
+A subject is tagged with the clusters it is taught to by `clusterIds` (on `POST` and `PUT /subjects`; leaving the
+field out of a `PUT` keeps the tags, `[]` clears them; an unknown id is a `422`).
 
 Activity types are `lecture`, `seminar`, `lab` and `project`. A project is held in an ordinary room
 (`roomType: "seminar"`) and has no pairs in the study plan, so it is not compared with it. A teacher's

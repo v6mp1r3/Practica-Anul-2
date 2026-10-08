@@ -227,6 +227,23 @@ export interface Group {
   subgroups: number;
 }
 
+/**
+ * A cluster is a year of study ("Year 1") or a speciality within a year ("FAF, year 1"). They are made
+ * automatically from the groups (FAF-261 is in "year 1" and in "FAF, year 1"); subjects are tagged with them.
+ */
+export interface Cluster {
+  id: string;
+  kind: 'year' | 'speciality';
+  cycle: StudyCycle;
+  year: number;
+  /** FAF, TI… (only for kind = 'speciality'). */
+  speciality?: string;
+  /** Plain English name, e.g. "FAF · Year 1"; screens build their own text from the fields. */
+  name: string;
+  /** Groups that belong to the cluster. */
+  groupIds: string[];
+}
+
 /** A stream ("torentă") joins several groups for one lecture. */
 export interface Stream {
   id: string;
@@ -248,6 +265,14 @@ export interface Subject {
   cycle?: StudyCycle;
   /** How the subject ends: with an exam in the session, or with the atestări only. Default exam. */
   evaluation?: 'exam' | 'atestari';
+  /** Semester of the year (1 or 2). Default 1. */
+  semester?: 1 | 2;
+  /** Assessment the subject has; all three by default. `hasExam` false = midterms only (same as evaluation 'atestari'). */
+  hasMidterm1?: boolean;
+  hasMidterm2?: boolean;
+  hasExam?: boolean;
+  /** Clusters (a year, or a speciality within a year) the subject is taught to. */
+  clusterIds?: string[];
   /** Pairs per week by activity type, from the study plan (0.5 = every other week). */
   lecturePairs: number;
   seminarPairs: number;
@@ -458,6 +483,8 @@ export interface Dataset {
   streams: Stream[];
   subjects: Subject[];
   assignments: Assignment[];
+  /** Year and speciality clusters, made automatically from the groups. */
+  clusters?: Cluster[];
 }
 
 /** Atestarea 1/2, final exams, and the retakes of each (atestarea 1, atestarea 2, final exam). */

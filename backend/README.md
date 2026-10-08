@@ -45,6 +45,9 @@ in `db/migrations/` you have not run yet, in order:
 | `001_supabase_admin.sql` | Supabase only: links `app_user` to a Supabase Auth user. **Not needed by this backend** (it has its own login). |
 | `002_group_periods.sql` | Adds the group-period tables (internships, licence exams, …). **Needed.** |
 | `003_allow_draft_room_clashes.sql` | Drops a rule that stopped drafts with room clashes from being saved. **Needed.** |
+| `004_project_activity_and_half_pairs.sql` | Adds the kind of pair "project" and half-pair loads. **Needed**, run it on its own. |
+| `006_subject_semester_assessment.sql` | Adds the semester and the assessment (Midterm 1, Midterm 2, Exam) to subjects. **Needed.** |
+| `005_clusters.sql` | Adds the clusters (made from the groups) and the subject tags. **Needed.** |
 
 The backend connects with the database password and bypasses row-level security; every table has RLS on with no
 policies, so Supabase's own public API can read nothing.
@@ -82,6 +85,7 @@ fixture (`tests/fixtures/make_parity.ts` explains how).
 | Dataset, settings (calendar, shifts, slots, group periods, semesters) | done |
 | Teachers, rooms, groups, streams, subjects, assignments (CRUD, subject import, availability) | done |
 | Automatic and predefined streams, group language | done |
+| Clusters (year, speciality in a year), made from the groups, and subject tags | done |
 | Timetables: save with server-side score, publish (merges faculties, refuses clashes), withdraw | done |
 | Schedule changes (checks the room or substitute is free) and notifications | done |
 | Exam timetables: save, publish, withdraw | done |

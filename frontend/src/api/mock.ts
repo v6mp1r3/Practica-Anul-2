@@ -8,6 +8,7 @@ import type { Dataset, ExamPlan, Notification, NotificationKind, Role, ScheduleC
 import { generateExams, generateMidterms } from '../domain/exams';
 import { DatasetIndex } from '../domain/indexes';
 import { createRng } from '../domain/rng';
+import { deriveClusters } from '../domain/clusters';
 import { ApiError } from './http';
 import type { Api, CollectionName, Collections } from './types';
 
@@ -389,7 +390,7 @@ export function createMockApi(): Api {
 
     // public: anyone can see the timetable, rooms and teachers without signing in
     async getDataset() {
-      return delay(store.dataset);
+      return delay({ ...store.dataset, clusters: deriveClusters(store.dataset.groups) });
     },
     async saveSettings(settings) {
       requireRole('admin');
