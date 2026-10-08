@@ -36,6 +36,24 @@ export default function Subjects() {
     setPreview(null);
   }
 
+  // filters: year, evaluation, activity in the study plan, whether it is in Sarcina didactică yet
+  const subjects = dataset.subjects.filter((x) => (!scope || !x.faculty || x.faculty === scope) && (x.cycle ?? 'licenta') === cycle);
+  const [year, setYear] = useState('');
+  const [evaluation, setEvaluation] = useState('');
+  const [activity, setActivity] = useState('');
+  const [load, setLoad] = useState('');
+  const years = [...new Set(subjects.map((x) => x.year))].sort((a, b) => a - b);
+  const planned = (x: Subject) => dataset.assignments.some((a) => a.subjectId === x.id);
+  const pairsOf = (x: Subject, a: string) => (a === 'lecture' ? x.lecturePairs : a === 'seminar' ? x.seminarPairs : x.labPairs);
+  const shown = subjects.filter(
+    (x) =>
+      (!year || x.year === Number(year)) &&
+      (!evaluation || (x.evaluation ?? 'exam') === evaluation) &&
+      (!activity || pairsOf(x, activity) > 0) &&
+      (!load || (load === 'planned') === planned(x)),
+  );
+  const filtering = !!(year || evaluation || activity || load);
+
   const pairs = (n: number) => (n ? String(n).replace('.', ',') : '—');
 
   return (
@@ -44,7 +62,55 @@ export default function Subjects() {
         collection="subjects"
         title={t('nav.subjects')}
         subtitle={t('subjects.subtitle')}
-        items={dataset.subjects.filter((x) => (!scope || !x.faculty || x.faculty === scope) && (x.cycle ?? 'licenta') === cycle)}
+        items={shown}
+        filters={
+          <>
+            <Select className="select pill" value={year} onChange={(e) => setYear(e.target.value)} aria-label={t('subjects.year')}>
+              <option value="">{t('subjects.allYears')}</option>
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {t('groups.year')} {y}
+                </option>
+              ))}
+            </Select>
+            <Select
+              className="select pill"
+              value={evaluation}
+              onChange={(e) => setEvaluation(e.target.value)}
+              aria-label={t('subjects.evaluation')}
+            >
+              <option value="">{t('subjects.anyEvaluation')}</option>
+              <option value="exam">{t('subjects.evaluation.exam')}</option>
+              <option value="atestari">{t('subjects.evaluation.atestari')}</option>
+            </Select>
+            <Select className="select pill" value={activity} onChange={(e) => setActivity(e.target.value)} aria-label={t('teachers.types')}>
+              <option value="">{t('subjects.anyActivity')}</option>
+              {(['lecture', 'seminar', 'lab'] as const).map((a) => (
+                <option key={a} value={a}>
+                  {t('subjects.withActivity', { what: t(`activity.${a}`).toLowerCase() })}
+                </option>
+              ))}
+            </Select>
+            <Select className="select pill" value={load} onChange={(e) => setLoad(e.target.value)} aria-label={t('nav.assignments')}>
+              <option value="">{t('subjects.anyLoad')}</option>
+              <option value="planned">{t('subjects.planned')}</option>
+              <option value="unplanned">{t('subjects.unplanned')}</option>
+            </Select>
+            {filtering && (
+              <button
+                className="btn ghost sm"
+                onClick={() => {
+                  setYear('');
+                  setEvaluation('');
+                  setActivity('');
+                  setLoad('');
+                }}
+              >
+                {t('filters.reset')}
+              </button>
+            )}
+          </>
+        }
         itemLabel={(x) => `${x.code} — ${x.name}`}
         searchText={(x) => `${x.code} ${x.name}`}
         headerActions={
