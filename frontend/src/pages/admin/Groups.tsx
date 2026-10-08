@@ -8,6 +8,7 @@ import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
 import { LanguageField, LanguageTag, languageOf } from '../../components/Language';
 import { useState } from 'react';
+import { specialtyOf as prefixOf } from '../../domain/specialty';
 
 export default function Groups() {
   const { t } = useI18n();
@@ -20,7 +21,6 @@ export default function Groups() {
   const [language, setLanguage] = useState('');
   // the specialty prefix of a group's name: TI-251 → TI, FAF-232 → FAF
   const [prefix, setPrefix] = useState('');
-  const prefixOf = (name: string) => name.split('-')[0].trim().toUpperCase();
   const ourGroups = dataset.groups.filter((x) => (!faculty || x.faculty === faculty) && mine(x));
   const prefixes = [...new Set(ourGroups.map((g) => prefixOf(g.name)))].sort((a, b) => a.localeCompare(b, 'ro'));
   // each lecture taught to several groups: its subject's torent

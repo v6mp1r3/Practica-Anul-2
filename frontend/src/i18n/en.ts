@@ -19,6 +19,10 @@ export const en: Record<MessageKey, string> = {
   'common.saved': 'Saved',
   'common.error': 'Something went wrong. Please try again.',
   'common.all': 'All',
+  'subjects.specialties': 'Specialties',
+  'subjects.allSpecialties': 'All specialties',
+  'subjects.specialtiesHint':
+    'Which specialties have it in their study plan. The same code can exist once per specialty (e.g. MD: FAF in year 1, SI in year 2).',
   'groups.prefix': 'Specialty',
   'groups.allPrefixes': 'All specialties',
   'language.ro': 'Romanian',
@@ -334,6 +338,7 @@ export const en: Record<MessageKey, string> = {
   'assignments.equipmentHint': 'The class only goes to a room that has everything ticked here.',
   'assignments.autoSplit':
     'The group ({size} students) fits in no suitable room (at most {largest} seats), so it is split into two subgroups, one pair each.',
+  'assignments.otherYears': 'Also show groups from other years (the subject is in year {year})',
   'freeRooms.equipment': 'With equipment',
   'freeRooms.anyEquipment': 'Any',
   'rooms.nameRequired': 'Room name is required.',

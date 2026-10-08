@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { api } from '../../api';
 import { CrudPage } from '../../components/CrudPage';
 import { needsSplit } from '../../domain/rooms';
+import { subjectForGroup } from '../../domain/specialty';
 import { MultiSelect } from '../../components/MultiSelect';
 import { LanguageTag, languageOf } from '../../components/Language';
 import { useEquipment } from '../../components/useEquipment';
@@ -31,6 +32,16 @@ export default function Assignments() {
   const cycleSubjects = dataset.subjects.filter((x) => (x.cycle ?? 'licenta') === cycle);
   // the same subject can be taught in several languages: then the list says which one
   const manyLanguages = new Set(cycleSubjects.map(languageOf)).size > 1;
+  // a code used by several study plans (MD for FAF in year 1, for SI in year 2): the list names the plan
+  const sharedCodes = new Set(cycleSubjects.filter((x, i) => cycleSubjects.findIndex((y) => y.code === x.code) !== i).map((x) => x.code));
+  const planOf = (x: (typeof cycleSubjects)[number]) =>
+    [x.specialties?.length ? x.specialties.join(', ') : null, `${t('groups.year')} ${x.year}`].filter(Boolean).join(', ');
+  // the groups offered are those of the subject's year; this shows the other years too
+  const [otherYears, setOtherYears] = useState(false);
+  const groupsFor = (subjectId: string) => {
+    const subject = index.subjects.get(subjectId);
+    return visibleGroups.filter((g) => !subject || (subjectForGroup(subject, g) && (otherYears || g.year === subject.year)));
+  };
   const inScope = dataset.assignments.filter(
     (a) => (!scope || scopeGroups.some((g) => index.audienceTouchesGroup(a.audience, g))) && audienceInCycle(index, a.audience, cycle),
   );
@@ -155,9 +166,8 @@ export default function Assignments() {
       }
       renderForm={(d, set) => {
         const teacher = index.teachers.get(d.teacherId);
-        // a subject is taught to the groups of its language (AM in Russian to the Russian groups)
-        const subjectLanguage = languageOf(index.subjects.get(d.subjectId) ?? {});
-        const formGroups = visibleGroups.filter((g) => languageOf(g) === subjectLanguage);
+        // a subject is taught to the groups of its language and specialties (AM in Russian to the Russian groups), in its year
+        const formGroups = groupsFor(d.subjectId);
         const split = needsSplit(index, dataset.rooms, d);
         const setAudience = (aud: Audience) => set({ audience: aud });
         const subgroupsOf = (id: string) => index.groups.get(id)?.subgroups ?? 1;
@@ -178,10 +188,10 @@ export default function Assignments() {
                   className="select"
                   value={d.subjectId}
                   onChange={(e) => {
-                    const lang = languageOf(index.subjects.get(e.target.value) ?? {});
-                    const fits = index.cohorts(d.audience).every((c) => languageOf(index.groups.get(c.groupId) ?? {}) === lang);
-                    const first = visibleGroups.find((g) => languageOf(g) === lang)?.id ?? '';
-                    // another language: the groups chosen so far don't take it
+                    const offered = groupsFor(e.target.value);
+                    const fits = index.cohorts(d.audience).every((c) => offered.some((g) => g.id === c.groupId));
+                    const first = offered[0]?.id ?? '';
+                    // another language, specialty or year: the groups chosen so far don't take it
                     set({
                       subjectId: e.target.value,
                       ...(fits
@@ -201,6 +211,7 @@ export default function Assignments() {
                     <option key={s.id} value={s.id}>
                       {s.code} — {s.name}
                       {manyLanguages ? ` (${languageOf(s).toUpperCase()})` : ''}
+                      {sharedCodes.has(s.code) ? ` · ${planOf(s)}` : ''}
                     </option>
                   ))}
                 </Select>
@@ -298,6 +309,10 @@ export default function Assignments() {
                   {index.audienceSize(d.audience)} {t('groups.size').toLowerCase()}
                 </span>
               </div>
+              <label className="check small" style={{ marginTop: 8 }}>
+                <input type="checkbox" checked={otherYears} onChange={(e) => setOtherYears(e.target.checked)} />
+                {t('assignments.otherYears', { year: index.subjects.get(d.subjectId)?.year ?? '' })}
+              </label>
               {split && (
                 <p className="small" style={{ margin: '8px 0 0', color: 'var(--warning)' }}>
                   {t('assignments.autoSplit', { size: split.size, largest: split.largest })}

@@ -18,6 +18,10 @@ export const ro = {
   'common.saved': 'Salvat',
   'common.error': 'Ceva nu a mers. Încearcă din nou.',
   'common.all': 'Toate',
+  'subjects.specialties': 'Specialități',
+  'subjects.allSpecialties': 'Toate specialitățile',
+  'subjects.specialtiesHint':
+    'Pentru ce specialități e în planul de studii. Același cod poate exista o dată pentru fiecare specialitate (ex. MD: FAF în anul 1, SI în anul 2).',
   'groups.prefix': 'Specialitate',
   'groups.allPrefixes': 'Toate specialitățile',
   'language.ro': 'Română',
@@ -334,6 +338,7 @@ export const ro = {
   'assignments.equipmentHint': 'Perechea se pune doar într-o sală care are tot ce bifezi aici.',
   'assignments.autoSplit':
     'Grupa ({size} studenți) nu încape în nicio sală potrivită (cel mult {largest} locuri), așa că se împarte în două subgrupe: câte o pereche pentru fiecare.',
+  'assignments.otherYears': 'Arată și grupele din alți ani (disciplina e în anul {year})',
   'freeRooms.equipment': 'Cu echipament',
   'freeRooms.anyEquipment': 'Oricare',
   'rooms.nameRequired': 'Denumirea sălii este obligatorie.',

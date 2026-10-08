@@ -12,7 +12,8 @@ describe('parseStudyPlan', () => {
   it('parses the template and skips the header', () => {
     const r = parseStudyPlan(STUDY_PLAN_TEMPLATE);
     expect(r.errors).toEqual([]);
-    expect(r.subjects).toHaveLength(2);
+    expect(r.subjects).toHaveLength(3);
+    expect(r.subjects.map((s) => s.specialties)).toEqual([undefined, ['FAF'], ['SI']]);
     expect(r.subjects[0]).toEqual({
       code: 'AM',
       name: 'Analiză matematică',

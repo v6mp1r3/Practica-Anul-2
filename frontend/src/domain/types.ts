@@ -259,6 +259,8 @@ export interface Subject {
   cycle?: StudyCycle;
   /** Language it is taught in, i.e. which groups it is for (default Romanian). */
   language?: Language;
+  /** Specialties (group name prefixes: FAF, TI…) whose study plan has it; empty = all. */
+  specialties?: string[];
   /** How the subject ends: with an exam in the session, or with the atestări only. Default exam. */
   evaluation?: 'exam' | 'atestari';
   /** Pairs per week by activity type, from the study plan (0.5 = every other week). */

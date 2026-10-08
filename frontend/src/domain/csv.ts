@@ -45,7 +45,7 @@ export function parseStudyPlan(text: string): CsvResult {
     const cols = splitCsvLine(raw, delimiter);
     // Skip a header row: its "credits" column is not a number
     if (i === lines.indexOf(first) && Number.isNaN(num(cols[2]))) return;
-    const [code, name, credits, year, lecture, seminar, lab] = cols;
+    const [code, name, credits, year, lecture, seminar, lab, specialties] = cols;
     const values = [credits, year, lecture, seminar, lab].map(num);
     if (!code || !name) {
       result.errors.push({ line: i + 1, message: 'code/name' });
@@ -63,10 +63,23 @@ export function parseStudyPlan(text: string): CsvResult {
       lecturePairs: values[2],
       seminarPairs: values[3],
       labPairs: values[4],
+      // optional: the specialties it is for, separated by spaces ("FAF TI"); empty = all
+      ...(specialties?.trim()
+        ? {
+            specialties: [
+              ...new Set(
+                specialties
+                  .toUpperCase()
+                  .split(/[\s|/]+/)
+                  .filter(Boolean),
+              ),
+            ],
+          }
+        : {}),
     });
   });
   return result;
 }
 
 export const STUDY_PLAN_TEMPLATE =
-  'code,name,credits,year,lecture,seminar,lab\nAM,Analiză matematică,6,1,2,1,0\nPC,Programarea calculatoarelor,6,1,1,0,2\n';
+  'code,name,credits,year,lecture,seminar,lab,specialties\nAM,Analiză matematică,6,1,2,1,0,\nMD,Matematică discretă,5,1,1,1,0,FAF\nMD,Matematică discretă,5,2,1,1,0,SI\n';

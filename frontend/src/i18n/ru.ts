@@ -19,6 +19,10 @@ export const ru: Record<MessageKey, string> = {
   'common.saved': 'Сохранено',
   'common.error': 'Что-то пошло не так. Попробуйте ещё раз.',
   'common.all': 'Все',
+  'subjects.specialties': 'Специальности',
+  'subjects.allSpecialties': 'Все специальности',
+  'subjects.specialtiesHint':
+    'У каких специальностей она есть в учебном плане. Один код может быть у каждой специальности свой (напр. MD: FAF на 1 курсе, SI на 2-м).',
   'groups.prefix': 'Специальность',
   'groups.allPrefixes': 'Все специальности',
   'language.ro': 'Румынский',
@@ -335,6 +339,7 @@ export const ru: Record<MessageKey, string> = {
   'assignments.equipmentHint': 'Пара ставится только в аудиторию, где есть всё отмеченное здесь.',
   'assignments.autoSplit':
     'Группа ({size} студентов) не помещается ни в одну подходящую аудиторию (не больше {largest} мест), поэтому делится на две подгруппы, по паре на каждую.',
+  'assignments.otherYears': 'Показать и группы других курсов (дисциплина на {year} курсе)',
   'freeRooms.equipment': 'С оборудованием',
   'freeRooms.anyEquipment': 'Любое',
   'rooms.nameRequired': 'Название аудитории обязательно.',
