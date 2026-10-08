@@ -11,7 +11,7 @@ import { SessionsSection } from '../../components/SessionTimetable';
 import { HolidaysCard } from '../../components/Holidays';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { ViewPicker } from '../../components/ViewPicker';
-import { Loading, PageHeader } from '../../components/ui';
+import { Field, Loading, Modal, PageHeader, Segmented } from '../../components/ui';
 import { scopeAssignments } from '../../domain/generator';
 import { findWarnings, scoreTimetable } from '../../domain/score';
 import type { Conflict, Dataset, Lesson, Parity, Timetable } from '../../domain/types';
@@ -23,7 +23,7 @@ import { useToast } from '../../state/toast';
 import { downloadFile } from '../../utils/download';
 import { publishSafely, unpublishWithConfirm } from '../../utils/publish';
 import { facultyView, useAdminScope } from '../../components/FacultyFilter';
-import { timetableToCsv, timetableToIcs } from '../../utils/export';
+import { timetableToCsv, timetableToCsvAllGroups, timetableToIcs } from '../../utils/export';
 import { StatusBadge } from './Dashboard';
 
 const HIDE: Record<ViewFilter['kind'], LessonField[]> = { group: [], teacher: ['teacher'], room: ['room'] };
@@ -45,6 +45,7 @@ export default function Editor() {
   const [selectedConflict, setSelectedConflict] = useState<Conflict | null>(null);
   const [history, setHistory] = useState<Lesson[][]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -137,6 +138,8 @@ export default function Editor() {
   }
 
   const visible = filterLessons(index, lessons, view).filter((l) => inWeek(l, week));
+  // "all groups": the groups of this timetable (only this faculty's, for a faculty administrator)
+  const allGroupIds = tt.groupIds.filter((g) => !scope || index.groups.get(g)?.faculty === scope);
   const highlightIds = selectedConflict ? new Set(selectedConflict.lessonIds) : undefined;
 
   function selectConflict(c: Conflict) {
@@ -197,6 +200,11 @@ export default function Editor() {
     return index.groups.get(view.id)?.name ?? 'grupa';
   }
 
+  const touches = (l: Lesson, groupId: string) => {
+    const a = index.assignmentOf(l);
+    return !!a && index.audienceTouchesGroup(a.audience, groupId);
+  };
+
   const fileBase = () =>
     `orar-${viewName()}`
       .toLowerCase()
@@ -220,20 +228,9 @@ export default function Editor() {
               <Icon name="edit" size={15} />
               {t('editor.rename')}
             </button>
-            <button
-              className="btn"
-              onClick={() => downloadFile(`${fileBase()}.csv`, timetableToCsv(visible, index, dataset.settings), 'text/csv')}
-            >
+            <button className="btn" onClick={() => setExporting(true)}>
               <Icon name="download" size={15} />
-              CSV
-            </button>
-            <button
-              className="btn"
-              onClick={() => downloadFile(`${fileBase()}.ics`, timetableToIcs(visible, index, dataset.settings), 'text/calendar')}
-              title={t('editor.icsHint')}
-            >
-              <Icon name="calendar" size={15} />
-              iCal
+              {t('editor.export')}
             </button>
             <button className="btn" onClick={() => window.print()}>
               <Icon name="printer" size={15} />
@@ -258,6 +255,26 @@ export default function Editor() {
           </>
         }
       />
+
+      {exporting && (
+        <ExportDialog
+          viewName={viewName()}
+          groupCount={allGroupIds.length}
+          onClose={() => setExporting(false)}
+          onExport={(what, format) => {
+            const all = what === 'all';
+            const shown = all ? lessons.filter((l) => inWeek(l, week) && allGroupIds.some((g) => touches(l, g))) : visible;
+            const base = all ? 'orar-toate-grupele' : fileBase();
+            if (format === 'csv') {
+              const csv = all
+                ? timetableToCsvAllGroups(shown, index, dataset.settings, allGroupIds)
+                : timetableToCsv(shown, index, dataset.settings);
+              downloadFile(`${base}.csv`, csv, 'text/csv');
+            } else downloadFile(`${base}.ics`, timetableToIcs(shown, index, dataset.settings), 'text/calendar');
+            setExporting(false);
+          }}
+        />
+      )}
 
       <div className="editor-layout">
         <div className="stack" style={{ minWidth: 0 }}>
@@ -331,5 +348,65 @@ export default function Editor() {
         </aside>
       </div>
     </div>
+  );
+}
+
+/** Export the timetable: the view shown or every group, as a spreadsheet or a calendar. */
+function ExportDialog({
+  viewName,
+  groupCount,
+  onClose,
+  onExport,
+}: {
+  viewName: string;
+  groupCount: number;
+  onClose: () => void;
+  onExport: (what: 'view' | 'all', format: 'csv' | 'ics') => void;
+}) {
+  const { t } = useI18n();
+  const [what, setWhat] = useState<'view' | 'all'>('all');
+  const [format, setFormat] = useState<'csv' | 'ics'>('csv');
+  return (
+    <Modal
+      title={t('editor.exportTitle')}
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn" onClick={onClose}>
+            {t('common.cancel')}
+          </button>
+          <button className="btn primary" onClick={() => onExport(what, format)}>
+            <Icon name="download" size={15} />
+            {t('editor.exportDownload')}
+          </button>
+        </>
+      }
+    >
+      <div className="stack">
+        <Field label={t('editor.exportWhat')}>
+          <Segmented
+            value={what}
+            onChange={setWhat}
+            options={[
+              { value: 'all', label: t('editor.exportAll', { count: groupCount }) },
+              { value: 'view', label: t('editor.exportView', { name: viewName }) },
+            ]}
+          />
+        </Field>
+        <Field
+          label={t('editor.exportFormat')}
+          hint={format === 'csv' ? t(what === 'all' ? 'editor.csvAllHint' : 'editor.csvHint') : t('editor.icsHint')}
+        >
+          <Segmented
+            value={format}
+            onChange={setFormat}
+            options={[
+              { value: 'csv', label: 'CSV (Excel)' },
+              { value: 'ics', label: 'iCal' },
+            ]}
+          />
+        </Field>
+      </div>
+    </Modal>
   );
 }
