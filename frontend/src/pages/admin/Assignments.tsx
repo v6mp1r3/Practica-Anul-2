@@ -2,7 +2,8 @@ import { CycleTabs, audienceInCycle, groupInCycle, useCycle } from '../../compon
 import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { useState } from 'react';
 import { CrudPage } from '../../components/CrudPage';
-import { TagInput } from '../../components/TagInput';
+import { MultiSelect } from '../../components/MultiSelect';
+import { useEquipment } from '../../components/useEquipment';
 import { Field, Segmented } from '../../components/ui';
 import type { ActivityType, Assignment, Audience, Parity, RoomType } from '../../domain/types';
 import { useI18n } from '../../i18n';
@@ -29,7 +30,7 @@ export default function Assignments() {
     (a) => (!scope || scopeGroups.some((g) => index.audienceTouchesGroup(a.audience, g))) && audienceInCycle(index, a.audience, cycle),
   );
   const items = groupFilter ? inScope.filter((a) => index.audienceTouchesGroup(a.audience, groupFilter)) : inScope;
-  const equipment = [...new Set(dataset.rooms.flatMap((r) => r.equipment))].sort();
+  const equipment = useEquipment();
 
   return (
     <CrudPage
@@ -166,7 +167,8 @@ export default function Assignments() {
                     const type = e.target.value as ActivityType;
                     set({
                       type,
-                      roomType: (type === 'project' ? 'seminar' : type) as RoomType, // project hours use ordinary rooms
+                      // rooms have no fixed type: only a lab needs a laboratory, any other class an ordinary room
+                      roomType: (type === 'project' ? 'seminar' : type) as RoomType,
                       equipment: type === 'lab' && !d.equipment.length ? ['calculatoare'] : d.equipment,
                     });
                   }}
@@ -325,18 +327,15 @@ export default function Assignments() {
                   </Select>
                 </Field>
               )}
-              <Field label={t('assignments.roomType')}>
-                <Select className="select" value={d.roomType} onChange={(e) => set({ roomType: e.target.value as RoomType })}>
-                  {(['lecture', 'seminar', 'lab'] as RoomType[]).map((type) => (
-                    <option key={type} value={type}>
-                      {t(`roomType.${type}`)}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
             </div>
-            <Field label={t('assignments.equipment')}>
-              <TagInput value={d.equipment} onChange={(eq) => set({ equipment: eq })} suggestions={equipment} />
+            <Field label={t('assignments.equipment')} hint={t('assignments.equipmentHint')}>
+              <MultiSelect
+                value={d.equipment}
+                onChange={(eq) => set({ equipment: eq })}
+                options={equipment.options}
+                placeholder={t('equipment.placeholder')}
+                aria-label={t('assignments.equipment')}
+              />
             </Field>
           </div>
         );
