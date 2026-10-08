@@ -140,7 +140,9 @@ export default function Assignments() {
         // a lecture's torent is chosen per subject, by its groups (an existing one is shown with its groups)
         const streamGroups = d.audience.kind === 'stream' ? (d.audience.groupIds ?? index.streams.get(d.audience.id)?.groupIds ?? []) : [];
         const setStreamGroups = (groupIds: string[]) => setAudience({ kind: 'stream', id: '', groupIds: [...new Set(groupIds)] });
-        const predefined = dataset.streams.filter((st) => !st.subjectId && st.groupIds.some((g) => visibleGroups.some((v) => v.id === g)));
+        const predefined = dataset.streams
+          .filter((st) => !st.subjectId && st.groupIds.some((g) => visibleGroups.some((v) => v.id === g)))
+          .sort((a, b) => a.name.localeCompare(b.name));
         const groupYears = [...new Set(visibleGroups.map((g) => g.year))].sort();
         // reduced attendance is counted per session, not per week (no odd/even weeks either)
         const reduced = index.isReduced(d);
