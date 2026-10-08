@@ -18,6 +18,11 @@ export default function Groups() {
   const [cycle, setCycle] = useCycle();
   const mine = (g: { cycle?: StudyCycle }) => groupInCycle(g, cycle);
   const [language, setLanguage] = useState('');
+  // the specialty prefix of a group's name: TI-251 → TI, FAF-232 → FAF
+  const [prefix, setPrefix] = useState('');
+  const prefixOf = (name: string) => name.split('-')[0].trim().toUpperCase();
+  const ourGroups = dataset.groups.filter((x) => (!faculty || x.faculty === faculty) && mine(x));
+  const prefixes = [...new Set(ourGroups.map((g) => prefixOf(g.name)))].sort((a, b) => a.localeCompare(b, 'ro'));
   // each lecture taught to several groups: its subject's torent
   const subjectStreams = dataset.assignments
     .filter(
@@ -38,16 +43,31 @@ export default function Groups() {
           embedded
           collection="groups"
           title={t('groups.groups')}
-          items={dataset.groups.filter((x) => (!faculty || x.faculty === faculty) && mine(x) && (!language || languageOf(x) === language))}
+          items={ourGroups.filter((x) => (!prefix || prefixOf(x.name) === prefix) && (!language || languageOf(x) === language))}
           filters={
-            <Select className="select pill" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label={t('language.label')}>
-              <option value="">{t('language.all')}</option>
-              {(['ro', 'ru', 'en', 'fr'] as const).map((l) => (
-                <option key={l} value={l}>
-                  {t(`language.${l}`)}
-                </option>
-              ))}
-            </Select>
+            <>
+              <Select className="select pill" value={prefix} onChange={(e) => setPrefix(e.target.value)} aria-label={t('groups.prefix')}>
+                <option value="">{t('groups.allPrefixes')}</option>
+                {prefixes.map((x) => (
+                  <option key={x} value={x}>
+                    {x}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                className="select pill"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                aria-label={t('language.label')}
+              >
+                <option value="">{t('language.all')}</option>
+                {(['ro', 'ru', 'en', 'fr'] as const).map((l) => (
+                  <option key={l} value={l}>
+                    {t(`language.${l}`)}
+                  </option>
+                ))}
+              </Select>
+            </>
           }
           itemLabel={(x) => x.name}
           searchText={(x) => `${x.name} ${x.program} ${x.faculty ?? ''}`}

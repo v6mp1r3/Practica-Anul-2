@@ -18,6 +18,8 @@ export const ro = {
   'common.saved': 'Salvat',
   'common.error': 'Ceva nu a mers. Încearcă din nou.',
   'common.all': 'Toate',
+  'groups.prefix': 'Specialitate',
+  'groups.allPrefixes': 'Toate specialitățile',
   'language.ro': 'Română',
   'language.ru': 'Rusă',
   'language.en': 'Engleză',

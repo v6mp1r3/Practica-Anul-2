@@ -19,6 +19,8 @@ export const ru: Record<MessageKey, string> = {
   'common.saved': 'Сохранено',
   'common.error': 'Что-то пошло не так. Попробуйте ещё раз.',
   'common.all': 'Все',
+  'groups.prefix': 'Специальность',
+  'groups.allPrefixes': 'Все специальности',
   'language.ro': 'Румынский',
   'language.ru': 'Русский',
   'language.en': 'Английский',
