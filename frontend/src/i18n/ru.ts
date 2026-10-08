@@ -333,6 +333,8 @@ export const ru: Record<MessageKey, string> = {
   'equipment.physics': 'Физические приборы',
   'equipment.sport': 'Спортзал',
   'assignments.equipmentHint': 'Пара ставится только в аудиторию, где есть всё отмеченное здесь.',
+  'assignments.autoSplit':
+    'Группа ({size} студентов) не помещается ни в одну подходящую аудиторию (не больше {largest} мест), поэтому делится на две подгруппы, по паре на каждую.',
   'freeRooms.equipment': 'С оборудованием',
   'freeRooms.anyEquipment': 'Любое',
   'rooms.nameRequired': 'Название аудитории обязательно.',
@@ -350,7 +352,6 @@ export const ru: Record<MessageKey, string> = {
   'groups.facultyRequired': 'Выберите факультет группы.',
   'groups.size': 'Студентов',
   'groups.subgroups': 'Подгруппы',
-  'groups.subgroupsHint': 'По умолчанию 1 (группа не делится). Только если лаборатория мала для всей группы (напр. A01).',
   'groups.streamHint': 'Группы, которые вместе слушают одну лекцию.',
   'groups.streamMin': 'В потоке должно быть не меньше двух групп.',
   'groups.nameRequired': 'Название обязательно.',

@@ -1,7 +1,9 @@
 import { CycleTabs, audienceInCycle, groupInCycle, useCycle } from '../../components/CycleTabs';
 import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { useState } from 'react';
+import { api } from '../../api';
 import { CrudPage } from '../../components/CrudPage';
+import { needsSplit } from '../../domain/rooms';
 import { MultiSelect } from '../../components/MultiSelect';
 import { LanguageTag, languageOf } from '../../components/Language';
 import { useEquipment } from '../../components/useEquipment';
@@ -127,6 +129,19 @@ export default function Assignments() {
         roomType: 'lecture',
         equipment: [],
       })}
+      // a group that fits in none of the rooms its class can use is split in two: one pair per subgroup
+      onSave={async ({ id, ...d }) => {
+        const split = needsSplit(index, dataset.rooms, d);
+        if (!split || d.audience.kind !== 'group') {
+          await (id ? api.update('assignments', { ...d, id }) : api.create('assignments', d));
+          return;
+        }
+        const group = index.groups.get(d.audience.id)!;
+        if (group.subgroups < 2) await api.update('groups', { ...group, subgroups: 2 });
+        const half = (n: number): Omit<Assignment, 'id'> => ({ ...d, audience: { kind: 'subgroup', id: group.id, subgroup: n } });
+        await (id ? api.update('assignments', { ...half(1), id }) : api.create('assignments', half(1)));
+        await api.create('assignments', half(2));
+      }}
       validate={(d) =>
         !d.subjectId ||
         !d.teacherId ||
@@ -143,6 +158,7 @@ export default function Assignments() {
         // a subject is taught to the groups of its language (AM in Russian to the Russian groups)
         const subjectLanguage = languageOf(index.subjects.get(d.subjectId) ?? {});
         const formGroups = visibleGroups.filter((g) => languageOf(g) === subjectLanguage);
+        const split = needsSplit(index, dataset.rooms, d);
         const setAudience = (aud: Audience) => set({ audience: aud });
         const subgroupsOf = (id: string) => index.groups.get(id)?.subgroups ?? 1;
         // a lecture's torent is chosen per subject, by its groups (an existing one is shown with its groups)
@@ -246,7 +262,8 @@ export default function Assignments() {
                   options={[
                     { value: 'stream', label: t('assignments.kind.stream') },
                     { value: 'group', label: t('assignments.kind.group') },
-                    { value: 'subgroup', label: t('assignments.kind.subgroup') },
+                    // subgroups come by themselves (see the split note); kept only on a class already split
+                    ...(d.audience.kind === 'subgroup' ? [{ value: 'subgroup' as const, label: t('assignments.kind.subgroup') }] : []),
                   ]}
                 />
                 {d.audience.kind !== 'stream' && (
@@ -281,6 +298,11 @@ export default function Assignments() {
                   {index.audienceSize(d.audience)} {t('groups.size').toLowerCase()}
                 </span>
               </div>
+              {split && (
+                <p className="small" style={{ margin: '8px 0 0', color: 'var(--warning)' }}>
+                  {t('assignments.autoSplit', { size: split.size, largest: split.largest })}
+                </p>
+              )}
               {/* the torent of this subject's lecture: tick the groups that attend it together */}
               {d.audience.kind === 'stream' && (
                 <div className="stream-picker">

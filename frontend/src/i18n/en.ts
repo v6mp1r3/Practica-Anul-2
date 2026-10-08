@@ -332,6 +332,8 @@ export const en: Record<MessageKey, string> = {
   'equipment.physics': 'Physics apparatus',
   'equipment.sport': 'Sports hall',
   'assignments.equipmentHint': 'The class only goes to a room that has everything ticked here.',
+  'assignments.autoSplit':
+    'The group ({size} students) fits in no suitable room (at most {largest} seats), so it is split into two subgroups, one pair each.',
   'freeRooms.equipment': 'With equipment',
   'freeRooms.anyEquipment': 'Any',
   'rooms.nameRequired': 'Room name is required.',
@@ -349,7 +351,6 @@ export const en: Record<MessageKey, string> = {
   'groups.facultyRequired': 'Choose the group’s faculty.',
   'groups.size': 'Students',
   'groups.subgroups': 'Subgroups',
-  'groups.subgroupsHint': 'Default 1 (not split). Only when a lab is too small for the whole group (e.g. A01).',
   'groups.streamHint': 'Groups that attend the same lecture together.',
   'groups.streamMin': 'A stream needs at least two groups.',
   'groups.nameRequired': 'Name is required.',

@@ -332,6 +332,8 @@ export const ro = {
   'equipment.physics': 'Aparatură de fizică',
   'equipment.sport': 'Sală de sport',
   'assignments.equipmentHint': 'Perechea se pune doar într-o sală care are tot ce bifezi aici.',
+  'assignments.autoSplit':
+    'Grupa ({size} studenți) nu încape în nicio sală potrivită (cel mult {largest} locuri), așa că se împarte în două subgrupe: câte o pereche pentru fiecare.',
   'freeRooms.equipment': 'Cu echipament',
   'freeRooms.anyEquipment': 'Oricare',
   'rooms.nameRequired': 'Denumirea sălii este obligatorie.',
@@ -349,7 +351,6 @@ export const ro = {
   'groups.facultyRequired': 'Alege facultatea grupei.',
   'groups.size': 'Studenți',
   'groups.subgroups': 'Subgrupe',
-  'groups.subgroupsHint': 'Implicit 1 (grupa nu se împarte). Doar dacă un laborator e prea mic pentru toată grupa (ex. A01).',
   'groups.streamHint': 'Grupele care ascultă împreună același curs.',
   'groups.streamMin': 'Un torent are cel puțin două grupe.',
   'groups.nameRequired': 'Denumirea este obligatorie.',
