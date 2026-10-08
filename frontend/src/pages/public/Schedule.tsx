@@ -16,8 +16,8 @@ import { fmtTime, parseSlotKey } from '../../domain/slots';
 import { filterLessons, streamChoices, streamGroups } from '../../domain/views';
 import { dateLocale, useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
-import { downloadFile } from '../../utils/download';
-import { timetableToIcs } from '../../utils/export';
+import { ExportDialog, downloadTimetable } from '../../components/ExportDialog';
+import { Icon } from '../../components/Icon';
 
 type Kind = 'group' | 'teacher';
 type Tab = 'timetable' | 'midterms' | 'exams' | 'reexams';
@@ -63,6 +63,7 @@ function Schedule({ kind }: { kind: Kind }) {
   // Orar | Atestări | Examene | Reexaminări for the chosen group or teacher
   const [tab, setTab] = useState<Tab>('timetable');
   const [choice, setChoiceState] = useState<Choice>(() => loadChoice(kind));
+  const [exporting, setExporting] = useState(false);
   const setChoice = (c: Choice) => {
     setChoiceState(c);
     saveChoice(c);
@@ -163,17 +164,39 @@ function Schedule({ kind }: { kind: Kind }) {
                 ]}
               />
             )}
-            {lessons.length > 0 && (
-              <button
-                className="btn"
-                onClick={() => downloadFile(`orar-${chosen!.name}.ics`, timetableToIcs(lessons, index, dataset.settings), 'text/calendar')}
-              >
-                {t('my.addToCalendar')}
+            {/* the one shown (to a calendar, or Excel), or every group of this cycle */}
+            {published && (
+              <button className="btn" onClick={() => setExporting(true)}>
+                <Icon name="download" size={15} />
+                {t('editor.export')}
               </button>
             )}
           </>
         }
       />
+
+      {exporting && published && (
+        <ExportDialog
+          viewName={lessons.length ? chosen?.name : undefined}
+          defaultWhat="view"
+          groupCount={groups.length}
+          onClose={() => setExporting(false)}
+          onExport={(what, format) => {
+            downloadTimetable({
+              what,
+              format,
+              index,
+              settings: dataset.settings,
+              viewName: chosen?.name,
+              viewLessons: lessons,
+              allLessons: published.lessons,
+              groupIds: groups.map((g) => g.id),
+              allName: cycle === 'master' ? 'orar-toate-grupele-master' : undefined,
+            });
+            setExporting(false);
+          }}
+        />
+      )}
 
       {/* licență or master's, then any group (students' page) or any teacher (teachers' page) */}
       <div className="row wrap" style={{ gap: 8, marginBottom: 18 }}>
