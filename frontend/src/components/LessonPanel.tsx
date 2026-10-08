@@ -1,5 +1,5 @@
 import type { DatasetIndex } from '../domain/indexes';
-import { fmtTime, paritiesOverlap, range } from '../domain/slots';
+import { fmtTime, paritiesOverlap, weekDays } from '../domain/slots';
 import type { Dataset, Lesson, Parity } from '../domain/types';
 import { useI18n } from '../i18n';
 import { Icon } from './Icon';
@@ -72,7 +72,7 @@ export function LessonPanel({
               disabled={lesson.locked}
               onChange={(e) => onChange({ day: Number(e.target.value) })}
             >
-              {range(dataset.settings.workingDays).map((d) => (
+              {weekDays(dataset.settings).map((d) => (
                 <option key={d} value={d}>
                   {t(`day.${d}` as 'day.0')}
                 </option>

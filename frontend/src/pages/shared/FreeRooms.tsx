@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { TimetableGrid } from '../../components/TimetableGrid';
 import { Empty, Field, PageHeader, Segmented } from '../../components/ui';
 import { freeRooms } from '../../domain/availability';
-import { fmtTime, range } from '../../domain/slots';
+import { fmtTime, weekDays } from '../../domain/slots';
 import type { Parity, RoomType } from '../../domain/types';
 import { dayIndexOf, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
@@ -13,7 +13,8 @@ import { Select } from '../../components/Select';
 export default function FreeRooms() {
   const { t } = useI18n();
   const { dataset, index, published } = useDataset();
-  const today = Math.min(dayIndexOf(new Date()), dataset.settings.workingDays - 1);
+  const days = weekDays(dataset.settings);
+  const today = days.includes(dayIndexOf(new Date())) ? dayIndexOf(new Date()) : days[0];
   const [day, setDay] = useState(today);
   const [slot, setSlot] = useState(0);
   const [week, setWeek] = useState<Parity>(dataset.settings.weekParity ? weekParityOf(new Date()) : 'weekly');
@@ -35,7 +36,7 @@ export default function FreeRooms() {
           <div className="card-body form-grid">
             <Field label={t('editor.day')}>
               <Select className="select" value={day} onChange={(e) => setDay(Number(e.target.value))}>
-                {range(dataset.settings.workingDays).map((d) => (
+                {days.map((d) => (
                   <option key={d} value={d}>
                     {t(`day.${d}` as 'day.0')}
                   </option>
