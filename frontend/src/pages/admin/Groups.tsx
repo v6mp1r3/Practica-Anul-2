@@ -6,6 +6,8 @@ import { STUDY_FORMS, type Group, type StudyCycle, type StudyForm } from '../../
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
+import { LanguageField, LanguageTag, languageOf } from '../../components/Language';
+import { useState } from 'react';
 
 export default function Groups() {
   const { t } = useI18n();
@@ -15,6 +17,7 @@ export default function Groups() {
   // licență | master's
   const [cycle, setCycle] = useCycle();
   const mine = (g: { cycle?: StudyCycle }) => groupInCycle(g, cycle);
+  const [language, setLanguage] = useState('');
   // each lecture taught to several groups: its subject's torent
   const subjectStreams = dataset.assignments
     .filter(
@@ -35,7 +38,17 @@ export default function Groups() {
           embedded
           collection="groups"
           title={t('groups.groups')}
-          items={dataset.groups.filter((x) => (!faculty || x.faculty === faculty) && mine(x))}
+          items={dataset.groups.filter((x) => (!faculty || x.faculty === faculty) && mine(x) && (!language || languageOf(x) === language))}
+          filters={
+            <Select className="select pill" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label={t('language.label')}>
+              <option value="">{t('language.all')}</option>
+              {(['ro', 'ru', 'en', 'fr'] as const).map((l) => (
+                <option key={l} value={l}>
+                  {t(`language.${l}`)}
+                </option>
+              ))}
+            </Select>
+          }
           itemLabel={(x) => x.name}
           searchText={(x) => `${x.name} ${x.program} ${x.faculty ?? ''}`}
           columns={[
@@ -44,6 +57,7 @@ export default function Groups() {
               render: (x) => (
                 <span>
                   <strong>{x.name}</strong>
+                  <LanguageTag language={x.language} />
                   {x.cycle === 'master' && (
                     <span className="badge primary" style={{ marginLeft: 6 }}>
                       {t('cycle.master')}
@@ -80,6 +94,7 @@ export default function Groups() {
             name: '',
             program: '',
             studyForm: 'full',
+            language: 'ro',
             year: 1,
             // the cycle being shown (master's lasts 2 years)
             cycle,
@@ -128,6 +143,7 @@ export default function Groups() {
                   <option value="master">{t('cycle.master')}</option>
                 </Select>
               </Field>
+              <LanguageField value={d.language} onChange={(language) => set({ language })} label={t('language.label')} />
               <Field label={t('groups.studyForm')}>
                 <Select
                   className="select"
