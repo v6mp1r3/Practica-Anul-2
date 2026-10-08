@@ -103,10 +103,11 @@ class DatasetIndex:
 
     @staticmethod
     def room_fits(assignment: dict, room: dict) -> bool:
-        """Seminars can fall back to lecture halls."""
-        if assignment["roomType"] == "seminar":
-            return room["type"] in ("seminar", "lecture")
-        return room["type"] == assignment["roomType"]
+        """Lectures and seminars can use any ordinary room that is big enough; a lab needs a laboratory.
+        A laboratory is kept for labs, unless the class needs equipment (has_equipment checks it is there)."""
+        if assignment["roomType"] == "lab":
+            return room["type"] == "lab"
+        return room["type"] != "lab" or bool(assignment["equipment"])
 
     @staticmethod
     def has_equipment(assignment: dict, room: dict) -> bool:

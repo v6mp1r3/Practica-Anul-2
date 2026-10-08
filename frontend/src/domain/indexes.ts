@@ -139,10 +139,14 @@ export class DatasetIndex {
     return this.assignments.get(lesson.assignmentId);
   }
 
-  /** Room types an activity may use. Seminars can fall back to lecture halls. */
+  /**
+   * Lectures and seminars can use any ordinary room that is big enough; a lab
+   * needs a laboratory. A laboratory is kept for labs, unless the class needs
+   * equipment (hasEquipment checks it is there).
+   */
   roomFits(assignment: Assignment, room: Room): boolean {
-    if (assignment.roomType === 'seminar') return room.type === 'seminar' || room.type === 'lecture';
-    return room.type === assignment.roomType;
+    if (assignment.roomType === 'lab') return room.type === 'lab';
+    return room.type !== 'lab' || assignment.equipment.length > 0;
   }
 
   hasEquipment(assignment: Assignment, room: Room): boolean {
