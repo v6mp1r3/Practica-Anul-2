@@ -8,6 +8,7 @@ import { Field, Modal } from '../../components/ui';
 import { parseStudyPlan, STUDY_PLAN_TEMPLATE, type CsvResult } from '../../domain/csv';
 import type { Subject, StudyCycle } from '../../domain/types';
 import { Select } from '../../components/Select';
+import { LanguageField, LanguageTag, languageOf } from '../../components/Language';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
@@ -42,6 +43,7 @@ export default function Subjects() {
   const [evaluation, setEvaluation] = useState('');
   const [activity, setActivity] = useState('');
   const [load, setLoad] = useState('');
+  const [language, setLanguage] = useState('');
   const years = [...new Set(subjects.map((x) => x.year))].sort((a, b) => a - b);
   const planned = (x: Subject) => dataset.assignments.some((a) => a.subjectId === x.id);
   const pairsOf = (x: Subject, a: string) => (a === 'lecture' ? x.lecturePairs : a === 'seminar' ? x.seminarPairs : x.labPairs);
@@ -50,9 +52,10 @@ export default function Subjects() {
       (!year || x.year === Number(year)) &&
       (!evaluation || (x.evaluation ?? 'exam') === evaluation) &&
       (!activity || pairsOf(x, activity) > 0) &&
-      (!load || (load === 'planned') === planned(x)),
+      (!load || (load === 'planned') === planned(x)) &&
+      (!language || languageOf(x) === language),
   );
-  const filtering = !!(year || evaluation || activity || load);
+  const filtering = !!(year || evaluation || activity || load || language);
 
   const pairs = (n: number) => (n ? String(n).replace('.', ',') : '—');
 
@@ -65,6 +68,14 @@ export default function Subjects() {
         items={shown}
         filters={
           <>
+            <Select className="select pill" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label={t('language.label')}>
+              <option value="">{t('language.all')}</option>
+              {(['ro', 'ru', 'en', 'fr'] as const).map((l) => (
+                <option key={l} value={l}>
+                  {t(`language.${l}`)}
+                </option>
+              ))}
+            </Select>
             <Select className="select pill" value={year} onChange={(e) => setYear(e.target.value)} aria-label={t('subjects.year')}>
               <option value="">{t('subjects.allYears')}</option>
               {years.map((y) => (
@@ -104,6 +115,7 @@ export default function Subjects() {
                   setEvaluation('');
                   setActivity('');
                   setLoad('');
+                  setLanguage('');
                 }}
               >
                 {t('filters.reset')}
@@ -139,6 +151,7 @@ export default function Subjects() {
             render: (x) => (
               <span>
                 <strong>{x.code}</strong>
+                <LanguageTag language={x.language} />
                 {x.cycle === 'master' && (
                   <span className="badge primary" style={{ marginLeft: 6 }}>
                     {t('cycle.master')}
@@ -172,6 +185,7 @@ export default function Subjects() {
           cycle,
           code: '',
           name: '',
+          language: 'ro',
           faculty: scope || undefined,
           credits: 5,
           year: 1,
@@ -189,6 +203,12 @@ export default function Subjects() {
               <Field label={t('common.name')}>
                 <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} />
               </Field>
+              <LanguageField
+                value={d.language}
+                onChange={(language) => set({ language })}
+                label={t('language.label')}
+                hint={t('language.subjectHint')}
+              />
               <Field label={t('subjects.cycle')}>
                 <Select value={d.cycle ?? 'licenta'} onChange={(e) => set({ cycle: e.target.value as StudyCycle })}>
                   <option value="licenta">{t('cycle.licenta')}</option>
