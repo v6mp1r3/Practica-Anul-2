@@ -132,40 +132,77 @@ export function parseTimetableCsv(text: string): { rows: ImportRow[]; error?: 'h
 
 // ---------------------------------------------------------------- matching
 
-const STOP = new Set(['si', 'de', 'a', 'al', 'ale', 'in', 'la', 'pentru', 'cu', 'din', 'si', 'the', 'of', 'and', 'partea']);
+const STOP = new Set(['si', 'de', 'a', 'al', 'ale', 'in', 'la', 'pentru', 'cu', 'din', 'pe', 'prin', 'the', 'of', 'and', 'partea']);
 const ROMAN: Record<string, string> = { i: '1', ii: '2', iii: '3', iv: '4', v: '5', vi: '6' };
 
-/** Words of a name, each marked when it was shortened ("T.U." → t, u both shortened). */
-function words(s: string): { w: string; short: boolean }[] {
-  const out: { w: string; short: boolean }[] = [];
-  for (const m of fold(s).matchAll(/([a-z0-9]+)(\.)?/g)) {
-    const w = ROMAN[m[1]] ?? m[1];
-    if (!STOP.has(w)) out.push({ w, short: !!m[2] || w.length === 1 });
-  }
-  return out;
+interface Word {
+  w: string;
+  /** Shortened ("T.U." → t, u). */
+  short: boolean;
+  /** Written in capitals, 2–5 letters: maybe the initials of several words ("GI" = gândire inginerească). */
+  caps: boolean;
 }
 
-const fits = (a: { w: string; short: boolean }, b: { w: string; short: boolean }) =>
-  a.w === b.w ||
-  (a.short && b.w.startsWith(a.w)) ||
-  (b.short && a.w.startsWith(b.w)) ||
-  (Math.min(a.w.length, b.w.length) >= 5 && (a.w.startsWith(b.w) || b.w.startsWith(a.w)));
+/** Words of a name, without the little ones (și, de, pe…), each marked when it was shortened. */
+function words(s: string): Word[] {
+  const out: Word[] = [];
+  const folded = fold(s);
+  for (const m of s.normalize('NFC').matchAll(/([\p{L}0-9]+)(\.)?/gu)) {
+    const raw = m[1];
+    const f = fold(raw);
+    const caps = /^\p{Lu}{2,5}$/u.test(raw) && !ROMAN[f];
+    const w = ROMAN[f] ?? f;
+    if (!caps && STOP.has(w)) continue;
+    out.push({ w, short: !!m[2] || w.length === 1, caps });
+  }
+  return folded ? out : [];
+}
+
+/** The same word, shortened or with another ending ("Filosofia" / "Filosofie", "Proprietate" / "proprietății"). */
+const fits = (a: Word, b: Word) => {
+  if (a.w === b.w || (a.short && b.w.startsWith(a.w)) || (b.short && a.w.startsWith(b.w))) return true;
+  const n = Math.min(a.w.length, b.w.length);
+  if (n < 5) return false;
+  let common = 0;
+  while (common < n && a.w[common] === b.w[common]) common++;
+  return common >= Math.max(5, n - 2);
+};
 
 /** 0…1: how well two names agree, word by word in order ("Planificarea și Infrastructura T.U." ≈ "… transportului urban"). */
 export function nameSimilarity(x: string, y: string): number {
   const a = words(x);
-  const b = words(y);
+  const b = words(y).filter((w) => !w.caps || !STOP.has(w.w));
   if (!a.length || !b.length) return 0;
   let j = 0;
   let hit = 0;
+  let size = 0;
   for (const wa of a) {
+    size++;
     const k = b.findIndex((wb, i) => i >= j && fits(wa, wb));
     if (k >= 0) {
       hit++;
       j = k + 1;
+      continue;
+    }
+    // "GI": the initials of the next words ("gândire inginerească")
+    if (wa.caps) {
+      const n = wa.w.length;
+      const at = b.findIndex(
+        (_, i) =>
+          i >= j &&
+          b
+            .slice(i, i + n)
+            .map((x) => x.w[0])
+            .join('') === wa.w,
+      );
+      if (at >= 0) {
+        hit += n;
+        size += n - 1;
+        j = at + n;
+      } else if (STOP.has(wa.w)) size--; // "și" written in capitals
     }
   }
-  return hit / Math.max(a.length, b.length);
+  return hit / Math.max(size, b.length);
 }
 
 const initials = (s: string) =>
@@ -211,6 +248,21 @@ const groupKey = (s: string) =>
 export function matchImport(rows: ImportRow[], ds: Dataset, idx: DatasetIndex): ImportResult {
   const groupsByKey = new Map(ds.groups.map((g) => [groupKey(g.name), g]));
   const roomsByKey = new Map(ds.rooms.map((r) => [roomKey(r.name), r]));
+  const bare = (k: string) => k.replace(/-/g, '');
+  const roomsBare = new Map(ds.rooms.map((r) => [bare(roomKey(r.name)), r]));
+  /** "606" → "3-606" (the only room ending so), "A03" → "A-03", "3-3 Amdaris" → "3-3". */
+  const findRoom = (name: string): Room | undefined => {
+    const k = roomKey(name);
+    if (!k) return undefined;
+    const exact = roomsByKey.get(k) ?? roomsBare.get(bare(k));
+    if (exact) return exact;
+    const ending = ds.rooms.filter((r) => roomKey(r.name).endsWith(`-${k}`));
+    if (ending.length === 1) return ending[0];
+    return ds.rooms.find((r) => {
+      const rk = roomKey(r.name);
+      return rk.length >= 3 && k.startsWith(rk) && !/[0-9]/.test(k[rk.length] ?? '');
+    });
+  };
   const streamsByName = new Map(ds.streams.filter((st) => st.name).map((st) => [fold(st.name!), st]));
   const slots = ds.settings.slots;
   const toMin = (hhmm: string) => {
@@ -268,6 +320,8 @@ export function matchImport(rows: ImportRow[], ds: Dataset, idx: DatasetIndex): 
       const sim = subjectScore(row, subject);
       if (sim < 0.5) continue;
       const teacher = row.teacher ? teacherSimilarity(row.teacher, idx.teachers.get(a.teacherId)?.name ?? '') : 0;
+      // another type, and another teacher or other groups: not this load (one group's seminar is not the lecture)
+      if (row.type && row.type !== a.type && ((row.teacher && teacher === 0) || shared !== cohorts.length || shared !== ids.size)) continue;
       let score = 3 * sim + 1.5 * teacher + shared / Math.max(cohorts.length, ids.size);
       score += row.type ? (row.type === a.type ? 1 : -2) : 0;
       if (a.audience.kind === 'subgroup') score += subgroup === a.audience.subgroup ? 0.5 : subgroup ? -1 : 0;
@@ -287,7 +341,7 @@ export function matchImport(rows: ImportRow[], ds: Dataset, idx: DatasetIndex): 
     }
     taken.add(key);
     // where: the room by name, otherwise a free room that fits
-    let room: Room | undefined = row.room ? roomsByKey.get(roomKey(row.room)) : undefined;
+    let room: Room | undefined = row.room ? findRoom(row.room) : undefined;
     let roomGuessed = false;
     if (!room) {
       const size = idx.audienceSize(a.audience);

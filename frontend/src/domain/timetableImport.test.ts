@@ -38,6 +38,40 @@ describe('timetable import', () => {
     expect(teacherSimilarity('Rusu Elena', 'Ion Balan')).toBe(0);
   });
 
+  it('matches FCIM short names and rooms', () => {
+    expect(nameSimilarity('Filosofia GI', 'Filosofie și gândire inginerească')).toBe(1);
+    expect(nameSimilarity('Cadrul Legal al SI', 'Cadrul legal al securității informaționale')).toBe(1);
+    expect(nameSimilarity('Dreptul de Proprietate Intelectuală', 'Dreptul proprietății intelectuale')).toBe(1);
+    const ds = {
+      ...seedDataset,
+      rooms: [
+        { ...seedDataset.rooms[0], id: 'x1', name: '3-606' },
+        { ...seedDataset.rooms[0], id: 'x2', name: 'A-03' },
+        { ...seedDataset.rooms[0], id: 'x3', name: '3-3' },
+      ],
+    };
+    const g = ds.groups[0];
+    const a = ds.assignments.find((x) => idx.audienceTouchesGroup(x.audience, g.id) && x.audience.kind === 'group')!;
+    const s = idx.subjects.get(a.subjectId)!;
+    const row = (room: string, start: string): ImportRow => ({
+      source: room,
+      groups: [g.name],
+      day: 0,
+      start,
+      subject: s.name,
+      type: a.type,
+      parity: 'weekly',
+      room,
+    });
+    const slots = ds.settings.slots;
+    const r = matchImport(
+      [row('606', slots[0].start), row('A03', slots[1].start), row('3-3 Amdaris', slots[2].start)],
+      ds,
+      new DatasetIndex(ds),
+    );
+    expect(r.lessons.map((l) => l.roomId)).toEqual(['x1', 'x2', 'x3']);
+  });
+
   it('reports rows it cannot place and why', () => {
     const g = seedDataset.groups[0];
     const a = seedDataset.assignments.find((x) => idx.audienceTouchesGroup(x.audience, g.id))!;
