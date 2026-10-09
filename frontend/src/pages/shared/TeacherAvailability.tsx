@@ -118,6 +118,8 @@ export default function TeacherAvailability() {
               value={week}
               onChange={setWeek}
               options={[
+                // both weeks: free (or shown) for the odd and the even week together
+                { value: 'weekly', label: t('tt.weekAll') },
                 { value: 'odd', label: t('tt.weekOdd') },
                 { value: 'even', label: t('tt.weekEven') },
               ]}
