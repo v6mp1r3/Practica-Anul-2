@@ -390,7 +390,7 @@ export const ru: Record<MessageKey, string> = {
   'clusters.title': 'Кластеры',
   'clusters.type': 'Тип',
   'clusters.hint': 'Создаются сами из групп: курс, специальность, язык и форма обучения. Можно добавить и свои.',
-  'clusters.yearSummary': '{groups} групп · {specs} специальностей',
+  'clusters.less': 'свернуть',
   'clusters.kind.year': 'Курс',
   'clusters.kind.speciality': 'Специальность',
   'clusters.kind.language': 'Язык',
