@@ -92,17 +92,20 @@ export function GroupPicker({ groups, value, onChange }: { groups: Group[]; valu
                     >
                       {sp}
                     </button>
-                    {rowGroups.map((g) => (
-                      <button
-                        key={g.id}
-                        type="button"
-                        className="tag"
-                        aria-pressed={chosen.has(g.id)}
-                        onClick={() => set([g.id], !chosen.has(g.id))}
-                      >
-                        {g.name.slice(sp.length + 1) || g.name}
-                      </button>
-                    ))}
+                    {/* the groups wrap next to the specialty, never under it */}
+                    <span className="group-tags">
+                      {rowGroups.map((g) => (
+                        <button
+                          key={g.id}
+                          type="button"
+                          className="tag"
+                          aria-pressed={chosen.has(g.id)}
+                          onClick={() => set([g.id], !chosen.has(g.id))}
+                        >
+                          {g.name.slice(sp.length + 1) || g.name}
+                        </button>
+                      ))}
+                    </span>
                   </div>
                 );
               })}

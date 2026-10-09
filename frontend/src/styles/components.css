@@ -1670,3 +1670,19 @@ button.holiday-row.selected {
   text-align: center;
   background-position: right 2px center;
 }
+
+/* GroupPicker: a specialty's groups wrap beside its label */
+.group-picker .tag-row {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+.group-picker .tag-row > .group-spec {
+  flex: none;
+  margin-top: 3px;
+}
+.group-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
