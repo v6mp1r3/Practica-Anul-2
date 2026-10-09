@@ -191,6 +191,8 @@ export default function FreeRooms() {
             settings={dataset.settings}
             index={index}
             lessons={[]}
+            // today's column and the line at the current time, as on Profesori disponibili
+            today={dayIndexOf(now)}
             onCellClick={(d, s) => {
               setDay(d);
               setSlot(s);
