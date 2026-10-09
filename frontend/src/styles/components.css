@@ -1817,9 +1817,6 @@ button.holiday-row.selected {
 .cluster-year-btn .chev.open {
   transform: rotate(90deg);
 }
-tr.cluster-sub td:first-child {
-  padding-left: 40px;
-}
 tr.cluster-sub {
   background: var(--surface-2);
 }
@@ -1836,42 +1833,33 @@ tr.cluster-section td {
   white-space: nowrap;
 }
 
-/* ---------- motion: opening and closing smoothly ---------- */
+/* ---------- motion: opening and closing smoothly (one gentle curve everywhere) ---------- */
 :root {
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --motion: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-/* Collapse: the height itself animates (0fr → 1fr), with a fade */
+/* Collapse: the height itself animates (0fr → 1fr) */
 .collapse {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
   visibility: hidden;
   transition:
-    grid-template-rows 0.32s var(--ease-out-soft),
-    opacity 0.2s ease,
-    visibility 0s linear 0.32s;
+    grid-template-rows var(--motion),
+    opacity var(--motion),
+    visibility 0s linear 0.3s;
 }
 .collapse.open {
   grid-template-rows: 1fr;
   opacity: 1;
   visibility: visible;
   transition:
-    grid-template-rows 0.38s var(--ease-out-soft),
-    opacity 0.3s ease 0.06s,
+    grid-template-rows var(--motion),
+    opacity var(--motion),
     visibility 0s;
 }
 .collapse-inner {
   min-height: 0;
   overflow: hidden;
-}
-.collapse.open .collapse-inner > * {
-  animation: content-in 0.42s var(--ease-out-soft) both;
-}
-@keyframes content-in {
-  from {
-    transform: translateY(-6px);
-  }
 }
 /* the group picker's year: the head, then its rows inside the collapse */
 .group-year:has(> .collapse) {
@@ -1882,58 +1870,59 @@ tr.cluster-section td {
   gap: 8px;
   padding-top: 10px;
 }
-/* the arrows turn with a little spring */
+/* the arrows turn on the same curve */
 .group-year-toggle .chev,
 .cluster-year-btn .chev {
   transition:
-    transform 0.34s var(--ease-spring),
+    transform var(--motion),
     color 0.2s ease;
 }
 .group-year-toggle:hover .chev,
 .cluster-year-btn:hover .chev {
   color: var(--text);
 }
-/* Clustere: a year's specialty rows slide in one after another, and fade out when it closes */
-tr.cluster-sub {
-  animation: row-in 0.36s var(--ease-out-soft) both;
-  animation-delay: calc(var(--i, 0) * 22ms);
+/* Clustere: a specialty row grows from no height to its own (its cells' padding moves inside, so it can be 0) */
+tr.cluster-sub > td {
+  padding: 0;
+  /* the line under the row takes no room, so a closed row is really 0 high */
+  border-bottom: 0;
+  box-shadow: inset 0 -1px 0 transparent;
+  transition: box-shadow var(--motion);
 }
-tr.cluster-sub.leaving {
-  animation: row-out 0.2s ease both;
-  animation-delay: 0s;
+tr.cluster-sub.grown > td {
+  box-shadow: inset 0 -1px 0 var(--border);
 }
-@keyframes row-in {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
+.row-grow {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--motion),
+    opacity var(--motion);
 }
-@keyframes row-out {
-  to {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
+tr.cluster-sub.grown .row-grow {
+  grid-template-rows: 1fr;
+  opacity: 1;
 }
-/* groups shown with "arată grupele" / "+N" pop in */
-.pop-in {
-  animation: pop-in 0.3s var(--ease-spring) both;
-  animation-delay: calc(var(--i, 0) * 12ms);
+.row-grow > div {
+  min-height: 0;
+  overflow: hidden;
 }
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.85);
-  }
+.row-pad {
+  padding: 10px 14px;
 }
-/* dropdown menus: a short scale and slide from where they open */
+tr.cluster-sub td:first-child .row-pad {
+  padding-left: 40px;
+}
+/* dropdown menus: a short fade and slide from where they open */
 .select-menu {
   transform-origin: top center;
-  animation: select-in 0.2s var(--ease-out-soft);
+  animation: select-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes select-in {
   from {
     opacity: 0;
-    transform: translateY(-4px) scale(0.98);
+    transform: translateY(-4px);
   }
 }
 /* <details> (e.g. the import's unmatched rows) open smoothly where the browser allows it */
@@ -1944,8 +1933,8 @@ details::details-content {
   height: 0;
   overflow: hidden;
   transition:
-    height 0.32s var(--ease-out-soft),
-    content-visibility 0.32s allow-discrete;
+    height var(--motion),
+    content-visibility 0.3s allow-discrete;
 }
 details[open]::details-content {
   height: auto;
@@ -1953,13 +1942,11 @@ details[open]::details-content {
 @media (prefers-reduced-motion: reduce) {
   .collapse,
   .collapse.open,
+  .row-grow,
+  tr.cluster-sub > td,
   details::details-content {
     transition: none;
   }
-  .collapse.open .collapse-inner > *,
-  tr.cluster-sub,
-  tr.cluster-sub.leaving,
-  .pop-in,
   .select-menu {
     animation: none;
   }
