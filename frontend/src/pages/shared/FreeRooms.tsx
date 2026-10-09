@@ -28,7 +28,6 @@ export default function FreeRooms() {
 
   const lessons = published?.lessons ?? [];
   const freeAt = (d: number, s: number) => freeRooms(rooms, lessons, d, s, week);
-  const list = freeAt(day, slot);
   // checking one room at the chosen day, pair and week
   const allRooms = [...dataset.rooms].sort((a, b) => a.name.localeCompare(b.name, 'ro', { numeric: true }));
   const [checkId, setCheckId] = useState('');
@@ -36,9 +35,15 @@ export default function FreeRooms() {
   const occupying = checked
     ? lessons.filter((l) => !l.date && l.roomId === checked.id && l.day === day && l.slot === slot && paritiesOverlap(l.parity, week))
     : [];
-  // the room picked in the list (only while it is still free at the chosen time)
+  // today only: the rooms free in the current pair (or the next one, between pairs), in this week
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const toMin = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+  const todaySlot = days.includes(dayIndexOf(now)) ? dataset.settings.slots.findIndex((x) => toMin(x.end) > nowMinutes) : -1;
+  const todayList =
+    todaySlot >= 0 ? freeRooms(rooms, lessons, dayIndexOf(now), todaySlot, dataset.settings.weekParity ? weekParityOf(now) : 'weekly') : [];
   const [roomId, setRoomId] = useState('');
-  const chosen = list.find((r) => r.id === roomId);
+  const chosen = todayList.find((r) => r.id === roomId);
 
   return (
     <div className="page">
@@ -123,13 +128,17 @@ export default function FreeRooms() {
           )}
         </div>
 
-        {/* the count, and a searchable list instead of every room at once */}
+        {/* today: the count, and a searchable list instead of every room at once */}
         <div className="card free-now">
-          <div className="free-now-count">
-            <strong>{list.length}</strong>
-            <span>{t('freeRooms.freeCount')}</span>
-          </div>
-          {list.length === 0 ? (
+          {todaySlot < 0 ? (
+            <span className="muted">{t(days.includes(dayIndexOf(now)) ? 'freeRooms.noPairsToday' : 'freeRooms.dayOff')}</span>
+          ) : (
+            <div className="free-now-count">
+              <strong>{todayList.length}</strong>
+              <span>{t('freeRooms.today', { pair: todaySlot + 1 })}</span>
+            </div>
+          )}
+          {todaySlot < 0 ? null : todayList.length === 0 ? (
             <span className="muted">{t('freeRooms.none')}</span>
           ) : (
             <div className="stack" style={{ gap: 6, width: 280 }}>
@@ -140,7 +149,7 @@ export default function FreeRooms() {
                 aria-label={t('freeRooms.find')}
               >
                 <option value="">{t('freeRooms.find')}</option>
-                {list.map((r) => (
+                {todayList.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name} · {r.capacity} {t('rooms.capacity').toLowerCase()}
                   </option>
@@ -186,7 +195,8 @@ export default function FreeRooms() {
                   onChange={(e) => {
                     setDay(d);
                     setSlot(s);
-                    setRoomId(e.target.value);
+                    setCheckId(e.target.value);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   aria-label={t('freeRooms.find')}
                 >
