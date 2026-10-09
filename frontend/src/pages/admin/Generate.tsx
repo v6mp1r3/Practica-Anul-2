@@ -2,7 +2,7 @@ import { CycleTabs, groupInCycle, useCycle } from '../../components/CycleTabs';
 import { weeksLabel } from '../../domain/exams';
 import { useAdminScope } from '../../components/FacultyFilter';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, type GenerateProgress } from '../../api';
 import { Icon } from '../../components/Icon';
 import { PrecheckList } from '../../components/PrecheckList';
@@ -105,6 +105,10 @@ export default function Generate() {
   const [effort, setEffort] = useState<Effort>('normal');
   const [baseId, setBaseId] = useState('');
   const [drafts, setDrafts] = useState<Timetable[]>([]);
+  // a timetable to follow (e.g. one just imported: Orare → Importă orar sends ?example=id)
+  const [params] = useSearchParams();
+  const [exampleId, setExampleId] = useState(params.get('example') ?? '');
+  const [examples, setExamples] = useState<Timetable[]>([]);
   const [progress, setProgress] = useState<GenerateProgress | null>(null);
   const [result, setResult] = useState<Timetable[]>([]);
   // what to generate: the weekly timetable, or atestări / exams / retakes
@@ -115,6 +119,7 @@ export default function Generate() {
   useEffect(() => {
     api.listTimetables().then((list) => {
       setDrafts(list.filter((x) => x.status !== 'variant' && x.lessons.some((l) => l.locked)));
+      setExamples(list.filter((x) => x.status !== 'variant' && x.lessons.length > 0));
       setResult(list.filter((x) => x.status === 'variant'));
     });
   }, []);
@@ -128,7 +133,16 @@ export default function Generate() {
     setProgress({ variant: 0, progress: 0 });
     setResult([]);
     try {
-      const out = await api.generate({ groupIds, variants, iterations: EFFORT[effort], baseTimetableId: baseId || undefined }, setProgress);
+      const out = await api.generate(
+        {
+          groupIds,
+          variants,
+          iterations: EFFORT[effort],
+          baseTimetableId: baseId || undefined,
+          exampleTimetableId: exampleId || undefined,
+        },
+        setProgress,
+      );
       setResult(out);
     } catch {
       toast(t('common.error'), 'error');
@@ -240,6 +254,18 @@ export default function Generate() {
                       ]}
                     />
                   </Field>
+                  {examples.length > 0 && (
+                    <Field label={t('generate.example')} hint={t('generate.exampleHint')}>
+                      <Select className="select" value={exampleId} onChange={(e) => setExampleId(e.target.value)}>
+                        <option value="">{t('generate.noExample')}</option>
+                        {examples.map((x) => (
+                          <option key={x.id} value={x.id}>
+                            {x.name} ({x.lessons.length} {t('dash.pairs')})
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                  )}
                   {drafts.length > 0 && (
                     <Field label={t('generate.base')} hint={t('generate.baseHint')}>
                       <Select className="select" value={baseId} onChange={(e) => setBaseId(e.target.value)}>
