@@ -1834,3 +1834,9 @@ tr.cluster-sub {
 tr.cluster-sub .badge {
   background: var(--surface);
 }
+tr.cluster-section td {
+  background: var(--surface);
+  padding-top: 18px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-strong);
+}
