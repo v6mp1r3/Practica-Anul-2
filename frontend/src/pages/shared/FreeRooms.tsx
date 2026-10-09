@@ -5,7 +5,6 @@ import { freeRooms } from '../../domain/availability';
 import { fmtTime, paritiesOverlap, weekDays } from '../../domain/slots';
 import { subjectLabel } from '../../domain/subjects';
 import type { Parity } from '../../domain/types';
-import { useEquipment } from '../../components/useEquipment';
 import { useRoomFilters } from '../../components/RoomFilters';
 import { dayIndexOf, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
@@ -21,7 +20,6 @@ export default function FreeRooms() {
   const [day, setDay] = useState(today);
   const [slot, setSlot] = useState(0);
   const [week, setWeek] = useState<Parity>(dataset.settings.weekParity ? weekParityOf(new Date()) : 'weekly');
-  const eq = useEquipment();
   // the same room filters as Săli: block, floor, seats, equipment
   const roomFilters = useRoomFilters(dataset.rooms);
   const rooms = roomFilters.filtered;
@@ -44,8 +42,6 @@ export default function FreeRooms() {
   const todaySlot = days.includes(dayIndexOf(now)) ? dataset.settings.slots.findIndex((x) => toMin(x.end) > nowMinutes) : -1;
   const todayList =
     todaySlot >= 0 ? freeRooms(rooms, lessons, dayIndexOf(now), todaySlot, dataset.settings.weekParity ? weekParityOf(now) : 'weekly') : [];
-  const [roomId, setRoomId] = useState('');
-  const chosen = todayList.find((r) => r.id === roomId);
 
   return (
     <div className="page">
@@ -130,7 +126,7 @@ export default function FreeRooms() {
           )}
         </div>
 
-        {/* today: the count, and a searchable list instead of every room at once */}
+        {/* today: how many rooms are free now */}
         <div className="card free-now">
           {todaySlot < 0 ? (
             <span className="muted">{t(days.includes(dayIndexOf(now)) ? 'freeRooms.noPairsToday' : 'freeRooms.dayOff')}</span>
@@ -138,32 +134,6 @@ export default function FreeRooms() {
             <div className="free-now-count">
               <strong>{todayList.length}</strong>
               <span>{t('freeRooms.today', { pair: todaySlot + 1 })}</span>
-            </div>
-          )}
-          {todaySlot < 0 ? null : todayList.length === 0 ? (
-            <span className="muted">{t('freeRooms.none')}</span>
-          ) : (
-            <div className="stack" style={{ gap: 6, width: 280 }}>
-              <Select
-                className="select"
-                value={chosen?.id ?? ''}
-                onChange={(e) => setRoomId(e.target.value)}
-                aria-label={t('freeRooms.find')}
-              >
-                <option value="">{t('freeRooms.find')}</option>
-                {todayList.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} · {r.capacity} {t('rooms.capacity').toLowerCase()}
-                  </option>
-                ))}
-              </Select>
-              {chosen && (
-                <span className="small muted">
-                  {[chosen.building, `${chosen.capacity} ${t('rooms.capacity').toLowerCase()}`, eq.list(chosen.equipment)]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              )}
             </div>
           )}
         </div>
