@@ -1,7 +1,7 @@
 // Helpers to slice a timetable by group, teacher, room or day.
 import type { DatasetIndex } from './indexes';
-import { paritiesOverlap } from './slots';
-import type { Day, Lesson, Parity, SlotIndex, Stream } from './types';
+import { paritiesOverlap, weekDays } from './slots';
+import type { Day, Lesson, Parity, Settings, SlotIndex, Stream } from './types';
 
 export type ViewKind = 'group' | 'teacher' | 'room';
 
@@ -86,4 +86,33 @@ export function streamChoices(
       return { id: st.id, label: st.subjectId ? names : `${st.name} (${names})`, groupIds: st.groupIds };
     })
     .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** The dates of the week of `now`, Monday to Sunday ("YYYY-MM-DD"). */
+export function datesOfWeek(now = new Date()): string[] {
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - dayIndexOf(now));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return isoDate(d);
+  });
+}
+
+/**
+ * Frecvență redusă pairs (on session dates) that fall in the week of `now`, put on their weekday so a
+ * weekly grid can show them next to the weekly pairs.
+ */
+export function sessionPairsThisWeek(lessons: Lesson[], now = new Date()): Lesson[] {
+  const dates = new Set(datesOfWeek(now));
+  return lessons.filter((l) => l.date && dates.has(l.date)).map((l) => ({ ...l, date: undefined, parity: 'weekly' as const }));
+}
+
+/** The weekdays of a weekly grid, plus Saturday and Sunday when there are frecvență redusă pairs (they use weekends). */
+export function gridDays(settings: Pick<Settings, 'workingDays' | 'formDays'>, lessons: Lesson[]): Day[] {
+  const days = weekDays(settings);
+  if (!lessons.some((l) => l.date)) return days;
+  return [...new Set([...days, ...(settings.formDays?.reduced ?? [5, 6])])].sort((a, b) => a - b) as Day[];
 }

@@ -1,5 +1,6 @@
 // CSV (spreadsheet) and iCalendar (phone calendar) exports of a timetable.
 import type { DatasetIndex } from '../domain/indexes';
+import { fmtDate } from '../domain/changes';
 import { splitCsvLine } from '../domain/csv';
 import type { Lesson, Settings } from '../domain/types';
 import { subjectLabel } from '../domain/subjects';
@@ -35,7 +36,7 @@ function csvRows(lessons: Lesson[], idx: DatasetIndex, settings: Settings): (str
           idx.audienceLabel(a.audience),
           idx.rooms.get(l.roomId)?.name ?? '',
           l.date ? '' : parityName[l.parity],
-          l.date ?? '',
+          l.date ? fmtDate(l.date) : '',
         ];
       })
   );

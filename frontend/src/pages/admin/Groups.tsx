@@ -8,8 +8,12 @@ import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
 import { LanguageField, LanguageTag, languageOf } from '../../components/Language';
-import { useState } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { specialtyOf as prefixOf } from '../../domain/specialty';
+
+const SHOWN_GROUPS = 8;
+// how long a year's rows take to open or close (as .row-grow in components.css)
+const ROW_MS = 300;
 
 export default function Groups() {
   const { t } = useI18n();
@@ -22,17 +26,62 @@ export default function Groups() {
   const [language, setLanguage] = useState('');
   // the specialty prefix of a group's name: TI-251 → TI, FAF-232 → FAF
   const [prefix, setPrefix] = useState('');
+  // frecvență | frecvență redusă | dual
+  const [form, setForm] = useState<'' | StudyForm>('');
   const ourGroups = dataset.groups.filter((x) => (!faculty || x.faculty === faculty) && mine(x));
   const prefixes = [...new Set(ourGroups.map((g) => prefixOf(g.name)))].sort((a, b) => a.localeCompare(b, 'ro'));
   // the clusters (year, speciality, language, form of study, own) with the groups of this faculty and cycle in them
   const { clusters: all = [] } = dataset;
   const clusterLabel = useClusterLabel();
   const [managing, setManaging] = useState(false);
+  // years whose specialty rows are open (closed at first, so the table stays short)
+  const [openYears, setOpenYears] = useState<Set<number>>(new Set());
+  // a year's specialty rows grow open from nothing and shrink back: they are on the page while open or closing
+  // ("mounted"), and "grown" one frame after they were put there, so the height has something to animate from
+  const [mountedYears, setMountedYears] = useState<Set<number>>(new Set());
+  const [grownYears, setGrownYears] = useState<Set<number>>(new Set());
+  const without = (set: Set<number>, y: number) => {
+    const next = new Set(set);
+    next.delete(y);
+    return next;
+  };
+  const toggleYear = (y: number) => {
+    if (openYears.has(y)) {
+      setOpenYears((cur) => without(cur, y));
+      setGrownYears((cur) => without(cur, y));
+      window.setTimeout(() => setMountedYears((cur) => without(cur, y)), ROW_MS);
+      return;
+    }
+    setOpenYears((cur) => new Set(cur).add(y));
+    setMountedYears((cur) => new Set(cur).add(y));
+    requestAnimationFrame(() => requestAnimationFrame(() => setGrownYears((cur) => new Set(cur).add(y))));
+  };
+  const specCount = (y: number) =>
+    clusters.filter(({ c, groups }) => c.kind === 'speciality' && (c.year ?? 1) === y && groups.length > 0).length;
+  // clusters whose groups are all shown
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpanded((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const visible = new Set(ourGroups.map((g) => g.id));
   const clusters = all
     .map((c) => ({ c, groups: c.groupIds.filter((id) => visible.has(id)) }))
     .filter(({ c, groups }) => groups.length > 0 || c.kind === 'custom');
   const groupName = (id: string) => dataset.groups.find((g) => g.id === id)?.name ?? id;
+  const sizeOf = new Map(dataset.groups.map((g) => [g.id, g.size]));
+  // TI · 5, FAF · 3…: how many of a cluster's groups each specialty has
+  const bySpecialty = (ids: string[]) => {
+    const n = new Map<string, number>();
+    for (const id of ids) {
+      const sp = prefixOf(groupName(id));
+      n.set(sp, (n.get(sp) ?? 0) + 1);
+    }
+    return [...n.entries()].sort((a, b) => a[0].localeCompare(b[0], 'ro'));
+  };
 
   return (
     <div className="page">
@@ -42,7 +91,9 @@ export default function Groups() {
           embedded
           collection="groups"
           title={t('groups.groups')}
-          items={ourGroups.filter((x) => (!prefix || prefixOf(x.name) === prefix) && (!language || languageOf(x) === language))}
+          items={ourGroups.filter(
+            (x) => (!prefix || prefixOf(x.name) === prefix) && (!language || languageOf(x) === language) && (!form || x.studyForm === form),
+          )}
           filters={
             <>
               <Select className="select pill" value={prefix} onChange={(e) => setPrefix(e.target.value)} aria-label={t('groups.prefix')}>
@@ -63,6 +114,19 @@ export default function Groups() {
                 {(['ro', 'ru', 'en', 'fr'] as const).map((l) => (
                   <option key={l} value={l}>
                     {t(`language.${l}`)}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                className="select pill"
+                value={form}
+                onChange={(e) => setForm(e.target.value as '' | StudyForm)}
+                aria-label={t('groups.studyForm')}
+              >
+                <option value="">{t('groups.allForms')}</option>
+                {STUDY_FORMS.map((f) => (
+                  <option key={f} value={f}>
+                    {t(`form.${f}`)}
                   </option>
                 ))}
               </Select>
@@ -240,30 +304,94 @@ export default function Groups() {
                 <thead>
                   <tr>
                     <th>{t('clusters.title')}</th>
-                    <th>{t('clusters.type')}</th>
                     <th>{t('groups.groups')}</th>
+                    <th style={{ whiteSpace: 'nowrap' }}>{t('clusters.groupCount')}</th>
                     <th>{t('groups.size')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {clusters.map(({ c, groups }) => (
-                    <tr key={c.id}>
-                      <td>
-                        <strong>{clusterLabel(c)}</strong>
-                      </td>
-                      <td className="small">{t(`clusters.kind.${c.kind}`)}</td>
-                      <td>
-                        <div className="row wrap" style={{ gap: 4 }}>
-                          {groups.map((id) => (
-                            <span key={id} className="badge">
-                              {groupName(id)}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td>{groups.length}</td>
-                    </tr>
-                  ))}
+                  {/* one section per kind (year, language, form, own), each with a line saying what it groups by */}
+                  {(['year', 'language', 'form', 'custom'] as const).map((kind) => {
+                    const rows = clusters.filter(
+                      ({ c }) => c.kind === kind || (kind === 'year' && c.kind === 'speciality' && mountedYears.has(c.year ?? 1)),
+                    );
+                    if (!rows.length) return null;
+                    return (
+                      <Fragment key={kind}>
+                        <tr className="cluster-section">
+                          <td colSpan={4}>
+                            <strong>{t(`clusters.section.${kind}`)}</strong>
+                            <span className="small muted"> — {t(`clusters.section.${kind}.hint`)}</span>
+                          </td>
+                        </tr>
+                        {rows.map(({ c, groups }) => {
+                          // a specialty row's cells grow from no height (see .row-grow)
+                          const sub = c.kind === 'speciality';
+                          const cell = (content: ReactNode) =>
+                            sub ? (
+                              <div className="row-grow">
+                                <div>
+                                  <div className="row-pad">{content}</div>
+                                </div>
+                              </div>
+                            ) : (
+                              content
+                            );
+                          return (
+                            <tr key={c.id} className={sub ? `cluster-sub ${grownYears.has(c.year ?? 1) ? 'grown' : ''}` : ''}>
+                              <td>
+                                {cell(
+                                  c.kind === 'year' ? (
+                                    <button
+                                      type="button"
+                                      className="cluster-year-btn"
+                                      aria-expanded={openYears.has(c.year ?? 1)}
+                                      title={t('clusters.showSpecs')}
+                                      onClick={() => toggleYear(c.year ?? 1)}
+                                    >
+                                      <span className={`chev ${openYears.has(c.year ?? 1) ? 'open' : ''}`} aria-hidden="true">
+                                        ›
+                                      </span>
+                                      <strong>{clusterLabel(c)}</strong>
+                                      <span className="small muted">{t('clusters.specCount', { n: specCount(c.year ?? 1) })}</span>
+                                    </button>
+                                  ) : (
+                                    <strong>{clusterLabel(c)}</strong>
+                                  ),
+                                )}
+                              </td>
+                              <td>
+                                {/* a few groups are listed; a year, or any big cluster, is summed up by specialty
+                                  (its groups are in the specialty rows under it, or behind "arată grupele") */}
+                                {cell(
+                                  <div className="row wrap" style={{ gap: 4 }}>
+                                    {c.kind !== 'year' && (groups.length <= SHOWN_GROUPS || expanded.has(c.id))
+                                      ? groups.map((id) => (
+                                          <span key={id} className="badge">
+                                            {groupName(id)}
+                                          </span>
+                                        ))
+                                      : bySpecialty(groups).map(([sp, n]) => (
+                                          <span key={sp} className="badge primary">
+                                            {sp} · {n}
+                                          </span>
+                                        ))}
+                                    {c.kind !== 'year' && groups.length > SHOWN_GROUPS && (
+                                      <button type="button" className="btn ghost sm more-groups" onClick={() => toggleExpanded(c.id)}>
+                                        {expanded.has(c.id) ? t('clusters.less') : t('clusters.showGroups')}
+                                      </button>
+                                    )}
+                                  </div>,
+                                )}
+                              </td>
+                              <td>{cell(groups.length)}</td>
+                              <td>{cell(groups.reduce((n, id) => n + (sizeOf.get(id) ?? 0), 0))}</td>
+                            </tr>
+                          );
+                        })}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -211,3 +211,18 @@ def test_contradictory_data_still_returns_something():
     ds["rooms"] = [room("r1", 10, "lecture")]  # nothing fits any group
     r = generate_timetable(ds, ["g1", "g2", "g3"], seed=1, seconds=3, workers=2)
     assert r.missing > 0 and r.score["hard"] > 0
+
+
+def test_generate_follows_an_example_timetable():
+    ds = tiny()
+    first = generate_timetable(ds, ["g1", "g2", "g3"], seed=3, seconds=3, workers=2)
+    at = lambda ls: Counter((l["assignmentId"], l["day"], l["slot"]) for l in ls)
+    example = at(first.lessons)
+    followed = generate_timetable(ds, ["g1", "g2", "g3"], seed=77, seconds=3, workers=2, example=first.lessons)
+    same = sum((at(followed.lessons) & example).values())
+    assert same == len(first.lessons) and followed.score["hard"] == 0
+    # a pair the example has somewhere it no longer fits (the teacher is away then) is placed elsewhere
+    ds["teachers"][0]["unavailable"] = [f"{l['day']}:{l['slot']}" for l in first.lessons if l["assignmentId"] == "a6"]
+    moved = generate_timetable(ds, ["g1", "g2", "g3"], seed=77, seconds=3, workers=2, example=first.lessons)
+    assert moved.score["hard"] == 0 and moved.missing == 0
+    assert all(f"{l['day']}:{l['slot']}" not in ds["teachers"][0]["unavailable"] for l in moved.lessons if l["assignmentId"] in ("a1", "a6", "a7"))

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
 import { DatasetIndex } from './indexes';
 import type { Lesson } from './types';
-import { dayIndexOf, filterLessons, inWeek, weekParityOf } from './views';
+import { datesOfWeek, dayIndexOf, filterLessons, gridDays, inWeek, sessionPairsThisWeek, weekParityOf } from './views';
 
 const idx = new DatasetIndex(seedDataset);
 // a1 = Year 1 AM lecture (stream "Anul I"); find a g1 subgroup-2 lab
@@ -65,5 +65,28 @@ describe('parseTime', () => {
     expect(parseTime('5 pm')).toBe('17:00');
     expect(parseTime('25:00')).toBeNull();
     expect(parseTime('abc')).toBeNull();
+  });
+});
+
+describe('frecvență redusă in the weekly grids', () => {
+  const weekly: Lesson = { id: 'w', assignmentId: 'a1', day: 0, slot: 0, roomId: 'r1', parity: 'weekly' };
+  const saturday: Lesson = { id: 's', assignmentId: 'a1', day: 5, slot: 1, roomId: 'r1', parity: 'weekly', date: '2026-10-17' };
+  const later: Lesson = { ...saturday, id: 'l', date: '2026-10-24' };
+  it('adds Saturday and Sunday only when there are session pairs', () => {
+    expect(gridDays(seedDataset.settings, [weekly])).toEqual([0, 1, 2, 3, 4]);
+    expect(gridDays(seedDataset.settings, [weekly, saturday])).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+  it("puts this week's session pairs on their day", () => {
+    const shown = sessionPairsThisWeek([weekly, saturday, later], new Date(2026, 9, 14));
+    expect(shown.map((l) => [l.id, l.day, l.date])).toEqual([['s', 5, undefined]]);
+    expect(datesOfWeek(new Date(2026, 9, 14))).toEqual([
+      '2026-10-12',
+      '2026-10-13',
+      '2026-10-14',
+      '2026-10-15',
+      '2026-10-16',
+      '2026-10-17',
+      '2026-10-18',
+    ]);
   });
 });

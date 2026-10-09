@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { specialityOf } from '../domain/clusters';
 import type { Group } from '../domain/types';
 import { useI18n } from '../i18n';
+import { Collapse } from './Collapse';
 import { fold } from './searchText';
 
 /**
@@ -77,35 +78,51 @@ export function GroupPicker({ groups, value, onChange }: { groups: Group[]; valu
                 {t('groupPicker.allYear')}
               </button>
             </div>
-            {open &&
-              specs.map((sp) => {
-                const rowGroups = inYear.filter((g) => specialityOf(g.name) === sp);
-                const ids = rowGroups.map((g) => g.id);
-                return (
-                  <div key={sp} className="tag-row">
-                    <button
-                      type="button"
-                      className="tag-label group-spec"
-                      aria-pressed={allOn(ids)}
-                      title={t('groupPicker.allSpeciality', { name: sp })}
-                      onClick={() => set(ids, !allOn(ids))}
-                    >
-                      {sp}
-                    </button>
-                    {rowGroups.map((g) => (
+            <Collapse open={open}>
+              <div className="group-year-body">
+                {specs.map((sp) => {
+                  const rowGroups = inYear.filter((g) => specialityOf(g.name) === sp);
+                  const ids = rowGroups.map((g) => g.id);
+                  return (
+                    <div key={sp} className="tag-row">
                       <button
-                        key={g.id}
                         type="button"
-                        className="tag"
-                        aria-pressed={chosen.has(g.id)}
-                        onClick={() => set([g.id], !chosen.has(g.id))}
+                        className="tag-label group-spec"
+                        aria-pressed={allOn(ids)}
+                        title={t('groupPicker.allSpeciality', { name: sp })}
+                        onClick={() => set(ids, !allOn(ids))}
                       >
-                        {g.name.slice(sp.length + 1) || g.name}
+                        {sp}
                       </button>
-                    ))}
-                  </div>
-                );
-              })}
+                      {/* the groups wrap next to the specialty, never under it */}
+                      <span className="group-tags">
+                        {rowGroups.map((g) => (
+                          <button
+                            key={g.id}
+                            type="button"
+                            className="tag"
+                            aria-pressed={chosen.has(g.id)}
+                            onClick={() => set([g.id], !chosen.has(g.id))}
+                          >
+                            {g.name.slice(sp.length + 1) || g.name}
+                          </button>
+                        ))}
+                      </span>
+                      {/* the whole specialty of this year at a click, like "Tot anul" */}
+                      <button
+                        type="button"
+                        className="tag group-spec-all"
+                        aria-pressed={allOn(ids)}
+                        title={t('groupPicker.allSpeciality', { name: sp })}
+                        onClick={() => set(ids, !allOn(ids))}
+                      >
+                        {t('groupPicker.allRow')}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </Collapse>
           </section>
         );
       })}

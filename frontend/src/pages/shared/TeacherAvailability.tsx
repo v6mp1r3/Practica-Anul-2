@@ -4,7 +4,7 @@ import { PageHeader, Segmented } from '../../components/ui';
 import { teacherStateAt, type TeacherSlotState } from '../../domain/availability';
 import { paritiesOverlap } from '../../domain/slots';
 import type { Day, Parity } from '../../domain/types';
-import { dayIndexOf, weekParityOf } from '../../domain/views';
+import { dayIndexOf, gridDays, sessionPairsThisWeek, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
@@ -25,8 +25,15 @@ export default function TeacherAvailability() {
   const teachers = [...dataset.teachers].sort((a, b) => a.name.localeCompare(b.name));
   const [teacherId, setTeacherId] = useState(teachers[0]?.id ?? '');
   const [week, setWeek] = useState<Parity>(dataset.settings.weekParity ? weekParityOf(new Date()) : 'weekly');
-  const lessons = published?.lessons ?? [];
+  const all = published?.lessons ?? [];
   const teacher = index.teachers.get(teacherId);
+  // this week's frecvență redusă pairs count too, on their day (weekends included for those who teach them)
+  const showsThisWeek = week === 'weekly' || !dataset.settings.weekParity || week === weekParityOf(new Date());
+  const lessons = showsThisWeek ? [...all.filter((l) => !l.date), ...sessionPairsThisWeek(all)] : all;
+  const days = gridDays(
+    dataset.settings,
+    all.filter((l) => index.assignmentOf(l)?.teacherId === teacherId),
+  );
 
   const label: Record<TeacherSlotState, string> = {
     free: t('availability.free'),
@@ -75,20 +82,27 @@ export default function TeacherAvailability() {
     <div className="page">
       <PageHeader title={t('nav.teacherAvailability')} subtitle={t('teacherAvail.subtitle')} />
       <div className="stack">
+        {/* who is free now: the count, and a searchable list instead of every name at once */}
         {freeNow && (
-          <div className="card">
-            <div className="card-header">
-              <h2>{t('teacherAvail.freeNow', { pair: currentSlot + 1 })}</h2>
-              <span className="spacer" />
-              <span className="badge success">{freeNow.length}</span>
+          <div className="card free-now">
+            <div className="free-now-count">
+              <strong>{freeNow.length}</strong>
+              <span>{t('teacherAvail.freeNow', { pair: currentSlot + 1 })}</span>
             </div>
-            <div className="card-body row wrap" style={{ gap: 6 }}>
+            <Select
+              className="select"
+              style={{ width: 280 }}
+              value=""
+              onChange={(e) => e.target.value && setTeacherId(e.target.value)}
+              aria-label={t('teacherAvail.findFree')}
+            >
+              <option value="">{t('teacherAvail.findFree')}</option>
               {freeNow.map((x) => (
-                <button key={x.id} className="badge" style={{ border: 'none', cursor: 'pointer' }} onClick={() => setTeacherId(x.id)}>
+                <option key={x.id} value={x.id}>
                   {x.name}
-                </button>
+                </option>
               ))}
-            </div>
+            </Select>
           </div>
         )}
 
@@ -111,6 +125,8 @@ export default function TeacherAvailability() {
               value={week}
               onChange={setWeek}
               options={[
+                // both weeks: free (or shown) for the odd and the even week together
+                { value: 'weekly', label: t('tt.weekAll') },
                 { value: 'odd', label: t('tt.weekOdd') },
                 { value: 'even', label: t('tt.weekEven') },
               ]}
@@ -128,6 +144,7 @@ export default function TeacherAvailability() {
           settings={dataset.settings}
           index={index}
           lessons={[]}
+          days={days}
           today={today}
           cellClass={(d, s) => CELL[teacherStateAt(index, lessons, teacherId, d, s, week)]}
           renderCell={renderCell}

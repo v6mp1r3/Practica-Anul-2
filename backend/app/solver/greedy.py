@@ -31,19 +31,19 @@ class _Busy:
         self.teacher_slots: dict[tuple[str, int], list[int]] = defaultdict(list)
         self.subject_days: set[tuple[str, int, str]] = set()
 
-    def _keys(self, a: dict, d: int, s: int, room_id: str):
-        for w in WEEKS:
+    def _keys(self, a: dict, d: int, s: int, room_id: str, parity: str = "weekly"):
+        for w in (WEEKS if parity not in WEEKS else (parity,)):
             yield ("t", a["teacherId"], d, s, w)
             yield ("r", room_id, d, s, w)
             for g, sub in self.idx.cohorts(a["audience"]):
                 for p in (self.points[g] if sub is None else (sub,)):
                     yield ("g", g, p, d, s, w)
 
-    def free(self, a: dict, d: int, s: int, room_id: str) -> bool:
-        return not any(k in self.used for k in self._keys(a, d, s, room_id))
+    def free(self, a: dict, d: int, s: int, room_id: str, parity: str = "weekly") -> bool:
+        return not any(k in self.used for k in self._keys(a, d, s, room_id, parity))
 
-    def add(self, a: dict, d: int, s: int, room_id: str) -> None:
-        self.used.update(self._keys(a, d, s, room_id))
+    def add(self, a: dict, d: int, s: int, room_id: str, parity: str = "weekly") -> None:
+        self.used.update(self._keys(a, d, s, room_id, parity))
         self.teacher_slots[(a["teacherId"], d)].append(s)
         for g, _ in self.idx.cohorts(a["audience"]):
             self.group_slots[(g, d)].append(s)
@@ -58,7 +58,7 @@ def construct(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dic
     for f in fixed:
         a = idx.assignment_of(f)
         if a and not f.get("date"):
-            busy.add(a, f["day"], f["slot"], f["roomId"])
+            busy.add(a, f["day"], f["slot"], f["roomId"], f.get("parity", "weekly"))
     shifted = bool(settings.get("yearShifts"))
     order = [a for a in idx.assignments.values() if need.get(a["id"], 0) > 0]
     rng.shuffle(order)
@@ -113,4 +113,34 @@ def construct(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dic
             _, d, s, room_id = best
             busy.add(a, d, s, room_id)
             out.append(Placement(a["id"], d, s, room_id, "weekly"))
+    return out
+
+
+def adopt_example(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dict], example: list[dict]) -> list[Placement]:
+    """An example timetable's pairs where they were (same day and pair; its room, or another that fits),
+    as long as that still clashes with nothing and the load still needs the pair."""
+    n_slots = len(ds["settings"]["slots"])
+    busy = _Busy(idx)
+    for f in fixed:
+        a = idx.assignment_of(f)
+        if a and not f.get("date"):
+            busy.add(a, f["day"], f["slot"], f["roomId"], f.get("parity", "weekly"))
+    left = dict(need)
+    out: list[Placement] = []
+    for ex in example:
+        a = idx.assignments.get(ex["assignmentId"])
+        if not a or ex.get("date") or left.get(a["id"], 0) <= 0:
+            continue
+        d, s, parity = ex["day"], ex["slot"], ex.get("parity", "weekly")
+        if s >= n_slots or d not in idx.allowed_days(a) or slot_key(d, s) in idx.teachers.get(a["teacherId"], {}).get("unavailable", []):
+            continue
+        size = idx.audience_size(a["audience"])
+        ok = [r for r in ds["rooms"] if r["capacity"] >= size and idx.room_fits(a, r) and idx.has_equipment(a, r)]
+        ok.sort(key=lambda r: (r["id"] != ex["roomId"], r["capacity"]))
+        room = next((r for r in ok if busy.free(a, d, s, r["id"], parity)), None)
+        if room is None:
+            continue
+        busy.add(a, d, s, room["id"], parity)
+        out.append(Placement(a["id"], d, s, room["id"], parity))
+        left[a["id"]] -= 1
     return out

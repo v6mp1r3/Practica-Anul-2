@@ -12,7 +12,7 @@ import { examEntries } from '../../components/examEntries';
 import { ROUNDS, RoundPicker } from '../../components/RoundPicker';
 import { Icon } from '../../components/Icon';
 import { Select } from '../../components/Select';
-import { Empty, Field, Modal, PageHeader, TimeInput } from '../../components/ui';
+import { DateInput, Empty, Field, Modal, PageHeader, TimeInput } from '../../components/ui';
 import { evaluationOf, findExamProblems, type ExamProblem } from '../../domain/exams';
 import type { ExamEvent, ExamPlan, ExamRound } from '../../domain/types';
 import { streamChoices } from '../../domain/views';
@@ -243,7 +243,7 @@ function EditEvent({ event, onClose, onSave }: { event: ExamEvent; onClose: () =
     >
       <div className="form-grid">
         <Field label={t('exams.date')}>
-          <input className="input" type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
+          <DateInput value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
         </Field>
         <Field label={t('exams.start')}>
           <TimeInput

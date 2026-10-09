@@ -8,7 +8,7 @@ import { Icon } from '../../components/Icon';
 import { Field, Modal } from '../../components/ui';
 import { deriveClusters, subjectInSpeciality } from '../../domain/clusters';
 import { parseStudyPlan, STUDY_PLAN_TEMPLATE, type CsvResult } from '../../domain/csv';
-import type { Subject, StudyCycle } from '../../domain/types';
+import { STUDY_FORMS, type StudyCycle, type StudyForm, type Subject } from '../../domain/types';
 import { Select } from '../../components/Select';
 import { specialtyOf } from '../../domain/specialty';
 import { useI18n } from '../../i18n';
@@ -19,9 +19,19 @@ import { downloadFile } from '../../utils/download';
 /** The subject ends with an exam (older records only have `evaluation`). */
 const hasExam = (x: { hasExam?: boolean; evaluation?: string }) => x.hasExam ?? x.evaluation !== 'atestari';
 
+/** The evaluation filter: atestarea 1, atestarea 2, both, or the exam. */
+function hasAssessment(x: Subject, what: string): boolean {
+  const m1 = x.hasMidterm1 ?? true;
+  const m2 = x.hasMidterm2 ?? true;
+  if (what === 'm1') return m1;
+  if (what === 'm2') return m2;
+  if (what === 'both') return m1 && m2;
+  return hasExam(x);
+}
+
 export default function Subjects() {
   const { t } = useI18n();
-  const { dataset, refresh } = useDataset();
+  const { dataset, index, refresh } = useDataset();
   const scope = useAdminScope();
   // licență | master's study plan
   const [cycle, setCycle] = useCycle();
@@ -48,31 +58,51 @@ export default function Subjects() {
     setPreview(null);
   }
 
-  // filters: year, evaluation, activity in the study plan, whether it is in Sarcina didactică yet
+  // filters: specialty, year, evaluation, activity in the study plan
   const subjects = dataset.subjects.filter((x) => (!scope || !x.faculty || x.faculty === scope) && (x.cycle ?? 'licenta') === cycle);
   const [year, setYear] = useState('');
   const [evaluation, setEvaluation] = useState('');
   const [activity, setActivity] = useState('');
-  const [load, setLoad] = useState('');
   const [specialty, setSpecialty] = useState('');
+  // frecvență | frecvență redusă | dual: the forms of the groups a subject is taught to (its loads in
+  // Sarcina didactică, or, before it has any, the groups of its clusters)
+  const [form, setForm] = useState<'' | StudyForm>('');
+  const formsOf = useMemo(() => {
+    const formOf = (id: string) => index.groups.get(id)?.studyForm;
+    const byLoads = new Map<string, Set<StudyForm>>();
+    for (const a of dataset.assignments) {
+      const set = byLoads.get(a.subjectId) ?? new Set<StudyForm>();
+      for (const c of index.cohorts(a.audience)) {
+        const f = formOf(c.groupId);
+        if (f) set.add(f);
+      }
+      byLoads.set(a.subjectId, set);
+    }
+    return (x: Subject): Set<StudyForm> => {
+      const loads = byLoads.get(x.id);
+      if (loads?.size) return loads;
+      const set = new Set<StudyForm>();
+      for (const id of x.clusterIds ?? []) for (const g of clusterById.get(id)?.groupIds ?? []) formOf(g) && set.add(formOf(g)!);
+      return set;
+    };
+  }, [dataset.assignments, index, clusterById]);
   // the faculty's specialties, from its group names (TI-251 → TI)
   const specialties = [...new Set(dataset.groups.filter((g) => !scope || g.faculty === scope).map((g) => specialtyOf(g.name)))].sort(
     (a, b) => a.localeCompare(b, 'ro'),
   );
   const years = [...new Set(subjects.map((x) => x.year))].sort((a, b) => a - b);
-  const planned = (x: Subject) => dataset.assignments.some((a) => a.subjectId === x.id);
   const pairsOf = (x: Subject, a: string) => (a === 'lecture' ? x.lecturePairs : a === 'seminar' ? x.seminarPairs : x.labPairs);
   const shown = subjects.filter(
     (x) =>
       (!year || x.year === Number(year)) &&
-      (!evaluation || (hasExam(x) ? 'exam' : 'atestari') === evaluation) &&
+      (!evaluation || hasAssessment(x, evaluation)) &&
       (!activity || pairsOf(x, activity) > 0) &&
-      (!load || (load === 'planned') === planned(x)) &&
       // a specialty's subjects: those tagged with it or with its whole year, and those for every specialty
       (!specialty || subjectInSpeciality(x.clusterIds, specialty, clusters)) &&
-      (!clusterFilter || !!x.clusterIds?.includes(clusterFilter)),
+      (!clusterFilter || !!x.clusterIds?.includes(clusterFilter)) &&
+      (!form || formsOf(x).has(form)),
   );
-  const filtering = !!(year || evaluation || activity || load || specialty);
+  const filtering = !!(year || evaluation || activity || specialty || form);
 
   const pairs = (n: number) => (n ? String(n).replace('.', ',') : '—');
 
@@ -113,8 +143,10 @@ export default function Subjects() {
               aria-label={t('subjects.evaluation')}
             >
               <option value="">{t('subjects.anyEvaluation')}</option>
+              <option value="m1">{t('subjects.filter.m1')}</option>
+              <option value="m2">{t('subjects.filter.m2')}</option>
+              <option value="both">{t('subjects.filter.both')}</option>
               <option value="exam">{t('subjects.evaluation.exam')}</option>
-              <option value="atestari">{t('subjects.evaluation.atestari')}</option>
             </Select>
             <Select className="select pill" value={activity} onChange={(e) => setActivity(e.target.value)} aria-label={t('teachers.types')}>
               <option value="">{t('subjects.anyActivity')}</option>
@@ -124,19 +156,27 @@ export default function Subjects() {
                 </option>
               ))}
             </Select>
-            <Select className="select pill" value={load} onChange={(e) => setLoad(e.target.value)} aria-label={t('nav.assignments')}>
-              <option value="">{t('subjects.anyLoad')}</option>
-              <option value="planned">{t('subjects.planned')}</option>
-              <option value="unplanned">{t('subjects.unplanned')}</option>
+            <Select
+              className="select pill"
+              value={form}
+              onChange={(e) => setForm(e.target.value as '' | StudyForm)}
+              aria-label={t('groups.studyForm')}
+            >
+              <option value="">{t('groups.allForms')}</option>
+              {STUDY_FORMS.map((f) => (
+                <option key={f} value={f}>
+                  {t(`form.${f}`)}
+                </option>
+              ))}
             </Select>
             {filtering && (
               <button
                 className="btn ghost sm"
                 onClick={() => {
+                  setForm('');
                   setYear('');
                   setEvaluation('');
                   setActivity('');
-                  setLoad('');
                   setSpecialty('');
                 }}
               >
@@ -147,6 +187,8 @@ export default function Subjects() {
         }
         itemLabel={(x) => `${x.code} — ${x.name}`}
         searchText={(x) => `${x.code} ${x.abbreviation ?? ''} ${x.name}`}
+        // the cluster list changes width with its choice: keep the actions under the title
+        stackedHeader
         headerActions={
           <>
             <CycleTabs

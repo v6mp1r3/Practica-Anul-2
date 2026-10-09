@@ -19,6 +19,9 @@ class Config(BaseSettings):
     generation_min_seconds: float = 5.0
     generation_max_seconds: float = 300.0
     solver_workers: int = 0  # 0 = use up to 8 CPU cores
+    # GET /dataset answers from memory for this long (any change saved through this server clears it at once;
+    # changes made elsewhere, e.g. a teammate's server on the same database, show up within this time). 0 = off
+    dataset_cache_seconds: float = 30.0
 
     @property
     def sqlalchemy_url(self) -> str:
