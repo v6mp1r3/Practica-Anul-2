@@ -58,6 +58,15 @@ export default function Groups() {
     .filter(({ c, groups }) => groups.length > 0 || c.kind === 'custom');
   const groupName = (id: string) => dataset.groups.find((g) => g.id === id)?.name ?? id;
   const sizeOf = new Map(dataset.groups.map((g) => [g.id, g.size]));
+  // TI · 5, FAF · 3…: how many of a cluster's groups each specialty has
+  const bySpecialty = (ids: string[]) => {
+    const n = new Map<string, number>();
+    for (const id of ids) {
+      const sp = prefixOf(groupName(id));
+      n.set(sp, (n.get(sp) ?? 0) + 1);
+    }
+    return [...n.entries()].sort((a, b) => a[0].localeCompare(b[0], 'ro'));
+  };
 
   return (
     <div className="page">
@@ -281,7 +290,7 @@ export default function Groups() {
                   <tr>
                     <th>{t('clusters.title')}</th>
                     <th>{t('groups.groups')}</th>
-                    <th>{t('clusters.groupCount')}</th>
+                    <th style={{ whiteSpace: 'nowrap' }}>{t('clusters.groupCount')}</th>
                     <th>{t('groups.size')}</th>
                   </tr>
                 </thead>
@@ -322,16 +331,23 @@ export default function Groups() {
                               )}
                             </td>
                             <td>
-                              {/* a few groups, the rest behind "+N" (a whole year is dozens) */}
+                              {/* a few groups are listed; a year, or any big cluster, is summed up by specialty
+                                  (its groups are in the specialty rows under it, or behind "arată grupele") */}
                               <div className="row wrap" style={{ gap: 4 }}>
-                                {(expanded.has(c.id) ? groups : groups.slice(0, SHOWN_GROUPS)).map((id) => (
-                                  <span key={id} className="badge">
-                                    {groupName(id)}
-                                  </span>
-                                ))}
-                                {groups.length > SHOWN_GROUPS && (
+                                {c.kind !== 'year' && (groups.length <= SHOWN_GROUPS || expanded.has(c.id))
+                                  ? groups.map((id) => (
+                                      <span key={id} className="badge">
+                                        {groupName(id)}
+                                      </span>
+                                    ))
+                                  : bySpecialty(groups).map(([sp, n]) => (
+                                      <span key={sp} className="badge primary">
+                                        {sp} · {n}
+                                      </span>
+                                    ))}
+                                {c.kind !== 'year' && groups.length > SHOWN_GROUPS && (
                                   <button type="button" className="btn ghost sm more-groups" onClick={() => toggleExpanded(c.id)}>
-                                    {expanded.has(c.id) ? t('clusters.less') : `+${groups.length - SHOWN_GROUPS}`}
+                                    {expanded.has(c.id) ? t('clusters.less') : t('clusters.showGroups')}
                                   </button>
                                 )}
                               </div>

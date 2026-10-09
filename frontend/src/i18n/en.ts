@@ -403,6 +403,7 @@ export const en: Record<MessageKey, string> = {
   'clusters.section.custom.hint': 'sets of groups you made',
   'clusters.specCount': '{n} specialties',
   'clusters.less': 'less',
+  'clusters.showGroups': 'show groups',
   'clusters.kind.year': 'Year',
   'clusters.kind.speciality': 'Speciality',
   'clusters.kind.language': 'Language',

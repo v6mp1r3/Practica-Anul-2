@@ -1840,3 +1840,6 @@ tr.cluster-section td {
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border-strong);
 }
+.cluster-year-btn {
+  white-space: nowrap;
+}

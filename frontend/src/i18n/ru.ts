@@ -403,6 +403,7 @@ export const ru: Record<MessageKey, string> = {
   'clusters.section.custom.hint': 'наборы групп, созданные вами',
   'clusters.specCount': '{n} специальностей',
   'clusters.less': 'свернуть',
+  'clusters.showGroups': 'показать группы',
   'clusters.kind.year': 'Курс',
   'clusters.kind.speciality': 'Специальность',
   'clusters.kind.language': 'Язык',

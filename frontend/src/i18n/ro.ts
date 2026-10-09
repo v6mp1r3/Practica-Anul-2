@@ -403,6 +403,7 @@ export const ro = {
   'clusters.section.custom.hint': 'seturi de grupe făcute de tine',
   'clusters.specCount': '{n} specialități',
   'clusters.less': 'mai puțin',
+  'clusters.showGroups': 'arată grupele',
   'clusters.kind.year': 'An',
   'clusters.kind.speciality': 'Specialitate',
   'clusters.kind.language': 'Limbă',
