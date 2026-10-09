@@ -57,7 +57,7 @@ describe('reduced-attendance session pairs', () => {
   it('puts the date in the CSV', () => {
     const rows = readCsvRows(timetableToCsv([dated, ...lessons], idx, seedDataset.settings));
     expect(rows[0][11]).toBe('Data');
-    expect(rows[3][11]).toBe('2026-10-14');
+    expect(rows[3][11]).toBe('14/10/2026'); // day/month/year
   });
   it('exports a single, non-recurring event', () => {
     const ics = timetableToIcs([dated], idx, seedDataset.settings, new Date(2026, 8, 1));

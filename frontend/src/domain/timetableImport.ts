@@ -3,6 +3,7 @@
 // time, week, type, subject, teacher, room) is matched to a load (Sarcina
 // didactică) by its groups, subject, type and teacher, and becomes a lesson of
 // a draft timetable, which can also be the example a generation follows.
+import { parseDateInput } from './changes';
 import { splitCsvLine } from './csv';
 import type { DatasetIndex } from './indexes';
 import type { ActivityType, Assignment, Dataset, Day, Lesson, Parity, Room } from './types';
@@ -123,7 +124,7 @@ export function parseTimetableCsv(text: string): { rows: ImportRow[]; error?: 'h
       teacher: get(c.teacher) || undefined,
       room: get(c.room) || undefined,
       parity: parity.startsWith('impar') || parity === 'odd' ? 'odd' : parity.startsWith('par') || parity === 'even' ? 'even' : 'weekly',
-      date: get(c.date) || undefined,
+      date: (get(c.date) && parseDateInput(get(c.date))) || undefined,
     });
   });
   return { rows };

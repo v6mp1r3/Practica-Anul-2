@@ -5,6 +5,7 @@ import { api } from '../../api';
 import { Icon } from '../../components/Icon';
 import { ImportTimetable } from '../../components/ImportTimetable';
 import { Empty, Loading, PageHeader } from '../../components/ui';
+import { fmtDate, toDateString } from '../../domain/changes';
 import { findExamProblems } from '../../domain/exams';
 import type { ExamPlan, ExamRound, Timetable } from '../../domain/types';
 import { dateLocale, useI18n } from '../../i18n';
@@ -13,6 +14,12 @@ import { useToast } from '../../state/toast';
 import { publishSafely, unpublishWithConfirm } from '../../utils/publish';
 import { StatusBadge } from './Dashboard';
 import { VariantComparison } from './Generate';
+
+/** "09/10/2026, 14:20": the date day/month/year, the time in the language's way. */
+function fmtDateTime(iso: string, lang: Parameters<typeof dateLocale>[0]): string {
+  const d = new Date(iso);
+  return `${fmtDate(toDateString(d))}, ${d.toLocaleTimeString(dateLocale(lang), { hour: '2-digit', minute: '2-digit' })}`;
+}
 
 export default function Timetables() {
   const { t, lang } = useI18n();
@@ -72,7 +79,7 @@ export default function Timetables() {
 
   if (!list) return <Loading />;
   const compared = list.filter((x) => selected.includes(x.id));
-  const fmt = (iso: string) => new Date(iso).toLocaleString(dateLocale(lang), { dateStyle: 'short', timeStyle: 'short' });
+  const fmt = (iso: string) => fmtDateTime(iso, lang);
 
   return (
     <div className="page">
@@ -203,7 +210,7 @@ function EvaluationPlans() {
         : r === 'reexam'
           ? t('exams.reexam')
           : t('exams.remidterm', { n: r === 'remidterm1' ? 1 : 2 });
-  const fmt = (iso: string) => new Date(iso).toLocaleString(dateLocale(lang), { dateStyle: 'short', timeStyle: 'short' });
+  const fmt = (iso: string) => fmtDateTime(iso, lang);
   const sorted = [...plans].sort((a, b) => ROUND_ORDER.indexOf(a.round) - ROUND_ORDER.indexOf(b.round));
 
   async function setStatus(p: ExamPlan, publish: boolean) {
