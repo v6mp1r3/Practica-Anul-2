@@ -13,6 +13,8 @@ import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
 
+const ROOM_KEY = 'eduschedule:freeRooms:room';
+
 /** Find an empty room for studying, a consultation or a make-up class. */
 export default function FreeRooms() {
   const { t } = useI18n();
@@ -33,7 +35,24 @@ export default function FreeRooms() {
   const freeInGrid = (d: number, s: number) => freeRooms(rooms, lessons, d, s, gridWeek);
   // checking one room at the chosen day, pair and week
   const allRooms = [...dataset.rooms].sort((a, b) => a.name.localeCompare(b.name, 'ro', { numeric: true }));
-  const [checkId, setCheckId] = useState('');
+  // the room whose week is shown (as on Orar profesori): the last one looked at, or the first; '' = all rooms
+  const [checkId, setCheckIdState] = useState(() => {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(ROOM_KEY);
+    } catch {
+      /* ignore */
+    }
+    return saved !== null && (saved === '' || index.rooms.has(saved)) ? saved : (allRooms[0]?.id ?? '');
+  });
+  const setCheckId = (id: string) => {
+    setCheckIdState(id);
+    try {
+      localStorage.setItem(ROOM_KEY, id);
+    } catch {
+      /* ignore */
+    }
+  };
   const checked = index.rooms.get(checkId);
   const occupying = checked
     ? lessons.filter((l) => !l.date && l.roomId === checked.id && l.day === day && l.slot === slot && paritiesOverlap(l.parity, week))
@@ -48,6 +67,24 @@ export default function FreeRooms() {
   const todaySlot = days.includes(dayIndexOf(now)) ? dataset.settings.slots.findIndex((x) => toMin(x.end) > nowMinutes) : -1;
   const todayList =
     todaySlot >= 0 ? freeRooms(rooms, lessons, dayIndexOf(now), todaySlot, dataset.settings.weekParity ? weekParityOf(now) : 'weekly') : [];
+
+  // a room's week, or every room's free count ("Toate sălile")
+  const roomPicker = (
+    <Select
+      className="select pill"
+      style={{ minWidth: 170 }}
+      value={checkId}
+      onChange={(e) => setCheckId(e.target.value)}
+      aria-label={t('freeRooms.check')}
+    >
+      <option value="">{t('freeRooms.allRooms')}</option>
+      {allRooms.map((r) => (
+        <option key={r.id} value={r.id}>
+          {r.name}
+        </option>
+      ))}
+    </Select>
+  );
 
   return (
     <div className="page">
@@ -149,6 +186,7 @@ export default function FreeRooms() {
           <div>
             <div className="row wrap" style={{ gap: 12, marginBottom: 4 }}>
               <h2>{t('freeRooms.roomTimetable', { room: checked.name })}</h2>
+              {roomPicker}
               <span className="small muted">
                 {[`${checked.capacity} ${t('rooms.capacity').toLowerCase()}`, ...checked.equipment.map((e) => equipment.label(e))].join(
                   ' · ',
@@ -165,22 +203,6 @@ export default function FreeRooms() {
                   ]}
                 />
               )}
-              <span className="spacer" />
-              <Select
-                className="select pill"
-                value={checkId}
-                onChange={(e) => setCheckId(e.target.value)}
-                aria-label={t('freeRooms.check')}
-              >
-                {allRooms.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </Select>
-              <button className="btn ghost sm" onClick={() => setCheckId('')}>
-                {t('freeRooms.allRooms')}
-              </button>
             </div>
             <p className="small muted" style={{ marginBottom: 10 }}>
               {t('freeRooms.roomHint')}
@@ -202,6 +224,7 @@ export default function FreeRooms() {
           <div>
             <div className="row wrap" style={{ gap: 12, marginBottom: 4 }}>
               <h2>{t('freeRooms.overview')}</h2>
+              {roomPicker}
               {dataset.settings.weekParity && (
                 <Segmented
                   value={gridWeek}
