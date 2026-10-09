@@ -46,6 +46,7 @@ in `db/migrations/` you have not run yet, in order:
 | `002_group_periods.sql` | Adds the group-period tables (internships, licence exams, …). **Needed.** |
 | `003_allow_draft_room_clashes.sql` | Drops a rule that stopped drafts with room clashes from being saved. **Needed.** |
 | `005_subject_language.sql` | Adds French and gives every subject a language of instruction (AM in Russian is separate from AM in Romanian). **Needed.** |
+| `006_subject_specialties.sql` | Lets a subject be for some specialties only (MD for FAF in year 1, for SI in year 2), each with its own row. **Needed.** |
 
 The backend connects with the database password and bypasses row-level security; every table has RLS on with no
 policies, so Supabase's own public API can read nothing.

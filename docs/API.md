@@ -146,8 +146,9 @@ or subject without a `faculty` is shared and any administrator may change it.
 
 // Subject — pairs per week from the study plan; 0.5 = every other week.
 // `language` ("ro" default, "ru", "en", "fr"): the groups it is for; AM in "ru" is a separate subject from AM in "ro"
+// `specialties`: group name prefixes whose study plan has it ([] = all); MD can be ["FAF"] in year 1 and ["SI"] in year 2
 { "id": "sub1", "code": "AM", "name": "Analiză matematică", "credits": 6, "year": 1,
-  "lecturePairs": 2, "seminarPairs": 1, "labPairs": 0, "language": "ro" }
+  "lecturePairs": 2, "seminarPairs": 1, "labPairs": 0, "language": "ro", "specialties": [] }
 
 // Assignment (teaching load). audience.kind is "stream" | "group" | "subgroup"
 { "id": "a1", "subjectId": "sub1", "type": "lecture", "teacherId": "t3",

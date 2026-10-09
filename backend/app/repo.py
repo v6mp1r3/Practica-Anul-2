@@ -330,7 +330,7 @@ def load_subjects(conn: Connection, ids: Iterable[int] | None = None) -> list[di
     rows = _all(
         conn,
         "select s.id, s.code, s.name, s.credits, s.year, s.edge_of_day, f.name as faculty, s.cycle::text as cycle, s.evaluation::text as evaluation, "
-        f"s.language::text as language, s.lecture_pairs, s.seminar_pairs, s.lab_pairs from subject s left join faculty f on f.id = s.faculty_id{where} order by s.id",
+        f"s.language::text as language, s.specialties, s.lecture_pairs, s.seminar_pairs, s.lab_pairs from subject s left join faculty f on f.id = s.faculty_id{where} order by s.id",
         p,
     )
     out = []
@@ -338,7 +338,7 @@ def load_subjects(conn: Connection, ids: Iterable[int] | None = None) -> list[di
         s = {
             "id": sid(r["id"]), "code": r["code"], "name": r["name"], "credits": num(r["credits"]), "year": r["year"], "edgeOfDay": r["edge_of_day"],
             "cycle": r["cycle"], "evaluation": r["evaluation"], "lecturePairs": num(r["lecture_pairs"]), "seminarPairs": num(r["seminar_pairs"]), "labPairs": num(r["lab_pairs"]),
-            "language": r["language"],
+            "language": r["language"], "specialties": list(r["specialties"] or []),
         }
         if r["faculty"]:
             s["faculty"] = r["faculty"]
@@ -352,16 +352,17 @@ def save_subject(conn: Connection, data: dict, sub_id: int | None = None) -> int
         "fid": faculty_id_by_name(conn, data.get("faculty")), "cycle": data.get("cycle") or "licenta", "ev": data.get("evaluation") or "exam",
         "edge": bool(data.get("edgeOfDay")), "lec": data.get("lecturePairs") or 0, "sem": data.get("seminarPairs") or 0, "lab": data.get("labPairs") or 0,
         "lang": data.get("language") or "ro",
+        "spec": sorted({str(x).strip().upper() for x in (data.get("specialties") or []) if str(x).strip()}),
     }
     if sub_id is None:
         return conn.execute(
-            text("insert into subject (code, name, credits, year, faculty_id, cycle, evaluation, edge_of_day, lecture_pairs, seminar_pairs, lab_pairs, language) "
-                 "values (:code, :name, :credits, :year, :fid, cast(:cycle as study_cycle), cast(:ev as evaluation_kind), :edge, :lec, :sem, :lab, cast(:lang as study_language)) returning id"),
+            text("insert into subject (code, name, credits, year, faculty_id, cycle, evaluation, edge_of_day, lecture_pairs, seminar_pairs, lab_pairs, language, specialties) "
+                 "values (:code, :name, :credits, :year, :fid, cast(:cycle as study_cycle), cast(:ev as evaluation_kind), :edge, :lec, :sem, :lab, cast(:lang as study_language), :spec) returning id"),
             params,
         ).scalar_one()
     n = conn.execute(
         text("update subject set code=:code, name=:name, credits=:credits, year=:year, faculty_id=:fid, cycle=cast(:cycle as study_cycle), "
-             "evaluation=cast(:ev as evaluation_kind), edge_of_day=:edge, lecture_pairs=:lec, seminar_pairs=:sem, lab_pairs=:lab, language=cast(:lang as study_language) where id=:id"),
+             "evaluation=cast(:ev as evaluation_kind), edge_of_day=:edge, lecture_pairs=:lec, seminar_pairs=:sem, lab_pairs=:lab, language=cast(:lang as study_language), specialties=:spec where id=:id"),
         {**params, "id": sub_id},
     ).rowcount
     if not n:
