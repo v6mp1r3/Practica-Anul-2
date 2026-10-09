@@ -400,6 +400,7 @@ export const ro = {
   'groupPicker.collapseAll': 'Închide tot',
   'groupPicker.clear': 'Șterge alegerea',
   'groupPicker.allYear': 'Tot anul',
+  'groupPicker.allRow': 'Toate',
   'groupPicker.allSpeciality': 'Toată specialitatea {name}',
   'groupPicker.none': 'Nicio grupă nu se potrivește cu etichetele disciplinei.',
   'clusters.year': 'Anul {n}',

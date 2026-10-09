@@ -106,6 +106,16 @@ export function GroupPicker({ groups, value, onChange }: { groups: Group[]; valu
                         </button>
                       ))}
                     </span>
+                    {/* the whole specialty of this year at a click, like "Tot anul" */}
+                    <button
+                      type="button"
+                      className="tag group-spec-all"
+                      aria-pressed={allOn(ids)}
+                      title={t('groupPicker.allSpeciality', { name: sp })}
+                      onClick={() => set(ids, !allOn(ids))}
+                    >
+                      {t('groupPicker.allRow')}
+                    </button>
                   </div>
                 );
               })}

@@ -1686,3 +1686,7 @@ button.holiday-row.selected {
   gap: 6px;
   min-width: 0;
 }
+.group-picker .tag-row > .group-spec-all {
+  flex: none;
+  margin-left: auto;
+}

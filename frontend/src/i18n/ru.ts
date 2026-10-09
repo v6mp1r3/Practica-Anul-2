@@ -400,6 +400,7 @@ export const ru: Record<MessageKey, string> = {
   'groupPicker.collapseAll': 'Свернуть все',
   'groupPicker.clear': 'Очистить',
   'groupPicker.allYear': 'Весь курс',
+  'groupPicker.allRow': 'Все',
   'groupPicker.allSpeciality': 'Вся специальность {name}',
   'groupPicker.none': 'Нет групп, подходящих к меткам дисциплины.',
   'clusters.year': 'Курс {n}',

@@ -401,6 +401,7 @@ export const en: Record<MessageKey, string> = {
   'groupPicker.collapseAll': 'Collapse all',
   'groupPicker.clear': 'Clear',
   'groupPicker.allYear': 'Whole year',
+  'groupPicker.allRow': 'All',
   'groupPicker.allSpeciality': 'All of {name}',
   'groupPicker.none': 'No group fits the tags of the subject.',
   'clusters.year': 'Year {n}',
