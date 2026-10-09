@@ -247,8 +247,16 @@ export function matchImport(rows: ImportRow[], ds: Dataset, idx: DatasetIndex): 
       results.push({ row, status: 'time' });
       continue;
     }
-    // what: the load of these groups whose subject, type and teacher agree best
-    const ids = new Set(known.map((g) => g.id));
+    // what: the load of these groups whose subject, type and teacher agree best; the whole audience,
+    // when the file says it, picks between a seminar of one group and one held for two together
+    const fromAudience = () => {
+      if (!row.groups.length || !row.audience) return [];
+      const st = streamsByName.get(fold(row.audience));
+      const list = st ? st.groupIds.map((id) => idx.groups.get(id)?.name ?? '') : row.audience.split(/[,;]\s*|\s+/);
+      return list.map((n) => groupsByKey.get(groupKey(n.replace(/\/\d+$/, '')))?.id).filter((id): id is string => !!id);
+    };
+    const audienceIds = fromAudience();
+    const ids = new Set(audienceIds.length ? audienceIds : known.map((g) => g.id));
     let best: { a: Assignment; score: number } | null = null;
     for (const a of ds.assignments) {
       const cohorts = idx.cohorts(a.audience);
