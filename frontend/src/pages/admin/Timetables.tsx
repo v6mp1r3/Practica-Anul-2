@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import { Icon } from '../../components/Icon';
+import { ImportTimetable } from '../../components/ImportTimetable';
 import { Empty, Loading, PageHeader } from '../../components/ui';
 import { findExamProblems } from '../../domain/exams';
 import type { ExamPlan, ExamRound, Timetable } from '../../domain/types';
@@ -19,6 +20,7 @@ export default function Timetables() {
   const toast = useToast();
   const [list, setList] = useState<Timetable[] | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  const [importing, setImporting] = useState(false);
 
   // Faculty administrators see the timetables that include their groups
   const scope = useAdminScope();
@@ -78,12 +80,19 @@ export default function Timetables() {
         title={t('nav.timetables')}
         subtitle={t('timetables.subtitle')}
         actions={
-          <Link className="btn primary" to="/admin/generate">
-            <Icon name="zap" />
-            {t('dashboard.generate')}
-          </Link>
+          <>
+            <button className="btn" onClick={() => setImporting(true)}>
+              <Icon name="upload" />
+              {t('import.button')}
+            </button>
+            <Link className="btn primary" to="/admin/generate">
+              <Icon name="zap" />
+              {t('dashboard.generate')}
+            </Link>
+          </>
         }
       />
+      {importing && <ImportTimetable onClose={() => setImporting(false)} onSaved={() => load()} />}
       <div className="stack">
         <div className="card">
           {list.length === 0 ? (
