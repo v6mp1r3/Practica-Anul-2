@@ -509,6 +509,8 @@ table.table {
 
 /* Custom select: the trigger keeps the .select / .select.pill look */
 .select-btn {
+  min-width: 0;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
   font: inherit;
@@ -568,6 +570,29 @@ table.table {
   padding: 8px 10px 4px;
   font-size: 12px;
   font-weight: 600;
+  color: var(--text-3);
+}
+/* the search box on top of a long list */
+.select-search {
+  position: sticky;
+  top: 0;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+}
+.select-search:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}
+.select-empty {
+  padding: 10px;
   color: var(--text-3);
 }
 @keyframes select-in {
@@ -1497,4 +1522,111 @@ button.holiday-row.selected {
 .badge.lang-fr {
   background: #f3eafd;
   color: #6b2fb0;
+}
+
+/* Tags: toggle the clusters (years, specialities) a subject belongs to */
+.tag-picker {
+  display: grid;
+  gap: 8px;
+}
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.tag-label {
+  min-width: 64px;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.tag {
+  padding: 3px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.tag:hover {
+  border-color: var(--primary);
+}
+.tag[aria-pressed='true'] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+.tag:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.tag-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Picking the groups of a class: by year, then speciality */
+.group-picker {
+  display: grid;
+  gap: 12px;
+}
+.group-picker-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.group-picker-bar .input {
+  flex: 1;
+  min-width: 180px;
+}
+.group-year {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.group-year-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.group-spec {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.group-spec[aria-pressed='true'] {
+  color: var(--primary);
+}
+.group-year-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.group-year-toggle .chev {
+  display: inline-block;
+  width: 14px;
+  color: var(--text-3);
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.15s;
+}
+.group-year-toggle .chev.open {
+  transform: rotate(90deg);
 }

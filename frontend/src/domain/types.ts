@@ -232,6 +232,30 @@ export interface Group {
   language?: Language;
 }
 
+/**
+ * A cluster is a year of study ("Year 1"), a speciality within a year ("FAF, year 1"), a language or a form of
+ * study (frecvență, frecvență redusă). They are made automatically from the groups (FAF-261 is in "year 1" and in
+ * "FAF, year 1"); an administrator can add custom ones. Subjects are tagged with them.
+ */
+export interface Cluster {
+  id: string;
+  /** year, speciality, language and form follow the groups; custom ones are made by an administrator. */
+  kind: 'year' | 'speciality' | 'language' | 'form' | 'custom';
+  /** Only year and speciality clusters. */
+  cycle?: StudyCycle;
+  year?: number;
+  /** FAF, TI… (only for kind = 'speciality'). */
+  speciality?: string;
+  /** Only language clusters. */
+  language?: Language;
+  /** Only form clusters: frecvență, frecvență redusă… */
+  studyForm?: StudyForm;
+  /** English name, e.g. "FAF · Year 1" or the name given to a custom cluster; screens build their own text from the fields. */
+  name: string;
+  /** Groups that belong to the cluster. */
+  groupIds: string[];
+}
+
 /** A stream ("torentă") joins several groups for one lecture. */
 /**
  * A torent: the groups that attend a lecture together. Usually defined per subject
@@ -249,6 +273,8 @@ export interface Subject {
   id: string;
   code: string;
   name: string;
+  /** Short name shown in the timetable instead of the code. */
+  abbreviation?: string;
   credits: number;
   year: number;
   /** Must be the first or last pair of the group's day (e.g. physical education). */
@@ -257,12 +283,16 @@ export interface Subject {
   faculty?: string;
   /** Licență (default) or master's study plan. */
   cycle?: StudyCycle;
-  /** Language it is taught in, i.e. which groups it is for (default Romanian). */
-  language?: Language;
-  /** Specialties (group name prefixes: FAF, TI…) whose study plan has it; empty = all. */
-  specialties?: string[];
   /** How the subject ends: with an exam in the session, or with the atestări only. Default exam. */
   evaluation?: 'exam' | 'atestari';
+  /** Semester of the year (1 or 2). Default 1. */
+  semester?: 1 | 2;
+  /** Assessment the subject has; all three by default. `hasExam` false = midterms only (same as evaluation 'atestari'). */
+  hasMidterm1?: boolean;
+  hasMidterm2?: boolean;
+  hasExam?: boolean;
+  /** Clusters (a year, or a speciality within a year) the subject is taught to. */
+  clusterIds?: string[];
   /** Pairs per week by activity type, from the study plan (0.5 = every other week). */
   lecturePairs: number;
   seminarPairs: number;
@@ -286,7 +316,6 @@ export interface Assignment {
    * full-time hours, same lecture/seminar/lab mix). Used instead of pairsPerWeek.
    */
   pairsPerSession?: number;
-  parity: Parity;
   roomType: RoomType;
   equipment: string[];
 }
@@ -475,6 +504,8 @@ export interface Dataset {
   streams: Stream[];
   subjects: Subject[];
   assignments: Assignment[];
+  /** Year and speciality clusters, made automatically from the groups. */
+  clusters?: Cluster[];
 }
 
 /** Atestarea 1/2, final exams, and the retakes of each (atestarea 1, atestarea 2, final exam). */

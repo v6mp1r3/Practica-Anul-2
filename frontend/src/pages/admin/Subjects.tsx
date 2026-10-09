@@ -1,20 +1,23 @@
 import { CycleTabs, useCycle } from '../../components/CycleTabs';
 import { useAdminScope } from '../../components/FacultyFilter';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { api } from '../../api';
+import { ClusterManager, ClusterPicker, useClusterLabel } from '../../components/ClusterPicker';
 import { CrudPage } from '../../components/CrudPage';
 import { Icon } from '../../components/Icon';
 import { Field, Modal } from '../../components/ui';
+import { deriveClusters, subjectInSpeciality } from '../../domain/clusters';
 import { parseStudyPlan, STUDY_PLAN_TEMPLATE, type CsvResult } from '../../domain/csv';
 import type { Subject, StudyCycle } from '../../domain/types';
 import { Select } from '../../components/Select';
-import { LanguageField, LanguageTag, languageOf } from '../../components/Language';
-import { MultiSelect } from '../../components/MultiSelect';
 import { specialtyOf } from '../../domain/specialty';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { downloadFile } from '../../utils/download';
+
+/** The subject ends with an exam (older records only have `evaluation`). */
+const hasExam = (x: { hasExam?: boolean; evaluation?: string }) => x.hasExam ?? x.evaluation !== 'atestari';
 
 export default function Subjects() {
   const { t } = useI18n();
@@ -25,6 +28,12 @@ export default function Subjects() {
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<CsvResult | null>(null);
+  // clusters come with the dataset; an older server without them is covered by deriving them from the groups
+  const clusters = useMemo(() => dataset.clusters ?? deriveClusters(dataset.groups), [dataset]);
+  const clusterLabel = useClusterLabel();
+  const clusterById = useMemo(() => new Map(clusters.map((c) => [c.id, c])), [clusters]);
+  const [clusterFilter, setClusterFilter] = useState('');
+  const [managing, setManaging] = useState(false);
 
   async function onFile(file: File) {
     setPreview(parseStudyPlan(await file.text()));
@@ -45,7 +54,6 @@ export default function Subjects() {
   const [evaluation, setEvaluation] = useState('');
   const [activity, setActivity] = useState('');
   const [load, setLoad] = useState('');
-  const [language, setLanguage] = useState('');
   const [specialty, setSpecialty] = useState('');
   // the faculty's specialties, from its group names (TI-251 → TI)
   const specialties = [...new Set(dataset.groups.filter((g) => !scope || g.faculty === scope).map((g) => specialtyOf(g.name)))].sort(
@@ -57,14 +65,14 @@ export default function Subjects() {
   const shown = subjects.filter(
     (x) =>
       (!year || x.year === Number(year)) &&
-      (!evaluation || (x.evaluation ?? 'exam') === evaluation) &&
+      (!evaluation || (hasExam(x) ? 'exam' : 'atestari') === evaluation) &&
       (!activity || pairsOf(x, activity) > 0) &&
       (!load || (load === 'planned') === planned(x)) &&
-      (!language || languageOf(x) === language) &&
-      // a specialty's subjects: its own and those for every specialty
-      (!specialty || !x.specialties?.length || x.specialties.includes(specialty)),
+      // a specialty's subjects: those tagged with it or with its whole year, and those for every specialty
+      (!specialty || subjectInSpeciality(x.clusterIds, specialty, clusters)) &&
+      (!clusterFilter || !!x.clusterIds?.includes(clusterFilter)),
   );
-  const filtering = !!(year || evaluation || activity || load || language || specialty);
+  const filtering = !!(year || evaluation || activity || load || specialty);
 
   const pairs = (n: number) => (n ? String(n).replace('.', ',') : '—');
 
@@ -87,14 +95,6 @@ export default function Subjects() {
               {specialties.map((x) => (
                 <option key={x} value={x}>
                   {x}
-                </option>
-              ))}
-            </Select>
-            <Select className="select pill" value={language} onChange={(e) => setLanguage(e.target.value)} aria-label={t('language.label')}>
-              <option value="">{t('language.all')}</option>
-              {(['ro', 'ru', 'en', 'fr'] as const).map((l) => (
-                <option key={l} value={l}>
-                  {t(`language.${l}`)}
                 </option>
               ))}
             </Select>
@@ -137,7 +137,6 @@ export default function Subjects() {
                   setEvaluation('');
                   setActivity('');
                   setLoad('');
-                  setLanguage('');
                   setSpecialty('');
                 }}
               >
@@ -147,10 +146,30 @@ export default function Subjects() {
           </>
         }
         itemLabel={(x) => `${x.code} — ${x.name}`}
-        searchText={(x) => `${x.code} ${x.name}`}
+        searchText={(x) => `${x.code} ${x.abbreviation ?? ''} ${x.name}`}
         headerActions={
           <>
-            <CycleTabs value={cycle} onChange={setCycle} />
+            <CycleTabs
+              value={cycle}
+              onChange={(c) => {
+                setCycle(c);
+                setClusterFilter('');
+              }}
+            />
+            <Select value={clusterFilter} onChange={(e) => setClusterFilter(e.target.value)} aria-label={t('subjects.clusters')}>
+              <option value="">{t('subjects.allClusters')}</option>
+              {clusters
+                .filter((c) => (!c.cycle || c.cycle === cycle) && (c.kind === 'year' || c.kind === 'custom' || c.groupIds.length > 0))
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {clusterLabel(c)}
+                  </option>
+                ))}
+            </Select>
+            <button className="btn" onClick={() => setManaging(true)}>
+              <Icon name="plus" />
+              {t('clusters.manage')}
+            </button>
             <button className="btn" onClick={() => downloadFile('plan-de-studii.csv', STUDY_PLAN_TEMPLATE, 'text/csv')}>
               <Icon name="download" />
               {t('subjects.template')}
@@ -174,7 +193,7 @@ export default function Subjects() {
             render: (x) => (
               <span>
                 <strong>{x.code}</strong>
-                <LanguageTag language={x.language} />
+                {x.abbreviation && x.abbreviation !== x.code && <span className="small muted"> ({x.abbreviation})</span>}
                 {x.cycle === 'master' && (
                   <span className="badge primary" style={{ marginLeft: 6 }}>
                     {t('cycle.master')}
@@ -185,26 +204,37 @@ export default function Subjects() {
             width: 120,
           },
           { label: t('common.name'), render: (x) => x.name },
+          { label: t('subjects.year'), render: (x) => x.year },
           {
-            label: t('subjects.specialties'),
-            render: (x) =>
-              x.specialties?.length ? (
-                <span className="row wrap" style={{ gap: 4 }}>
-                  {x.specialties.map((sp) => (
-                    <span key={sp} className="badge">
-                      {sp}
+            label: t('subjects.clusters'),
+            render: (x) => {
+              const tags = (x.clusterIds ?? []).map((id) => clusterById.get(id)).filter((c) => !!c);
+              return tags.length ? (
+                <span className="tag-list">
+                  {tags.slice(0, 3).map((c) => (
+                    <span key={c!.id} className="badge primary">
+                      {clusterLabel(c!)}
                     </span>
                   ))}
+                  {tags.length > 3 && <span className="small muted">+{tags.length - 3}</span>}
                 </span>
               ) : (
-                <span className="small muted">{t('subjects.allSpecialties')}</span>
-              ),
+                <span className="muted">—</span>
+              );
+            },
           },
-          { label: t('subjects.year'), render: (x) => x.year },
           { label: 'ECTS', render: (x) => x.credits },
+          { label: t('subjects.semester'), render: (x) => x.semester ?? 1 },
           {
             label: t('subjects.evaluation'),
-            render: (x) => <span className="small">{t(`subjects.evaluation.${x.evaluation ?? 'exam'}`)}</span>,
+            render: (x) => {
+              const parts = [
+                x.hasMidterm1 !== false && t('subjects.midterm1Short'),
+                x.hasMidterm2 !== false && t('subjects.midterm2Short'),
+                hasExam(x) && t('subjects.examShort'),
+              ].filter(Boolean);
+              return <span className="small">{parts.length ? parts.join(' · ') : '—'}</span>;
+            },
           },
           {
             label: '',
@@ -223,11 +253,14 @@ export default function Subjects() {
           cycle,
           code: '',
           name: '',
-          language: 'ro',
-          specialties: [],
           faculty: scope || undefined,
           credits: 5,
           year: 1,
+          semester: 1,
+          hasMidterm1: true,
+          hasMidterm2: true,
+          hasExam: true,
+          clusterIds: [],
           lecturePairs: 1,
           seminarPairs: 1,
           labPairs: 0,
@@ -239,35 +272,57 @@ export default function Subjects() {
               <Field label={t('subjects.code')}>
                 <input className="input" value={d.code} onChange={(e) => set({ code: e.target.value.toUpperCase() })} autoFocus />
               </Field>
+              <Field label={t('subjects.abbreviation')} hint={t('subjects.abbreviationHint')}>
+                <input
+                  className="input"
+                  value={d.abbreviation ?? ''}
+                  placeholder={d.code}
+                  maxLength={12}
+                  onChange={(e) => set({ abbreviation: e.target.value })}
+                />
+              </Field>
               <Field label={t('common.name')}>
                 <input className="input" value={d.name} onChange={(e) => set({ name: e.target.value })} />
               </Field>
-              <Field label={t('subjects.specialties')} hint={t('subjects.specialtiesHint')}>
-                <MultiSelect
-                  value={d.specialties ?? []}
-                  onChange={(v) => set({ specialties: v })}
-                  options={specialties.map((x) => ({ value: x, label: x }))}
-                  placeholder={t('subjects.allSpecialties')}
-                  aria-label={t('subjects.specialties')}
-                />
-              </Field>
-              <LanguageField
-                value={d.language}
-                onChange={(language) => set({ language })}
-                label={t('language.label')}
-                hint={t('language.subjectHint')}
-              />
               <Field label={t('subjects.cycle')}>
                 <Select value={d.cycle ?? 'licenta'} onChange={(e) => set({ cycle: e.target.value as StudyCycle })}>
                   <option value="licenta">{t('cycle.licenta')}</option>
                   <option value="master">{t('cycle.master')}</option>
                 </Select>
               </Field>
-              <Field label={t('subjects.evaluation')}>
-                <Select value={d.evaluation ?? 'exam'} onChange={(e) => set({ evaluation: e.target.value as 'exam' | 'atestari' })}>
-                  <option value="exam">{t('subjects.evaluation.exam')}</option>
-                  <option value="atestari">{t('subjects.evaluation.atestari')}</option>
+              <Field label={t('subjects.semester')}>
+                <Select value={String(d.semester ?? 1)} onChange={(e) => set({ semester: Number(e.target.value) === 2 ? 2 : 1 })}>
+                  <option value="1">{t('subjects.semesterN', { n: 1 })}</option>
+                  <option value="2">{t('subjects.semesterN', { n: 2 })}</option>
                 </Select>
+              </Field>
+              <Field label={t('subjects.evaluation')}>
+                <div className="tag-row">
+                  <button
+                    type="button"
+                    className="tag"
+                    aria-pressed={d.hasMidterm1 !== false}
+                    onClick={() => set({ hasMidterm1: d.hasMidterm1 === false })}
+                  >
+                    {t('subjects.midterm1')}
+                  </button>
+                  <button
+                    type="button"
+                    className="tag"
+                    aria-pressed={d.hasMidterm2 !== false}
+                    onClick={() => set({ hasMidterm2: d.hasMidterm2 === false })}
+                  >
+                    {t('subjects.midterm2')}
+                  </button>
+                  <button
+                    type="button"
+                    className="tag"
+                    aria-pressed={hasExam(d)}
+                    onClick={() => set({ hasExam: !hasExam(d), evaluation: hasExam(d) ? 'atestari' : 'exam' })}
+                  >
+                    {t('subjects.evaluation.exam')}
+                  </button>
+                </div>
               </Field>
               <Field label={t('subjects.year')}>
                 <input
@@ -289,6 +344,14 @@ export default function Subjects() {
                 />
               </Field>
             </div>
+            <Field label={t('subjects.clusters')} hint={t('subjects.clustersHint')}>
+              <ClusterPicker
+                clusters={clusters}
+                cycle={d.cycle ?? 'licenta'}
+                value={d.clusterIds ?? []}
+                onChange={(ids) => set({ clusterIds: ids })}
+              />
+            </Field>
             <label className="row" style={{ gap: 12, cursor: 'pointer' }}>
               <input type="checkbox" checked={!!d.edgeOfDay} onChange={(e) => set({ edgeOfDay: e.target.checked || undefined })} />
               <span>
@@ -373,6 +436,7 @@ export default function Subjects() {
           </div>
         </Modal>
       )}
+      {managing && <ClusterManager dataset={dataset} onClose={() => setManaging(false)} />}
     </>
   );
 }

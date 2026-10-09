@@ -182,7 +182,7 @@ class Builder {
         const cost = this.cost(a, day, slot);
         if (cost >= bestCost) continue;
         for (const room of rooms) {
-          const l: Lesson = { id: newLessonId(), assignmentId: a.id, day, slot, roomId: room.id, parity: a.parity };
+          const l: Lesson = { id: newLessonId(), assignmentId: a.id, day, slot, roomId: room.id, parity: 'weekly' };
           if (this.occ.fits(l, a)) {
             best = l;
             bestCost = cost + (room.capacity - size) / 200;
@@ -208,7 +208,7 @@ class Builder {
       })(),
       slot: this.rng.int(this.ds.settings.slots.length),
       roomId: room.id,
-      parity: a.parity,
+      parity: 'weekly',
     });
   }
 }

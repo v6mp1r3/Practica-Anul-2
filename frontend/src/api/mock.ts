@@ -4,10 +4,22 @@ import { seedDataset, seedNotifications, seedUsers } from '../data/seed';
 import { generateTimetable } from '../domain/generator';
 import { scoreTimetable } from '../domain/score';
 import { findHardConflicts } from '../domain/validator';
-import type { Assignment, Dataset, ExamPlan, Notification, NotificationKind, Role, ScheduleChange, Timetable, User } from '../domain/types';
+import type {
+  Assignment,
+  Cluster,
+  Dataset,
+  ExamPlan,
+  Notification,
+  NotificationKind,
+  Role,
+  ScheduleChange,
+  Timetable,
+  User,
+} from '../domain/types';
 import { generateExams, generateMidterms } from '../domain/exams';
 import { DatasetIndex } from '../domain/indexes';
 import { createRng } from '../domain/rng';
+import { deriveClusters } from '../domain/clusters';
 import { ApiError } from './http';
 import type { Api, CollectionName, Collections } from './types';
 
@@ -408,7 +420,8 @@ export function createMockApi(): Api {
 
     // public: anyone can see the timetable, rooms and teachers without signing in
     async getDataset() {
-      return delay(store.dataset);
+      const custom = (store.dataset.clusters ?? []).filter((c) => c.kind === 'custom');
+      return delay({ ...store.dataset, clusters: [...deriveClusters(store.dataset.groups), ...custom] });
     },
     async saveSettings(settings) {
       requireRole('admin');
@@ -459,6 +472,29 @@ export function createMockApi(): Api {
       store.dataset.subjects.push(...created);
       persist();
       return delay(created);
+    },
+
+    async saveCluster(c) {
+      requireRole('admin');
+      const name = c.name.trim();
+      if (!name) throw new ApiError(422, 'A cluster needs a name');
+      const all = store.dataset.clusters ?? [];
+      if (all.some((x) => x.kind === 'custom' && x.id !== c.id && x.name.toLowerCase() === name.toLowerCase()))
+        throw new ApiError(409, 'A cluster with this name already exists');
+      const groupIds = [...new Set(c.groupIds)];
+      const existing = c.id ? all.find((x) => x.id === c.id && x.kind === 'custom') : undefined;
+      if (c.id && !existing) throw new ApiError(404, 'Not found');
+      const saved: Cluster = existing ? Object.assign(existing, { name, groupIds }) : { id: uid('c'), kind: 'custom', name, groupIds };
+      store.dataset.clusters = existing ? all : [...all, saved];
+      persist();
+      return delay(saved);
+    },
+    async deleteCluster(id) {
+      requireRole('admin');
+      store.dataset.clusters = (store.dataset.clusters ?? []).filter((x) => x.id !== id);
+      for (const s of store.dataset.subjects) if (s.clusterIds) s.clusterIds = s.clusterIds.filter((x) => x !== id);
+      persist();
+      return delay(undefined);
     },
 
     async updateAvailability(teacherId, data) {

@@ -167,6 +167,37 @@ for _name in repo.LOADERS:
     _register(_name)
 
 
+@router.get("/clusters")
+def list_clusters(_: CurrentUser = Depends(current_user), conn: Connection = Depends(get_conn)):
+    """All the clusters. Year, speciality, language and form clusters follow the groups; custom ones are made by an administrator."""
+    return repo.load_clusters(conn)
+
+
+def _cluster(conn: Connection, cid: int) -> dict:
+    return next(c for c in repo.load_clusters(conn) if c["id"] == str(cid))
+
+
+@router.post("/clusters", status_code=201)
+def create_cluster(data: dict = Body(...), _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    cid = repo.save_custom_cluster(conn, data)
+    conn.commit()
+    return _cluster(conn, cid)
+
+
+@router.put("/clusters/{cluster_id}")
+def update_cluster(cluster_id: str, data: dict = Body(...), _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    cid = repo.save_custom_cluster(conn, data, pid(cluster_id))
+    conn.commit()
+    return _cluster(conn, cid)
+
+
+@router.delete("/clusters/{cluster_id}", status_code=204)
+def delete_cluster(cluster_id: str, _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    repo.delete_custom_cluster(conn, pid(cluster_id))
+    conn.commit()
+    return Response(status_code=204)
+
+
 # ---------------------------------------------------------------- extra endpoints
 
 

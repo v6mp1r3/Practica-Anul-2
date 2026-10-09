@@ -8,6 +8,7 @@ import type { DatasetIndex } from '../domain/indexes';
 import { fmtTime } from '../domain/slots';
 import type { Settings, Vacation } from '../domain/types';
 import { dateLocale, useI18n } from '../i18n';
+import { subjectLabel } from '../domain/subjects';
 
 export interface CalendarEntry {
   id: string;
@@ -92,7 +93,7 @@ export function ExamCalendar({
                       <span className="exam-body">
                         <span className={`badge exam-badge ${e.tone}`}>{e.label}</span>
                         <strong>
-                          {subject?.code} · {subject?.name}
+                          {subjectLabel(subject)} · {subject?.name}
                         </strong>
                         <span className="small muted">
                           {[

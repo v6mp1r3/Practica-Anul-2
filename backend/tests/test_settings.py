@@ -9,7 +9,7 @@ def get_settings(client):
 
 def test_dataset_is_public_and_seeded(client):
     ds = client.get("/api/dataset").json()
-    assert set(ds) == {"settings", "teachers", "rooms", "groups", "streams", "subjects", "assignments"}
+    assert set(ds) == {"settings", "teachers", "rooms", "groups", "streams", "subjects", "assignments", "clusters"}
     s = ds["settings"]
     assert s["institutionName"] == "Universitatea Tehnică a Moldovei" and s["semester"] == "Toamna 2026/2027"
     assert len(s["faculties"]) == 14 and len(s["slots"]) == 7 and s["slots"][0] == {"start": "08:00", "end": "09:30"}

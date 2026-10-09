@@ -1,5 +1,6 @@
 import { OtherFaculty, facultyView, useAdminScope } from '../../components/FacultyFilter';
 import { CrudPage } from '../../components/CrudPage';
+import { GroupPicker } from '../../components/GroupPicker';
 import { MultiSelect } from '../../components/MultiSelect';
 import { useEquipment } from '../../components/useEquipment';
 import { Field } from '../../components/ui';
@@ -199,46 +200,24 @@ export default function Rooms() {
             <p className="small muted" style={{ margin: '2px 0 10px' }}>
               {t('rooms.preferredHint')}
             </p>
-            <Field label={t('rooms.preferredSubjects')}>
-              <div className="checks">
-                {dataset.subjects
+            <Field label={t('rooms.preferredSubjects')} hint={t('rooms.preferredSubjectsHint')}>
+              <MultiSelect
+                value={d.preferredSubjectIds ?? []}
+                onChange={(ids) => set({ preferredSubjectIds: ids })}
+                options={dataset.subjects
                   .filter((sub) => !d.faculty || !sub.faculty || sub.faculty === d.faculty)
-                  .map((sub) => {
-                    const list = d.preferredSubjectIds ?? [];
-                    return (
-                      <label key={sub.id} className="check" title={sub.name}>
-                        <input
-                          type="checkbox"
-                          checked={list.includes(sub.id)}
-                          onChange={(e) =>
-                            set({ preferredSubjectIds: e.target.checked ? [...list, sub.id] : list.filter((x) => x !== sub.id) })
-                          }
-                        />
-                        {sub.code}
-                      </label>
-                    );
-                  })}
-              </div>
+                  .map((sub) => ({ value: sub.id, label: `${sub.code} — ${sub.name}`, short: sub.code }))}
+                placeholder={t('rooms.pickSubjects')}
+                aria-label={t('rooms.preferredSubjects')}
+              />
             </Field>
             <div style={{ height: 12 }} />
             <Field label={t('rooms.preferredGroups')}>
-              <div className="checks">
-                {dataset.groups
-                  .filter((g) => !d.faculty || !g.faculty || g.faculty === d.faculty)
-                  .map((g) => {
-                    const list = d.preferredGroupIds ?? [];
-                    return (
-                      <label key={g.id} className="check">
-                        <input
-                          type="checkbox"
-                          checked={list.includes(g.id)}
-                          onChange={(e) => set({ preferredGroupIds: e.target.checked ? [...list, g.id] : list.filter((x) => x !== g.id) })}
-                        />
-                        {g.name}
-                      </label>
-                    );
-                  })}
-              </div>
+              <GroupPicker
+                groups={dataset.groups.filter((g) => !d.faculty || !g.faculty || g.faculty === d.faculty)}
+                value={d.preferredGroupIds ?? []}
+                onChange={(ids) => set({ preferredGroupIds: ids })}
+              />
             </Field>
           </div>
         </div>
