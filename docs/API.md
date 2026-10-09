@@ -249,6 +249,23 @@ Extra endpoints:
 
 `status` is `variant` (fresh from the generator), `draft` or `published`.
 
+### Importing a timetable file
+
+```
+POST /timetables/import-sheet?filename=orar.pdf     (admin)
+Content-Type: application/octet-stream               (the PDF or .xlsx file itself, at most 15 MB)
+→ { "rows": [ { "groups": ["AR-251","TCM-251"], "day": 0, "start": "08:00", "end": "09:30", "parity": "even",
+                "type": "lecture", "subject": "Analiza matematică II", "teacher": "Rusu Elena", "room": "5-I",
+                "source": "p1 08:00 AR-251/TCM-251" } ],
+    "warnings": [] }
+```
+
+Reads a faculty's weekly timetable as UTM publishes it (groups across the top, days and pair times down the
+left, a lecture shared by several groups as one wide cell, odd week above / even week below in a split cell)
+into rows. Nothing is saved: the client matches the rows to the assignments (`frontend/src/domain/timetableImport.ts`,
+which also reads our own CSV export) and saves the result with `PUT /timetables/{id}` as a `draft`.
+415 for other file types, 422 for a file that cannot be read.
+
 ## Generation (background job)
 
 Generation can take minutes, so it is a job the client polls.
@@ -260,7 +277,7 @@ Generation can take minutes, so it is a job the client polls.
 
 ```
 POST /generate            (admin)
-{ "groupIds": ["g1","g2"], "variants": 3, "iterations": 250, "seed": 42, "baseTimetableId": "tt1" }
+{ "groupIds": ["g1","g2"], "variants": 3, "iterations": 250, "seed": 42, "baseTimetableId": "tt1", "exampleTimetableId": "tt2" }
 → { "jobId": "job_123" }
 
 GET /generate/{jobId}
@@ -272,6 +289,9 @@ GET /generate/{jobId}
 
 - Only assignments whose audience touches one of `groupIds` are scheduled.
 - Lessons with `locked: true` in `baseTimetableId` must be kept exactly as they are.
+- `exampleTimetableId` (optional): a timetable to follow, e.g. an imported one. Its pairs start on the same day,
+  pair and room (another room that fits when theirs no longer does) whenever that clashes with nothing; the search
+  moves one away only when that lowers the soft score by more than 2 per pair moved. 404 if it does not exist.
 - Every variant must satisfy the hard constraints in report §2.1.3; `iterations`
   is a hint for effort (the frontend uses 80 / 250 / 700) — map it to a time limit.
 - The frontend polls once per second.
