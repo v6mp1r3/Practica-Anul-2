@@ -27,7 +27,9 @@ export default function FreeRooms() {
   const rooms = roomFilters.filtered;
 
   const lessons = published?.lessons ?? [];
-  const freeAt = (d: number, s: number) => freeRooms(rooms, lessons, d, s, week);
+  // the week grid has its own odd / even / both switch
+  const [gridWeek, setGridWeek] = useState<Parity>(week);
+  const freeInGrid = (d: number, s: number) => freeRooms(rooms, lessons, d, s, gridWeek);
   // checking one room at the chosen day, pair and week
   const allRooms = [...dataset.rooms].sort((a, b) => a.name.localeCompare(b.name, 'ro', { numeric: true }));
   const [checkId, setCheckId] = useState('');
@@ -167,7 +169,20 @@ export default function FreeRooms() {
         </div>
 
         <div>
-          <h2 style={{ marginBottom: 4 }}>{t('freeRooms.overview')}</h2>
+          <div className="row wrap" style={{ gap: 12, marginBottom: 4 }}>
+            <h2>{t('freeRooms.overview')}</h2>
+            {dataset.settings.weekParity && (
+              <Segmented
+                value={gridWeek}
+                onChange={setGridWeek}
+                options={[
+                  { value: 'weekly', label: t('tt.weekAll') },
+                  { value: 'odd', label: t('tt.weekOdd') },
+                  { value: 'even', label: t('tt.weekEven') },
+                ]}
+              />
+            )}
+          </div>
           <p className="small muted" style={{ marginBottom: 10 }}>
             {t('freeRooms.overviewHint')}
           </p>
@@ -182,11 +197,11 @@ export default function FreeRooms() {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             cellClass={(d, s) =>
-              d === day && s === slot ? 'state-consultation' : freeAt(d, s).length ? 'state-free' : 'state-unavailable'
+              d === day && s === slot ? 'state-consultation' : freeInGrid(d, s).length ? 'state-free' : 'state-unavailable'
             }
             // the number of free rooms; clicking it opens the list of them (searchable)
             renderCell={(d, s) => {
-              const free = freeAt(d, s);
+              const free = freeInGrid(d, s);
               if (!free.length) return 0;
               return (
                 <Select
@@ -195,6 +210,7 @@ export default function FreeRooms() {
                   onChange={(e) => {
                     setDay(d);
                     setSlot(s);
+                    setWeek(gridWeek);
                     setCheckId(e.target.value);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
