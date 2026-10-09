@@ -19,15 +19,14 @@ import { downloadFile } from '../../utils/download';
 /** The subject ends with an exam (older records only have `evaluation`). */
 const hasExam = (x: { hasExam?: boolean; evaluation?: string }) => x.hasExam ?? x.evaluation !== 'atestari';
 
-/** The evaluation filter: atestarea 1, atestarea 2, both, the exam, or atestări only. */
+/** The evaluation filter: atestarea 1, atestarea 2, both, or the exam. */
 function hasAssessment(x: Subject, what: string): boolean {
   const m1 = x.hasMidterm1 ?? true;
   const m2 = x.hasMidterm2 ?? true;
   if (what === 'm1') return m1;
   if (what === 'm2') return m2;
   if (what === 'both') return m1 && m2;
-  if (what === 'exam') return hasExam(x);
-  return !hasExam(x);
+  return hasExam(x);
 }
 
 export default function Subjects() {
@@ -125,7 +124,6 @@ export default function Subjects() {
               <option value="m2">{t('subjects.filter.m2')}</option>
               <option value="both">{t('subjects.filter.both')}</option>
               <option value="exam">{t('subjects.evaluation.exam')}</option>
-              <option value="atestari">{t('subjects.evaluation.atestari')}</option>
             </Select>
             <Select className="select pill" value={activity} onChange={(e) => setActivity(e.target.value)} aria-label={t('teachers.types')}>
               <option value="">{t('subjects.anyActivity')}</option>
