@@ -8,10 +8,12 @@ import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
 import { LanguageField, LanguageTag, languageOf } from '../../components/Language';
-import { Fragment, useState, type CSSProperties } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { specialtyOf as prefixOf } from '../../domain/specialty';
 
 const SHOWN_GROUPS = 8;
+// how long a year's rows take to open or close (as .row-grow in components.css)
+const ROW_MS = 300;
 
 export default function Groups() {
   const { t } = useI18n();
@@ -34,28 +36,25 @@ export default function Groups() {
   const [managing, setManaging] = useState(false);
   // years whose specialty rows are open (closed at first, so the table stays short)
   const [openYears, setOpenYears] = useState<Set<number>>(new Set());
-  // a year being closed keeps its rows a moment, so they can fade out
-  const [closingYears, setClosingYears] = useState<Set<number>>(new Set());
+  // a year's specialty rows grow open from nothing and shrink back: they are on the page while open or closing
+  // ("mounted"), and "grown" one frame after they were put there, so the height has something to animate from
+  const [mountedYears, setMountedYears] = useState<Set<number>>(new Set());
+  const [grownYears, setGrownYears] = useState<Set<number>>(new Set());
+  const without = (set: Set<number>, y: number) => {
+    const next = new Set(set);
+    next.delete(y);
+    return next;
+  };
   const toggleYear = (y: number) => {
-    const closing = openYears.has(y);
-    setOpenYears((cur) => {
-      const next = new Set(cur);
-      if (closing) next.delete(y);
-      else next.add(y);
-      return next;
-    });
-    if (closing) {
-      setClosingYears((cur) => new Set(cur).add(y));
-      window.setTimeout(
-        () =>
-          setClosingYears((cur) => {
-            const next = new Set(cur);
-            next.delete(y);
-            return next;
-          }),
-        220,
-      );
+    if (openYears.has(y)) {
+      setOpenYears((cur) => without(cur, y));
+      setGrownYears((cur) => without(cur, y));
+      window.setTimeout(() => setMountedYears((cur) => without(cur, y)), ROW_MS);
+      return;
     }
+    setOpenYears((cur) => new Set(cur).add(y));
+    setMountedYears((cur) => new Set(cur).add(y));
+    requestAnimationFrame(() => requestAnimationFrame(() => setGrownYears((cur) => new Set(cur).add(y))));
   };
   const specCount = (y: number) =>
     clusters.filter(({ c, groups }) => c.kind === 'speciality' && (c.year ?? 1) === y && groups.length > 0).length;
@@ -314,9 +313,7 @@ export default function Groups() {
                   {/* one section per kind (year, language, form, own), each with a line saying what it groups by */}
                   {(['year', 'language', 'form', 'custom'] as const).map((kind) => {
                     const rows = clusters.filter(
-                      ({ c }) =>
-                        c.kind === kind ||
-                        (kind === 'year' && c.kind === 'speciality' && (openYears.has(c.year ?? 1) || closingYears.has(c.year ?? 1))),
+                      ({ c }) => c.kind === kind || (kind === 'year' && c.kind === 'speciality' && mountedYears.has(c.year ?? 1)),
                     );
                     if (!rows.length) return null;
                     return (
@@ -328,64 +325,67 @@ export default function Groups() {
                           </td>
                         </tr>
                         {rows.map(({ c, groups }) => {
-                          // where the row sits among its year's specialties: they come in one after another
+                          // a specialty row's cells grow from no height (see .row-grow)
                           const sub = c.kind === 'speciality';
-                          const subs = sub ? rows.filter(({ c: x }) => x.kind === 'speciality' && x.year === c.year) : [];
-                          const i = subs.findIndex(({ c: x }) => x.id === c.id);
-                          const leaving = sub && !openYears.has(c.year ?? 1);
+                          const cell = (content: ReactNode) =>
+                            sub ? (
+                              <div className="row-grow">
+                                <div>
+                                  <div className="row-pad">{content}</div>
+                                </div>
+                              </div>
+                            ) : (
+                              content
+                            );
                           return (
-                            <tr
-                              key={c.id}
-                              className={sub ? `cluster-sub ${leaving ? 'leaving' : ''}` : ''}
-                              style={sub ? ({ '--i': i } as CSSProperties) : undefined}
-                            >
+                            <tr key={c.id} className={sub ? `cluster-sub ${grownYears.has(c.year ?? 1) ? 'grown' : ''}` : ''}>
                               <td>
-                                {c.kind === 'year' ? (
-                                  <button
-                                    type="button"
-                                    className="cluster-year-btn"
-                                    aria-expanded={openYears.has(c.year ?? 1)}
-                                    title={t('clusters.showSpecs')}
-                                    onClick={() => toggleYear(c.year ?? 1)}
-                                  >
-                                    <span className={`chev ${openYears.has(c.year ?? 1) ? 'open' : ''}`} aria-hidden="true">
-                                      ›
-                                    </span>
+                                {cell(
+                                  c.kind === 'year' ? (
+                                    <button
+                                      type="button"
+                                      className="cluster-year-btn"
+                                      aria-expanded={openYears.has(c.year ?? 1)}
+                                      title={t('clusters.showSpecs')}
+                                      onClick={() => toggleYear(c.year ?? 1)}
+                                    >
+                                      <span className={`chev ${openYears.has(c.year ?? 1) ? 'open' : ''}`} aria-hidden="true">
+                                        ›
+                                      </span>
+                                      <strong>{clusterLabel(c)}</strong>
+                                      <span className="small muted">{t('clusters.specCount', { n: specCount(c.year ?? 1) })}</span>
+                                    </button>
+                                  ) : (
                                     <strong>{clusterLabel(c)}</strong>
-                                    <span className="small muted">{t('clusters.specCount', { n: specCount(c.year ?? 1) })}</span>
-                                  </button>
-                                ) : (
-                                  <strong>{clusterLabel(c)}</strong>
+                                  ),
                                 )}
                               </td>
                               <td>
                                 {/* a few groups are listed; a year, or any big cluster, is summed up by specialty
                                   (its groups are in the specialty rows under it, or behind "arată grupele") */}
-                                <div className="row wrap" style={{ gap: 4 }}>
-                                  {c.kind !== 'year' && (groups.length <= SHOWN_GROUPS || expanded.has(c.id))
-                                    ? groups.map((id, i) => (
-                                        <span
-                                          key={id}
-                                          className={`badge ${expanded.has(c.id) ? 'pop-in' : ''}`}
-                                          style={expanded.has(c.id) ? ({ '--i': Math.min(i, 30) } as CSSProperties) : undefined}
-                                        >
-                                          {groupName(id)}
-                                        </span>
-                                      ))
-                                    : bySpecialty(groups).map(([sp, n]) => (
-                                        <span key={sp} className="badge primary">
-                                          {sp} · {n}
-                                        </span>
-                                      ))}
-                                  {c.kind !== 'year' && groups.length > SHOWN_GROUPS && (
-                                    <button type="button" className="btn ghost sm more-groups" onClick={() => toggleExpanded(c.id)}>
-                                      {expanded.has(c.id) ? t('clusters.less') : t('clusters.showGroups')}
-                                    </button>
-                                  )}
-                                </div>
+                                {cell(
+                                  <div className="row wrap" style={{ gap: 4 }}>
+                                    {c.kind !== 'year' && (groups.length <= SHOWN_GROUPS || expanded.has(c.id))
+                                      ? groups.map((id) => (
+                                          <span key={id} className="badge">
+                                            {groupName(id)}
+                                          </span>
+                                        ))
+                                      : bySpecialty(groups).map(([sp, n]) => (
+                                          <span key={sp} className="badge primary">
+                                            {sp} · {n}
+                                          </span>
+                                        ))}
+                                    {c.kind !== 'year' && groups.length > SHOWN_GROUPS && (
+                                      <button type="button" className="btn ghost sm more-groups" onClick={() => toggleExpanded(c.id)}>
+                                        {expanded.has(c.id) ? t('clusters.less') : t('clusters.showGroups')}
+                                      </button>
+                                    )}
+                                  </div>,
+                                )}
                               </td>
-                              <td>{groups.length}</td>
-                              <td>{groups.reduce((n, id) => n + (sizeOf.get(id) ?? 0), 0)}</td>
+                              <td>{cell(groups.length)}</td>
+                              <td>{cell(groups.reduce((n, id) => n + (sizeOf.get(id) ?? 0), 0))}</td>
                             </tr>
                           );
                         })}
