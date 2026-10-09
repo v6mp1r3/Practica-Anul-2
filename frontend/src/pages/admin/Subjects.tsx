@@ -48,31 +48,28 @@ export default function Subjects() {
     setPreview(null);
   }
 
-  // filters: year, evaluation, activity in the study plan, whether it is in Sarcina didactică yet
+  // filters: specialty, year, evaluation, activity in the study plan
   const subjects = dataset.subjects.filter((x) => (!scope || !x.faculty || x.faculty === scope) && (x.cycle ?? 'licenta') === cycle);
   const [year, setYear] = useState('');
   const [evaluation, setEvaluation] = useState('');
   const [activity, setActivity] = useState('');
-  const [load, setLoad] = useState('');
   const [specialty, setSpecialty] = useState('');
   // the faculty's specialties, from its group names (TI-251 → TI)
   const specialties = [...new Set(dataset.groups.filter((g) => !scope || g.faculty === scope).map((g) => specialtyOf(g.name)))].sort(
     (a, b) => a.localeCompare(b, 'ro'),
   );
   const years = [...new Set(subjects.map((x) => x.year))].sort((a, b) => a - b);
-  const planned = (x: Subject) => dataset.assignments.some((a) => a.subjectId === x.id);
   const pairsOf = (x: Subject, a: string) => (a === 'lecture' ? x.lecturePairs : a === 'seminar' ? x.seminarPairs : x.labPairs);
   const shown = subjects.filter(
     (x) =>
       (!year || x.year === Number(year)) &&
       (!evaluation || (hasExam(x) ? 'exam' : 'atestari') === evaluation) &&
       (!activity || pairsOf(x, activity) > 0) &&
-      (!load || (load === 'planned') === planned(x)) &&
       // a specialty's subjects: those tagged with it or with its whole year, and those for every specialty
       (!specialty || subjectInSpeciality(x.clusterIds, specialty, clusters)) &&
       (!clusterFilter || !!x.clusterIds?.includes(clusterFilter)),
   );
-  const filtering = !!(year || evaluation || activity || load || specialty);
+  const filtering = !!(year || evaluation || activity || specialty);
 
   const pairs = (n: number) => (n ? String(n).replace('.', ',') : '—');
 
@@ -124,11 +121,6 @@ export default function Subjects() {
                 </option>
               ))}
             </Select>
-            <Select className="select pill" value={load} onChange={(e) => setLoad(e.target.value)} aria-label={t('nav.assignments')}>
-              <option value="">{t('subjects.anyLoad')}</option>
-              <option value="planned">{t('subjects.planned')}</option>
-              <option value="unplanned">{t('subjects.unplanned')}</option>
-            </Select>
             {filtering && (
               <button
                 className="btn ghost sm"
@@ -136,7 +128,6 @@ export default function Subjects() {
                   setYear('');
                   setEvaluation('');
                   setActivity('');
-                  setLoad('');
                   setSpecialty('');
                 }}
               >
