@@ -22,6 +22,8 @@ export default function Groups() {
   const [language, setLanguage] = useState('');
   // the specialty prefix of a group's name: TI-251 → TI, FAF-232 → FAF
   const [prefix, setPrefix] = useState('');
+  // frecvență | frecvență redusă | dual
+  const [form, setForm] = useState<'' | StudyForm>('');
   const ourGroups = dataset.groups.filter((x) => (!faculty || x.faculty === faculty) && mine(x));
   const prefixes = [...new Set(ourGroups.map((g) => prefixOf(g.name)))].sort((a, b) => a.localeCompare(b, 'ro'));
   // the clusters (year, speciality, language, form of study, own) with the groups of this faculty and cycle in them
@@ -42,7 +44,9 @@ export default function Groups() {
           embedded
           collection="groups"
           title={t('groups.groups')}
-          items={ourGroups.filter((x) => (!prefix || prefixOf(x.name) === prefix) && (!language || languageOf(x) === language))}
+          items={ourGroups.filter(
+            (x) => (!prefix || prefixOf(x.name) === prefix) && (!language || languageOf(x) === language) && (!form || x.studyForm === form),
+          )}
           filters={
             <>
               <Select className="select pill" value={prefix} onChange={(e) => setPrefix(e.target.value)} aria-label={t('groups.prefix')}>
@@ -63,6 +67,19 @@ export default function Groups() {
                 {(['ro', 'ru', 'en', 'fr'] as const).map((l) => (
                   <option key={l} value={l}>
                     {t(`language.${l}`)}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                className="select pill"
+                value={form}
+                onChange={(e) => setForm(e.target.value as '' | StudyForm)}
+                aria-label={t('groups.studyForm')}
+              >
+                <option value="">{t('groups.allForms')}</option>
+                {STUDY_FORMS.map((f) => (
+                  <option key={f} value={f}>
+                    {t(`form.${f}`)}
                   </option>
                 ))}
               </Select>

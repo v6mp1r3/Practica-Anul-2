@@ -27,6 +27,7 @@ export const en: Record<MessageKey, string> = {
   'subjects.filter.both': 'Both midterms',
   'groups.prefix': 'Specialty',
   'groups.allPrefixes': 'All specialties',
+  'groups.allForms': 'All forms of study',
   'language.ro': 'Romanian',
   'language.ru': 'Russian',
   'language.en': 'English',

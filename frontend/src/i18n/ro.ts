@@ -26,6 +26,7 @@ export const ro = {
   'subjects.filter.both': 'Ambele atestări',
   'groups.prefix': 'Specialitate',
   'groups.allPrefixes': 'Toate specialitățile',
+  'groups.allForms': 'Toate formele',
   'language.ro': 'Română',
   'language.ru': 'Rusă',
   'language.en': 'Engleză',

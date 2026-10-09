@@ -27,6 +27,7 @@ export const ru: Record<MessageKey, string> = {
   'subjects.filter.both': 'Обе аттестации',
   'groups.prefix': 'Специальность',
   'groups.allPrefixes': 'Все специальности',
+  'groups.allForms': 'Все формы обучения',
   'language.ro': 'Румынский',
   'language.ru': 'Русский',
   'language.en': 'Английский',
