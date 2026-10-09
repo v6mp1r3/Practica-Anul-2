@@ -14,6 +14,7 @@ from ..dataset import build_dataset
 from ..db import get_engine
 from ..deps import CurrentUser
 from ..errors import ApiError
+from ..memo import forget_all
 from ..settings_io import current_semester
 from ..solver.generate import generate_timetable
 from ..util import maybe_pid, pid, sid
@@ -141,6 +142,7 @@ def _run(job_id: int, user_id: int) -> None:
                 {"i": job_id, "l": json.dumps({"variant": variants - 1, "progress": 1, "best": results[-1][1].score})},
             )
             conn.commit()
+        forget_all()  # the new variants: the timetable list is read again
     except Exception as exc:
         log.exception("Generation job %s failed", job_id)
         try:

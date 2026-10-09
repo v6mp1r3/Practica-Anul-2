@@ -2,7 +2,9 @@
 from fastapi import APIRouter, Body, Depends, Query, Request, Response
 from sqlalchemy import Connection
 
+from ..db import get_engine
 from ..deps import CurrentUser, current_user, get_conn, require_admin
+from ..memo import Memo
 from ..importers import read_sheet
 from ..services import timetables as svc
 from ..util import pid
@@ -10,9 +12,18 @@ from ..util import pid
 router = APIRouter(prefix="/timetables", tags=["timetables"])
 
 
+def _read_list():
+    with get_engine().connect() as conn:
+        return svc.list_timetables(conn)
+
+
+_list = Memo(_read_list)
+
+
 @router.get("")
-def list_timetables(_: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
-    return svc.list_timetables(conn)
+def list_timetables(_: CurrentUser = Depends(require_admin)):
+    """The same for every administrator (the client keeps its faculty's), so from memory too (memo.py)."""
+    return _list.get()
 
 
 @router.post("/import-sheet")
@@ -22,10 +33,18 @@ async def import_sheet(request: Request, filename: str = Query(""), _: CurrentUs
     return read_sheet(filename, await request.body())
 
 
+def _read_published():
+    with get_engine().connect() as conn:
+        return svc.get_published(conn)
+
+
+_published = Memo(_read_published)
+
+
 @router.get("/published")
-def get_published(conn: Connection = Depends(get_conn)):
-    """Public: the timetable students and teachers see, or null before the first publish."""
-    return svc.get_published(conn)
+def get_published():
+    """Public: the timetable students and teachers see, or null before the first publish (from memory, memo.py)."""
+    return _published.get()
 
 
 @router.get("/{timetable_id}")

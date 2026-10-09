@@ -5,6 +5,7 @@ from sqlalchemy import Connection
 
 from . import repo
 from .db import get_engine
+from .memo import Memo
 from .settings_io import read_settings
 
 PARTS = {
@@ -28,9 +29,17 @@ def _load_alone(load):
         return load(conn)
 
 
-def read_dataset() -> dict:
+def _read_fresh() -> dict:
     """The committed dataset, its parts read side by side on their own connections (each part is
     several round trips to the database, so one after the other they add up to seconds)."""
     with ThreadPoolExecutor(len(PARTS)) as pool:
         futures = {name: pool.submit(_load_alone, load) for name, load in PARTS.items()}
         return {name: f.result() for name, f in futures.items()}
+
+
+_memo = Memo(_read_fresh)
+
+
+def read_dataset() -> dict:
+    """GET /dataset: from memory (memo.py)."""
+    return _memo.get()

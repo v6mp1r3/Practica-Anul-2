@@ -6,7 +6,9 @@ from fastapi import APIRouter, Body, Depends, Response
 from sqlalchemy import Connection, text
 
 from ..dataset import build_dataset
+from ..db import get_engine
 from ..deps import CurrentUser, get_conn, require_admin
+from ..memo import Memo
 from ..domain.indexes import DatasetIndex
 from ..errors import ApiError
 from ..services.timetables import get_published
@@ -56,11 +58,19 @@ def _find(conn: Connection, user: CurrentUser, round_: str) -> int | None:
     ).scalar()
 
 
+def _read_published_events():
+    with get_engine().connect() as conn:
+        sem = current_semester(conn)
+        return _events(conn, "p.semester_id = :s and p.status = 'published'", {"s": sem.id})
+
+
+_published_events = Memo(_read_published_events)
+
+
 @router.get("")
-def list_published(conn: Connection = Depends(get_conn)):
-    """Public: the events of every faculty's published plans."""
-    sem = current_semester(conn)
-    return _events(conn, "p.semester_id = :s and p.status = 'published'", {"s": sem.id})
+def list_published():
+    """Public: the events of every faculty's published plans (from memory, memo.py)."""
+    return _published_events.get()
 
 
 @router.get("/plans")

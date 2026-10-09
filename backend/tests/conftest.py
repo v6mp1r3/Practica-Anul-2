@@ -22,6 +22,8 @@ if TEST_URL:
     os.environ["GENERATION_SECONDS_PER_ITERATION"] = "0.001"
     os.environ["GENERATION_MIN_SECONDS"] = "1"
     os.environ["SOLVER_WORKERS"] = "4"
+    # tests change the database directly too: always read the dataset afresh
+    os.environ["DATASET_CACHE_SECONDS"] = "0"
 
 
 def _plain(url: str) -> str:
