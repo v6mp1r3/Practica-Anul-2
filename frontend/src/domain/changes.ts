@@ -11,6 +11,25 @@ export function parseDate(s: string): Date {
   return new Date(y, m - 1, d);
 }
 
+/** "2026-10-09" → "09/10/2026": dates are written day/month/year everywhere. */
+export function fmtDate(s: string): string {
+  const [y, m, d] = s.slice(0, 10).split('-');
+  return y && m && d ? `${d}/${m}/${y}` : s;
+}
+
+/** What someone typed ("9/10/2026", "09.10.26", "2026-10-09") → "2026-10-09", or null if it is not a real date. */
+export function parseDateInput(text: string): string | null {
+  const t = text.trim();
+  let y: number, m: number, d: number;
+  const iso = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  const dmy = t.match(/^(\d{1,2})[/.\-\s](\d{1,2})[/.\-\s](\d{2}|\d{4})$/);
+  if (iso) [y, m, d] = [Number(iso[1]), Number(iso[2]), Number(iso[3])];
+  else if (dmy) [d, m, y] = [Number(dmy[1]), Number(dmy[2]), Number(dmy[3].length === 2 ? `20${dmy[3]}` : dmy[3])];
+  else return null;
+  const date = new Date(y, m - 1, d);
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d ? toDateString(date) : null;
+}
+
 export function toDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
