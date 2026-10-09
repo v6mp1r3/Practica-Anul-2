@@ -150,6 +150,8 @@ export default function Subjects() {
         }
         itemLabel={(x) => `${x.code} — ${x.name}`}
         searchText={(x) => `${x.code} ${x.abbreviation ?? ''} ${x.name}`}
+        // the cluster list changes width with its choice: keep the actions under the title
+        stackedHeader
         headerActions={
           <>
             <CycleTabs

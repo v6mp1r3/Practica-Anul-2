@@ -4,9 +4,20 @@ import { LANGS, useI18n } from '../i18n';
 import { fmtTime, parseTime } from '../domain/slots';
 import { Icon } from './Icon';
 
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+  stacked,
+}: {
+  title: string;
+  subtitle?: ReactNode;
+  actions?: ReactNode;
+  /** Always put the actions on their own line under the title (they don't jump up when they get narrower). */
+  stacked?: boolean;
+}) {
   return (
-    <div className="page-header">
+    <div className={`page-header ${stacked ? 'stacked' : ''}`}>
       <div className="titles">
         <h1>{title}</h1>
         {subtitle && <p>{subtitle}</p>}
