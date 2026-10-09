@@ -95,10 +95,11 @@ export default function Generate() {
   // licență | master's: generate one cycle at a time (the other keeps its published pairs)
   const [cycle, setCycle] = useCycle();
   const scopeGroups = dataset.groups.filter((g) => (!scope || g.faculty === scope) && groupInCycle(g, cycle));
-  const [groupIds, setGroupIds] = useState<string[]>(scopeGroups.map((g) => g.id));
+  // nothing is chosen at first: the administrator picks the groups to generate for
+  const [groupIds, setGroupIds] = useState<string[]>([]);
   useEffect(() => {
-    setGroupIds(dataset.groups.filter((g) => (!scope || g.faculty === scope) && groupInCycle(g, cycle)).map((g) => g.id));
-  }, [cycle, scope, dataset.groups]);
+    setGroupIds([]);
+  }, [cycle, scope]);
   const [form, setForm] = useState<'all' | StudyForm>('all');
   const [variants, setVariants] = useState(3);
   const [effort, setEffort] = useState<Effort>('normal');
@@ -157,7 +158,6 @@ export default function Generate() {
     navigate(`/admin/timetables/${saved.id}`);
   }
 
-
   return (
     <div className="page">
       <PageHeader title={t('nav.generate')} subtitle={t('generate.subtitle')} />
@@ -202,7 +202,8 @@ export default function Generate() {
                       value={form}
                       onChange={(f) => {
                         setForm(f);
-                        setGroupIds(scopeGroups.filter((g) => f === 'all' || g.studyForm === f).map((g) => g.id));
+                        // keep only the chosen groups of that form of study
+                        setGroupIds((cur) => cur.filter((id) => f === 'all' || index.groups.get(id)?.studyForm === f));
                       }}
                       options={[
                         { value: 'all', label: t('generate.allForms') },
