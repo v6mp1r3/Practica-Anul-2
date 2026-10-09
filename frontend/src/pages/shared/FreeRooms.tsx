@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { TimetableGrid } from '../../components/TimetableGrid';
 import { Field, PageHeader, Segmented } from '../../components/ui';
 import { freeRooms } from '../../domain/availability';
-import { fmtTime, weekDays } from '../../domain/slots';
+import { fmtTime, paritiesOverlap, weekDays } from '../../domain/slots';
+import { subjectLabel } from '../../domain/subjects';
 import type { Parity } from '../../domain/types';
 import { useEquipment } from '../../components/useEquipment';
 import { useRoomFilters } from '../../components/RoomFilters';
@@ -28,6 +29,13 @@ export default function FreeRooms() {
   const lessons = published?.lessons ?? [];
   const freeAt = (d: number, s: number) => freeRooms(rooms, lessons, d, s, week);
   const list = freeAt(day, slot);
+  // checking one room at the chosen day, pair and week
+  const allRooms = [...dataset.rooms].sort((a, b) => a.name.localeCompare(b.name, 'ro', { numeric: true }));
+  const [checkId, setCheckId] = useState('');
+  const checked = index.rooms.get(checkId);
+  const occupying = checked
+    ? lessons.filter((l) => !l.date && l.roomId === checked.id && l.day === day && l.slot === slot && paritiesOverlap(l.parity, week))
+    : [];
   // the room picked in the list (only while it is still free at the chosen time)
   const [roomId, setRoomId] = useState('');
   const chosen = list.find((r) => r.id === roomId);
@@ -59,7 +67,38 @@ export default function FreeRooms() {
                 ))}
               </Select>
             </Field>
+            {/* one room: is it free at this day and pair? */}
+            <Field label={t('freeRooms.check')}>
+              <Select className="select" value={checkId} onChange={(e) => setCheckId(e.target.value)} aria-label={t('freeRooms.check')}>
+                <option value="">{t('freeRooms.checkPick')}</option>
+                {allRooms.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
           </div>
+          {checked && (
+            <div className="card-body" style={{ paddingTop: 0 }}>
+              {occupying.length === 0 ? (
+                <span className="badge success">{t('freeRooms.isFree', { room: checked.name })}</span>
+              ) : (
+                <span className="row wrap" style={{ gap: 8 }}>
+                  <span className="badge danger">{t('freeRooms.isBusy', { room: checked.name })}</span>
+                  {occupying.map((l) => {
+                    const a = index.assignmentOf(l)!;
+                    return (
+                      <span key={l.id} className="small muted">
+                        {subjectLabel(index.subjects.get(a.subjectId))} · {t(`activity.${a.type}`)} · {index.audienceLabel(a.audience)} ·{' '}
+                        {index.teachers.get(a.teacherId)?.name}
+                      </span>
+                    );
+                  })}
+                </span>
+              )}
+            </div>
+          )}
           <div className="filter-bar">
             {roomFilters.controls}
             {roomFilters.filtering && (
