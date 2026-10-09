@@ -4,7 +4,7 @@ import { PageHeader, Segmented } from '../../components/ui';
 import { teacherStateAt, type TeacherSlotState } from '../../domain/availability';
 import { paritiesOverlap } from '../../domain/slots';
 import type { Day, Parity } from '../../domain/types';
-import { dayIndexOf, weekParityOf } from '../../domain/views';
+import { dayIndexOf, gridDays, sessionPairsThisWeek, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
@@ -25,8 +25,15 @@ export default function TeacherAvailability() {
   const teachers = [...dataset.teachers].sort((a, b) => a.name.localeCompare(b.name));
   const [teacherId, setTeacherId] = useState(teachers[0]?.id ?? '');
   const [week, setWeek] = useState<Parity>(dataset.settings.weekParity ? weekParityOf(new Date()) : 'weekly');
-  const lessons = published?.lessons ?? [];
+  const all = published?.lessons ?? [];
   const teacher = index.teachers.get(teacherId);
+  // this week's frecvență redusă pairs count too, on their day (weekends included for those who teach them)
+  const showsThisWeek = week === 'weekly' || !dataset.settings.weekParity || week === weekParityOf(new Date());
+  const lessons = showsThisWeek ? [...all.filter((l) => !l.date), ...sessionPairsThisWeek(all)] : all;
+  const days = gridDays(
+    dataset.settings,
+    all.filter((l) => index.assignmentOf(l)?.teacherId === teacherId),
+  );
 
   const label: Record<TeacherSlotState, string> = {
     free: t('availability.free'),
@@ -137,6 +144,7 @@ export default function TeacherAvailability() {
           settings={dataset.settings}
           index={index}
           lessons={[]}
+          days={days}
           today={today}
           cellClass={(d, s) => CELL[teacherStateAt(index, lessons, teacherId, d, s, week)]}
           renderCell={renderCell}

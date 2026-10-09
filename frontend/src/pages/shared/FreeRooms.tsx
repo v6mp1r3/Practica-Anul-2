@@ -8,7 +8,7 @@ import { subjectLabel } from '../../domain/subjects';
 import type { Parity } from '../../domain/types';
 import { useRoomFilters } from '../../components/RoomFilters';
 import { useEquipment } from '../../components/useEquipment';
-import { dayIndexOf, inWeek, weekParityOf } from '../../domain/views';
+import { dayIndexOf, gridDays, inWeek, sessionPairsThisWeek, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
@@ -59,7 +59,14 @@ export default function FreeRooms() {
     : [];
   // the chosen room's pairs: the week (odd / even / both) and the session dates
   const roomLessons = checked ? lessons.filter((l) => l.roomId === checked.id) : [];
-  const roomWeek = roomLessons.filter((l) => !l.date && inWeek(l, gridWeek));
+  // plus this week's frecvență redusă pairs on their day; Saturday and Sunday when the room has such pairs
+  const roomWeek = [
+    ...roomLessons.filter((l) => !l.date && inWeek(l, gridWeek)),
+    ...(gridWeek === 'weekly' || !dataset.settings.weekParity || gridWeek === weekParityOf(new Date())
+      ? sessionPairsThisWeek(roomLessons)
+      : []),
+  ];
+  const roomDays = gridDays(dataset.settings, roomLessons);
   // today only: the rooms free in the current pair (or the next one, between pairs), in this week
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
@@ -211,6 +218,7 @@ export default function FreeRooms() {
               settings={dataset.settings}
               index={index}
               lessons={roomWeek}
+              days={roomDays}
               hide={['room']}
               today={dayIndexOf(now)}
               renderCell={(d, s) =>
