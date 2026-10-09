@@ -1690,3 +1690,56 @@ button.holiday-row.selected {
   flex: none;
   margin-left: auto;
 }
+
+/* Importă orar: what the file gave, before saving */
+.import-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.import-summary > div {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.import-summary strong {
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--success);
+}
+.import-summary .warn strong {
+  color: var(--danger);
+}
+.import-summary span {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.import-problems summary {
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 550;
+}
+.import-problems ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  max-height: 260px;
+  overflow: auto;
+  font-size: 13px;
+  display: grid;
+  gap: 4px;
+}
+.import-why {
+  color: var(--danger);
+}
+.import-error {
+  white-space: normal;
+  align-self: flex-start;
+}
+@media (max-width: 560px) {
+  .import-summary strong {
+    font-size: 20px;
+  }
+}
