@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends, Response
 from sqlalchemy import Connection, text
 
 from .. import repo
-from ..dataset import build_dataset
+from ..dataset import read_dataset
 from ..deps import CurrentUser, current_user, get_conn, require_admin
 from ..errors import ApiError
 from ..settings_io import save_settings
@@ -17,9 +17,9 @@ OTHER_FACULTY = "This record belongs to another faculty"
 
 
 @router.get("/dataset")
-def get_dataset(conn: Connection = Depends(get_conn)):
+def get_dataset():
     """Public: students and teachers read the timetable without signing in."""
-    return build_dataset(conn)
+    return read_dataset()
 
 
 @router.put("/settings")
