@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TimetableGrid } from '../../components/TimetableGrid';
-import { Empty, Field, PageHeader, Segmented } from '../../components/ui';
+import { Field, PageHeader, Segmented } from '../../components/ui';
 import { freeRooms } from '../../domain/availability';
 import { fmtTime, weekDays } from '../../domain/slots';
 import type { Parity } from '../../domain/types';
@@ -26,6 +26,9 @@ export default function FreeRooms() {
   const lessons = published?.lessons ?? [];
   const opts = { minCapacity, equipment };
   const list = freeRooms(dataset.rooms, lessons, day, slot, week, opts);
+  // the room picked in the list (only while it is still free at the chosen time)
+  const [roomId, setRoomId] = useState('');
+  const chosen = list.find((r) => r.id === roomId);
 
   return (
     <div className="page">
@@ -88,23 +91,36 @@ export default function FreeRooms() {
           )}
         </div>
 
-        <div className="card">
-          <div className="card-header">
-            <h2>{t('freeRooms.result', { count: list.length })}</h2>
+        {/* the count, and a searchable list instead of every room at once */}
+        <div className="card free-now">
+          <div className="free-now-count">
+            <strong>{list.length}</strong>
+            <span>{t('freeRooms.freeCount')}</span>
           </div>
           {list.length === 0 ? (
-            <Empty>{t('freeRooms.none')}</Empty>
+            <span className="muted">{t('freeRooms.none')}</span>
           ) : (
-            <div className="card-body row wrap" style={{ gap: 10 }}>
-              {list.map((r) => (
-                <div key={r.id} className="card" style={{ padding: '10px 14px', minWidth: 150 }}>
-                  <strong>{r.name}</strong>
-                  <div className="small muted">
-                    {r.capacity} {t('rooms.capacity').toLowerCase()}
-                  </div>
-                  {r.equipment.length > 0 && <div className="small muted">{eq.list(r.equipment)}</div>}
-                </div>
-              ))}
+            <div className="stack" style={{ gap: 6, width: 280 }}>
+              <Select
+                className="select"
+                value={chosen?.id ?? ''}
+                onChange={(e) => setRoomId(e.target.value)}
+                aria-label={t('freeRooms.find')}
+              >
+                <option value="">{t('freeRooms.find')}</option>
+                {list.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} · {r.capacity} {t('rooms.capacity').toLowerCase()}
+                  </option>
+                ))}
+              </Select>
+              {chosen && (
+                <span className="small muted">
+                  {[chosen.building, `${chosen.capacity} ${t('rooms.capacity').toLowerCase()}`, eq.list(chosen.equipment)]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              )}
             </div>
           )}
         </div>

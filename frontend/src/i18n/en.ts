@@ -531,6 +531,8 @@ export const en: Record<MessageKey, string> = {
     'Calculated automatically from the published timetable. Only the administration can change rooms and the timetable.',
   'freeRooms.minCapacity': 'Minimum seats',
   'freeRooms.result': '{count} free rooms',
+  'freeRooms.freeCount': 'free rooms',
+  'freeRooms.find': 'Find a free room…',
   'freeRooms.none': 'No free room matches these filters.',
   'freeRooms.overview': 'Whole week',
   'freeRooms.overviewHint': 'Number of free rooms in each slot. Click a slot for details.',

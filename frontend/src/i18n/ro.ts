@@ -531,6 +531,8 @@ export const ro = {
   'freeRooms.readOnly': 'Calculat automat din orarul publicat. Doar administrația poate modifica sălile și orarul.',
   'freeRooms.minCapacity': 'Minim locuri',
   'freeRooms.result': '{count} săli libere',
+  'freeRooms.freeCount': 'săli libere',
+  'freeRooms.find': 'Caută o sală liberă…',
   'freeRooms.none': 'Nicio sală liberă cu aceste criterii.',
   'freeRooms.overview': 'Toată săptămâna',
   'freeRooms.overviewHint': 'Numărul de săli libere în fiecare interval. Apasă pe un interval pentru detalii.',
