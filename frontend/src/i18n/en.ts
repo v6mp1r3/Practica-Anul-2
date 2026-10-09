@@ -391,6 +391,7 @@ export const en: Record<MessageKey, string> = {
   'clusters.type': 'Type',
   'clusters.hint':
     'Made automatically from the groups: the year, the speciality, the language and the form of study. You can also add your own.',
+  'clusters.yearSummary': '{groups} groups · {specs} specialties',
   'clusters.kind.year': 'Year',
   'clusters.kind.speciality': 'Speciality',
   'clusters.kind.language': 'Language',

@@ -3,7 +3,7 @@ import { useAdminScope } from '../../components/FacultyFilter';
 import { ClusterManager, useClusterLabel } from '../../components/ClusterPicker';
 import { CrudPage } from '../../components/CrudPage';
 import { Empty, Field, PageHeader } from '../../components/ui';
-import { STUDY_FORMS, type Group, type StudyCycle, type StudyForm } from '../../domain/types';
+import { STUDY_FORMS, type Cluster, type Group, type StudyCycle, type StudyForm } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
@@ -28,7 +28,6 @@ export default function Groups() {
   const prefixes = [...new Set(ourGroups.map((g) => prefixOf(g.name)))].sort((a, b) => a.localeCompare(b, 'ro'));
   // the clusters (year, speciality, language, form of study, own) with the groups of this faculty and cycle in them
   const { clusters: all = [] } = dataset;
-  const clusterLabel = useClusterLabel();
   const [managing, setManaging] = useState(false);
   const visible = new Set(ourGroups.map((g) => g.id));
   const clusters = all
@@ -249,45 +248,110 @@ export default function Groups() {
           <p className="small muted" style={{ margin: 0, padding: '0 22px 8px' }}>
             {t('clusters.hint')}
           </p>
-          {clusters.length === 0 ? (
-            <Empty />
-          ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>{t('clusters.title')}</th>
-                    <th>{t('clusters.type')}</th>
-                    <th>{t('groups.groups')}</th>
-                    <th>{t('groups.size')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clusters.map(({ c, groups }) => (
-                    <tr key={c.id}>
-                      <td>
-                        <strong>{clusterLabel(c)}</strong>
-                      </td>
-                      <td className="small">{t(`clusters.kind.${c.kind}`)}</td>
-                      <td>
-                        <div className="row wrap" style={{ gap: 4 }}>
-                          {groups.map((id) => (
-                            <span key={id} className="badge">
-                              {groupName(id)}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td>{groups.length}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {clusters.length === 0 ? <Empty /> : <ClusterOverview clusters={clusters} groupName={groupName} />}
         </section>
         {managing && <ClusterManager dataset={dataset} onClose={() => setManaging(false)} />}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The clusters without one long list: a line per year (closed at first) with a chip per specialty, then the
+ * languages, the forms of study and the custom clusters. A chip opens its groups.
+ */
+function ClusterOverview({ clusters, groupName }: { clusters: { c: Cluster; groups: string[] }[]; groupName: (id: string) => string }) {
+  const { t } = useI18n();
+  const clusterLabel = useClusterLabel();
+  const [openYears, setOpenYears] = useState<Set<number>>(new Set());
+  const [shown, setShown] = useState<string | null>(null);
+  const years = [...new Set(clusters.filter(({ c }) => c.kind === 'year').map(({ c }) => c.year ?? 1))].sort((a, b) => a - b);
+  const toggleYear = (y: number) =>
+    setOpenYears((cur) => {
+      const next = new Set(cur);
+      if (next.has(y)) next.delete(y);
+      else next.add(y);
+      return next;
+    });
+  const chip = ({ c, groups }: { c: Cluster; groups: string[] }, text: string) => (
+    <button key={c.id} type="button" className="tag" aria-pressed={shown === c.id} onClick={() => setShown(shown === c.id ? null : c.id)}>
+      {text} <span className="muted">· {groups.length}</span>
+    </button>
+  );
+  // the groups of the chip that is open, under its line
+  const groupsOf = (items: { c: Cluster; groups: string[] }[]) => {
+    const open = items.find(({ c }) => c.id === shown);
+    if (!open) return null;
+    return (
+      <div className="cluster-groups">
+        <strong className="small">{clusterLabel(open.c)}</strong>
+        <span className="group-tags">
+          {open.groups.map((id) => (
+            <span key={id} className="badge">
+              {groupName(id)}
+            </span>
+          ))}
+          {open.groups.length === 0 && <span className="small muted">—</span>}
+        </span>
+      </div>
+    );
+  };
+  const line = (key: string, title: string, items: { c: Cluster; groups: string[] }[], text: (c: Cluster) => string) =>
+    items.length > 0 && (
+      <div key={key}>
+        <div className="tag-row">
+          <span className="tag-label group-spec">{title}</span>
+          <span className="group-tags">{items.map((x) => chip(x, text(x.c)))}</span>
+        </div>
+        {groupsOf(items)}
+      </div>
+    );
+  const ofKind = (kind: Cluster['kind']) => clusters.filter(({ c }) => c.kind === kind);
+
+  return (
+    <div className="group-picker cluster-overview">
+      {years.map((y) => {
+        const year = clusters.find(({ c }) => c.kind === 'year' && (c.year ?? 1) === y)!;
+        const specs = ofKind('speciality')
+          .filter(({ c, groups }) => (c.year ?? 1) === y && groups.length > 0)
+          .sort((a, b) => (a.c.speciality ?? '').localeCompare(b.c.speciality ?? '', 'ro'));
+        const open = openYears.has(y);
+        return (
+          <section key={y} className="group-year">
+            <div className="group-year-head">
+              <button type="button" className="group-year-toggle" aria-expanded={open} onClick={() => toggleYear(y)}>
+                <span className={`chev ${open ? 'open' : ''}`} aria-hidden="true">
+                  ›
+                </span>
+                <strong>{t('clusters.year', { n: y })}</strong>
+                <span className="small muted">{t('clusters.yearSummary', { groups: year.groups.length, specs: specs.length })}</span>
+              </button>
+              <button
+                type="button"
+                className="tag"
+                aria-pressed={shown === year.c.id}
+                onClick={() => {
+                  setShown(shown === year.c.id ? null : year.c.id);
+                  if (!open) toggleYear(y);
+                }}
+              >
+                {t('groupPicker.allYear')}
+              </button>
+            </div>
+            {open && (
+              <>
+                {line(`s${y}`, t('clusters.kind.speciality'), specs, (c) => c.speciality ?? '')}
+                {groupsOf([year])}
+              </>
+            )}
+          </section>
+        );
+      })}
+      <section className="group-year">
+        {line('lang', t('clusters.kind.language'), ofKind('language'), clusterLabel)}
+        {line('form', t('clusters.kind.form'), ofKind('form'), clusterLabel)}
+        {line('custom', t('clusters.kind.custom'), ofKind('custom'), clusterLabel)}
+      </section>
     </div>
   );
 }

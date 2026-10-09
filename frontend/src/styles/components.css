@@ -1797,3 +1797,24 @@ button.holiday-row.selected {
   font-size: 13px;
   font-weight: 500;
 }
+
+/* Grupe și torente → Clustere: a chip's groups, under its line */
+.cluster-overview .tag .muted {
+  font-weight: 400;
+}
+.cluster-groups {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 2px 0 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.cluster-groups > strong {
+  flex: none;
+  padding-top: 3px;
+}
+.cluster-groups .badge {
+  background: var(--surface);
+}
