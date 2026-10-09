@@ -5,7 +5,7 @@ import { api, API_MODE } from '../../api';
 import { resetMockData } from '../../api/mock';
 import { useAdminScope } from '../../components/FacultyFilter';
 import { Icon } from '../../components/Icon';
-import { Field, PageHeader, Segmented, Switch, TimeInput, useClock } from '../../components/ui';
+import { DateInput, Field, PageHeader, Segmented, Switch, TimeInput, useClock } from '../../components/ui';
 import { fmtTime, parseTime, range } from '../../domain/slots';
 import { DEFAULT_EVALUATION, DEFAULT_MASTER, evaluationOf, midtermRange, teachingWeek } from '../../domain/exams';
 import { parseDate, toDateString } from '../../domain/changes';
@@ -411,9 +411,7 @@ export default function Setup() {
                 <span className="small muted" style={{ minWidth: 70 }}>
                   {t('setup.session')} {i + 1}
                 </span>
-                <input
-                  className="input"
-                  type="date"
+                <DateInput
                   style={{ width: 170 }}
                   value={sess.start}
                   aria-label={`${t('setup.session')} ${i + 1} — ${t('setup.start')}`}
@@ -425,9 +423,7 @@ export default function Setup() {
                   }
                 />
                 <span className="muted">–</span>
-                <input
-                  className="input"
-                  type="date"
+                <DateInput
                   style={{ width: 170 }}
                   value={sess.end}
                   min={sess.start}
@@ -721,12 +717,7 @@ export default function Setup() {
                       </Field>
                     ) : (
                       <Field label={t('setup.semesterStart')}>
-                        <input
-                          className="input"
-                          type="date"
-                          value={semesterStartOf(ev.semesterStart)}
-                          onChange={(e) => setEv({ semesterStart: e.target.value })}
-                        />
+                        <DateInput value={semesterStartOf(ev.semesterStart)} onChange={(e) => setEv({ semesterStart: e.target.value })} />
                       </Field>
                     )}
                     <Field label={t('setup.midtermWeeks')}>
@@ -811,10 +802,8 @@ export default function Setup() {
                             {t('setup.period')} {i + 1}
                           </span>
                           {(['start', 'end'] as const).map((edge) => (
-                            <input
+                            <DateInput
                               key={edge}
-                              className="input"
-                              type="date"
                               style={{ width: 170 }}
                               value={r[edge]}
                               min={edge === 'end' ? r.start : undefined}
@@ -972,10 +961,8 @@ export default function Setup() {
                       ))}
                     </Select>
                     {(['start', 'end'] as const).map((edge) => (
-                      <input
+                      <DateInput
                         key={edge}
-                        className="input"
-                        type="date"
                         style={{ width: 170 }}
                         value={p[edge]}
                         min={edge === 'end' ? p.start : undefined}
