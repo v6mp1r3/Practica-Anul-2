@@ -537,6 +537,7 @@ export const en: Record<MessageKey, string> = {
   'teacherAvail.subtitle': 'See when a teacher is teaching, free, or holding consultations.',
   'teacherAvail.teaching': 'Teaching',
   'teacherAvail.freeNow': 'Free now (pair {pair})',
+  'teacherAvail.findFree': 'Find a free teacher…',
 
   'day.0': 'Monday',
   'day.1': 'Tuesday',

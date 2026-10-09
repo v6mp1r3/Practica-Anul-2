@@ -75,20 +75,27 @@ export default function TeacherAvailability() {
     <div className="page">
       <PageHeader title={t('nav.teacherAvailability')} subtitle={t('teacherAvail.subtitle')} />
       <div className="stack">
+        {/* who is free now: the count, and a searchable list instead of every name at once */}
         {freeNow && (
-          <div className="card">
-            <div className="card-header">
-              <h2>{t('teacherAvail.freeNow', { pair: currentSlot + 1 })}</h2>
-              <span className="spacer" />
-              <span className="badge success">{freeNow.length}</span>
+          <div className="card free-now">
+            <div className="free-now-count">
+              <strong>{freeNow.length}</strong>
+              <span>{t('teacherAvail.freeNow', { pair: currentSlot + 1 })}</span>
             </div>
-            <div className="card-body row wrap" style={{ gap: 6 }}>
+            <Select
+              className="select pill"
+              style={{ minWidth: 280 }}
+              value=""
+              onChange={(e) => e.target.value && setTeacherId(e.target.value)}
+              aria-label={t('teacherAvail.findFree')}
+            >
+              <option value="">{t('teacherAvail.findFree')}</option>
               {freeNow.map((x) => (
-                <button key={x.id} className="badge" style={{ border: 'none', cursor: 'pointer' }} onClick={() => setTeacherId(x.id)}>
+                <option key={x.id} value={x.id}>
                   {x.name}
-                </button>
+                </option>
               ))}
-            </div>
+            </Select>
           </div>
         )}
 

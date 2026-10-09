@@ -537,6 +537,7 @@ export const ro = {
   'teacherAvail.subtitle': 'Vezi când un profesor predă, când este liber și când are consultații.',
   'teacherAvail.teaching': 'Predă',
   'teacherAvail.freeNow': 'Liberi acum (perechea {pair})',
+  'teacherAvail.findFree': 'Caută un profesor liber…',
 
   'day.0': 'Luni',
   'day.1': 'Marți',

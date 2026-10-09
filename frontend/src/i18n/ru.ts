@@ -537,6 +537,7 @@ export const ru: Record<MessageKey, string> = {
   'teacherAvail.subtitle': 'Когда преподаватель ведёт занятия, свободен или проводит консультации.',
   'teacherAvail.teaching': 'Ведёт занятие',
   'teacherAvail.freeNow': 'Свободны сейчас (пара {pair})',
+  'teacherAvail.findFree': 'Найти свободного преподавателя…',
 
   'day.0': 'Понедельник',
   'day.1': 'Вторник',

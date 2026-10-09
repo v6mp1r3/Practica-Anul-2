@@ -1630,3 +1630,30 @@ button.holiday-row.selected {
 .group-year-toggle .chev.open {
   transform: rotate(90deg);
 }
+
+/* Profesori: who is free now, as a big count and a searchable list */
+.card.free-now {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+}
+.free-now-count {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.free-now-count strong {
+  font-size: 44px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--success, #1d7a3e);
+}
+.free-now-count span {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-2);
+}
