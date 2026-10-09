@@ -1783,3 +1783,17 @@ button.holiday-row.selected {
   border: 0;
   padding: 0;
 }
+
+/* Săli libere → one room's week: the pairs it is free */
+.room-free {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1.5px dashed var(--border-strong);
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 500;
+}
