@@ -89,6 +89,19 @@ export function createHttpApi(baseUrl: string): Api {
     publishTimetable: (id) => request('POST', `/timetables/${id}/publish`),
     unpublishTimetable: (id) => request('POST', `/timetables/${id}/unpublish`),
     getPublished: () => request('GET', '/timetables/published'),
+    async readTimetableSheet(file) {
+      const token = getToken();
+      const res = await fetch(`${baseUrl}/timetables/import-sheet?filename=${encodeURIComponent(file.name)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: file,
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}));
+        throw new ApiError(res.status, detail.message ?? res.statusText);
+      }
+      return res.json();
+    },
 
     // Generation is a background job: start it, then poll until it is done.
     async generate(req, onProgress) {

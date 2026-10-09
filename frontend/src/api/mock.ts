@@ -615,10 +615,16 @@ export function createMockApi(): Api {
       return delay(store.timetables.find((t) => t.status === 'published') ?? null);
     },
 
+    async readTimetableSheet() {
+      // reading PDF / Excel sheets is done by the backend; the demo reads our CSV only
+      throw new ApiError(501, 'PDF and Excel files can be read in live mode only');
+    },
+
     async generate(req, onProgress) {
       requireRole('admin');
       const base = req.baseTimetableId ? store.timetables.find((t) => t.id === req.baseTimetableId) : undefined;
       const fixed = base?.lessons.filter((l) => l.locked) ?? [];
+      const example = req.exampleTimetableId ? store.timetables.find((t) => t.id === req.exampleTimetableId)?.lessons : undefined;
       // Other groups' published pairs (e.g. another faculty) stay in place and booked
       const selected = new Set(req.groupIds);
       const keep =
@@ -631,7 +637,7 @@ export function createMockApi(): Api {
       for (let v = 0; v < req.variants; v++) {
         const result = await generateTimetable(
           store.dataset,
-          { groupIds: req.groupIds, seed: seed0 + v * 7919, iterations: req.iterations, fixed, keep },
+          { groupIds: req.groupIds, seed: seed0 + v * 7919, iterations: req.iterations, fixed, keep, example },
           (p, best) => onProgress?.({ variant: v, progress: (v + p) / req.variants, best }),
         );
         out.push({
