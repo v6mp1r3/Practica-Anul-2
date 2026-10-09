@@ -8,7 +8,7 @@ import { Icon } from '../../components/Icon';
 import { Field, Modal } from '../../components/ui';
 import { deriveClusters, subjectInSpeciality } from '../../domain/clusters';
 import { parseStudyPlan, STUDY_PLAN_TEMPLATE, type CsvResult } from '../../domain/csv';
-import type { Subject, StudyCycle } from '../../domain/types';
+import { STUDY_FORMS, type StudyCycle, type StudyForm, type Subject } from '../../domain/types';
 import { Select } from '../../components/Select';
 import { specialtyOf } from '../../domain/specialty';
 import { useI18n } from '../../i18n';
@@ -31,7 +31,7 @@ function hasAssessment(x: Subject, what: string): boolean {
 
 export default function Subjects() {
   const { t } = useI18n();
-  const { dataset, refresh } = useDataset();
+  const { dataset, index, refresh } = useDataset();
   const scope = useAdminScope();
   // licență | master's study plan
   const [cycle, setCycle] = useCycle();
@@ -64,6 +64,28 @@ export default function Subjects() {
   const [evaluation, setEvaluation] = useState('');
   const [activity, setActivity] = useState('');
   const [specialty, setSpecialty] = useState('');
+  // frecvență | frecvență redusă | dual: the forms of the groups a subject is taught to (its loads in
+  // Sarcina didactică, or, before it has any, the groups of its clusters)
+  const [form, setForm] = useState<'' | StudyForm>('');
+  const formsOf = useMemo(() => {
+    const formOf = (id: string) => index.groups.get(id)?.studyForm;
+    const byLoads = new Map<string, Set<StudyForm>>();
+    for (const a of dataset.assignments) {
+      const set = byLoads.get(a.subjectId) ?? new Set<StudyForm>();
+      for (const c of index.cohorts(a.audience)) {
+        const f = formOf(c.groupId);
+        if (f) set.add(f);
+      }
+      byLoads.set(a.subjectId, set);
+    }
+    return (x: Subject): Set<StudyForm> => {
+      const loads = byLoads.get(x.id);
+      if (loads?.size) return loads;
+      const set = new Set<StudyForm>();
+      for (const id of x.clusterIds ?? []) for (const g of clusterById.get(id)?.groupIds ?? []) formOf(g) && set.add(formOf(g)!);
+      return set;
+    };
+  }, [dataset.assignments, index, clusterById]);
   // the faculty's specialties, from its group names (TI-251 → TI)
   const specialties = [...new Set(dataset.groups.filter((g) => !scope || g.faculty === scope).map((g) => specialtyOf(g.name)))].sort(
     (a, b) => a.localeCompare(b, 'ro'),
@@ -77,9 +99,10 @@ export default function Subjects() {
       (!activity || pairsOf(x, activity) > 0) &&
       // a specialty's subjects: those tagged with it or with its whole year, and those for every specialty
       (!specialty || subjectInSpeciality(x.clusterIds, specialty, clusters)) &&
-      (!clusterFilter || !!x.clusterIds?.includes(clusterFilter)),
+      (!clusterFilter || !!x.clusterIds?.includes(clusterFilter)) &&
+      (!form || formsOf(x).has(form)),
   );
-  const filtering = !!(year || evaluation || activity || specialty);
+  const filtering = !!(year || evaluation || activity || specialty || form);
 
   const pairs = (n: number) => (n ? String(n).replace('.', ',') : '—');
 
@@ -133,10 +156,24 @@ export default function Subjects() {
                 </option>
               ))}
             </Select>
+            <Select
+              className="select pill"
+              value={form}
+              onChange={(e) => setForm(e.target.value as '' | StudyForm)}
+              aria-label={t('groups.studyForm')}
+            >
+              <option value="">{t('groups.allForms')}</option>
+              {STUDY_FORMS.map((f) => (
+                <option key={f} value={f}>
+                  {t(`form.${f}`)}
+                </option>
+              ))}
+            </Select>
             {filtering && (
               <button
                 className="btn ghost sm"
                 onClick={() => {
+                  setForm('');
                   setYear('');
                   setEvaluation('');
                   setActivity('');
