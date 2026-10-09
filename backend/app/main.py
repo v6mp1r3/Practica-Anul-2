@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from . import errors
 from .config import DEV_SECRET, get_config
@@ -26,6 +27,8 @@ def create_app() -> FastAPI:
         log.warning("JWT_SECRET is not set: using the development secret. Set a long random value in .env.")
     app = FastAPI(title="EduSchedule API", version="0.1.0", docs_url="/api/docs", openapi_url="/api/openapi.json", lifespan=lifespan)
     app.add_middleware(CORSMiddleware, allow_origins=cfg.origins, allow_methods=["*"], allow_headers=["*"])
+    # the dataset is ~400 KB of JSON, ~10x smaller compressed
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
     errors.install(app)
 
     api = APIRouter(prefix="/api")
