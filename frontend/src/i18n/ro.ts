@@ -390,6 +390,7 @@ export const ro = {
   'clusters.title': 'Clustere',
   'clusters.type': 'Tip',
   'clusters.hint': 'Se creează singure din grupe: anul, specialitatea, limba și forma de învățământ. Poți adăuga și clustere proprii.',
+  'clusters.specCount': '{n} specialități',
   'clusters.less': 'mai puțin',
   'clusters.kind.year': 'An',
   'clusters.kind.speciality': 'Specialitate',

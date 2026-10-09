@@ -32,6 +32,17 @@ export default function Groups() {
   const { clusters: all = [] } = dataset;
   const clusterLabel = useClusterLabel();
   const [managing, setManaging] = useState(false);
+  // years whose specialty rows are open (closed at first, so the table stays short)
+  const [openYears, setOpenYears] = useState<Set<number>>(new Set());
+  const toggleYear = (y: number) =>
+    setOpenYears((cur) => {
+      const next = new Set(cur);
+      if (next.has(y)) next.delete(y);
+      else next.add(y);
+      return next;
+    });
+  const specCount = (y: number) =>
+    clusters.filter(({ c, groups }) => c.kind === 'speciality' && (c.year ?? 1) === y && groups.length > 0).length;
   // clusters whose groups are all shown
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const toggleExpanded = (id: string) =>
@@ -274,30 +285,48 @@ export default function Groups() {
                   </tr>
                 </thead>
                 <tbody>
-                  {clusters.map(({ c, groups }) => (
-                    <tr key={c.id}>
-                      <td>
-                        <strong>{clusterLabel(c)}</strong>
-                      </td>
-                      <td className="small">{t(`clusters.kind.${c.kind}`)}</td>
-                      <td>
-                        {/* a few groups, the rest behind "+N" (a whole year is dozens) */}
-                        <div className="row wrap" style={{ gap: 4 }}>
-                          {(expanded.has(c.id) ? groups : groups.slice(0, SHOWN_GROUPS)).map((id) => (
-                            <span key={id} className="badge">
-                              {groupName(id)}
-                            </span>
-                          ))}
-                          {groups.length > SHOWN_GROUPS && (
-                            <button type="button" className="btn ghost sm more-groups" onClick={() => toggleExpanded(c.id)}>
-                              {expanded.has(c.id) ? t('clusters.less') : `+${groups.length - SHOWN_GROUPS}`}
+                  {/* a year's specialty rows are folded under the year's row */}
+                  {clusters
+                    .filter(({ c }) => c.kind !== 'speciality' || openYears.has(c.year ?? 1))
+                    .map(({ c, groups }) => (
+                      <tr key={c.id} className={c.kind === 'speciality' ? 'cluster-sub' : ''}>
+                        <td>
+                          {c.kind === 'year' ? (
+                            <button
+                              type="button"
+                              className="cluster-year-btn"
+                              aria-expanded={openYears.has(c.year ?? 1)}
+                              onClick={() => toggleYear(c.year ?? 1)}
+                            >
+                              <span className={`chev ${openYears.has(c.year ?? 1) ? 'open' : ''}`} aria-hidden="true">
+                                ›
+                              </span>
+                              <strong>{clusterLabel(c)}</strong>
+                              <span className="small muted">{t('clusters.specCount', { n: specCount(c.year ?? 1) })}</span>
                             </button>
+                          ) : (
+                            <strong>{clusterLabel(c)}</strong>
                           )}
-                        </div>
-                      </td>
-                      <td>{groups.length}</td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="small">{t(`clusters.kind.${c.kind}`)}</td>
+                        <td>
+                          {/* a few groups, the rest behind "+N" (a whole year is dozens) */}
+                          <div className="row wrap" style={{ gap: 4 }}>
+                            {(expanded.has(c.id) ? groups : groups.slice(0, SHOWN_GROUPS)).map((id) => (
+                              <span key={id} className="badge">
+                                {groupName(id)}
+                              </span>
+                            ))}
+                            {groups.length > SHOWN_GROUPS && (
+                              <button type="button" className="btn ghost sm more-groups" onClick={() => toggleExpanded(c.id)}>
+                                {expanded.has(c.id) ? t('clusters.less') : `+${groups.length - SHOWN_GROUPS}`}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        <td>{groups.length}</td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

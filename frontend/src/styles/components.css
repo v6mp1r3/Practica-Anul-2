@@ -1804,3 +1804,33 @@ button.holiday-row.selected {
   min-height: 0;
   font-size: 12.5px;
 }
+.cluster-year-btn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.cluster-year-btn .chev {
+  display: inline-block;
+  width: 10px;
+  color: var(--text-2);
+  transition: transform 0.15s var(--ease);
+}
+.cluster-year-btn .chev.open {
+  transform: rotate(90deg);
+}
+tr.cluster-sub td:first-child {
+  padding-left: 40px;
+}
+tr.cluster-sub {
+  background: var(--surface-2);
+}
+tr.cluster-sub .badge {
+  background: var(--surface);
+}
