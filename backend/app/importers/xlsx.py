@@ -5,7 +5,7 @@ the odd week above and the even week below."""
 import io
 import re
 
-from .cells import TIME_RE, day_of, group_name, read_cell
+from .cells import TIME_RE, day_of, group_name, read_cell, untyped_are_seminars
 
 
 def _time(v) -> tuple[str, str] | None:
@@ -102,4 +102,4 @@ def read_xlsx(data: bytes) -> dict:
                     for x in read_cell(text(cs)):
                         rows.append({"groups": groups, "day": day, "start": start, "end": end, "parity": parity, **x,
                                      "source": f"{ws.title} {ws.cell(cs[0][0], cs[0][1]).coordinate}"})
-    return {"rows": rows, "warnings": warnings}
+    return {"rows": untyped_are_seminars(rows), "warnings": warnings}

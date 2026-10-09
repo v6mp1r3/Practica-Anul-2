@@ -26,7 +26,7 @@ TYPES = [
 # a type written after the subject: "Fiabilitatea mijloacelor de transport L.L.", "... Curs/L.L."
 TRAILING_TYPE = re.compile(r"\s*\b(curs(?:\s*/\s*l\.\s*l\.)?|l\.\s*l\.|l\.\s*p\.|lucr\.?|sem\.|lab\.)\s*$", re.I)
 TITLE_WORDS = {"dr", "hab", "conf", "univ", "lect", "asist", "prof", "sup", "superior", "lector", "ing", "mag", "drd", "academician", "acad", "dse", "dst", "dsf", "dhab"}
-ROOM_RE = re.compile(r"^(?:aud\.?|sala|cab\.?|auditoriul)?\s*((?:\d{1,2}\s*-\s*)?[0-9IVX]+[\w/.\- ]*|[A-Z]{1,3}\s*-\s*\d[\w/]*|Tekwill[\w/\- ]*|Aula[\w ().]*)$", re.I)
+ROOM_RE = re.compile(r"^(?:aud\.?|sala|cab\.?|auditoriul)?\s*((?:\d{1,2}\s*-\s*)?[0-9IVX]+[\w/.\- ]*|[A-Z]{1,3}\s*-\s*\d[\w/]*|[A-Z]\d{2,3}[A-Z]?|Tekwill[\w/\- ]*|Aula[\w ().]*)$", re.I)
 
 
 def fold(s: str) -> str:
@@ -58,7 +58,8 @@ def is_teacher(line: str) -> bool:
     if any(w in TITLE_WORDS for w in words):
         return True
     # "E. Guțuleac", "Guțuleac E.", "Rotaru Igor V."
-    return bool(re.match(r"^([A-ZĂÂÎȘȚ]\.\s*){1,2}[A-ZĂÂÎȘȚ][a-zăâîșțşţ-]+$|^[A-ZĂÂÎȘȚ][a-zăâîșțşţ-]+\s+([A-ZĂÂÎȘȚ]\.\s*){1,2}$", line.strip()))
+    name = r"[A-ZĂÂÎȘȚ](?=[\wăâîșțşţ-]*[a-zăâîșțşţ])[\wăâîșțşţ-]+"  # a capital, then letters with some lowercase ("BÎrnaz")
+    return bool(re.match(rf"^([A-ZĂÂÎȘȚ][a-z]?\.\s*){{1,2}}{name}$|^{name}\s+([A-ZĂÂÎȘȚ][a-z]?\.\s*){{1,2}}$", line.strip()))
 
 
 def clean_teacher(line: str) -> str:
@@ -72,10 +73,14 @@ def clean_teacher(line: str) -> str:
     return re.sub(r"\s*\(.*$", "", " ".join(out)).strip(" ,")
 
 
+TEACHER_MARK = "\u2063"  # (invisible) put before a piece known to be the teacher
+PREFIX_MARK = "\u2064"  # (invisible) put before a type written as a prefix ("c.", "lab.")
+
+
 def _split_inline(line: str) -> list[str]:
     """"VEPS curs E. Guțuleac aud 614" → ["VEPS", "curs", "E. Guțuleac", "aud 614"]; "X /Curs" → ["X", "Curs"]."""
     parts: list[str] = []
-    for chunk in re.split(r"\s+/\s*|\s*/\s+", line):
+    for chunk in re.split(r"\s+/\s*|\s*/\s+|\s*;\s*", line):
         chunk = chunk.strip()
         if not chunk:
             continue
@@ -88,6 +93,9 @@ def _split_inline(line: str) -> list[str]:
         if m and type_of_line(chunk) is None:
             before, after = chunk[: m.start()].strip(), chunk[m.end():].strip()
             parts += [p for p in (before, m.group(0), after) if p]
+        elif (m := re.match(r"^([A-ZĂÂÎȘȚ]{2,8})\s+([A-ZĂÂÎȘȚ][\wăâîșțşţ\-]+(?:\s+[A-ZĂÂÎȘȚ][\wăâîșțşţ]{0,2}\.?)*)$", chunk)) and not is_room(m[2]) and re.search(r"[a-zăâîșțşţ]", m[2].split()[0]):
+            # a short name and the teacher on one line: "ASCS Prodius Cr.", "CDE Bîrnaz"
+            parts += [m[1], TEACHER_MARK + m[2]]
         else:
             # a room printed right after the teacher: "Stanciu Liuba 6-313"
             m = re.match(r"^(.*[^\d\s-])\s+(\d{1,2}\s*-\s*[\w/]+)$", chunk)
@@ -98,9 +106,20 @@ def _split_inline(line: str) -> list[str]:
 def read_cell(lines: list[str]) -> list[dict]:
     """The classes in one cell, in order (usually one; two when a cell holds two stacked blocks)."""
     items: list[str] = []
+    # a type written before the subject: "c. Analiza ...", "lab. CDE", "sem. MS"
+    lead = []
+    for line in lines:
+        m = re.match(r"^\s*(c|curs|lab|sem|l\.\s*p|pr)\.\s*(\S.*)$", line, re.I)
+        lead += [PREFIX_MARK + {"c": "Curs", "curs": "Curs", "lab": "Laborator", "sem": "Seminar", "pr": "Proiect"}.get(fold(m[1]).replace(" ", ""), "Seminar"), m[2]] if m else [line]
+    # notes about subgroups ("0,5 gr.", "1/l", "1)", "2)") say nothing about the class itself
+    lines = [x for x in (re.sub(r"^\s*\d\)\s*", "", re.sub(r"\b0,5\s*gr\.?|\b\d/l\b", " ", line).strip()) for line in lead) if x]
     # text that ran together with long gaps ("ANALIZA MATEMATICĂ II        Curs") is separate pieces
     lines = [re.sub(r" {2,5}", " ", piece).strip() for line in lines for piece in re.split(r" {6,}|\t", line) if piece.strip()]
+    prefixed = False
     for line in lines:
+        if line.startswith(PREFIX_MARK):
+            prefixed = True
+            line = line[1:]
         items += _split_inline(line) if type_of_line(line) is None else [line.strip()]
     out: list[dict] = []
     cur: dict | None = None
@@ -120,7 +139,14 @@ def read_cell(lines: list[str]) -> list[dict]:
         if cur is None:
             cur = {"type": None, "subject": "", "teacher": "", "room": ""}
             out.append(cur)
-        if is_room(it) and not cur["room"]:
+        if it.startswith(TEACHER_MARK):
+            if not cur["teacher"]:
+                cur["teacher"] = clean_teacher(it[1:])
+            continue
+        if not cur["subject"] and not is_room(it):
+            # the first line of a class is its subject ("L. Engleză" is not a teacher)
+            cur["subject"] = it
+        elif is_room(it) and not cur["room"]:
             cur["room"] = re.sub(r"^(aud\.?|sala|cab\.?|auditoriul)\s*", "", it.strip(), flags=re.I)
         elif is_teacher(it) and not cur["teacher"]:
             cur["teacher"] = clean_teacher(it)
@@ -139,4 +165,19 @@ def read_cell(lines: list[str]) -> list[dict]:
             c["subject"] = c["subject"][: m.start()].strip(" /")
             if not c["type"]:
                 c["type"] = type_of_line(m.group(1).split("/")[-1])
-    return [c for c in out if c["subject"] and (c["teacher"] or c["room"] or c["type"])]
+    out = [c for c in out if c["subject"] and (c["teacher"] or c["room"] or c["type"])]
+    if prefixed:
+        for c in out:
+            c["prefixed"] = True
+    return out
+
+
+def untyped_are_seminars(rows: list[dict]) -> list[dict]:
+    """Where lectures and labs are marked with a prefix ("c.", "lab."), as at FCIM, a class without one is a seminar."""
+    if any(r.pop("prefixed", False) for r in [*rows]):
+        for r in rows:
+            if not r["type"]:
+                r["type"] = "seminar"
+    for r in rows:
+        r.pop("prefixed", None)
+    return rows

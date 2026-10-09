@@ -90,3 +90,27 @@ def test_other_files_are_refused():
 
     with pytest.raises(ApiError):
         read_sheet("orar.docx", b"hello")
+
+
+def test_fcim_cells():
+    """FCIM writes "c." before a lecture and "lab." before a lab, short names, and the teacher with initials."""
+    assert read_cell(["c. Analiza și Proiectarea Algoritmilor", "Bagrin V.", "6-2"]) == [
+        {"type": "lecture", "subject": "Analiza și Proiectarea Algoritmilor", "teacher": "Bagrin V.", "room": "6-2", "prefixed": True}
+    ]
+    [lab] = read_cell(["Lab.PAE", "BÎrnaz A.", "422"])
+    assert (lab["type"], lab["subject"], lab["teacher"]) == ("lab", "PAE", "BÎrnaz A.")
+    [inline] = read_cell(["ASCS Prodius Cr.", "607"])
+    assert (inline["subject"], inline["teacher"], inline["room"]) == ("ASCS", "Prodius Cr.", "607")
+    [note] = read_cell(["0,5 gr. 1) CDE", "Chiriac M.", "A03"])
+    assert (note["subject"], note["room"]) == ("CDE", "A03")
+    # the first line is the subject, even when it looks like a name ("L. Engleză" = limba engleză)
+    [eng] = read_cell(["L. Engleză", "Nicolai F.", "606"])
+    assert (eng["subject"], eng["teacher"]) == ("L. Engleză", "Nicolai F.")
+
+
+def test_unmarked_classes_are_seminars_where_the_others_are_marked():
+    from app.importers.cells import untyped_are_seminars
+
+    rows = [{"type": "lecture", "prefixed": True}, {"type": None, "prefixed": False}]
+    assert [r["type"] for r in untyped_are_seminars(rows)] == ["lecture", "seminar"]
+    assert [r["type"] for r in untyped_are_seminars([{"type": None, "prefixed": False}])] == [None]
