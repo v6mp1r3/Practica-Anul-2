@@ -6,7 +6,7 @@ import io
 import re
 from collections import defaultdict
 
-from .cells import TIME_RE, day_of, group_name, read_cell
+from .cells import TIME_RE, day_of, group_name, read_cell, untyped_are_seminars
 
 
 def _clusters(chars: list[dict], gap: float = 3.0) -> list[list[dict]]:
@@ -135,10 +135,21 @@ def read_pdf(data: bytes) -> dict:
                 warnings.append(f"p{pno}: no pair times found")
                 continue
             # the times are printed in the middle of their rows: a row reaches halfway to the next label
-            # (or to a drawn border close to that), and the day of a row is the last day name above it
+            # (or to a drawn border close to that). A day is the run of pairs until the times start again
+            # (8:00 after 18:30); the day names (at the top of a day, or in its middle) say which day it is.
             centers = [(t + b) / 2 for t, b, _, _ in times]
-            def day_at(y: float):
-                return next((d for dy, d in reversed(days) if dy <= y + 2), None)
+            block = []
+            for i, (_, _, start, _) in enumerate(times):
+                block.append(0 if i == 0 else block[-1] + (start <= times[i - 1][2]))
+            names = []
+            for _, d in days:
+                if not names or names[-1] != d:
+                    names.append(d)
+            first = names[0] if names else 0
+            day_of_block = lambda k: names[k] if k < len(names) and len(names) >= block[-1] + 1 else (first + k) % 7
+
+            def day_at(i: int):
+                return day_of_block(block[i])
 
             def snap(y: float, reach: float) -> float:
                 near = [r for r in row_tops if abs(r - y) <= reach]
@@ -147,44 +158,58 @@ def read_pdf(data: bytes) -> dict:
             bands = []
             for i, (t, b, start, end) in enumerate(times):
                 c = centers[i]
-                same_prev = i > 0 and day_at(centers[i - 1]) == day_at(c) and c - centers[i - 1] < 3 * (b - t + 10)
-                same_next = i + 1 < len(times) and day_at(centers[i + 1]) == day_at(c) and centers[i + 1] - c < 3 * (b - t + 10)
+                same_prev = i > 0 and block[i - 1] == block[i]
+                same_next = i + 1 < len(times) and block[i + 1] == block[i]
                 step = (c - centers[i - 1]) if same_prev else (centers[i + 1] - c) if same_next else 2 * (b - t)
                 y0 = (centers[i - 1] + c) / 2 if same_prev else c - step / 2
                 y1 = (c + centers[i + 1]) / 2 if same_next else c + step / 2
-                bands.append((snap(y0, step / 4), snap(y1, step / 4), start, end, day_at(c)))
+                bands.append((snap(y0, step / 4), snap(y1, step / 4), start, end, day_at(i)))
             # the pairs' bands: from where the cells start, not where the sideways label starts
             for y0, y1, start, end, day in bands:
                 if day is None:
                     continue
                 inside = [w for w in words if y0 <= (w["top"] + w["bottom"]) / 2 < y1 and w["x0"] >= left - 1]
-                # columns joined into one wide cell: no border between them in this band
-                def border(x: float) -> bool:
-                    mid = (y0 + y1) / 2
+                grid_w = cols[-1]["x1"] - left
+
+                def border(x: float, ya: float, yb: float) -> bool:
+                    mid = (ya + yb) / 2
                     return any(abs(vx - x) < 1.5 and vt <= mid <= vb for vx, vt, vb in vert)
 
-                runs: list[list[dict]] = [[cols[0]]]
-                for a, b in zip(cols, cols[1:]):
-                    if vert and not border(a["x1"]):
-                        runs[-1].append(b)
-                    else:
-                        runs.append([b])
-                for run in runs:
+                # a column whose cell is split across (odd week above, even week below)
+                def split_of(c: dict) -> float | None:
+                    ys = sorted(hy for hy, hx0, hx1 in horiz if y0 + 3 < hy < y1 - 3 and hx0 <= c["x0"] + 2 and hx1 >= c["x1"] - 2 and hx1 - hx0 < grid_w - 2)
+                    return ys[0] if ys else None
+
+                splits = [split_of(c) for c in cols]
+                # the cells of this pair: (columns, top, bottom, week); neighbours with no border between them
+                # at that height are one wide cell (a lecture shared by several groups)
+                cells: list[tuple[list[dict], float, float, str]] = []
+                for half in ("weekly", "odd", "even"):
+                    run: list[dict] = []
+                    run_box: tuple[float, float] | None = None
+                    for c, sp in zip(cols, splits):
+                        if half == "weekly":
+                            box = (y0, y1) if sp is None else None
+                        else:
+                            box = None if sp is None else ((y0, sp) if half == "odd" else (sp, y1))
+                        joined = run and box and run_box and abs(box[0] - run_box[0]) < 2 and abs(box[1] - run_box[1]) < 2 and not (vert and border(run[-1]["x1"], *box))
+                        if joined:
+                            run.append(c)
+                            continue
+                        if run:
+                            cells.append((run, run_box[0], run_box[1], half))
+                        run, run_box = ([c], box) if box else ([], None)
+                    if run:
+                        cells.append((run, run_box[0], run_box[1], half))
+                for run, ya, yb, parity in cells:
                     x0, x1 = run[0]["x0"], run[-1]["x1"]
-                    cell = [w for w in inside if x0 <= (w["x0"] + w["x1"]) / 2 < x1]
-                    if not cell:
+                    # a little slack at the row's own edges, none at the line between the odd and the even week
+                    lo, hi = ya - (1 if ya == y0 else 0), yb + (1 if yb == y1 else 0)
+                    ws = [w for w in inside if x0 <= (w["x0"] + w["x1"]) / 2 < x1 and lo <= (w["top"] + w["bottom"]) / 2 < hi]
+                    if not ws:
                         continue
-                    # a border across the cell (not across the whole row) splits odd week / even week
-                    splits = sorted(hy for hy, hx0, hx1 in horiz if y0 + 3 < hy < y1 - 3 and hx0 <= x0 + 2 and hx1 >= x1 - 2 and hx1 - hx0 < (cols[-1]["x1"] - left) - 2)
-                    parts = [(cell, "weekly")]
-                    if splits:
-                        s = splits[0]
-                        up = [w for w in cell if w["bottom"] <= s + 1]
-                        down = [w for w in cell if w["top"] >= s - 1]
-                        parts = [(up, "odd"), (down, "even")]
-                    for ws, parity in parts:
-                        for c in read_cell(_lines(ws)):
-                            rows.append({"groups": [g["name"] for g in run], "day": day, "start": start, "end": end, "parity": parity,
-                                         "type": c["type"], "subject": c["subject"], "teacher": c["teacher"], "room": c["room"],
-                                         "source": f"p{pno} {start} {'/'.join(g['name'] for g in run)}"})
-    return {"rows": rows, "warnings": warnings}
+                    for c in read_cell(_lines(ws)):
+                        rows.append({"groups": [g["name"] for g in run], "day": day, "start": start, "end": end, "parity": parity,
+                                     "type": c["type"], "subject": c["subject"], "teacher": c["teacher"], "room": c["room"], "prefixed": c.get("prefixed", False),
+                                     "source": f"p{pno} {start} {'/'.join(g['name'] for g in run)}"})
+    return {"rows": untyped_are_seminars(rows), "warnings": warnings}
