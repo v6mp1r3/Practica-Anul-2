@@ -1743,3 +1743,43 @@ button.holiday-row.selected {
     font-size: 20px;
   }
 }
+
+/* a date written day/month/year (DateInput), with the browser's calendar behind the icon */
+.date-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.date-input > .input {
+  width: 100%;
+  padding-right: 34px;
+}
+.date-input-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: none;
+  padding: 5px;
+  border-radius: 6px;
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex;
+}
+.date-input-btn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.date-input-native {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+}

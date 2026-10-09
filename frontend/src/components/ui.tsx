@@ -1,6 +1,7 @@
 // Small presentational building blocks shared by every page.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { LANGS, useI18n } from '../i18n';
+import { fmtDate, parseDateInput } from '../domain/changes';
 import { fmtTime, parseTime } from '../domain/slots';
 import { Icon } from './Icon';
 
@@ -151,6 +152,82 @@ export function useClock(): string {
  * Time field in the app's own format (24h "17:30" or 12h "05:30 PM"). The browser's
  * <input type="time"> follows the computer's clock setting instead, so it isn't used.
  */
+/**
+ * A date written day/month/year whatever the browser's language (the browser's own date box follows the
+ * computer's settings, often month/day/year). Type it, or pick it from the calendar. The value stays
+ * "YYYY-MM-DD"; onChange gets it as `e.target.value`, like a plain date input.
+ */
+export function DateInput({
+  value,
+  onChange,
+  min,
+  style,
+  'aria-label': label,
+}: {
+  value: string;
+  onChange: (e: { target: { value: string } }) => void;
+  min?: string;
+  style?: CSSProperties;
+  className?: string;
+  'aria-label'?: string;
+}) {
+  const { t } = useI18n();
+  const picker = useRef<HTMLInputElement>(null);
+  const [text, setText] = useState(() => (value ? fmtDate(value) : ''));
+  const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    if (!editing) setText(value ? fmtDate(value) : '');
+  }, [value, editing]);
+  const commit = () => {
+    setEditing(false);
+    const parsed = parseDateInput(text);
+    if (parsed && parsed !== value && (!min || parsed >= min)) onChange({ target: { value: parsed } });
+    else setText(value ? fmtDate(value) : '');
+  };
+  return (
+    <span className="date-input" style={style}>
+      <input
+        className="input"
+        inputMode="numeric"
+        value={text}
+        aria-label={label}
+        placeholder={t('date.placeholder')}
+        onFocus={() => setEditing(true)}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+      />
+      <button
+        type="button"
+        className="date-input-btn"
+        aria-label={t('date.pick')}
+        title={t('date.pick')}
+        onClick={() => {
+          const el = picker.current;
+          if (!el) return;
+          try {
+            el.showPicker();
+          } catch {
+            el.focus();
+          }
+        }}
+      >
+        <Icon name="calendar" size={16} />
+      </button>
+      <input
+        ref={picker}
+        className="date-input-native"
+        type="date"
+        tabIndex={-1}
+        aria-hidden="true"
+        value={value}
+        min={min}
+        onChange={(e) => e.target.value && onChange({ target: { value: e.target.value } })}
+      />
+    </span>
+  );
+}
+
 export function TimeInput({
   value,
   onChange,

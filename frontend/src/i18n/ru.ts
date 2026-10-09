@@ -12,6 +12,8 @@ export const ru: Record<MessageKey, string> = {
   'common.noResults': 'Ничего не найдено',
   'common.search': 'Поиск…',
   'common.loading': 'Загрузка…',
+  'date.placeholder': 'дд/мм/гггг',
+  'date.pick': 'Выбрать в календаре',
   'common.empty': 'Пока нечего показать.',
   'common.yes': 'Да',
   'common.no': 'Нет',

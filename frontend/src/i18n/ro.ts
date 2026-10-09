@@ -11,6 +11,8 @@ export const ro = {
   'common.noResults': 'Niciun rezultat',
   'common.search': 'Caută…',
   'common.loading': 'Se încarcă…',
+  'date.placeholder': 'zz/ll/aaaa',
+  'date.pick': 'Alege din calendar',
   'common.empty': 'Nimic de afișat încă.',
   'common.yes': 'Da',
   'common.no': 'Nu',

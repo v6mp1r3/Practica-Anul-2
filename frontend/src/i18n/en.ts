@@ -12,6 +12,8 @@ export const en: Record<MessageKey, string> = {
   'common.noResults': 'No results',
   'common.search': 'Search…',
   'common.loading': 'Loading…',
+  'date.placeholder': 'dd/mm/yyyy',
+  'date.pick': 'Pick from the calendar',
   'common.empty': 'Nothing to show yet.',
   'common.yes': 'Yes',
   'common.no': 'No',
