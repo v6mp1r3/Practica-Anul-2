@@ -19,6 +19,17 @@ import { downloadFile } from '../../utils/download';
 /** The subject ends with an exam (older records only have `evaluation`). */
 const hasExam = (x: { hasExam?: boolean; evaluation?: string }) => x.hasExam ?? x.evaluation !== 'atestari';
 
+/** The evaluation filter: atestarea 1, atestarea 2, both, the exam, or atestări only. */
+function hasAssessment(x: Subject, what: string): boolean {
+  const m1 = x.hasMidterm1 ?? true;
+  const m2 = x.hasMidterm2 ?? true;
+  if (what === 'm1') return m1;
+  if (what === 'm2') return m2;
+  if (what === 'both') return m1 && m2;
+  if (what === 'exam') return hasExam(x);
+  return !hasExam(x);
+}
+
 export default function Subjects() {
   const { t } = useI18n();
   const { dataset, refresh } = useDataset();
@@ -63,7 +74,7 @@ export default function Subjects() {
   const shown = subjects.filter(
     (x) =>
       (!year || x.year === Number(year)) &&
-      (!evaluation || (hasExam(x) ? 'exam' : 'atestari') === evaluation) &&
+      (!evaluation || hasAssessment(x, evaluation)) &&
       (!activity || pairsOf(x, activity) > 0) &&
       // a specialty's subjects: those tagged with it or with its whole year, and those for every specialty
       (!specialty || subjectInSpeciality(x.clusterIds, specialty, clusters)) &&
@@ -110,6 +121,9 @@ export default function Subjects() {
               aria-label={t('subjects.evaluation')}
             >
               <option value="">{t('subjects.anyEvaluation')}</option>
+              <option value="m1">{t('subjects.filter.m1')}</option>
+              <option value="m2">{t('subjects.filter.m2')}</option>
+              <option value="both">{t('subjects.filter.both')}</option>
               <option value="exam">{t('subjects.evaluation.exam')}</option>
               <option value="atestari">{t('subjects.evaluation.atestari')}</option>
             </Select>
