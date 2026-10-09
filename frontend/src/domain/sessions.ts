@@ -73,7 +73,14 @@ class Board {
  * Place the session pairs of the given reduced-attendance teaching loads.
  * `existing` = every other pair in the timetable. Returns the new dated pairs.
  */
-export function placeSessions(ds: Dataset, idx: DatasetIndex, loads: Assignment[], existing: Lesson[], rng: Rng): Lesson[] {
+export function placeSessions(
+  ds: Dataset,
+  idx: DatasetIndex,
+  loads: Assignment[],
+  existing: Lesson[],
+  rng: Rng,
+  example: Lesson[] = [],
+): Lesson[] {
   const board = new Board(idx, existing);
   const placed: Lesson[] = [];
   const { settings } = ds;
@@ -104,6 +111,30 @@ export function placeSessions(ds: Dataset, idx: DatasetIndex, loads: Assignment[
       const maxPerDay = Math.min(...groupIds.map((g) => idx.groupMaxPairs(g)));
 
       let remaining = a.pairsPerSession ?? a.pairsPerWeek;
+      // an example timetable's pairs on this session's dates come first, where they were
+      for (const ex of example) {
+        if (remaining <= 0) break;
+        if (ex.assignmentId !== a.id || !ex.date || !dates.includes(ex.date) || ex.slot >= nSlots) continue;
+        const day = weekdayOf(ex.date);
+        if (teacher?.unavailable.includes(slotKey(day, ex.slot))) continue;
+        const at = (roomId: string): Lesson => ({
+          id: newId(),
+          assignmentId: a.id,
+          day,
+          slot: ex.slot,
+          roomId,
+          parity: 'weekly',
+          date: ex.date,
+        });
+        const room = [...rooms.filter((r) => r.id === ex.roomId), ...rooms.filter((r) => r.id !== ex.roomId)].find(
+          (r) => !board.clashes(at(r.id), a),
+        );
+        if (!room) continue;
+        const l = at(room.id);
+        board.add(l);
+        placed.push(l);
+        remaining--;
+      }
       while (remaining > 0) {
         let best: { date: string; start: number; k: number; roomId: string; cost: number } | null = null;
         for (let k = Math.min(MAX_BLOCK, remaining); k >= 1 && !best; k--) {

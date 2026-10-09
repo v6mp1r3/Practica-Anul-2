@@ -7,7 +7,7 @@ import { createRng, type Rng } from './rng';
 import { placeSessions } from './sessions';
 import { scoreTimetable } from './score';
 import { paritiesOverlap, range, slotKey } from './slots';
-import type { Assignment, Dataset, Lesson, Score } from './types';
+import type { Assignment, Dataset, Lesson, Room, Score } from './types';
 
 export interface GenerateOptions {
   groupIds: string[];
@@ -21,6 +21,12 @@ export interface GenerateOptions {
    * the result so the timetable stays complete.
    */
   keep?: Lesson[];
+  /**
+   * A timetable to follow (e.g. last year's, imported): its pairs go back to
+   * the same day, pair and room whenever that still fits, and move only when
+   * that makes the timetable better.
+   */
+  example?: Lesson[];
 }
 
 export interface GenerateResult {
@@ -196,6 +202,28 @@ class Builder {
     return true;
   }
 
+  /** Put a pair where the example has it: same day and pair, its room or another that fits; false if that clashes now. */
+  adopt(ex: Lesson, a: Assignment): boolean {
+    const teacher = this.idx.teachers.get(a.teacherId);
+    if (ex.slot >= this.ds.settings.slots.length || !this.idx.allowedDays(a).includes(ex.day)) return false;
+    if (teacher?.unavailable.includes(slotKey(ex.day, ex.slot))) return false;
+    const size = this.idx.audienceSize(a.audience);
+    const ok = (r: Room) => r.capacity >= size && this.idx.roomFits(a, r) && this.idx.hasEquipment(a, r);
+    const same = this.idx.rooms.get(ex.roomId);
+    const rooms = [
+      ...(same && ok(same) ? [same] : []),
+      ...this.ds.rooms.filter((r) => r.id !== ex.roomId && ok(r)).sort((x, y) => x.capacity - y.capacity),
+    ];
+    for (const room of rooms) {
+      const l: Lesson = { id: newLessonId(), assignmentId: a.id, day: ex.day, slot: ex.slot, roomId: room.id, parity: ex.parity };
+      if (this.occ.fits(l, a)) {
+        this.add(l);
+        return true;
+      }
+    }
+    return false;
+  }
+
   /** Last resort: put it somewhere so the admin sees the conflict instead of a silent gap. */
   forcePlace(a: Assignment) {
     const room = this.ds.rooms.find((r) => this.idx.roomFits(a, r)) ?? this.ds.rooms[0];
@@ -219,11 +247,18 @@ function difficulty(a: Assignment, idx: DatasetIndex): number {
   return idx.audienceSize(a.audience) / 10 + (a.type === 'lab' ? 4 : 0) + (t?.unavailable.length ?? 0) / 3 + a.equipment.length * 2;
 }
 
-function construct(ds: Dataset, idx: DatasetIndex, scoped: Assignment[], fixed: Lesson[], rng: Rng): Builder {
+function construct(ds: Dataset, idx: DatasetIndex, scoped: Assignment[], fixed: Lesson[], rng: Rng, example: Lesson[] = []): Builder {
   const b = new Builder(ds, idx, rng);
   fixed.forEach((l) => b.add(l));
   const already = new Map<string, number>();
   fixed.forEach((l) => already.set(l.assignmentId, (already.get(l.assignmentId) ?? 0) + 1));
+  // the example's pairs first, where they were
+  const byId = new Map(scoped.map((a) => [a.id, a]));
+  for (const ex of example) {
+    const a = byId.get(ex.assignmentId);
+    if (!a || ex.date || (already.get(a.id) ?? 0) >= a.pairsPerWeek) continue;
+    if (b.adopt(ex, a)) already.set(a.id, (already.get(a.id) ?? 0) + 1);
+  }
 
   const queue = rng
     .shuffle(scoped)
@@ -232,6 +267,9 @@ function construct(ds: Dataset, idx: DatasetIndex, scoped: Assignment[], fixed: 
   for (const a of queue) if (!b.place(a)) b.forcePlace(a);
   return b;
 }
+
+/** Search cost of moving one pair away from the example timetable (as much as a missed preferred room). */
+export const EXAMPLE_WEIGHT = 2;
 
 const better = (x: Score, y: Score) => x.hard < y.hard || (x.hard === y.hard && x.soft <= y.soft);
 
@@ -288,14 +326,38 @@ export async function generateTimetable(
   const weeklyFixed = fixed.filter((l) => !l.date);
   const scopedDs: Dataset = { ...ds, assignments: weekly };
 
-  let lessons = construct(ds, idx, weekly, [...keep, ...weeklyFixed], rng).lessons;
+  let lessons = construct(ds, idx, weekly, [...keep, ...weeklyFixed], rng, opts.example).lessons;
   let score = scoreTimetable(scopedDs, lessons, idx);
   let k = 4;
   let stale = 0;
 
+  // following an example: each pair moved away from it costs a little, so a pair moves only for a real gain
+  const exampleAt = new Map<string, number>();
+  for (const l of opts.example ?? [])
+    exampleAt.set(`${l.assignmentId}|${l.day}|${l.slot}`, (exampleAt.get(`${l.assignmentId}|${l.day}|${l.slot}`) ?? 0) + 1);
+  const away = (ls: Lesson[]) => {
+    if (!exampleAt.size) return 0;
+    const left = new Map(exampleAt);
+    let n = 0;
+    for (const l of ls) {
+      const key = `${l.assignmentId}|${l.day}|${l.slot}`;
+      const c = left.get(key) ?? 0;
+      if (c > 0) left.set(key, c - 1);
+      else if (!keepIds.has(l.id) && !l.date) n++;
+    }
+    return n;
+  };
+  let awayNow = away(lessons);
+
   for (let i = 0; i < opts.iterations; i++) {
     const next = lnsStep(scopedDs, idx, lessons, score, k, rng, keepIds);
-    if (next && (next.score.hard < score.hard || next.score.soft < score.soft)) {
+    const awayNext = next ? away(next.lessons) : 0;
+    if (
+      next &&
+      (next.score.hard < score.hard ||
+        (next.score.hard === score.hard && next.score.soft + EXAMPLE_WEIGHT * awayNext < score.soft + EXAMPLE_WEIGHT * awayNow))
+    ) {
+      awayNow = awayNext;
       lessons = next.lessons;
       score = next.score;
       stale = 0;
@@ -310,7 +372,7 @@ export async function generateTimetable(
     }
   }
   if (reduced.length) {
-    lessons = [...lessons, ...placeSessions(ds, idx, reduced, lessons, rng)];
+    lessons = [...lessons, ...placeSessions(ds, idx, reduced, lessons, rng, opts.example)];
   }
   score = scoreTimetable({ ...ds, assignments: scoped }, lessons, idx);
   onProgress?.(1, score);

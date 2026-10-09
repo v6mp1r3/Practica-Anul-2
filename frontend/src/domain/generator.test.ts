@@ -22,6 +22,18 @@ describe('generateTimetable', () => {
     );
   });
 
+  it('follows an example timetable: its pairs stay where they were', async () => {
+    const example = (await generateTimetable(seedDataset, { groupIds: allGroups, seed: 1, iterations: 30 })).lessons;
+    const at = (l: Lesson) => `${l.assignmentId}|${l.date ?? l.day}|${l.slot}`;
+    const before = new Set(example.map(at));
+    const followed = await generateTimetable(seedDataset, { groupIds: allGroups, seed: 99, iterations: 30, example });
+    const fresh = await generateTimetable(seedDataset, { groupIds: allGroups, seed: 99, iterations: 30 });
+    const kept = (ls: Lesson[]) => ls.filter((l) => before.has(at(l))).length / ls.length;
+    expect(kept(followed.lessons)).toBeGreaterThan(0.9);
+    expect(kept(followed.lessons)).toBeGreaterThan(kept(fresh.lessons));
+    expect(followed.score.hard).toBe(0);
+  });
+
   it('only schedules the selected groups', async () => {
     const { lessons } = await generateTimetable(seedDataset, { groupIds: ['g5'], seed: 3, iterations: 10 });
     const scoped = new Set(scopeAssignments(seedDataset, ['g5']).map((a) => a.id));
