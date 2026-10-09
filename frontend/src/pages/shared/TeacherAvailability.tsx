@@ -83,8 +83,8 @@ export default function TeacherAvailability() {
               <span>{t('teacherAvail.freeNow', { pair: currentSlot + 1 })}</span>
             </div>
             <Select
-              className="select pill"
-              style={{ minWidth: 280 }}
+              className="select"
+              style={{ width: 280 }}
               value=""
               onChange={(e) => e.target.value && setTeacherId(e.target.value)}
               aria-label={t('teacherAvail.findFree')}
