@@ -1,8 +1,9 @@
 """Timetables (docs/API.md, Timetables). The work is in services/timetables.py."""
-from fastapi import APIRouter, Body, Depends, Response
+from fastapi import APIRouter, Body, Depends, Query, Request, Response
 from sqlalchemy import Connection
 
 from ..deps import CurrentUser, current_user, get_conn, require_admin
+from ..importers import read_sheet
 from ..services import timetables as svc
 from ..util import pid
 
@@ -12,6 +13,13 @@ router = APIRouter(prefix="/timetables", tags=["timetables"])
 @router.get("")
 def list_timetables(_: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
     return svc.list_timetables(conn)
+
+
+@router.post("/import-sheet")
+async def import_sheet(request: Request, filename: str = Query(""), _: CurrentUser = Depends(require_admin)):
+    """A faculty's timetable as published (PDF or Excel), read into rows: groups, day, time, week, type,
+    subject, teacher and room. Nothing is saved; the client matches the rows and saves a draft."""
+    return read_sheet(filename, await request.body())
 
 
 @router.get("/published")
