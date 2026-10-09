@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, type GenerateProgress } from '../../api';
 import { Icon } from '../../components/Icon';
 import { PrecheckList } from '../../components/PrecheckList';
+import { GroupPicker } from '../../components/GroupPicker';
 import { Field, PageHeader, Segmented } from '../../components/ui';
 import { precheck } from '../../domain/precheck';
 import { SOFT_WEIGHTS } from '../../domain/score';
@@ -120,7 +121,6 @@ export default function Generate() {
   const issues = useMemo(() => precheck(dataset, index), [dataset, index]);
   const hard = issues.filter((i) => i.severity === 'hard');
   const formGroups = scopeGroups.filter((g) => form === 'all' || g.studyForm === form);
-  const years = [...new Set(formGroups.map((g) => g.year))].sort();
   const running = progress !== null;
 
   async function run() {
@@ -157,8 +157,6 @@ export default function Generate() {
     navigate(`/admin/timetables/${saved.id}`);
   }
 
-  const toggle = (ids: string[], on: boolean) =>
-    setGroupIds((cur) => (on ? [...new Set([...cur, ...ids])] : cur.filter((x) => !ids.includes(x))));
 
   return (
     <div className="page">
@@ -216,31 +214,8 @@ export default function Generate() {
                     />
                   </Field>
                   <Field label={t('generate.groups')} hint={t('generate.groupsHint')}>
-                    <div className="stack" style={{ gap: 8 }}>
-                      {years.map((y) => {
-                        const ids = formGroups.filter((g) => g.year === y).map((g) => g.id);
-                        const all = ids.every((id) => groupIds.includes(id));
-                        return (
-                          <div key={y} className="row wrap">
-                            <label className="check" style={{ minWidth: 90, fontWeight: 600 }}>
-                              <input type="checkbox" checked={all} onChange={(e) => toggle(ids, e.target.checked)} />
-                              {t('groups.year')} {y}
-                            </label>
-                            <div className="checks">
-                              {ids.map((id) => (
-                                <label key={id} className="check">
-                                  <input type="checkbox" checked={groupIds.includes(id)} onChange={(e) => toggle([id], e.target.checked)} />
-                                  {index.groups.get(id)?.name}
-                                  {index.groups.get(id)?.studyForm !== 'full' && (
-                                    <span className="small muted">({t(`form.${index.groups.get(id)?.studyForm ?? 'full'}`)})</span>
-                                  )}
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {/* by year, then a row per specialty (TI, FAF…): a whole specialty or year at a click, with search */}
+                    <GroupPicker groups={formGroups} value={groupIds} onChange={setGroupIds} />
                   </Field>
                   <div className="form-grid">
                     <Field label={t('generate.variants')}>
