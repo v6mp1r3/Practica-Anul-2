@@ -535,7 +535,7 @@ export const ru: Record<MessageKey, string> = {
   'freeRooms.find': 'Найти свободную аудиторию…',
   'freeRooms.none': 'Нет свободных аудиторий по этим критериям.',
   'freeRooms.overview': 'Вся неделя',
-  'freeRooms.overviewHint': 'Число свободных аудиторий в каждом интервале. Нажмите на интервал, чтобы увидеть подробности.',
+  'freeRooms.overviewHint': 'Число свободных аудиторий в каждом интервале, с фильтрами выше. Нажмите на число, чтобы увидеть какие.',
   'teacherAvail.subtitle': 'Когда преподаватель ведёт занятия, свободен или проводит консультации.',
   'teacherAvail.teaching': 'Ведёт занятие',
   'teacherAvail.freeNow': 'Свободны сейчас (пара {pair})',

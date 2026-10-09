@@ -535,7 +535,7 @@ export const en: Record<MessageKey, string> = {
   'freeRooms.find': 'Find a free room…',
   'freeRooms.none': 'No free room matches these filters.',
   'freeRooms.overview': 'Whole week',
-  'freeRooms.overviewHint': 'Number of free rooms in each slot. Click a slot for details.',
+  'freeRooms.overviewHint': 'The number of free rooms in each interval, with the filters above. Click a number to see which ones.',
   'teacherAvail.subtitle': 'See when a teacher is teaching, free, or holding consultations.',
   'teacherAvail.teaching': 'Teaching',
   'teacherAvail.freeNow': 'Free now (pair {pair})',

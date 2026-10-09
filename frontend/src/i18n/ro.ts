@@ -535,7 +535,7 @@ export const ro = {
   'freeRooms.find': 'Caută o sală liberă…',
   'freeRooms.none': 'Nicio sală liberă cu aceste criterii.',
   'freeRooms.overview': 'Toată săptămâna',
-  'freeRooms.overviewHint': 'Numărul de săli libere în fiecare interval. Apasă pe un interval pentru detalii.',
+  'freeRooms.overviewHint': 'Numărul de săli libere în fiecare interval, după filtrele de mai sus. Apasă pe un număr ca să vezi care sunt.',
   'teacherAvail.subtitle': 'Vezi când un profesor predă, când este liber și când are consultații.',
   'teacherAvail.teaching': 'Predă',
   'teacherAvail.freeNow': 'Liberi acum (perechea {pair})',

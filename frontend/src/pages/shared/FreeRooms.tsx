@@ -5,6 +5,7 @@ import { freeRooms } from '../../domain/availability';
 import { fmtTime, weekDays } from '../../domain/slots';
 import type { Parity } from '../../domain/types';
 import { useEquipment } from '../../components/useEquipment';
+import { useRoomFilters } from '../../components/RoomFilters';
 import { dayIndexOf, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
@@ -19,13 +20,14 @@ export default function FreeRooms() {
   const [day, setDay] = useState(today);
   const [slot, setSlot] = useState(0);
   const [week, setWeek] = useState<Parity>(dataset.settings.weekParity ? weekParityOf(new Date()) : 'weekly');
-  const [minCapacity, setMinCapacity] = useState(0);
-  const [equipment, setEquipment] = useState('');
   const eq = useEquipment();
+  // the same room filters as Săli: block, floor, seats, equipment
+  const roomFilters = useRoomFilters(dataset.rooms);
+  const rooms = roomFilters.filtered;
 
   const lessons = published?.lessons ?? [];
-  const opts = { minCapacity, equipment };
-  const list = freeRooms(dataset.rooms, lessons, day, slot, week, opts);
+  const freeAt = (d: number, s: number) => freeRooms(rooms, lessons, d, s, week);
+  const list = freeAt(day, slot);
   // the room picked in the list (only while it is still free at the chosen time)
   const [roomId, setRoomId] = useState('');
   const chosen = list.find((r) => r.id === roomId);
@@ -57,25 +59,14 @@ export default function FreeRooms() {
                 ))}
               </Select>
             </Field>
-            <Field label={t('freeRooms.minCapacity')}>
-              <input
-                className="input"
-                type="number"
-                min={0}
-                value={minCapacity}
-                onChange={(e) => setMinCapacity(Number(e.target.value) || 0)}
-              />
-            </Field>
-            <Field label={t('freeRooms.equipment')}>
-              <Select className="select" value={equipment} onChange={(e) => setEquipment(e.target.value)}>
-                <option value="">{t('freeRooms.anyEquipment')}</option>
-                {eq.options.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+          </div>
+          <div className="filter-bar">
+            {roomFilters.controls}
+            {roomFilters.filtering && (
+              <button className="btn ghost sm" onClick={roomFilters.reset}>
+                {t('filters.reset')}
+              </button>
+            )}
           </div>
           {dataset.settings.weekParity && (
             <div className="card-body" style={{ paddingTop: 0 }}>
@@ -83,6 +74,8 @@ export default function FreeRooms() {
                 value={week}
                 onChange={setWeek}
                 options={[
+                  // both weeks: free (or shown) for the odd and the even week together
+                  { value: 'weekly', label: t('tt.weekAll') },
                   { value: 'odd', label: t('tt.weekOdd') },
                   { value: 'even', label: t('tt.weekEven') },
                 ]}
@@ -141,13 +134,32 @@ export default function FreeRooms() {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             cellClass={(d, s) =>
-              d === day && s === slot
-                ? 'state-consultation'
-                : freeRooms(dataset.rooms, lessons, d, s, week, opts).length
-                  ? 'state-free'
-                  : 'state-unavailable'
+              d === day && s === slot ? 'state-consultation' : freeAt(d, s).length ? 'state-free' : 'state-unavailable'
             }
-            renderCell={(d, s) => freeRooms(dataset.rooms, lessons, d, s, week, opts).length}
+            // the number of free rooms; clicking it opens the list of them (searchable)
+            renderCell={(d, s) => {
+              const free = freeAt(d, s);
+              if (!free.length) return 0;
+              return (
+                <Select
+                  className="select cell-select"
+                  value=""
+                  onChange={(e) => {
+                    setDay(d);
+                    setSlot(s);
+                    setRoomId(e.target.value);
+                  }}
+                  aria-label={t('freeRooms.find')}
+                >
+                  <option value="">{free.length}</option>
+                  {free.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} · {r.capacity} {t('rooms.capacity').toLowerCase()}
+                    </option>
+                  ))}
+                </Select>
+              );
+            }}
           />
         </div>
       </div>
