@@ -1,7 +1,7 @@
 // In-browser implementation of the API contract. Data lives in localStorage so
 // the whole app can be used (and demoed) without the backend.
 import { seedDataset, seedNotifications, seedUsers } from '../data/seed';
-import { generateTimetable } from '../domain/generator';
+import { generateTimetable, scopeAssignments } from '../domain/generator';
 import { scoreTimetable } from '../domain/score';
 import { findHardConflicts } from '../domain/validator';
 import type {
@@ -523,7 +523,11 @@ export function createMockApi(): Api {
         ...t,
         status: t.status === 'variant' ? 'draft' : t.status,
         updatedAt: new Date().toISOString(),
-        score: scoreTimetable(store.dataset, t.lessons),
+        // against the loads of its own groups, like the editor
+        score: scoreTimetable(
+          t.groupIds.length ? { ...store.dataset, assignments: scopeAssignments(store.dataset, t.groupIds) } : store.dataset,
+          t.lessons,
+        ),
       };
       const i = store.timetables.findIndex((x) => x.id === t.id);
       if (i >= 0) store.timetables[i] = saved;

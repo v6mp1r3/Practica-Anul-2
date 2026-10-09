@@ -10,6 +10,7 @@ from ..domain.score import SOFT_WEIGHTS, score_timetable
 from ..domain.validator import find_hard_conflicts
 from ..errors import ApiError
 from ..settings_io import current_semester
+from ..solver.generate import scope_assignments
 from ..util import iso_date, iso_ts, maybe_pid, pid, sid
 from .notify import notify
 
@@ -142,8 +143,14 @@ def _set_groups(conn: Connection, tid: int, group_ids: list[int]) -> None:
 
 
 def _store_score(conn: Connection, tid: int, ds: dict | None = None) -> None:
+    """Scored against the loads of its own groups (like the editor): a timetable of some groups, e.g. one
+    imported for a year of study, is not missing the pairs of all the others."""
     ds = ds or build_dataset(conn)
     lessons = load_lessons(conn, tid)
+    group_ids = [sid(g[0]) for g in conn.execute(text("select group_id from timetable_group where timetable_id = :t"), {"t": tid})]
+    if group_ids:
+        idx = DatasetIndex(ds)
+        ds = {**ds, "assignments": scope_assignments(ds, idx, group_ids)}
     score = score_timetable(ds, lessons)
     conn.execute(
         text("update timetable set score_hard = :h, score_soft = :s, score_breakdown = cast(:b as jsonb) where id = :t"),
