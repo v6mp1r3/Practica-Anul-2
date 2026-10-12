@@ -950,15 +950,18 @@ table.table {
 .xw {
   display: grid;
   grid-template-rows: auto var(--h);
-  min-width: 920px;
+  /* as wide as its days need (a busy day is wider), so the page scrolls sideways instead of cutting days off */
+  width: max-content;
+  min-width: max(100%, 920px);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  overflow: hidden;
+  /* clip, not hidden: hidden would stop the day labels sticking while scrolling sideways */
+  overflow: clip;
 }
 .xw-head {
   padding: 12px 8px;
-  text-align: center;
+  text-align: left;
   font-size: 13px;
   color: var(--text-2);
   border-bottom: 1px solid var(--border);
@@ -966,6 +969,14 @@ table.table {
 }
 .xw-head:first-child {
   border-left: none;
+}
+.xw-head-label {
+  position: sticky;
+  left: 8px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  align-items: baseline;
 }
 .xw-head strong {
   color: var(--text);

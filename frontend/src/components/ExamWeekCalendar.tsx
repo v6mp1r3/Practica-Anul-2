@@ -152,8 +152,11 @@ export function ExamWeekCalendar({
             const off = vacations.find((v) => v.start <= d && d <= v.end);
             return (
               <div key={d} className={`xw-head ${d === today ? 'today' : ''} ${off ? 'holiday-col' : ''}`}>
-                <strong>{fmt(d, { weekday: 'short' })}</strong> {fmt(d, { day: 'numeric', month: 'short' })}
-                {off && <div className="small">{holidayName(off)}</div>}
+                {/* stays in view when a busy day is wider than the screen */}
+                <span className="xw-head-label">
+                  <strong>{fmt(d, { weekday: 'short' })}</strong> {fmt(d, { day: 'numeric', month: 'short' })}
+                  {off && <span className="small">{holidayName(off)}</span>}
+                </span>
               </div>
             );
           })}
