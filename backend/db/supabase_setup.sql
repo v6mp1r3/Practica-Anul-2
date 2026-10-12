@@ -340,6 +340,16 @@ create table student_group (
 );
 create index student_group_faculty_idx on student_group (faculty_id);
 
+-- the two parts of a dual group, e.g. AI-263 + R-264 (a dual group has exactly two, enforced by the API)
+create table group_dual (
+  group_id bigint not null references student_group (id) on delete cascade,
+  position smallint not null check (position in (1, 2)),
+  name     text not null check (name = upper(trim(name)) and name <> ''),
+  program  text not null default '',
+  primary key (group_id, position)
+);
+create unique index group_dual_name_unique on group_dual (name);   -- a name is a part of one dual group only
+
 -- internships, final-year exam sessions, plagiarism checks and licence exams of particular groups
 create table group_period (
   id          bigint generated always as identity primary key,
@@ -490,9 +500,13 @@ create function ensure_group_clusters() returns trigger language plpgsql as $$
 begin
   insert into cluster (kind, cycle, year, speciality, language, study_form)
   values ('year', new.cycle, new.year, null, null, null),
-         ('speciality', new.cycle, new.year, speciality_of(new.name), null, null),
          ('language', null, null, null, new.language, null),
          ('form', null, null, null, null, new.study_form)
+  on conflict do nothing;
+  -- a dual group is named after two groups ("AI-263 R-264"): it belongs to the speciality of each
+  insert into cluster (kind, cycle, year, speciality, language, study_form)
+  select 'speciality', new.cycle, new.year, speciality_of(w), null, null
+  from regexp_split_to_table(trim(new.name), '\s+') w
   on conflict do nothing;
   return new;
 end $$;
@@ -650,7 +664,7 @@ create table exam_event (
   plan_id     bigint not null references exam_plan (id) on delete cascade,
   kind        exam_event_kind not null,
   subject_id  bigint not null references subject (id) on delete restrict,
-  group_id    bigint not null references student_group (id) on delete restrict,
+  group_id    bigint not null references student_group (id) on delete cascade,     -- a deleted group leaves the exam timetable
   teacher_id  bigint not null references teacher (id) on delete restrict,
   room_id     bigint not null references room (id) on delete restrict,
   event_date  date not null,
@@ -822,7 +836,7 @@ insert into cluster (kind, study_form) select 'form', f from unnest(enum_range(n
 
 commit;
 
--- Result: should show 46 tables, 74 foreign keys, 46 with row level security, 14 faculties, 7 time slots.
+-- Result: should show 47 tables, 75 foreign keys, 47 with row level security, 14 faculties, 7 time slots.
 select
   (select count(*) from pg_tables where schemaname = 'public')                                   as tables,
   (select count(*) from pg_constraint c join pg_namespace n on n.oid = c.connamespace

@@ -230,6 +230,13 @@ export interface Group {
   subgroups: number;
   /** Language of instruction (default Romanian). */
   language?: Language;
+  /** A dual group is one group made of these two parts (named like "AI-263 R-264"); name and program follow from them; the group has one size. */
+  dualParts?: DualPart[];
+}
+
+export interface DualPart {
+  name: string;
+  program: string;
 }
 
 /**

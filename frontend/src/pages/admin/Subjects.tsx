@@ -186,6 +186,7 @@ export default function Subjects() {
           </>
         }
         itemLabel={(x) => `${x.code} — ${x.name}`}
+        sortText={(x) => x.name}
         searchText={(x) => `${x.code} ${x.abbreviation ?? ''} ${x.name}`}
         // the cluster list changes width with its choice: keep the actions under the title
         stackedHeader
@@ -232,6 +233,7 @@ export default function Subjects() {
         columns={[
           {
             label: t('subjects.code'),
+            sort: (x) => x.code,
             render: (x) => (
               <span>
                 <strong>{x.code}</strong>
@@ -245,8 +247,8 @@ export default function Subjects() {
             ),
             width: 120,
           },
-          { label: t('common.name'), render: (x) => x.name },
-          { label: t('subjects.year'), render: (x) => x.year },
+          { label: t('common.name'), sort: (x) => x.name, render: (x) => x.name },
+          { label: t('subjects.year'), sort: (x) => x.year, render: (x) => x.year },
           {
             label: t('subjects.clusters'),
             render: (x) => {
@@ -265,8 +267,8 @@ export default function Subjects() {
               );
             },
           },
-          { label: 'ECTS', render: (x) => x.credits },
-          { label: t('subjects.semester'), render: (x) => x.semester ?? 1 },
+          { label: 'ECTS', sort: (x) => x.credits, render: (x) => x.credits },
+          { label: t('subjects.semester'), sort: (x) => x.semester ?? 1, render: (x) => x.semester ?? 1 },
           {
             label: t('subjects.evaluation'),
             render: (x) => {
@@ -287,9 +289,9 @@ export default function Subjects() {
                 </span>
               ) : null,
           },
-          { label: t('activity.lecture'), render: (x) => pairs(x.lecturePairs) },
-          { label: t('activity.seminar'), render: (x) => pairs(x.seminarPairs) },
-          { label: t('activity.lab'), render: (x) => pairs(x.labPairs) },
+          { label: t('activity.lecture'), sort: (x) => x.lecturePairs, render: (x) => pairs(x.lecturePairs) },
+          { label: t('activity.seminar'), sort: (x) => x.seminarPairs, render: (x) => pairs(x.seminarPairs) },
+          { label: t('activity.lab'), sort: (x) => x.labPairs, render: (x) => pairs(x.labPairs) },
         ]}
         newItem={(): Omit<Subject, 'id'> => ({
           cycle,

@@ -82,6 +82,11 @@ export interface GridProps {
   onLessonClick?: (lesson: Lesson) => void;
   cellClass?: (day: Day, slot: SlotIndex) => string;
   onCellClick?: (day: Day, slot: SlotIndex) => void;
+  /** Mouse pressed on a cell, and the pointer entering a cell with the button still down (painting by dragging). */
+  /** Cells look clickable even without onCellClick (used with press/drag). */
+  selectable?: boolean;
+  onCellPress?: (day: Day, slot: SlotIndex) => void;
+  onCellDrag?: (day: Day, slot: SlotIndex) => void;
   renderCell?: (day: Day, slot: SlotIndex) => ReactNode;
   /** The day columns; the weekly days by default (weekDays). */
   days?: Day[];
@@ -103,6 +108,9 @@ export function TimetableGrid({
   onLessonClick,
   cellClass,
   onCellClick,
+  selectable,
+  onCellPress,
+  onCellDrag,
   renderCell,
   days: shownDays,
   className = '',
@@ -139,8 +147,18 @@ export function TimetableGrid({
               return (
                 <div
                   key={key}
-                  className={`tt-cell ${dropState} ${cellClass?.(day, slot) ?? ''} ${onCellClick ? 'selectable' : ''} ${dayOff?.[day] ? 'day-off' : ''}`}
+                  className={`tt-cell ${dropState} ${cellClass?.(day, slot) ?? ''} ${onCellClick || selectable ? 'selectable' : ''} ${dayOff?.[day] ? 'day-off' : ''}`}
                   onClick={onCellClick ? () => onCellClick(day, slot) : undefined}
+                  onMouseDown={
+                    onCellPress
+                      ? (e) => {
+                          if (e.button !== 0) return;
+                          e.preventDefault(); // no text selection while dragging
+                          onCellPress(day, slot);
+                        }
+                      : undefined
+                  }
+                  onMouseEnter={onCellDrag ? (e) => e.buttons === 1 && onCellDrag(day, slot) : undefined}
                   onDragOver={
                     onMove
                       ? (e) => {

@@ -53,6 +53,7 @@ export default function Assignments() {
       subtitle={t('assignments.subtitle')}
       items={items}
       itemLabel={(x) => `${index.subjects.get(x.subjectId)?.code} ${t(`activity.${x.type}`)} · ${index.audienceLabel(x.audience)}`}
+      sortText={(x) => `${index.subjects.get(x.subjectId)?.name} ${t(`activity.${x.type}`)} ${index.audienceLabel(x.audience)}`}
       searchText={(x) =>
         `${index.subjects.get(x.subjectId)?.code} ${index.subjects.get(x.subjectId)?.name} ${index.teachers.get(x.teacherId)?.name} ${index.audienceLabel(x.audience)}`
       }
@@ -79,6 +80,7 @@ export default function Assignments() {
       columns={[
         {
           label: t('assignments.subject'),
+          sort: (x) => index.subjects.get(x.subjectId)?.name ?? '',
           render: (x) => (
             <div>
               <strong>{index.subjects.get(x.subjectId)?.code}</strong>{' '}
@@ -86,9 +88,14 @@ export default function Assignments() {
             </div>
           ),
         },
-        { label: t('assignments.type'), render: (x) => <span className={`badge ${x.type}`}>{t(`activity.${x.type}`)}</span> },
+        {
+          label: t('assignments.type'),
+          sort: (x) => t(`activity.${x.type}`),
+          render: (x) => <span className={`badge ${x.type}`}>{t(`activity.${x.type}`)}</span>,
+        },
         {
           label: t('assignments.teacher'),
+          sort: (x) => index.teachers.get(x.teacherId)?.name ?? '',
           render: (x) => {
             const teacher = index.teachers.get(x.teacherId);
             return (
@@ -105,6 +112,7 @@ export default function Assignments() {
         },
         {
           label: t('assignments.audience'),
+          sort: (x) => index.audienceLabel(x.audience),
           render: (x) => (
             <span>
               {index.audienceLabel(x.audience)} <span className="small muted">({index.audienceSize(x.audience)})</span>
@@ -113,6 +121,7 @@ export default function Assignments() {
         },
         {
           label: t('assignments.pairs'),
+          sort: (x) => x.pairsPerWeek,
           render: (x) =>
             index.isReduced(x) ? (
               <span>

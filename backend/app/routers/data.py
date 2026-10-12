@@ -159,6 +159,8 @@ def _register(name: str) -> None:
         # the database removes the assignments that point at a deleted teacher, subject, group or stream
         if not conn.execute(text(f"delete from {TABLES[name]} where id = :id"), {"id": rid}).rowcount:
             raise ApiError(404, "Not found")
+        if name == "groups":  # an automatic stream left without groups goes with them
+            conn.execute(text("delete from stream s where not exists (select 1 from stream_group g where g.stream_id = s.id)"))
         conn.commit()
         return Response(status_code=204)
 

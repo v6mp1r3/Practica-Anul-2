@@ -188,3 +188,32 @@ def test_subject_abbreviation(client, admin):
     assert "abbreviation" not in create(client, admin, "subjects", subject("PC"))
     s["abbreviation"] = ""
     assert "abbreviation" not in client.put(f"/api/subjects/{s['id']}", json=s, headers=admin).json()
+
+
+def test_dual_group_is_added_with_its_two_groups(client, admin):
+    parts = [{"name": "ai-263", "program": "Automatica"}, {"name": "R-264", "program": "Robotica"}]
+    dual = create(client, admin, "groups", group("x", year=3, studyForm="dual", size=16, dualParts=parts))
+    assert dual["name"] == "AI-263 R-264" and dual["size"] == 16 and dual["program"] == "Automatica + Robotica"
+    assert [p["name"] for p in dual["dualParts"]] == ["AI-263", "R-264"]
+    listed = client.get("/api/groups", headers=admin).json()
+    assert [g["name"] for g in listed] == ["AI-263 R-264"]
+    # not the same group twice, no repeats of a name used elsewhere, exactly two
+    same = group("x", studyForm="dual", dualParts=[parts[0], parts[0]])
+    assert client.post("/api/groups", json=same, headers=admin).status_code == 422
+    again = group("x", studyForm="dual", dualParts=[{"name": "AI-263"}, {"name": "TI-1"}])
+    assert client.post("/api/groups", json=again, headers=admin).status_code == 409
+    one = group("x", studyForm="dual", dualParts=[parts[0]])
+    assert client.post("/api/groups", json=one, headers=admin).status_code == 422
+    # editing keeps its own parts, and switching the form back drops them
+    edited = client.put(f"/api/groups/{dual['id']}", json=dual, headers=admin)
+    assert edited.status_code == 200
+    back = client.put(f"/api/groups/{dual['id']}", json={**dual, "name": "FAF-1", "size": 20, "studyForm": "full"}, headers=admin).json()
+    assert "dualParts" not in back and back["name"] == "FAF-1"
+
+
+def test_dual_group_belongs_to_both_specialities(client, admin):
+    parts = [{"name": "AI-263", "program": "Automatica"}, {"name": "R-264", "program": "Robotica"}]
+    dual = create(client, admin, "groups", group("x", year=1, studyForm="dual", size=16, dualParts=parts))
+    cs = {c["name"]: c for c in clusters(client, admin)}
+    assert dual["id"] in cs["AI · Year 1"]["groupIds"] and dual["id"] in cs["R · Year 1"]["groupIds"]
+    assert not any("AI-263" in n for n in cs)

@@ -5,7 +5,12 @@ import { CrudPage } from '../../components/CrudPage';
 import { useState } from 'react';
 import { Select } from '../../components/Select';
 import { Field } from '../../components/ui';
-import type { ActivityType, Teacher } from '../../domain/types';
+import { range, slotKey } from '../../domain/slots';
+import type { ActivityType, Settings, Teacher } from '../../domain/types';
+
+/** Every pair of Saturday and Sunday (days 5 and 6). */
+const weekendSlots = (settings: Settings) =>
+  [5, 6].filter((d) => d < settings.workingDays).flatMap((d) => range(settings.slots.length).map((s) => slotKey(d, s)));
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 
@@ -106,6 +111,7 @@ export default function Teachers() {
       columns={[
         {
           label: t('common.name'),
+          sort: (x) => x.name,
           render: (x) => (
             <div>
               <strong>{x.name}</strong>
@@ -114,7 +120,7 @@ export default function Teachers() {
             </div>
           ),
         },
-        { label: t('teachers.department'), render: (x) => x.department },
+        { label: t('teachers.department'), sort: (x) => x.department, render: (x) => x.department },
         {
           label: t('teachers.types'),
           render: (x) => (
@@ -129,6 +135,7 @@ export default function Teachers() {
         },
         {
           label: t('teachers.load'),
+          sort: (x) => plannedLoad(x.id),
           render: (x) => {
             const load = plannedLoad(x.id);
             return (
@@ -138,8 +145,16 @@ export default function Teachers() {
             );
           },
         },
-        { label: t('teachers.unavailable'), render: (x) => (x.unavailable.length ? x.unavailable.length : '—') },
-        { label: t('examAvail.column'), render: (x) => (x.examUnavailable?.length ? x.examUnavailable.length : '—') },
+        {
+          label: t('teachers.unavailable'),
+          sort: (x) => x.unavailable.length,
+          render: (x) => (x.unavailable.length ? x.unavailable.length : '—'),
+        },
+        {
+          label: t('examAvail.column'),
+          sort: (x) => x.examUnavailable?.length ?? 0,
+          render: (x) => (x.examUnavailable?.length ? x.examUnavailable.length : '—'),
+        },
       ]}
       newItem={(): Omit<Teacher, 'id'> => ({
         name: '',
@@ -149,7 +164,8 @@ export default function Teachers() {
         email: '',
         maxPairsPerWeek: 12,
         activityTypes: ['lecture', 'seminar'],
-        unavailable: [],
+        // a new teacher doesn't teach on Saturday and Sunday unless the administration changes it
+        unavailable: weekendSlots(dataset.settings),
         preferred: [],
       })}
       validate={(d) => (!d.name.trim() ? t('teachers.nameRequired') : d.activityTypes.length === 0 ? t('teachers.typeRequired') : null)}
