@@ -48,19 +48,28 @@ export function AvailabilityPicker({
   function paint(day: number, slot: number) {
     if (locked?.(day, slot)) return;
     const k = slotKey(day, slot);
+    const v = current.current;
     const without = (list: SlotKey[]) => list.filter((x) => x !== k);
-    // Clicking a cell that already has the brush state clears it
-    const target: Brush = stateOf(k) === brush ? 'free' : brush;
     const next: AvailabilityValue = {
-      unavailable: without(value.unavailable),
-      preferred: without(value.preferred),
-      consultation: value.consultation === k ? undefined : value.consultation,
+      unavailable: without(v.unavailable),
+      preferred: without(v.preferred),
+      consultation: v.consultation === k ? undefined : v.consultation,
     };
     if (target === 'unavailable') next.unavailable.push(k);
     if (target === 'preferred') next.preferred.push(k);
     if (target === 'consultation') next.consultation = k;
+    current.current = next;
     onChange(next);
   }
+
+  // pressing a cell that already has the brush state clears it, and the drag then clears too
+  function press(day: number, slot: number) {
+    const target: Brush = stateOf(slotKey(day, slot)) === brush ? 'free' : brush;
+    dragging.current = target;
+    paintAs(day, slot, target);
+  }
+  // one consultation hour only: dragging it over several cells moves it, it doesn't copy it
+  const drag = (day: number, slot: number) => dragging.current && paintAs(day, slot, dragging.current);
 
   const label: Record<Brush, string> = {
     free: t('availability.free'),

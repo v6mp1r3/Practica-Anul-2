@@ -284,13 +284,41 @@ def load_groups(conn: Connection, ids: Iterable[int] | None = None) -> list[dict
         f"g.language::text as language, g.size, g.subgroups from student_group g join faculty f on f.id = g.faculty_id{where} order by g.id",
         p,
     )
+    parts: dict[int, list[dict]] = defaultdict(list)
+    if rows:
+        for r in _all(conn, "select group_id, name, program from group_dual where group_id = any(cast(:k as bigint[])) order by group_id, position", {"k": [r["id"] for r in rows]}):
+            parts[r["group_id"]].append({"name": r["name"], "program": r["program"]})
     return [
         {
             "id": sid(r["id"]), "name": r["name"], "program": r["program"], "faculty": r["faculty"], "year": r["year"], "cycle": r["cycle"],
             "programYears": r["program_years"], "size": r["size"], "studyForm": r["study_form"], "subgroups": r["subgroups"], "language": r["language"],
+            **({"dualParts": parts[r["id"]]} if parts[r["id"]] else {}),
         }
         for r in rows
     ]
+
+
+def _dual_parts(conn: Connection, data: dict, gid: int | None) -> list[dict]:
+    raw = data.get("dualParts") or []
+    parts = [{"name": str(p.get("name") or "").strip().upper(), "program": str(p.get("program") or "").strip()} for p in raw]
+    if len(parts) != 2 or any(not p["name"] for p in parts):
+        raise ApiError(422, "A dual group is made of exactly two groups, each with a name")
+    names = [p["name"] for p in parts]
+    if names[0] == names[1]:
+        raise ApiError(422, "The two groups of a dual group must be different")
+    # the parts are new groups: neither an existing group nor a part of another dual group
+    own = set(conn.execute(text("select name from group_dual where group_id = :g"), {"n": names, "g": gid}).scalars()) if gid else set()
+    taken = [
+        n for n in conn.execute(
+            text("select name from student_group where name = any(:n) and id is distinct from :g union "
+                 "select name from group_dual where name = any(:n) and group_id is distinct from :g"),
+            {"n": names, "g": gid},
+        ).scalars()
+        if n not in own
+    ]
+    if taken:
+        raise ApiError(409, f"{taken[0]} already exists")
+    return parts
 
 
 def save_group(conn: Connection, data: dict, default_faculty_id: int | None, gid: int | None = None) -> int:
@@ -301,19 +329,24 @@ def save_group(conn: Connection, data: dict, default_faculty_id: int | None, gid
     cycle = data.get("cycle") or "licenta"
     program_years = data.get("programYears") or (max(4, year) if cycle == "licenta" else max(2, year))
     params = {
-        "name": data["name"].strip().upper(), "program": data.get("program") or "", "fid": fid, "cycle": cycle,
+        "name": (data.get("name") or "").strip().upper(), "program": data.get("program") or "", "fid": fid, "cycle": cycle,
         "year": year, "py": program_years,
-        "form": data.get("studyForm") or "full", "lang": data.get("language") or "ro", "size": data["size"], "sub": data.get("subgroups") or 1,
+        "form": data.get("studyForm") or "full", "lang": data.get("language") or "ro", "size": data.get("size") or 1, "sub": data.get("subgroups") or 1,
     }
     sql_cols = "name=:name, program=:program, faculty_id=:fid, cycle=cast(:cycle as study_cycle), year=:year, program_years=:py, study_form=cast(:form as study_form), language=cast(:lang as study_language), size=:size, subgroups=:sub"
+    dual = _dual_parts(conn, data, gid) if params["form"] == "dual" else []
+    if dual:  # a dual group is named after its two parts; it has one number of students
+        params["name"] = " ".join(p["name"] for p in dual)
+        params["program"] = " + ".join(dict.fromkeys(p["program"] for p in dual if p["program"]))
     if gid is None:
-        return conn.execute(
+        gid = conn.execute(
             text("insert into student_group (name, program, faculty_id, cycle, year, program_years, study_form, language, size, subgroups) "
                  "values (:name, :program, :fid, cast(:cycle as study_cycle), :year, :py, cast(:form as study_form), cast(:lang as study_language), :size, :sub) returning id"),
             params,
         ).scalar_one()
-    if not conn.execute(text(f"update student_group set {sql_cols} where id=:id"), {**params, "id": gid}).rowcount:
+    elif not conn.execute(text(f"update student_group set {sql_cols} where id=:id"), {**params, "id": gid}).rowcount:
         raise ApiError(404, "Not found")
+    _replace(conn, "group_dual", "group_id", gid, ["position", "name", "program"], [(i + 1, p["name"], p["program"]) for i, p in enumerate(dual)])
     return gid
 
 
@@ -443,6 +476,11 @@ def _speciality(group_name: str) -> str:
     return re.sub(r"-\d+$", "", group_name).upper()
 
 
+def _specialities(group_name: str) -> list[str]:
+    """A dual group ("AI-263 R-264") is named after two groups and belongs to both specialities (AI, R)."""
+    return list(dict.fromkeys(_speciality(w) for w in group_name.split()))
+
+
 FORM_NAMES = {"full": "Full-time", "reduced": "Reduced attendance", "dual": "Dual"}
 
 
@@ -463,7 +501,7 @@ def load_clusters(conn: Connection) -> list[dict]:
     rows = _all(conn, "select id, kind, cycle::text as cycle, year, speciality, language::text as language, study_form::text as study_form, name from cluster", {})
     members: dict[tuple, list[str]] = defaultdict(list)
     for g in _all(conn, "select id, name, cycle::text as cycle, year, language::text as language, study_form::text as study_form from student_group order by id", {}):
-        for key in (("year", g["cycle"], g["year"], None), ("speciality", g["cycle"], g["year"], _speciality(g["name"])),
+        for key in (("year", g["cycle"], g["year"], None), *(("speciality", g["cycle"], g["year"], sp) for sp in _specialities(g["name"])),
                     ("language", g["language"]), ("form", g["study_form"])):
             members[key].append(sid(g["id"]))
     custom: dict[int, list[str]] = defaultdict(list)

@@ -12,6 +12,8 @@ export interface Column<T> {
   label: string;
   render: (item: T) => ReactNode;
   width?: number | string;
+  /** Makes the header clickable: rows are ordered by this value (text or number). */
+  sort?: (item: T) => string | number;
 }
 
 export interface CrudProps<K extends CollectionName> {
@@ -22,6 +24,10 @@ export interface CrudProps<K extends CollectionName> {
   items: Collections[K][];
   columns: Column<Collections[K]>[];
   searchText: (item: Collections[K]) => string;
+  /** Rows are kept in alphabetical order of this text (defaults to the item label). */
+  sortText?: (item: Collections[K]) => string;
+  /** Replaces the standard "Delete …?" question (e.g. to say what else disappears). */
+  confirmDeleteText?: (item: Collections[K]) => string;
   newItem: () => Omit<Collections[K], 'id'>;
   renderForm: (draft: Omit<Collections[K], 'id'>, set: (patch: Partial<Collections[K]>) => void) => ReactNode;
   /** Returns an error message, or null when the draft is valid. */
@@ -51,10 +57,27 @@ export function CrudPage<K extends CollectionName>(p: CrudProps<K>) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [order, setOrder] = useState<{ label: string; dir: 1 | -1 } | null>(null);
+  // click: ascending, again: descending, again: back to the default order
+  const toggleOrder = (label: string) =>
+    setOrder((o) => (o?.label !== label ? { label, dir: 1 } : o.dir === 1 ? { label, dir: -1 } : null));
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? p.items.filter((i) => p.searchText(i).toLowerCase().includes(q)) : p.items;
-  }, [p, query]);
+    const found = q ? p.items.filter((i) => p.searchText(i).toLowerCase().includes(q)) : p.items;
+    const key = p.sortText ?? p.itemLabel;
+    const text = (a: string, b: string) => a.localeCompare(b, 'ro', { sensitivity: 'base', numeric: true });
+    const col = order && p.columns.find((c) => c.label === order.label)?.sort;
+    return [...found].sort((a, b) => {
+      if (col) {
+        const x = col(a);
+        const y = col(b);
+        const d = typeof x === 'number' && typeof y === 'number' ? x - y : text(String(x), String(y));
+        if (d) return d * order!.dir;
+      }
+      return text(key(a), key(b));
+    });
+  }, [p, query, order]);
 
   async function save() {
     if (!draft) return;
@@ -79,9 +102,13 @@ export function CrudPage<K extends CollectionName>(p: CrudProps<K>) {
   }
 
   async function remove(item: Collections[K]) {
-    if (!confirm(t('common.confirmDelete', { name: p.itemLabel(item) }))) return;
-    await api.remove(p.collection, item.id);
-    await refresh();
+    if (!confirm(p.confirmDeleteText?.(item) ?? t('common.confirmDelete', { name: p.itemLabel(item) }))) return;
+    try {
+      await api.remove(p.collection, item.id);
+      await refresh();
+    } catch {
+      toast(t('common.error'), 'error');
+    }
   }
 
   const open = (d: Draft<K>) => {
@@ -122,8 +149,19 @@ export function CrudPage<K extends CollectionName>(p: CrudProps<K>) {
               <thead>
                 <tr>
                   {p.columns.map((c) => (
-                    <th key={c.label} style={{ width: c.width }}>
-                      {c.label}
+                    <th
+                      key={c.label}
+                      style={{ width: c.width }}
+                      aria-sort={order?.label === c.label ? (order.dir === 1 ? 'ascending' : 'descending') : undefined}
+                    >
+                      {c.sort && c.label ? (
+                        <button type="button" className="th-sort" onClick={() => toggleOrder(c.label)}>
+                          {c.label}
+                          <span aria-hidden="true">{order?.label === c.label ? (order.dir === 1 ? ' ▲' : ' ▼') : ''}</span>
+                        </button>
+                      ) : (
+                        c.label
+                      )}
                     </th>
                   ))}
                   <th />
