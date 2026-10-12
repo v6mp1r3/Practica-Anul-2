@@ -25,7 +25,7 @@ import type { Api, CollectionName, Collections } from './types';
 
 const STORE_KEY = 'eduschedule:mock:v1';
 /** Bump when demo records are added, so saved stores pick them up (see mergeSeed). */
-const SEED_VERSION = 21;
+const SEED_VERSION = 22;
 
 interface Store {
   dataset: Dataset;
@@ -160,8 +160,8 @@ function mergeSeed(saved: Store) {
   }
   // there is no institution-wide administrator any more: every account belongs to a faculty
   saved.users = saved.users.filter((u) => u.username !== 'natalia.grosu');
-  // students and teachers don't sign in any more: only administrators have accounts
-  saved.users = saved.users.filter((u) => u.role === 'admin');
+  // students don't sign in; teachers do only with an account tied to them (to set their availability)
+  saved.users = saved.users.filter((u) => u.role === 'admin' || (u.role === 'teacher' && !!u.teacherId));
   if (!saved.users.some((u) => u.id === saved.sessionUserId)) saved.sessionUserId = null;
   // demo accounts added later (faculty administrators)
   const users = new Set(saved.users.map((u) => u.username));
@@ -387,6 +387,9 @@ export function createMockApi(): Api {
       requireRole('admin');
       const username = nu.username.trim().toLowerCase();
       if (!username || store.users.some((u) => u.username === username)) throw new ApiError(422, 'Username taken');
+      // one account per teacher
+      if (nu.teacherId && store.users.some((u) => u.teacherId === nu.teacherId))
+        throw new ApiError(422, 'This teacher already has an account');
       if (nu.password.length < 8) throw new ApiError(422, 'Password too short');
       const { password, ...rest } = nu;
       const created: User = { ...rest, username, id: uid('u') };
@@ -395,13 +398,22 @@ export function createMockApi(): Api {
       persist();
       return delay(created);
     },
-    async updateUser(user) {
+    async updateUser(id, changes) {
       requireRole('admin');
-      const i = store.users.findIndex((u) => u.id === user.id);
-      if (i < 0) throw new ApiError(404, 'Not found');
-      store.users[i] = { ...store.users[i], ...user };
+      const u = store.users.find((x) => x.id === id);
+      if (!u) throw new ApiError(404, 'Not found');
+      if (u.role !== 'teacher') throw new ApiError(403, 'Only teacher accounts are managed here');
+      if (changes.username !== undefined) {
+        const username = changes.username.trim().toLowerCase();
+        if (!username || store.users.some((x) => x.id !== id && x.username === username)) throw new ApiError(422, 'Username taken');
+        u.username = username;
+      }
+      if (changes.password) {
+        if (changes.password.length < 8) throw new ApiError(422, 'Password too short');
+        store.passwords = { ...store.passwords, [id]: changes.password };
+      }
       persist();
-      return delay(store.users[i]);
+      return delay(u);
     },
     async deleteUser(id) {
       const me = requireRole('admin');
@@ -463,6 +475,24 @@ export function createMockApi(): Api {
           (a) => a.teacherId !== id && a.subjectId !== id && a.audience.id !== id,
         );
       }
+      if (name === 'groups') {
+        // a deleted group just disappears from the streams, timetables and exam timetables
+        store.dataset.streams = store.dataset.streams
+          .map((s) => ({ ...s, groupIds: s.groupIds.filter((g) => g !== id) }))
+          .filter((s) => s.groupIds.length > 0);
+        store.dataset.assignments = store.dataset.assignments.filter(
+          (a) => a.audience.kind !== 'stream' || store.dataset.streams.some((s) => s.id === a.audience.id),
+        );
+        for (const p of store.examPlans ?? []) p.events = p.events.filter((e) => e.groupId !== id);
+      }
+      if (name !== 'assignments') {
+        const alive = new Set(store.dataset.assignments.map((a) => a.id));
+        for (const t of store.timetables) {
+          t.groupIds = t.groupIds.filter((g) => g !== id);
+          t.lessons = t.lessons.filter((l) => alive.has(l.assignmentId));
+        }
+        store.changes = store.changes.filter((c) => alive.has(c.assignmentId));
+      }
       persist();
       return delay(undefined);
     },
@@ -498,11 +528,16 @@ export function createMockApi(): Api {
     },
 
     async updateAvailability(teacherId, data) {
-      // Only the administration enters and edits availability; teachers just see it
-      requireRole('admin');
+      // the administration sets any teacher's availability; a signed-in teacher sets their own (not the consultation hour)
+      const u = requireRole('admin', 'teacher');
+      if (u.role === 'teacher' && u.teacherId !== teacherId) throw new ApiError(403, 'Forbidden');
       const t = store.dataset.teachers.find((x) => x.id === teacherId);
       if (!t) throw new ApiError(404, 'Not found');
-      Object.assign(t, data);
+      const { consultation, ...rest } = data;
+      Object.assign(t, rest);
+      if (u.role === 'admin') t.consultation = consultation;
+      if (data.unavailableOn && !data.unavailableOn.length) delete t.unavailableOn;
+      if (u.role === 'teacher') notify('availability', { name: u.name, teacherId }, ['admin']);
       persist();
       return delay(t);
     },

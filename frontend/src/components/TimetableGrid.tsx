@@ -75,6 +75,8 @@ export interface GridProps {
   today?: Day;
   /** Days off this week (by day index): the column shows the holiday instead of lessons. */
   dayOff?: (string | undefined)[];
+  /** A line under the day's name (e.g. its date, when the grid is one particular week). */
+  dayNote?: (day: Day) => ReactNode;
   /** Enables drag & drop; called with the new slot. */
   onMove?: (lessonId: string, day: Day, slot: SlotIndex) => void;
   /** Tells the grid whether dropping a lesson at a slot would be conflict-free. */
@@ -82,6 +84,11 @@ export interface GridProps {
   onLessonClick?: (lesson: Lesson) => void;
   cellClass?: (day: Day, slot: SlotIndex) => string;
   onCellClick?: (day: Day, slot: SlotIndex) => void;
+  /** Mouse pressed on a cell, and the pointer entering a cell with the button still down (painting by dragging). */
+  /** Cells look clickable even without onCellClick (used with press/drag). */
+  selectable?: boolean;
+  onCellPress?: (day: Day, slot: SlotIndex) => void;
+  onCellDrag?: (day: Day, slot: SlotIndex) => void;
   renderCell?: (day: Day, slot: SlotIndex) => ReactNode;
   /** The day columns; the weekly days by default (weekDays). */
   days?: Day[];
@@ -98,11 +105,15 @@ export function TimetableGrid({
   dimOthers = false,
   today,
   dayOff,
+  dayNote,
   onMove,
   canDrop,
   onLessonClick,
   cellClass,
   onCellClick,
+  selectable,
+  onCellPress,
+  onCellDrag,
   renderCell,
   days: shownDays,
   className = '',
@@ -123,6 +134,7 @@ export function TimetableGrid({
         {days.map((d) => (
           <div key={d} className={`tt-head ${d === today ? 'today' : ''} ${dayOff?.[d] ? 'holiday-col' : ''}`}>
             {t(`day.${d}` as 'day.0')}
+            {dayNote && <div className="small tt-head-note">{dayNote(d)}</div>}
             {dayOff?.[d] && <div className="small">{dayOff[d]}</div>}
           </div>
         ))}
@@ -139,8 +151,18 @@ export function TimetableGrid({
               return (
                 <div
                   key={key}
-                  className={`tt-cell ${dropState} ${cellClass?.(day, slot) ?? ''} ${onCellClick ? 'selectable' : ''} ${dayOff?.[day] ? 'day-off' : ''}`}
+                  className={`tt-cell ${dropState} ${cellClass?.(day, slot) ?? ''} ${onCellClick || selectable ? 'selectable' : ''} ${dayOff?.[day] ? 'day-off' : ''}`}
                   onClick={onCellClick ? () => onCellClick(day, slot) : undefined}
+                  onMouseDown={
+                    onCellPress
+                      ? (e) => {
+                          if (e.button !== 0) return;
+                          e.preventDefault(); // no text selection while dragging
+                          onCellPress(day, slot);
+                        }
+                      : undefined
+                  }
+                  onMouseEnter={onCellDrag ? (e) => e.buttons === 1 && onCellDrag(day, slot) : undefined}
                   onDragOver={
                     onMove
                       ? (e) => {

@@ -69,6 +69,20 @@ function load(fresh = false): Promise<Cached> {
   return req;
 }
 
+// Every list and drop-down reads the dataset, so sorting here puts them all in alphabetical order.
+const byName = <T extends { name: string }>(list: T[]) =>
+  [...list].sort((a, b) => a.name.localeCompare(b.name, 'ro', { sensitivity: 'base', numeric: true }));
+function alphabetical(d: Dataset): Dataset {
+  return {
+    ...d,
+    teachers: byName(d.teachers),
+    rooms: byName(d.rooms),
+    groups: byName(d.groups),
+    subjects: byName(d.subjects),
+    streams: byName(d.streams),
+  };
+}
+
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const signedIn = !!user;
@@ -93,10 +107,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
   const institutionTimeFormat: TimeFormat = raw?.settings.timeFormat ?? '24h';
   // Everything that shows times reads settings.timeFormat, so the personal choice is applied there
-  const dataset = useMemo(
-    () => (raw && myTimeFormat ? { ...raw, settings: { ...raw.settings, timeFormat: myTimeFormat } } : raw),
-    [raw, myTimeFormat],
-  );
+  const dataset = useMemo(() => {
+    if (!raw) return raw;
+    const sorted = alphabetical(raw);
+    return myTimeFormat ? { ...sorted, settings: { ...sorted.settings, timeFormat: myTimeFormat } } : sorted;
+  }, [raw, myTimeFormat]);
   const [published, setPublished] = useState<Timetable | null>(cached?.published ?? null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [changes, setChanges] = useState<ScheduleChange[]>(cached?.changes ?? []);

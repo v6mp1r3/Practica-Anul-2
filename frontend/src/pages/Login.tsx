@@ -8,8 +8,8 @@ import type { Role } from '../domain/types';
 import { useI18n } from '../i18n';
 import { useAuth } from '../state/auth';
 
-// only administrators sign in; anyone else uses the public timetable
-export const homeFor = (role: Role) => (role === 'admin' ? '/admin' : '/studenti');
+// administrators go to their dashboard, teachers to their availability; students use the public timetable
+export const homeFor = (role: Role) => (role === 'admin' ? '/admin' : role === 'teacher' ? '/my-availability' : '/studenti');
 
 export default function Login() {
   const { user, login } = useAuth();

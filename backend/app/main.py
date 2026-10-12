@@ -11,7 +11,7 @@ from . import errors
 from . import dataset  # noqa: F401  (registers the dataset with memo)
 from .memo import forget_all
 from .config import DEV_SECRET, get_config
-from .routers import auth, changes, data, exams, generation, notifications, timetables
+from .routers import auth, changes, data, exams, generation, notifications, timetables, users
 from .services.generation import mark_orphans
 
 log = logging.getLogger("eduschedule")
@@ -46,7 +46,7 @@ def create_app() -> FastAPI:
         return response
 
     api = APIRouter(prefix="/api")
-    for module in (auth, data, timetables, generation, changes, notifications, exams):
+    for module in (auth, data, timetables, generation, changes, notifications, exams, users):
         api.include_router(module.router)
 
     @api.get("/health", tags=["health"])

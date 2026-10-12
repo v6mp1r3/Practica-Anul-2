@@ -1,13 +1,21 @@
 import { OtherFaculty, facultyView, useAdminScope } from '../../components/FacultyFilter';
 import { AvailabilityPicker } from '../../components/AvailabilityPicker';
 import { ExamAvailabilityPicker } from '../../components/ExamAvailabilityPicker';
+import { TeacherAccount } from '../../components/TeacherAccount';
+import { WeekAvailability } from '../../components/WeekAvailability';
 import { CrudPage } from '../../components/CrudPage';
 import { useState } from 'react';
 import { Select } from '../../components/Select';
 import { Field } from '../../components/ui';
-import type { ActivityType, Teacher } from '../../domain/types';
+import { range, slotKey } from '../../domain/slots';
+import type { ActivityType, Settings, Teacher } from '../../domain/types';
+
+/** Every pair of Saturday and Sunday (days 5 and 6). */
+const weekendSlots = (settings: Settings) =>
+  [5, 6].filter((d) => d < settings.workingDays).flatMap((d) => range(settings.slots.length).map((s) => slotKey(d, s)));
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
+import { toDateString } from '../../domain/changes';
 
 const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab', 'project'];
 
@@ -36,6 +44,7 @@ export default function Teachers() {
     .sort((a, b) => (order === 'az' ? 1 : -1) * a.name.localeCompare(b.name, 'ro'));
   const filtering = !!(title || department || activity);
 
+  const today = toDateString(new Date());
   const plannedLoad = (id: string) => dataset.assignments.filter((a) => a.teacherId === id).reduce((n, a) => n + a.pairsPerWeek, 0);
 
   return (
@@ -106,6 +115,7 @@ export default function Teachers() {
       columns={[
         {
           label: t('common.name'),
+          sort: (x) => x.name,
           render: (x) => (
             <div>
               <strong>{x.name}</strong>
@@ -114,7 +124,7 @@ export default function Teachers() {
             </div>
           ),
         },
-        { label: t('teachers.department'), render: (x) => x.department },
+        { label: t('teachers.department'), sort: (x) => x.department, render: (x) => x.department },
         {
           label: t('teachers.types'),
           render: (x) => (
@@ -129,6 +139,7 @@ export default function Teachers() {
         },
         {
           label: t('teachers.load'),
+          sort: (x) => plannedLoad(x.id),
           render: (x) => {
             const load = plannedLoad(x.id);
             return (
@@ -138,8 +149,29 @@ export default function Teachers() {
             );
           },
         },
-        { label: t('teachers.unavailable'), render: (x) => (x.unavailable.length ? x.unavailable.length : '—') },
-        { label: t('examAvail.column'), render: (x) => (x.examUnavailable?.length ? x.examUnavailable.length : '—') },
+        {
+          label: t('teachers.unavailable'),
+          sort: (x) => x.unavailable.length,
+          render: (x) => {
+            // upcoming one-off "can't that day" pairs, next to the weekly ones
+            const soon = (x.unavailableOn ?? []).filter((k) => k.slice(0, 10) >= today).length;
+            return (
+              <span className="row" style={{ gap: 6 }}>
+                {x.unavailable.length || '—'}
+                {soon > 0 && (
+                  <span className="badge danger" title={t('teachers.datedHint')}>
+                    +{soon} {t('teachers.dated')}
+                  </span>
+                )}
+              </span>
+            );
+          },
+        },
+        {
+          label: t('examAvail.column'),
+          sort: (x) => x.examUnavailable?.length ?? 0,
+          render: (x) => (x.examUnavailable?.length ? x.examUnavailable.length : '—'),
+        },
       ]}
       newItem={(): Omit<Teacher, 'id'> => ({
         name: '',
@@ -149,7 +181,8 @@ export default function Teachers() {
         email: '',
         maxPairsPerWeek: 12,
         activityTypes: ['lecture', 'seminar'],
-        unavailable: [],
+        // a new teacher doesn't teach on Saturday and Sunday unless the administration changes it
+        unavailable: weekendSlots(dataset.settings),
         preferred: [],
       })}
       validate={(d) => (!d.name.trim() ? t('teachers.nameRequired') : d.activityTypes.length === 0 ? t('teachers.typeRequired') : null)}
@@ -207,6 +240,20 @@ export default function Teachers() {
               onChange={(v) => set(v)}
             />
           </div>
+          {/* one particular week (what the teacher marks on their own page): the timetable stays as it is */}
+          {(d as Partial<Teacher>).id && (
+            <div>
+              <h3 style={{ marginBottom: 4 }}>{t('teachers.datedTitle')}</h3>
+              <p className="small muted" style={{ marginBottom: 8 }}>
+                {t('teachers.datedFormHint')}
+              </p>
+              <WeekAvailability
+                teacherId={(d as Partial<Teacher>).id!}
+                value={d.unavailableOn ?? []}
+                onChange={(v) => set({ unavailableOn: v })}
+              />
+            </div>
+          )}
           {/* separate: the exam period has no classes, so the weekly availability doesn't apply */}
           <div>
             <h3 style={{ marginBottom: 4 }}>{t('examAvail.title')}</h3>
@@ -214,6 +261,13 @@ export default function Teachers() {
               {t('examAvail.hint')}
             </p>
             <ExamAvailabilityPicker dataset={dataset} value={d.examUnavailable ?? []} onChange={(v) => set({ examUnavailable: v })} />
+          </div>
+          <div>
+            <h3 style={{ marginBottom: 4 }}>{t('teacherAccount.title')}</h3>
+            <p className="small muted" style={{ marginBottom: 8 }}>
+              {t('teacherAccount.hint')}
+            </p>
+            <TeacherAccount teacherId={(d as Partial<Teacher>).id} name={d.name} email={d.email} />
           </div>
         </div>
       )}

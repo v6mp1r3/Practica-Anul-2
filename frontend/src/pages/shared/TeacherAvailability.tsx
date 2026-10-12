@@ -4,7 +4,7 @@ import { PageHeader, Segmented } from '../../components/ui';
 import { teacherStateAt, type TeacherSlotState } from '../../domain/availability';
 import { paritiesOverlap } from '../../domain/slots';
 import type { Day, Parity } from '../../domain/types';
-import { dayIndexOf, gridDays, sessionPairsThisWeek, weekParityOf } from '../../domain/views';
+import { datesOfWeek, dayIndexOf, gridDays, sessionPairsThisWeek, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
@@ -30,6 +30,9 @@ export default function TeacherAvailability() {
   // this week's frecvență redusă pairs count too, on their day (weekends included for those who teach them)
   const showsThisWeek = week === 'weekly' || !dataset.settings.weekParity || week === weekParityOf(new Date());
   const lessons = showsThisWeek ? [...all.filter((l) => !l.date), ...sessionPairsThisWeek(all)] : all;
+  // this week's dates: a teacher's "can't that day" counts on them
+  const dates = showsThisWeek ? datesOfWeek() : [];
+  const stateAt = (id: string, d: Day, s: number) => teacherStateAt(index, lessons, id, d, s, week, dates[d]);
   const days = gridDays(
     dataset.settings,
     all.filter((l) => index.assignmentOf(l)?.teacherId === teacherId),
@@ -48,7 +51,7 @@ export default function TeacherAvailability() {
       (l) => !l.date && l.day === d && l.slot === s && paritiesOverlap(l.parity, week) && index.assignmentOf(l)?.teacherId === teacherId,
     );
   const renderCell = (d: Day, s: number) => {
-    const state = teacherStateAt(index, lessons, teacherId, d, s, week);
+    const state = stateAt(teacherId, d, s);
     if (state !== 'teaching') return label[state];
     return lessonsAt(d, s).map((l) => {
       const a = index.assignmentOf(l)!;
@@ -75,7 +78,7 @@ export default function TeacherAvailability() {
   const today = dayIndexOf(now);
   const freeNow =
     currentSlot >= 0 && today < dataset.settings.workingDays
-      ? teachers.filter((x) => ['free', 'consultation'].includes(teacherStateAt(index, lessons, x.id, today, currentSlot, week)))
+      ? teachers.filter((x) => ['free', 'consultation'].includes(stateAt(x.id, today, currentSlot)))
       : null;
 
   return (
@@ -146,7 +149,7 @@ export default function TeacherAvailability() {
           lessons={[]}
           days={days}
           today={today}
-          cellClass={(d, s) => CELL[teacherStateAt(index, lessons, teacherId, d, s, week)]}
+          cellClass={(d, s) => CELL[stateAt(teacherId, d, s)]}
           renderCell={renderCell}
         />
       </div>

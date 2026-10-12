@@ -10,6 +10,7 @@ from ..dataset import read_dataset
 from ..deps import CurrentUser, current_user, get_conn, require_admin
 from ..errors import ApiError
 from ..settings_io import save_settings
+from ..services.notify import notify
 from ..util import pid
 
 router = APIRouter(tags=["data"])
@@ -159,6 +160,8 @@ def _register(name: str) -> None:
         # the database removes the assignments that point at a deleted teacher, subject, group or stream
         if not conn.execute(text(f"delete from {TABLES[name]} where id = :id"), {"id": rid}).rowcount:
             raise ApiError(404, "Not found")
+        if name == "groups":  # an automatic stream left without groups goes with them
+            conn.execute(text("delete from stream s where not exists (select 1 from stream_group g where g.stream_id = s.id)"))
         conn.commit()
         return Response(status_code=204)
 
@@ -209,9 +212,21 @@ def import_subjects(data: dict = Body(...), _: CurrentUser = Depends(require_adm
 
 
 @router.put("/teachers/{teacher_id}/availability")
-def put_availability(teacher_id: str, data: dict = Body(...), user: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+def put_availability(teacher_id: str, data: dict = Body(...), user: CurrentUser = Depends(current_user), conn: Connection = Depends(get_conn)):
+    """An administrator sets any of their faculty's teachers; a teacher sets their own (not the consultation hour)."""
     tid = pid(teacher_id)
-    _own_faculty_record(conn, user, "teacher", tid, None)
+    if user.role == "teacher":
+        if user.teacher_id != tid:
+            raise ApiError(403, "Forbidden")
+        before = repo.load_teachers(conn, [tid])[0]
+        data = {**data, "consultation": before.get("consultation")}
+    elif user.role == "admin":
+        _own_faculty_record(conn, user, "teacher", tid, None)
+    else:
+        raise ApiError(403, "Forbidden")
     repo.save_availability(conn, tid, data)
+    if user.role == "teacher":
+        # the administrators see that it changed (and look before the next generation)
+        notify(conn, "availability", {"name": user.name, "teacherId": str(tid)}, roles=["admin"])
     conn.commit()
     return repo.load_teachers(conn, [tid])[0]

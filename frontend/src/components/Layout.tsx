@@ -44,6 +44,20 @@ const NAV: Partial<Record<Role, { section?: MessageKey; items: NavItem[] }[]>> =
   ],
 };
 
+/** A teacher with an account: their availability, then the same pages as everyone. */
+NAV.teacher = [
+  { section: 'nav.mine', items: [{ to: '/my-availability', label: 'nav.myAvailability', icon: 'calendar' }] },
+  {
+    section: 'nav.menu',
+    items: [
+      { to: '/studenti', label: 'nav.studentSchedule', icon: 'layers' },
+      { to: '/profesori', label: 'nav.teacherSchedule', icon: 'user' },
+      { to: '/rooms', label: 'nav.freeRooms', icon: 'door' },
+      { to: '/teachers', label: 'nav.teacherAvailability', icon: 'users' },
+    ],
+  },
+];
+
 /** Without signing in: the timetable, free rooms and teachers. */
 const PUBLIC_NAV: { section?: MessageKey; items: NavItem[] }[] = [
   {
@@ -126,7 +140,7 @@ export function Layout() {
               </NavLink>
             </>
           ) : (
-            // students and teachers don't need an account; only the administration signs in
+            // students don't need an account; the administration and teachers (for their availability) sign in
             <NavLink to="/login" className="user-chip admin-login">
               <Icon name="lock" size={16} />
               <span className="small">{t('nav.adminLogin')}</span>

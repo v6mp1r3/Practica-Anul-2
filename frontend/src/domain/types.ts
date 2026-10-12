@@ -196,6 +196,12 @@ export interface Teacher {
    * before 13:00, "2026-12-15|pm" from 13:00.
    */
   examUnavailable?: string[];
+  /**
+   * Pairs the teacher can't hold on one particular date, on top of the weekly
+   * availability: "2026-10-19:2" = pair 3 on 19 October. Set by the teacher
+   * (or an administrator); the timetable stays as it is.
+   */
+  unavailableOn?: string[];
 }
 
 export interface Room {
@@ -230,6 +236,13 @@ export interface Group {
   subgroups: number;
   /** Language of instruction (default Romanian). */
   language?: Language;
+  /** A dual group is one group made of these two parts (named like "AI-263 R-264"); name and program follow from them; the group has one size. */
+  dualParts?: DualPart[];
+}
+
+export interface DualPart {
+  name: string;
+  program: string;
 }
 
 /**

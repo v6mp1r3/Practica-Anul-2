@@ -229,6 +229,19 @@ create table teacher_exam_unavailability (
   primary key (teacher_id, date, part)
 );
 
+-- pairs a teacher can't hold on one particular date (set by the teacher or an administrator); the timetable stays as it is
+create table teacher_date_unavailability (
+  teacher_id bigint not null references teacher (id) on delete cascade,
+  date       date not null,
+  slot_index smallint not null references time_slot (slot_index),
+  primary key (teacher_id, date, slot_index)
+);
+
+-- a 'teacher' account belongs to one teacher (declared here: app_user comes before teacher)
+alter table app_user add column teacher_id bigint references teacher (id) on delete cascade;
+create unique index app_user_one_per_teacher on app_user (teacher_id) where teacher_id is not null;
+alter table app_user add constraint app_user_teacher_check check (role <> 'teacher' or teacher_id is not null);
+
 create table room (
   id         bigint generated always as identity primary key,
   name       text not null,
@@ -268,6 +281,16 @@ create table student_group (
   check ((cycle = 'licenta' and program_years between 3 and 6) or (cycle = 'master' and program_years between 1 and 2))
 );
 create index student_group_faculty_idx on student_group (faculty_id);
+
+-- the two parts of a dual group, e.g. AI-263 + R-264 (a dual group has exactly two, enforced by the API)
+create table group_dual (
+  group_id bigint not null references student_group (id) on delete cascade,
+  position smallint not null check (position in (1, 2)),
+  name     text not null check (name = upper(trim(name)) and name <> ''),
+  program  text not null default '',
+  primary key (group_id, position)
+);
+create unique index group_dual_name_unique on group_dual (name);   -- a name is a part of one dual group only
 
 -- internships, final-year exam sessions, plagiarism checks and licence exams of particular groups
 create table group_period (
@@ -419,9 +442,13 @@ create function ensure_group_clusters() returns trigger language plpgsql as $$
 begin
   insert into cluster (kind, cycle, year, speciality, language, study_form)
   values ('year', new.cycle, new.year, null, null, null),
-         ('speciality', new.cycle, new.year, speciality_of(new.name), null, null),
          ('language', null, null, null, new.language, null),
          ('form', null, null, null, null, new.study_form)
+  on conflict do nothing;
+  -- a dual group is named after two groups ("AI-263 R-264"): it belongs to the speciality of each
+  insert into cluster (kind, cycle, year, speciality, language, study_form)
+  select 'speciality', new.cycle, new.year, speciality_of(w), null, null
+  from regexp_split_to_table(trim(new.name), '\s+') w
   on conflict do nothing;
   return new;
 end $$;
@@ -579,7 +606,7 @@ create table exam_event (
   plan_id     bigint not null references exam_plan (id) on delete cascade,
   kind        exam_event_kind not null,
   subject_id  bigint not null references subject (id) on delete restrict,
-  group_id    bigint not null references student_group (id) on delete restrict,
+  group_id    bigint not null references student_group (id) on delete cascade,     -- a deleted group leaves the exam timetable
   teacher_id  bigint not null references teacher (id) on delete restrict,
   room_id     bigint not null references room (id) on delete restrict,
   event_date  date not null,

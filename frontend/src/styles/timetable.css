@@ -312,3 +312,21 @@
     padding: 10px 8px;
   }
 }
+
+/* A teacher's own week (Disponibilitatea mea): their pairs are locked, free pairs can be marked */
+.tt-head-note {
+  font-weight: 400;
+  opacity: 0.75;
+}
+.avail .tt-cell.state-lesson {
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+.avail .tt-cell.state-past {
+  background: var(--surface-2);
+}
+.avail .tt-cell.selectable:is(.state-lesson, .state-past, .state-off, .state-consultation) {
+  cursor: default;
+}

@@ -87,6 +87,7 @@ export default function Rooms() {
       columns={[
         {
           label: t('rooms.name'),
+          sort: (x) => x.name,
           render: (x) => (
             <span>
               <strong>{x.name}</strong>
@@ -94,8 +95,8 @@ export default function Rooms() {
             </span>
           ),
         },
-        { label: t('rooms.building'), render: (x) => x.building },
-        { label: t('rooms.capacity'), render: (x) => x.capacity },
+        { label: t('rooms.building'), sort: (x) => x.building, render: (x) => x.building },
+        { label: t('rooms.capacity'), sort: (x) => x.capacity, render: (x) => x.capacity },
         { label: t('rooms.equipment'), render: (x) => <span className="small muted">{equipment.list(x.equipment) || '—'}</span> },
         {
           label: t('rooms.preferredCount'),

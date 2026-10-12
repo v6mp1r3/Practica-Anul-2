@@ -3,7 +3,7 @@ import { useAdminScope } from '../../components/FacultyFilter';
 import { ClusterManager, useClusterLabel } from '../../components/ClusterPicker';
 import { CrudPage } from '../../components/CrudPage';
 import { Empty, Field, PageHeader } from '../../components/ui';
-import { STUDY_FORMS, type Group, type StudyCycle, type StudyForm } from '../../domain/types';
+import { STUDY_FORMS, type DualPart, type Group, type StudyCycle, type StudyForm } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
@@ -12,6 +12,10 @@ import { Fragment, useState, type ReactNode } from 'react';
 import { specialtyOf as prefixOf } from '../../domain/specialty';
 
 const SHOWN_GROUPS = 8;
+const emptyPart: DualPart = { name: '', program: '' };
+// two different named groups (the students are counted once, on the dual group)
+const dualValid = (parts?: DualPart[]) =>
+  !!parts && parts.length === 2 && parts.every((p) => p.name.trim()) && parts[0].name.trim() !== parts[1].name.trim();
 // how long a year's rows take to open or close (as .row-grow in components.css)
 const ROW_MS = 300;
 
@@ -34,28 +38,30 @@ export default function Groups() {
   const { clusters: all = [] } = dataset;
   const clusterLabel = useClusterLabel();
   const [managing, setManaging] = useState(false);
-  // years whose specialty rows are open (closed at first, so the table stays short)
-  const [openYears, setOpenYears] = useState<Set<number>>(new Set());
-  // a year's specialty rows grow open from nothing and shrink back: they are on the page while open or closing
-  // ("mounted"), and "grown" one frame after they were put there, so the height has something to animate from
-  const [mountedYears, setMountedYears] = useState<Set<number>>(new Set());
-  const [grownYears, setGrownYears] = useState<Set<number>>(new Set());
-  const without = (set: Set<number>, y: number) => {
+  // What is unfolded: a section ("sec:year", "sec:language", "sec:form") or a year's specialties ("year:2").
+  // Everything starts closed, so the table stays short. Folded rows grow open from nothing and shrink back:
+  // they are on the page while open or closing ("mounted"), and "grown" one frame after they were put
+  // there, so the height has something to animate from.
+  const [opened, setOpened] = useState<Set<string>>(new Set());
+  const [mounted, setMounted] = useState<Set<string>>(new Set());
+  const [grown, setGrown] = useState<Set<string>>(new Set());
+  const without = (set: Set<string>, key: string) => {
     const next = new Set(set);
-    next.delete(y);
+    next.delete(key);
     return next;
   };
-  const toggleYear = (y: number) => {
-    if (openYears.has(y)) {
-      setOpenYears((cur) => without(cur, y));
-      setGrownYears((cur) => without(cur, y));
-      window.setTimeout(() => setMountedYears((cur) => without(cur, y)), ROW_MS);
+  const toggle = (key: string) => {
+    if (opened.has(key)) {
+      setOpened((cur) => without(cur, key));
+      setGrown((cur) => without(cur, key));
+      window.setTimeout(() => setMounted((cur) => without(cur, key)), ROW_MS);
       return;
     }
-    setOpenYears((cur) => new Set(cur).add(y));
-    setMountedYears((cur) => new Set(cur).add(y));
-    requestAnimationFrame(() => requestAnimationFrame(() => setGrownYears((cur) => new Set(cur).add(y))));
+    setOpened((cur) => new Set(cur).add(key));
+    setMounted((cur) => new Set(cur).add(key));
+    requestAnimationFrame(() => requestAnimationFrame(() => setGrown((cur) => new Set(cur).add(key))));
   };
+  const yearKey = (y: number | undefined) => `year:${y ?? 1}`;
   const specCount = (y: number) =>
     clusters.filter(({ c, groups }) => c.kind === 'speciality' && (c.year ?? 1) === y && groups.length > 0).length;
   // clusters whose groups are all shown
@@ -133,10 +139,12 @@ export default function Groups() {
             </>
           }
           itemLabel={(x) => x.name}
+          confirmDeleteText={(x) => t('groups.confirmDelete', { name: x.name })}
           searchText={(x) => `${x.name} ${x.program} ${x.faculty ?? ''}`}
           columns={[
             {
               label: t('groups.name'),
+              sort: (x) => x.name,
               render: (x) => (
                 <span>
                   <strong>{x.name}</strong>
@@ -149,9 +157,10 @@ export default function Groups() {
                 </span>
               ),
             },
-            { label: t('groups.program'), render: (x) => x.program },
+            { label: t('groups.program'), sort: (x) => x.program, render: (x) => x.program },
             {
               label: t('groups.studyForm'),
+              sort: (x) => t(`form.${x.studyForm}`),
               render: (x) => (
                 <span className={`badge ${x.studyForm === 'full' ? '' : x.studyForm === 'reduced' ? 'warning' : 'primary'}`}>
                   {t(`form.${x.studyForm}`)}
@@ -160,6 +169,7 @@ export default function Groups() {
             },
             {
               label: t('groups.year'),
+              sort: (x) => x.year,
               render: (x) => (
                 <span>
                   {x.year}
@@ -167,7 +177,7 @@ export default function Groups() {
                 </span>
               ),
             },
-            { label: t('groups.size'), render: (x) => x.size },
+            { label: t('groups.size'), sort: (x) => x.size, render: (x) => x.size },
           ]}
           newItem={(): Omit<Group, 'id'> => ({
             name: '',
@@ -185,28 +195,32 @@ export default function Groups() {
             faculty: scope || dataset.settings.faculties[0],
           })}
           validate={(d) =>
-            !d.name.trim()
-              ? t('groups.nameRequired')
-              : d.size < 1
-                ? t('groups.sizeRequired')
-                : d.programYears && d.year > d.programYears
-                  ? t('groups.yearOver')
-                  : // every group belongs to a faculty, whose administrator schedules it
-                    dataset.settings.faculties.length && !d.faculty
-                    ? t('groups.facultyRequired')
-                    : null
+            d.studyForm === 'dual' && !dualValid(d.dualParts)
+              ? t('groups.dualRequired')
+              : !d.name.trim()
+                ? t('groups.nameRequired')
+                : d.size < 1
+                  ? t('groups.sizeRequired')
+                  : d.programYears && d.year > d.programYears
+                    ? t('groups.yearOver')
+                    : // every group belongs to a faculty, whose administrator schedules it
+                      dataset.settings.faculties.length && !d.faculty
+                      ? t('groups.facultyRequired')
+                      : null
           }
           renderForm={(d, set) => (
             <div className="form-grid">
-              <Field label={t('groups.name')}>
-                <input
-                  className="input"
-                  value={d.name}
-                  onChange={(e) => set({ name: e.target.value.toUpperCase() })}
-                  placeholder="FAF-251"
-                  autoFocus
-                />
-              </Field>
+              {d.studyForm !== 'dual' && (
+                <Field label={t('groups.name')}>
+                  <input
+                    className="input"
+                    value={d.name}
+                    onChange={(e) => set({ name: e.target.value.toUpperCase() })}
+                    placeholder="FAF-251"
+                    autoFocus
+                  />
+                </Field>
+              )}
               <Field label={t('groups.cycle')}>
                 <Select
                   className="select"
@@ -230,6 +244,7 @@ export default function Groups() {
                   onChange={(e) =>
                     set({
                       studyForm: e.target.value as StudyForm,
+                      ...(e.target.value === 'dual' ? { dualParts: d.dualParts ?? [emptyPart, emptyPart] } : { dualParts: undefined }),
                       // frecvență redusă licență lasts 5 years
                       ...(d.cycle !== 'master' ? { programYears: e.target.value === 'reduced' ? 5 : 4 } : {}),
                     })
@@ -242,9 +257,44 @@ export default function Groups() {
                   ))}
                 </Select>
               </Field>
-              <Field label={t('groups.program')}>
-                <input className="input" value={d.program} onChange={(e) => set({ program: e.target.value })} />
-              </Field>
+              {d.studyForm === 'dual' &&
+                [0, 1].map((i) => {
+                  const parts = [d.dualParts?.[0] ?? emptyPart, d.dualParts?.[1] ?? emptyPart];
+                  // the dual group is named after both ("AI-263 R-264") ; it has one number of students, set below
+                  const change = (patch: Partial<DualPart>) => {
+                    const next = parts.map((p, j) => (j === i ? { ...p, ...patch } : p));
+                    set({
+                      dualParts: next,
+                      name: next
+                        .map((p) => p.name.trim())
+                        .filter(Boolean)
+                        .join(' '),
+                      program: [...new Set(next.map((p) => p.program.trim()).filter(Boolean))].join(' + '),
+                    });
+                  };
+                  const p = parts[i];
+                  return (
+                    <Fragment key={i}>
+                      <Field label={t(i === 0 ? 'groups.dualFirst' : 'groups.dualSecond')}>
+                        <input
+                          className="input"
+                          value={p.name}
+                          placeholder="AI-263"
+                          autoFocus={i === 0}
+                          onChange={(e) => change({ name: e.target.value.toUpperCase() })}
+                        />
+                      </Field>
+                      <Field label={t('groups.program')}>
+                        <input className="input" value={p.program} onChange={(e) => change({ program: e.target.value })} />
+                      </Field>
+                    </Fragment>
+                  );
+                })}
+              {d.studyForm !== 'dual' && (
+                <Field label={t('groups.program')}>
+                  <input className="input" value={d.program} onChange={(e) => set({ program: e.target.value })} />
+                </Field>
+              )}
               <Field label={t('groups.programYears')}>
                 <Select
                   className="select"
@@ -303,32 +353,57 @@ export default function Groups() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>{t('clusters.title')}</th>
+                    {/* fixed widths: the columns stay put while sections open and close */}
+                    <th style={{ width: '24%' }}>{t('clusters.title')}</th>
                     <th>{t('groups.groups')}</th>
-                    <th style={{ whiteSpace: 'nowrap' }}>{t('clusters.groupCount')}</th>
-                    <th>{t('groups.size')}</th>
+                    <th style={{ width: '11%', whiteSpace: 'nowrap' }}>{t('clusters.groupCount')}</th>
+                    <th style={{ width: '9%' }}>{t('groups.size')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {/* one section per kind (year, language, form, own), each with a line saying what it groups by */}
                   {(['year', 'language', 'form', 'custom'] as const).map((kind) => {
-                    const rows = clusters.filter(
-                      ({ c }) => c.kind === kind || (kind === 'year' && c.kind === 'speciality' && mountedYears.has(c.year ?? 1)),
-                    );
-                    if (!rows.length) return null;
+                    // the year, language and form sections open with their arrow; your own clusters are always shown
+                    const folds = kind !== 'custom';
+                    const sec = `sec:${kind}`;
+                    const own = clusters.filter(({ c }) => c.kind === kind);
+                    if (!own.length) return null;
+                    const rows =
+                      folds && !mounted.has(sec)
+                        ? []
+                        : clusters.filter(
+                            ({ c }) => c.kind === kind || (kind === 'year' && c.kind === 'speciality' && mounted.has(yearKey(c.year))),
+                          );
                     return (
                       <Fragment key={kind}>
                         <tr className="cluster-section">
                           <td colSpan={4}>
-                            <strong>{t(`clusters.section.${kind}`)}</strong>
+                            {folds ? (
+                              <button
+                                type="button"
+                                className="cluster-year-btn cluster-section-btn"
+                                aria-expanded={opened.has(sec)}
+                                onClick={() => toggle(sec)}
+                              >
+                                <span className={`chev ${opened.has(sec) ? 'open' : ''}`} aria-hidden="true">
+                                  ›
+                                </span>
+                                <strong>{t(`clusters.section.${kind}`)}</strong>
+                                <span className="badge">{own.length}</span>
+                              </button>
+                            ) : (
+                              <strong>{t(`clusters.section.${kind}`)}</strong>
+                            )}
                             <span className="small muted"> — {t(`clusters.section.${kind}.hint`)}</span>
                           </td>
                         </tr>
                         {rows.map(({ c, groups }) => {
-                          // a specialty row's cells grow from no height (see .row-grow)
+                          // a folded row's cells grow from no height (see .row-grow): a section's rows with the
+                          // section, a specialty's with its section and its year
                           const sub = c.kind === 'speciality';
+                          const isGrown = grown.has(sec) && (!sub || grown.has(yearKey(c.year)));
                           const cell = (content: ReactNode) =>
-                            sub ? (
+                            folds ? (
                               <div className="row-grow">
                                 <div>
                                   <div className="row-pad">{content}</div>
@@ -338,18 +413,18 @@ export default function Groups() {
                               content
                             );
                           return (
-                            <tr key={c.id} className={sub ? `cluster-sub ${grownYears.has(c.year ?? 1) ? 'grown' : ''}` : ''}>
+                            <tr key={c.id} className={folds ? `cluster-fold ${sub ? 'cluster-sub' : ''} ${isGrown ? 'grown' : ''}` : ''}>
                               <td>
                                 {cell(
                                   c.kind === 'year' ? (
                                     <button
                                       type="button"
                                       className="cluster-year-btn"
-                                      aria-expanded={openYears.has(c.year ?? 1)}
+                                      aria-expanded={opened.has(yearKey(c.year))}
                                       title={t('clusters.showSpecs')}
-                                      onClick={() => toggleYear(c.year ?? 1)}
+                                      onClick={() => toggle(yearKey(c.year))}
                                     >
-                                      <span className={`chev ${openYears.has(c.year ?? 1) ? 'open' : ''}`} aria-hidden="true">
+                                      <span className={`chev ${opened.has(yearKey(c.year)) ? 'open' : ''}`} aria-hidden="true">
                                         ›
                                       </span>
                                       <strong>{clusterLabel(c)}</strong>
