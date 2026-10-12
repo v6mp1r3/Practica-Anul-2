@@ -950,15 +950,18 @@ table.table {
 .xw {
   display: grid;
   grid-template-rows: auto var(--h);
-  min-width: 920px;
+  /* as wide as its days need (a busy day is wider), so the page scrolls sideways instead of cutting days off */
+  width: max-content;
+  min-width: max(100%, 920px);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  overflow: hidden;
+  /* clip, not hidden: hidden would stop the day labels sticking while scrolling sideways */
+  overflow: clip;
 }
 .xw-head {
   padding: 12px 8px;
-  text-align: center;
+  text-align: left;
   font-size: 13px;
   color: var(--text-2);
   border-bottom: 1px solid var(--border);
@@ -966,6 +969,14 @@ table.table {
 }
 .xw-head:first-child {
   border-left: none;
+}
+.xw-head-label {
+  position: sticky;
+  left: 8px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  align-items: baseline;
 }
 .xw-head strong {
   color: var(--text);
@@ -1824,13 +1835,25 @@ tr.cluster-sub .badge {
   background: var(--surface);
 }
 tr.cluster-section td {
-  background: var(--surface);
+  /* no background of its own: the card's is the same, and a square one would cover its rounded corners */
+  background: transparent;
   padding-top: 18px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border-strong);
 }
 .cluster-year-btn {
   white-space: nowrap;
+}
+/* a section's heading opens its clusters: the arrow and title as large as the heading was */
+.cluster-section-btn {
+  gap: 8px;
+}
+.cluster-section-btn {
+  align-items: center;
+}
+/* a closed section at the very bottom: some room before the card's edge */
+.table tr.cluster-section:last-child td {
+  padding-bottom: 16px;
 }
 
 /* ---------- motion: opening and closing smoothly (one gentle curve everywhere) ---------- */
@@ -1881,16 +1904,21 @@ tr.cluster-section td {
 .cluster-year-btn:hover .chev {
   color: var(--text);
 }
-/* Clustere: a specialty row grows from no height to its own (its cells' padding moves inside, so it can be 0) */
-tr.cluster-sub > td {
+/* Clustere: a folded row (a section's, or a year's specialty) grows from no height to its own
+   (its cells' padding moves inside, so it can be 0) */
+tr.cluster-fold > td {
   padding: 0;
   /* the line under the row takes no room, so a closed row is really 0 high */
   border-bottom: 0;
   box-shadow: inset 0 -1px 0 transparent;
   transition: box-shadow var(--motion);
 }
-tr.cluster-sub.grown > td {
+tr.cluster-fold.grown > td {
   box-shadow: inset 0 -1px 0 var(--border);
+}
+/* the last row: no line, the card's rounded edge is under it */
+tr.cluster-fold.grown:last-child > td {
+  box-shadow: none;
 }
 .row-grow {
   display: grid;
@@ -1900,7 +1928,7 @@ tr.cluster-sub.grown > td {
     grid-template-rows var(--motion),
     opacity var(--motion);
 }
-tr.cluster-sub.grown .row-grow {
+tr.cluster-fold.grown .row-grow {
   grid-template-rows: 1fr;
   opacity: 1;
 }
@@ -1943,7 +1971,7 @@ details[open]::details-content {
   .collapse,
   .collapse.open,
   .row-grow,
-  tr.cluster-sub > td,
+  tr.cluster-fold > td,
   details::details-content {
     transition: none;
   }

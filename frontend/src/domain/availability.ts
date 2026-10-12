@@ -19,6 +19,9 @@ export function freeRooms(
     .sort((a, b) => a.capacity - b.capacity);
 }
 
+/** A pair on one date, as in Teacher.unavailableOn: "2026-10-19:2". */
+export const dateSlotKey = (date: string, slot: SlotIndex) => `${date}:${slot}`;
+
 export type TeacherSlotState = 'teaching' | 'unavailable' | 'consultation' | 'free';
 
 export function teacherStateAt(
@@ -28,6 +31,8 @@ export function teacherStateAt(
   day: Day,
   slot: SlotIndex,
   week: Parity,
+  /** The actual date, when the grid shows a particular week: the teacher's one-off unavailability counts too. */
+  date?: string,
 ): TeacherSlotState {
   const t = idx.teachers.get(teacherId);
   if (!t) return 'free';
@@ -38,5 +43,6 @@ export function teacherStateAt(
   );
   if (teaching) return 'teaching';
   if (t.unavailable.includes(k)) return 'unavailable';
+  if (date && t.unavailableOn?.includes(dateSlotKey(date, slot))) return 'unavailable';
   return 'free';
 }

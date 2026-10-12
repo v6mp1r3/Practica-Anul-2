@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
 import { range, slotKey } from '../domain/slots';
 import type { Settings, SlotKey } from '../domain/types';
@@ -21,6 +21,7 @@ export function AvailabilityPicker({
   onChange,
   allowConsultation = true,
   readOnly = false,
+  locked,
 }: {
   settings: Settings;
   index: DatasetIndex;
@@ -29,6 +30,8 @@ export function AvailabilityPicker({
   allowConsultation?: boolean;
   /** Show the grid without editing (teachers see what the administration set). */
   readOnly?: boolean;
+  /** Pairs that can't be marked (the teacher's own lessons): what to show there instead. */
+  locked?: (day: number, slot: number) => ReactNode | undefined;
 }) {
   const { t } = useI18n();
   const [brush, setBrush] = useState<Brush>('unavailable');
@@ -53,6 +56,7 @@ export function AvailabilityPicker({
   }, []);
 
   function paintAs(day: number, slot: number, target: Brush) {
+    if (locked?.(day, slot)) return;
     const k = slotKey(day, slot);
     const v = current.current;
     const without = (list: SlotKey[]) => list.filter((x) => x !== k);
@@ -70,6 +74,7 @@ export function AvailabilityPicker({
 
   // pressing a cell that already has the brush state clears it, and the drag then clears too
   function press(day: number, slot: number) {
+    if (locked?.(day, slot)) return;
     const target: Brush = stateOf(slotKey(day, slot)) === brush ? 'free' : brush;
     dragging.current = target;
     paintAs(day, slot, target);
@@ -101,11 +106,13 @@ export function AvailabilityPicker({
         lessons={[]}
         // also frecvență redusă's weekend sessions: every working day
         days={range(settings.workingDays)}
-        cellClass={(d, s) => `state-${stateOf(slotKey(d, s))}`}
+        cellClass={(d, s) => (locked?.(d, s) ? 'state-lesson' : `state-${stateOf(slotKey(d, s))}`)}
         onCellPress={readOnly ? undefined : press}
         onCellDrag={readOnly ? undefined : drag}
         selectable={!readOnly}
         renderCell={(d, s) => {
+          const lesson = locked?.(d, s);
+          if (lesson) return lesson;
           const st = stateOf(slotKey(d, s));
           return st === 'free' ? '' : label[st];
         }}

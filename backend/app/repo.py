@@ -100,6 +100,13 @@ def load_teachers(conn: Connection, ids: Iterable[int] | None = None) -> list[di
     for r in _all(conn, "select teacher_id, date, part from teacher_exam_unavailability where teacher_id = any(cast(:k as bigint[])) order by date, part", {"k": keys}):
         d = iso_date(r["date"])
         exams[r["teacher_id"]].append(d if r["part"] == "day" else f"{d}|{r['part']}")
+    dated: dict[int, list[str]] = defaultdict(list)
+    for r in _all(
+        conn,
+        f"select teacher_id, date, slot_index from teacher_date_unavailability where teacher_id = any(cast(:k as bigint[])) and date >= current_date - {DATED_KEPT_DAYS} order by date, slot_index",
+        {"k": keys},
+    ):
+        dated[r["teacher_id"]].append(f"{iso_date(r['date'])}:{r['slot_index']}")
     out = []
     for r in rows:
         t = {
@@ -116,11 +123,33 @@ def load_teachers(conn: Connection, ids: Iterable[int] | None = None) -> list[di
         }
         if r["faculty"]:
             t["faculty"] = r["faculty"]
+        if dated[r["id"]]:
+            t["unavailableOn"] = dated[r["id"]]
         cons = prefs[(r["id"], "consultation")]
         if cons:
             t["consultation"] = cons[0]
         out.append(t)
     return out
+
+
+# days back that dated unavailability is still read (older dates are history, not needed by anyone)
+DATED_KEPT_DAYS = 7
+
+
+def _save_dated(conn: Connection, tid: int, items: list[str]) -> None:
+    """Replace the teacher's dated unavailability ("2026-10-19:2" = pair 3 on that date); older dates stay as they were."""
+    rows: dict[tuple[str, int], None] = {}
+    for item in items:
+        d, _, s = str(item).rpartition(":")
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d) or not s.isdigit():
+            raise ApiError(422, f"Bad date and pair: {item}")
+        rows[(d, int(s))] = None
+    conn.execute(text(f"delete from teacher_date_unavailability where teacher_id = :t and date >= current_date - {DATED_KEPT_DAYS}"), {"t": tid})
+    if rows:
+        conn.execute(
+            text("insert into teacher_date_unavailability (teacher_id, date, slot_index) values (:t, cast(:d as date), :s) on conflict do nothing"),
+            [{"t": tid, "d": d, "s": s} for (d, s) in rows],
+        )
 
 
 def _save_slot_prefs(conn: Connection, tid: int, unavailable: list[str], preferred: list[str], consultation: str | None) -> None:
@@ -173,6 +202,8 @@ def save_teacher(conn: Connection, data: dict, tid: int | None = None) -> int:
             text("insert into teacher_exam_unavailability (teacher_id, date, part) values (:t, cast(:d as date), :p)"),
             [{"t": tid, "d": d, "p": p} for (d, p) in ex],
         )
+    if "unavailableOn" in data:
+        _save_dated(conn, tid, data["unavailableOn"] or [])
     return tid
 
 
@@ -180,6 +211,8 @@ def save_availability(conn: Connection, tid: int, data: dict) -> None:
     if not conn.execute(text("select 1 from teacher where id = :id"), {"id": tid}).first():
         raise ApiError(404, "Not found")
     _save_slot_prefs(conn, tid, data.get("unavailable") or [], data.get("preferred") or [], data.get("consultation"))
+    if "unavailableOn" in data:
+        _save_dated(conn, tid, data["unavailableOn"] or [])
 
 
 # ---------------------------------------------------------------- rooms

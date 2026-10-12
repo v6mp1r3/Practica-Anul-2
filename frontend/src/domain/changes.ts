@@ -126,7 +126,14 @@ export function freeTeachersFor(
   const busy = new Set(others.map((l) => effective(idx, l, sameDay).teacher));
   const key = slotKey(lesson.day, lesson.slot);
   return ds.teachers
-    .filter((t) => t.id !== a.teacherId && !busy.has(t.id) && !t.unavailable.includes(key))
+    .filter(
+      (t) =>
+        t.id !== a.teacherId &&
+        !busy.has(t.id) &&
+        !t.unavailable.includes(key) &&
+        // not someone who said they can't come that day
+        !t.unavailableOn?.includes(`${date}:${lesson.slot}`),
+    )
     .sort((x, y) => Number(y.activityTypes.includes(a.type)) - Number(x.activityTypes.includes(a.type)) || x.name.localeCompare(y.name));
 }
 

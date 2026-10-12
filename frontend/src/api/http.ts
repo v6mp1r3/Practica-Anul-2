@@ -66,7 +66,7 @@ export function createHttpApi(baseUrl: string): Api {
     changePassword: (current, next) => request('POST', '/auth/password', { current, next }),
     listUsers: () => request('GET', '/users'),
     createUser: (user) => request('POST', '/users', user),
-    updateUser: (user) => request('PUT', `/users/${user.id}`, user),
+    updateUser: (id, changes) => request('PUT', `/users/${id}`, changes),
     deleteUser: (id) => request('DELETE', `/users/${id}`),
 
     getDataset: () => request('GET', '/dataset'),

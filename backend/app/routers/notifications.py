@@ -10,7 +10,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 @router.get("")
 def list_notifications(user: CurrentUser = Depends(current_user), conn: Connection = Depends(get_conn)):
-    return notify.list_for(conn, user.id, user.role)
+    return notify.list_for(conn, user.id, user.role, user.teacher_id)
 
 
 @router.post("/read", status_code=204)

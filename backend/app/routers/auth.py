@@ -20,7 +20,7 @@ class Login(BaseModel):
 def user_json(conn: Connection, user_id: int) -> dict:
     r = conn.execute(
         text(
-            "select u.id, u.username, u.name, u.role::text as role, f.name as faculty, u.email, u.phone, u.avatar_url, u.email_notifications "
+            "select u.id, u.username, u.name, u.role::text as role, f.name as faculty, u.email, u.phone, u.avatar_url, u.email_notifications, u.teacher_id "
             "from app_user u left join faculty f on f.id = u.faculty_id where u.id = :id"
         ),
         {"id": user_id},
@@ -28,6 +28,8 @@ def user_json(conn: Connection, user_id: int) -> dict:
     if not r:
         raise ApiError(401, "Not signed in")
     u = {"id": str(r["id"]), "username": r["username"], "name": r["name"], "role": r["role"], "emailNotifications": r["email_notifications"]}
+    if r["teacher_id"] is not None:
+        u["teacherId"] = str(r["teacher_id"])
     for key, col in (("faculty", "faculty"), ("email", "email"), ("phone", "phone"), ("avatar", "avatar_url")):
         if r[col]:
             u[key] = r[col]

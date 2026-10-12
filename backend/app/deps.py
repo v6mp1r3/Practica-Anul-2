@@ -25,12 +25,13 @@ class CurrentUser:
     role: str
     faculty_id: int | None
     faculty: str | None
+    teacher_id: int | None = None
 
 
 def _load_user(conn: Connection, user_id: int) -> CurrentUser | None:
     row = conn.execute(
         text(
-            "select u.id, u.username, u.name, u.role::text as role, u.faculty_id, f.name as faculty "
+            "select u.id, u.username, u.name, u.role::text as role, u.faculty_id, f.name as faculty, u.teacher_id "
             "from app_user u left join faculty f on f.id = u.faculty_id where u.id = :id"
         ),
         {"id": user_id},

@@ -23,7 +23,9 @@ reference behaviour when something here is unclear.
 
 ## Roles
 
-Only the administration has accounts (`role: "admin"`). Students and teachers
+The administration has accounts (`role: "admin"`), and so can teachers
+(`role: "teacher"`, tied to one teacher by `teacherId`): a teacher signs in only to
+set their own availability (`PUT /teachers/{id}/availability`, see Users). Students
 don't sign in: the reads they need are **public** (no token) —
 `GET /dataset`, `GET /timetables/published` and `GET /changes`. Everything else
 needs an admin token.
@@ -51,8 +53,21 @@ Configurare, which sends `faculty` in `PUT /auth/me` (it must be one of
 | PUT    | `/auth/me`       | `ProfileUpdate`          | `User`                                                                             |
 | POST   | `/auth/password` | `{ current, next }`      | `204` (`400` wrong current password, `422` shorter than 8 or longer than 72 bytes) |
 
-Accounts are created on the server with `python -m app.cli create-admin` (see
-`backend/README.md`); there is no endpoint for it.
+Administrator accounts are created on the server with `python -m app.cli create-admin`
+(see `backend/README.md`); teacher accounts by an administrator (Users, below).
+
+### Users (teacher accounts)
+
+| Method | Path          | Role  | Body                                                                | Response                                                    |
+| ------ | ------------- | ----- | ------------------------------------------------------------------- | ----------------------------------------------------------- |
+| GET    | `/users`      | admin | —                                                                   | the teacher accounts and the administrator: `User[]`        |
+| POST   | `/users`      | admin | `{ username, name?, role: "teacher", teacherId, email?, password }` | `201 User` (`422` username taken / teacher already has one) |
+| PUT    | `/users/{id}` | admin | `{ username?, password? }` (a new password when it is forgotten)    | `User`                                                      |
+| DELETE | `/users/{id}` | admin | —                                                                   | `204`                                                       |
+
+Only `teacher` accounts are created, changed or deleted here, and only for a
+teacher of the administrator's faculty (or one without a faculty). One account per
+teacher; deleting the teacher deletes the account.
 
 ```json
 // User
@@ -205,10 +220,18 @@ counts 0.5.
 
 Extra endpoints:
 
-| Method | Path                          | Role                | Body                                                    |
-| ------ | ----------------------------- | ------------------- | ------------------------------------------------------- |
-| POST   | `/subjects/import`            | admin               | `{ subjects: Subject[] without id }` → created subjects |
-| PUT    | `/teachers/{id}/availability` | admin, that teacher | `{ unavailable, preferred, consultation? }` → `Teacher` |
+| Method | Path                          | Role                | Body                                                                    |
+| ------ | ----------------------------- | ------------------- | ----------------------------------------------------------------------- |
+| POST   | `/subjects/import`            | admin               | `{ subjects: Subject[] without id }` → created subjects                 |
+| PUT    | `/teachers/{id}/availability` | admin, that teacher | `{ unavailable, preferred, consultation?, unavailableOn? }` → `Teacher` |
+
+`Teacher.unavailableOn` lists pairs the teacher can't hold on one particular date
+(`"2026-10-22:2"` = pair 3 on 22 October), on top of the weekly `unavailable`. It
+doesn't change the timetable: it shows in Profesori disponibili for that week, and
+the teacher isn't offered as a substitute then (`/changes`). Dates older than a week
+are not returned. When **the teacher** saves, `consultation` is kept as it was (only
+the administration sets it) and the administrators get an `availability`
+notification.
 
 ## Timetables
 

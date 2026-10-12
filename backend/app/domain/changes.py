@@ -83,5 +83,10 @@ def free_teachers_for(ds: dict, idx: DatasetIndex, lessons: list[dict], changes:
     others = [l for l in lessons_on_date(ds, lessons, d, idx) if l["id"] != lesson["id"] and l["slot"] == lesson["slot"]]
     busy = {_effective(idx, l, same_day)[1] for l in others}
     key = slot_key(lesson["day"], lesson["slot"])
-    ts = [t for t in ds["teachers"] if t["id"] != a["teacherId"] and t["id"] not in busy and key not in t["unavailable"]]
+    dated = f"{d}:{lesson['slot']}"
+    ts = [
+        t
+        for t in ds["teachers"]
+        if t["id"] != a["teacherId"] and t["id"] not in busy and key not in t["unavailable"] and dated not in t.get("unavailableOn", [])
+    ]
     return sorted(ts, key=lambda t: (not (a["type"] in t["activityTypes"]), t["name"]))

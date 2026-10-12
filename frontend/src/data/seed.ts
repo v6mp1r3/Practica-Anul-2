@@ -728,11 +728,12 @@ export const seedDataset: Dataset = {
   assignments: seedAssignments,
 };
 
-/** Demo administrator accounts — password "demo". Students and teachers don't sign in. */
+/** Demo accounts — password "demo". Students don't sign in; a teacher signs in to set their availability. */
 export const seedUsers: User[] = [
   // One administrator per faculty — there is no administrator above them
   { id: 'u1', username: 'elena.popescu', name: 'Elena Popescu', role: 'admin', faculty: FCIM },
   { id: 'u5', username: 'ion.sirbu', name: 'Ion Sîrbu', role: 'admin', faculty: FET },
+  { id: 'u7', username: 'daniel.rusu', name: 'Daniel Rusu', role: 'teacher', teacherId: 't1' },
 ];
 
 export const seedNotifications: Notification[] = [

@@ -34,3 +34,14 @@ describe('teacherStateAt', () => {
     expect(teacherStateAt(idx, lessons, 't7', 0, 2, 'even')).toBe('free');
   });
 });
+
+describe('one-off unavailability (Teacher.unavailableOn)', () => {
+  const ds = structuredClone(seedDataset);
+  ds.teachers.find((t) => t.id === 't3')!.unavailableOn = ['2026-10-22:2'];
+  const i = new DatasetIndex(ds);
+  it('counts only on that date, not on the same weekday of other weeks', () => {
+    expect(teacherStateAt(i, [], 't3', 3, 2, 'weekly', '2026-10-22')).toBe('unavailable');
+    expect(teacherStateAt(i, [], 't3', 3, 2, 'weekly', '2026-10-29')).toBe('free');
+    expect(teacherStateAt(i, [], 't3', 3, 2, 'weekly')).toBe('free');
+  });
+});

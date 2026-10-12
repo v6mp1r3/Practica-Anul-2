@@ -24,7 +24,7 @@ def notify(conn: Connection, kind: str, params: dict, roles: list[str] | None = 
     return nid
 
 
-def list_for(conn: Connection, user_id: int, role: str) -> list[dict]:
+def list_for(conn: Connection, user_id: int, role: str, teacher_id: int | None = None) -> list[dict]:
     rows = conn.execute(
         text(
             "select n.id, n.created_at, n.kind::text as kind, n.params, n.title, n.body, n.roles::text[] as roles, "
@@ -42,6 +42,9 @@ def list_for(conn: Connection, user_id: int, role: str) -> list[dict]:
     out = []
     for r in rows:
         if r["roles"] and role not in r["roles"]:
+            continue
+        # a teacher: only what is addressed to them among the targeted ones (their pairs moved, a substitution)
+        if role == "teacher" and (r["id"] in groups or r["id"] in teachers) and sid(teacher_id) not in teachers.get(r["id"], []):
             continue
         n = {"id": sid(r["id"]), "createdAt": iso_ts(r["created_at"]), "title": r["title"], "body": r["body"], "roles": list(r["roles"] or []), "read": r["read"]}
         if r["kind"]:
