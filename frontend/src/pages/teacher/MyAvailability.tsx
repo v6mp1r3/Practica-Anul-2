@@ -65,9 +65,13 @@ export default function MyAvailability() {
         preferred: usualValue.preferred,
         unavailableOn: datedValue,
       });
-      await refresh();
-      setUsual(null);
-      setDated(null);
+      try {
+        await refresh();
+        setUsual(null);
+        setDated(null);
+      } catch {
+        // saved all the same; the grid keeps showing what was saved until the data loads again
+      }
       toast(t('myAvail.saved'));
     } catch {
       toast(t('common.error'), 'error');
