@@ -151,3 +151,20 @@ def test_republishing_the_published_one_is_harmless(client, admin):
     r = client.post(f"/api/timetables/{t['id']}/publish", headers=admin)
     assert r.status_code == 200 and r.json()["status"] == "published" and len(r.json()["lessons"]) == 1
     assert [n["params"]["count"] for n in client.get("/api/notifications", headers=admin).json() if n["kind"] == "updated"] == [0]
+
+
+def test_a_group_can_be_deleted_after_the_timetable_was_made(client, admin):
+    from .test_exams import event, plan
+
+    w = World(client, admin)
+    lec = w.lecture(w.s1, w.t1, [w.g1["id"], w.g2["id"]])
+    sem = w.seminar(w.s1, w.t2, w.g1)
+    t = save(client, admin, "A", [w.g1["id"], w.g2["id"]], [lesson(lec["id"], 0, 1, w.r1["id"], "a"), lesson(sem["id"], 0, 2, w.r2["id"], "b")], status="published")
+    assert client.put("/api/exams/plans/session", json=plan(w, event(w)), headers=admin).status_code == 200
+    assert client.delete(f"/api/groups/{w.g1['id']}", headers=admin).status_code == 204
+    # the group's own seminar leaves the timetable; the shared lecture stays for the other group
+    after = client.get(f"/api/timetables/{t['id']}", headers=admin).json()
+    assert after["groupIds"] == [w.g2["id"]] and [l["assignmentId"] for l in after["lessons"]] == [lec["id"]]
+    assert client.get("/api/exams/plans/session", headers=admin).json()["events"] == []
+    streams = client.get("/api/streams", headers=admin).json()
+    assert all(w.g1["id"] not in s["groupIds"] for s in streams)

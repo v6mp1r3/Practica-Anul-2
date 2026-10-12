@@ -475,6 +475,24 @@ export function createMockApi(): Api {
           (a) => a.teacherId !== id && a.subjectId !== id && a.audience.id !== id,
         );
       }
+      if (name === 'groups') {
+        // a deleted group just disappears from the streams, timetables and exam timetables
+        store.dataset.streams = store.dataset.streams
+          .map((s) => ({ ...s, groupIds: s.groupIds.filter((g) => g !== id) }))
+          .filter((s) => s.groupIds.length > 0);
+        store.dataset.assignments = store.dataset.assignments.filter(
+          (a) => a.audience.kind !== 'stream' || store.dataset.streams.some((s) => s.id === a.audience.id),
+        );
+        for (const p of store.examPlans ?? []) p.events = p.events.filter((e) => e.groupId !== id);
+      }
+      if (name !== 'assignments') {
+        const alive = new Set(store.dataset.assignments.map((a) => a.id));
+        for (const t of store.timetables) {
+          t.groupIds = t.groupIds.filter((g) => g !== id);
+          t.lessons = t.lessons.filter((l) => alive.has(l.assignmentId));
+        }
+        store.changes = store.changes.filter((c) => alive.has(c.assignmentId));
+      }
       persist();
       return delay(undefined);
     },

@@ -3,7 +3,7 @@ import { useAdminScope } from '../../components/FacultyFilter';
 import { ClusterManager, useClusterLabel } from '../../components/ClusterPicker';
 import { CrudPage } from '../../components/CrudPage';
 import { Empty, Field, PageHeader } from '../../components/ui';
-import { STUDY_FORMS, type Group, type StudyCycle, type StudyForm } from '../../domain/types';
+import { STUDY_FORMS, type DualPart, type Group, type StudyCycle, type StudyForm } from '../../domain/types';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
@@ -12,6 +12,10 @@ import { Fragment, useState, type ReactNode } from 'react';
 import { specialtyOf as prefixOf } from '../../domain/specialty';
 
 const SHOWN_GROUPS = 8;
+const emptyPart: DualPart = { name: '', program: '' };
+// two different named groups (the students are counted once, on the dual group)
+const dualValid = (parts?: DualPart[]) =>
+  !!parts && parts.length === 2 && parts.every((p) => p.name.trim()) && parts[0].name.trim() !== parts[1].name.trim();
 // how long a year's rows take to open or close (as .row-grow in components.css)
 const ROW_MS = 300;
 
@@ -135,10 +139,12 @@ export default function Groups() {
             </>
           }
           itemLabel={(x) => x.name}
+          confirmDeleteText={(x) => t('groups.confirmDelete', { name: x.name })}
           searchText={(x) => `${x.name} ${x.program} ${x.faculty ?? ''}`}
           columns={[
             {
               label: t('groups.name'),
+              sort: (x) => x.name,
               render: (x) => (
                 <span>
                   <strong>{x.name}</strong>
@@ -151,9 +157,10 @@ export default function Groups() {
                 </span>
               ),
             },
-            { label: t('groups.program'), render: (x) => x.program },
+            { label: t('groups.program'), sort: (x) => x.program, render: (x) => x.program },
             {
               label: t('groups.studyForm'),
+              sort: (x) => t(`form.${x.studyForm}`),
               render: (x) => (
                 <span className={`badge ${x.studyForm === 'full' ? '' : x.studyForm === 'reduced' ? 'warning' : 'primary'}`}>
                   {t(`form.${x.studyForm}`)}
@@ -162,6 +169,7 @@ export default function Groups() {
             },
             {
               label: t('groups.year'),
+              sort: (x) => x.year,
               render: (x) => (
                 <span>
                   {x.year}
@@ -169,7 +177,7 @@ export default function Groups() {
                 </span>
               ),
             },
-            { label: t('groups.size'), render: (x) => x.size },
+            { label: t('groups.size'), sort: (x) => x.size, render: (x) => x.size },
           ]}
           newItem={(): Omit<Group, 'id'> => ({
             name: '',
@@ -187,28 +195,32 @@ export default function Groups() {
             faculty: scope || dataset.settings.faculties[0],
           })}
           validate={(d) =>
-            !d.name.trim()
-              ? t('groups.nameRequired')
-              : d.size < 1
-                ? t('groups.sizeRequired')
-                : d.programYears && d.year > d.programYears
-                  ? t('groups.yearOver')
-                  : // every group belongs to a faculty, whose administrator schedules it
-                    dataset.settings.faculties.length && !d.faculty
-                    ? t('groups.facultyRequired')
-                    : null
+            d.studyForm === 'dual' && !dualValid(d.dualParts)
+              ? t('groups.dualRequired')
+              : !d.name.trim()
+                ? t('groups.nameRequired')
+                : d.size < 1
+                  ? t('groups.sizeRequired')
+                  : d.programYears && d.year > d.programYears
+                    ? t('groups.yearOver')
+                    : // every group belongs to a faculty, whose administrator schedules it
+                      dataset.settings.faculties.length && !d.faculty
+                      ? t('groups.facultyRequired')
+                      : null
           }
           renderForm={(d, set) => (
             <div className="form-grid">
-              <Field label={t('groups.name')}>
-                <input
-                  className="input"
-                  value={d.name}
-                  onChange={(e) => set({ name: e.target.value.toUpperCase() })}
-                  placeholder="FAF-251"
-                  autoFocus
-                />
-              </Field>
+              {d.studyForm !== 'dual' && (
+                <Field label={t('groups.name')}>
+                  <input
+                    className="input"
+                    value={d.name}
+                    onChange={(e) => set({ name: e.target.value.toUpperCase() })}
+                    placeholder="FAF-251"
+                    autoFocus
+                  />
+                </Field>
+              )}
               <Field label={t('groups.cycle')}>
                 <Select
                   className="select"
@@ -232,6 +244,7 @@ export default function Groups() {
                   onChange={(e) =>
                     set({
                       studyForm: e.target.value as StudyForm,
+                      ...(e.target.value === 'dual' ? { dualParts: d.dualParts ?? [emptyPart, emptyPart] } : { dualParts: undefined }),
                       // frecvență redusă licență lasts 5 years
                       ...(d.cycle !== 'master' ? { programYears: e.target.value === 'reduced' ? 5 : 4 } : {}),
                     })
@@ -244,9 +257,44 @@ export default function Groups() {
                   ))}
                 </Select>
               </Field>
-              <Field label={t('groups.program')}>
-                <input className="input" value={d.program} onChange={(e) => set({ program: e.target.value })} />
-              </Field>
+              {d.studyForm === 'dual' &&
+                [0, 1].map((i) => {
+                  const parts = [d.dualParts?.[0] ?? emptyPart, d.dualParts?.[1] ?? emptyPart];
+                  // the dual group is named after both ("AI-263 R-264") ; it has one number of students, set below
+                  const change = (patch: Partial<DualPart>) => {
+                    const next = parts.map((p, j) => (j === i ? { ...p, ...patch } : p));
+                    set({
+                      dualParts: next,
+                      name: next
+                        .map((p) => p.name.trim())
+                        .filter(Boolean)
+                        .join(' '),
+                      program: [...new Set(next.map((p) => p.program.trim()).filter(Boolean))].join(' + '),
+                    });
+                  };
+                  const p = parts[i];
+                  return (
+                    <Fragment key={i}>
+                      <Field label={t(i === 0 ? 'groups.dualFirst' : 'groups.dualSecond')}>
+                        <input
+                          className="input"
+                          value={p.name}
+                          placeholder="AI-263"
+                          autoFocus={i === 0}
+                          onChange={(e) => change({ name: e.target.value.toUpperCase() })}
+                        />
+                      </Field>
+                      <Field label={t('groups.program')}>
+                        <input className="input" value={p.program} onChange={(e) => change({ program: e.target.value })} />
+                      </Field>
+                    </Fragment>
+                  );
+                })}
+              {d.studyForm !== 'dual' && (
+                <Field label={t('groups.program')}>
+                  <input className="input" value={d.program} onChange={(e) => set({ program: e.target.value })} />
+                </Field>
+              )}
               <Field label={t('groups.programYears')}>
                 <Select
                   className="select"

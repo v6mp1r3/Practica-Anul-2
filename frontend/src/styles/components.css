@@ -1979,3 +1979,13 @@ details[open]::details-content {
     animation: none;
   }
 }
+.th-sort {
+  all: unset;
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+.th-sort:hover,
+.th-sort:focus-visible {
+  color: var(--text);
+}

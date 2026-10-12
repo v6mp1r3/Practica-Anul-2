@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react';
-import { specialityOf } from '../domain/clusters';
+import { specialitiesOf } from '../domain/clusters';
+
+// the row a group sits in: its speciality, or both for a dual group ("AI + R")
+const specialityOf = (groupName: string) => specialitiesOf(groupName).join(' + ');
 import type { Group } from '../domain/types';
 import { useI18n } from '../i18n';
 import { Collapse } from './Collapse';

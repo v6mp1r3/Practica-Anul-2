@@ -4,6 +4,9 @@ import { LANGUAGES, STUDY_FORMS, type Cluster, type Group, type StudyCycle } fro
 /** FAF-261 → FAF: the group name without its number. */
 export const specialityOf = (groupName: string) => groupName.replace(/-\d+$/, '').toUpperCase();
 
+/** A dual group ("AI-263 R-264") is named after two groups and belongs to both specialities (AI, R). */
+export const specialitiesOf = (groupName: string) => [...new Set(groupName.split(/\s+/).filter(Boolean).map(specialityOf))];
+
 const nameOf = (cycle: StudyCycle, year: number, speciality?: string) =>
   `${cycle === 'master' ? 'Master · ' : ''}${speciality ? `${speciality} · ` : ''}Year ${year}`;
 
@@ -94,7 +97,7 @@ export function deriveClusters(groups: Group[]): Cluster[] {
   for (const g of groups) {
     const cycle = g.cycle ?? 'licenta';
     add(cycle, g.year, undefined, g.id);
-    add(cycle, g.year, specialityOf(g.name), g.id);
+    for (const sp of specialitiesOf(g.name)) add(cycle, g.year, sp, g.id);
   }
   const years = [...map.values()].sort(
     (a, b) =>

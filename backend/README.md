@@ -50,6 +50,10 @@ in `db/migrations/` you have not run yet, in order:
 | `005_subject_language.sql` | Adds French and gives every subject a language of instruction (AM in Russian is separate from AM in Romanian). **Needed.** |
 | `008_remove_subject_language.sql` | Removes the language of subjects and merges the per-language copies of a subject into one (the Romanian one is kept). **Run it in one transaction.** |
 | `010_subject_abbreviation.sql` | Adds the abbreviation of a subject, shown in the timetable instead of its code. **Needed.** |
+| `012_dual_group_parts.sql` | Adds `group_dual`: the two parts (name, program, size) of a dual group. **Needed.** |
+| `013_group_delete_cascade.sql` | A deleted group also leaves the exam timetable (it already left the timetables). **Needed.** |
+| `014_dual_one_size.sql` | A dual group has one number of students; its two parts keep only a name and a program. **Needed.** |
+| `015_dual_group_specialities.sql` | A dual group belongs to the speciality of each of its two groups. **Needed.** |
 | `009_remove_assignment_parity.sql` | Removes the odd/even choice from teaching loads (the placed pairs keep theirs). **Needed.** |
 | `007_cluster_language_form_custom.sql` | Adds the language and form-of-study clusters and the custom clusters. **Needed**, after 005. |
 | `006_subject_semester_assessment.sql` | Adds the semester and the assessment (Midterm 1, Midterm 2, Exam) to subjects. **Needed.** |
