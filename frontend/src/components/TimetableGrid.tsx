@@ -5,6 +5,7 @@ import type { Day, Lesson, Settings, SlotIndex } from '../domain/types';
 import { lessonsAt } from '../domain/views';
 import { useI18n } from '../i18n';
 import { Icon } from './Icon';
+import { subjectLabel } from '../domain/subjects';
 
 export type LessonField = 'teacher' | 'audience' | 'room';
 
@@ -52,7 +53,7 @@ export function LessonCard({
         {lesson.locked && <Icon name="lock" size={11} />}
       </div>
       <div className="title">
-        {subject?.code} · {t(`activity.${a.type}`)}
+        {subjectLabel(subject)} · {t(`activity.${a.type}`)}
       </div>
       {!hide.includes('audience') && <div className="meta">{index.audienceLabel(a.audience)}</div>}
       {!hide.includes('teacher') && <div className="meta">{teacher?.name}</div>}

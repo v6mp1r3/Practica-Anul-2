@@ -13,9 +13,31 @@ interface Auth {
 
 const AuthContext = createContext<Auth | null>(null);
 
+// who was signed in on this browser: pages open at once, the server confirms it after
+const USER_KEY = 'eduschedule:user';
+function readUser(): User | null {
+  try {
+    return localStorage.getItem('eduschedule:token') ? JSON.parse(localStorage.getItem(USER_KEY) ?? 'null') : null;
+  } catch {
+    return null;
+  }
+}
+function rememberUser(u: User | null) {
+  try {
+    if (u) localStorage.setItem(USER_KEY, JSON.stringify(u));
+    else localStorage.removeItem(USER_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [ready, setReady] = useState(false);
+  const [user, setUserState] = useState<User | null>(readUser);
+  const [ready, setReady] = useState(() => readUser() !== null);
+  const setUser = useCallback((u: User | null) => {
+    rememberUser(u);
+    setUserState(u);
+  }, []);
 
   useEffect(() => {
     api
@@ -23,20 +45,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(setUser)
       .catch(() => setUser(null))
       .finally(() => setReady(true));
-  }, []);
+  }, [setUser]);
 
-  const login = useCallback(async (username: string, password: string) => {
-    const session = await api.login(username, password);
-    setUser(session.user);
-    return session.user;
-  }, []);
+  const login = useCallback(
+    async (username: string, password: string) => {
+      const session = await api.login(username, password);
+      setUser(session.user);
+      return session.user;
+    },
+    [setUser],
+  );
 
   const logout = useCallback(async () => {
     await api.logout();
     setUser(null);
-  }, []);
+  }, [setUser]);
 
-  const value = useMemo(() => ({ user, ready, login, logout, setUser }), [user, ready, login, logout]);
+  const value = useMemo(() => ({ user, ready, login, logout, setUser }), [user, ready, login, logout, setUser]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

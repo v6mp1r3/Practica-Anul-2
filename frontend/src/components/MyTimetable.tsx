@@ -2,11 +2,11 @@
 // and the full week — the agenda is the default on phones.
 import { useEffect, useState } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
-import { fmtTime, range, weekDays } from '../domain/slots';
+import { fmtTime, range } from '../domain/slots';
 import type { Lesson, Parity, Settings, Vacation } from '../domain/types';
 import { toDateString } from '../domain/changes';
 import { useHolidayName } from './Holidays';
-import { dayIndexOf, inWeek, weekParityOf } from '../domain/views';
+import { dayIndexOf, gridDays, inWeek, sessionPairsThisWeek, weekParityOf } from '../domain/views';
 import { useI18n } from '../i18n';
 import { Agenda, Legend, LessonCard, TimetableGrid, type LessonField } from './TimetableGrid';
 import { Segmented } from './ui';
@@ -54,7 +54,9 @@ export function MyTimetable({
   });
   const [mode, setMode] = useState<'week' | 'day'>(isPhone() ? 'day' : 'week');
   const [week, setWeek] = useState<Parity>(settings.weekParity ? thisWeek : 'weekly');
-  const [day, setDay] = useState(weekDays(settings).includes(todayIdx) ? todayIdx : weekDays(settings)[0]);
+  // Monday–Friday, plus the weekend for someone with frecvență redusă pairs (they have weekend sessions)
+  const days = gridDays(settings, lessons);
+  const [day, setDay] = useState(days.includes(todayIdx) ? todayIdx : days[0]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 720px)');
@@ -63,14 +65,19 @@ export function MyTimetable({
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  const shown = lessons.filter((l) => !l.date && inWeek(l, week));
+  // this week's frecvență redusă pairs (on their session dates) go on their day, next to the weekly ones
+  const showsThisWeek = week === 'weekly' || !settings.weekParity || week === thisWeek;
+  const shown = [...lessons.filter((l) => !l.date && inWeek(l, week)), ...(showsThisWeek ? sessionPairsThisWeek(lessons, now) : [])];
   // only the week actually happening now is tied to dates
   const isThisWeek = !settings.weekParity || week === thisWeek;
   const dayOff = weekDates.map((date) => {
     const h = isThisWeek ? holidays.find((v) => v.start <= date && date <= v.end) : undefined;
     return h ? holidayName(h) : undefined;
   });
-  const todays = lessons.filter((l) => !l.date && inWeek(l, settings.weekParity ? thisWeek : 'weekly'));
+  const todays = [
+    ...lessons.filter((l) => !l.date && inWeek(l, settings.weekParity ? thisWeek : 'weekly')),
+    ...sessionPairsThisWeek(lessons, now),
+  ];
   const next = dayOff[todayIdx] ? null : nextLesson(todays, settings, now);
 
   return (
@@ -103,6 +110,8 @@ export function MyTimetable({
             value={week}
             onChange={setWeek}
             options={[
+              // both weeks: free (or shown) for the odd and the even week together
+              { value: 'weekly', label: t('tt.weekAll') },
               { value: 'odd', label: t('tt.weekOdd') + (thisWeek === 'odd' ? ' •' : '') },
               { value: 'even', label: t('tt.weekEven') + (thisWeek === 'even' ? ' •' : '') },
             ]}
@@ -118,7 +127,7 @@ export function MyTimetable({
         <div className="card">
           <div className="card-header" style={{ overflowX: 'auto' }}>
             <div className="segmented">
-              {weekDays(settings).map((d) => (
+              {days.map((d) => (
                 <button key={d} type="button" aria-pressed={d === day} onClick={() => setDay(d)}>
                   {t(`dayShort.${d}` as 'dayShort.0')}
                   {d === todayIdx ? ' •' : ''}
@@ -132,7 +141,7 @@ export function MyTimetable({
         </div>
       ) : (
         <>
-          <TimetableGrid settings={settings} index={index} lessons={shown} hide={hide} today={todayIdx} dayOff={dayOff} />
+          <TimetableGrid settings={settings} index={index} lessons={shown} hide={hide} today={todayIdx} dayOff={dayOff} days={days} />
           <Legend />
         </>
       )}

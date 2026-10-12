@@ -52,8 +52,9 @@ export class DatasetIndex {
   audienceLabel(aud: Audience): string {
     if (aud.kind === 'stream') {
       const st = this.streams.get(aud.id);
-      if (st?.name) return st.name;
-      // a lecture's own torent: its groups
+      // a predefined stream has a name of its own (FAF); a lecture's own stream is named after its subject ("ARC: FI-231, …"),
+      // which the subject's label already says, so it is shown as its groups
+      if (st?.name && !st.subjectId) return st.name;
       return (
         this.cohorts(aud)
           .map((c) => this.groups.get(c.groupId)?.name)

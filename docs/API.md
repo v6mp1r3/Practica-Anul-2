@@ -43,13 +43,13 @@ Configurare, which sends `faculty` in `PUT /auth/me` (it must be one of
 
 ## Auth
 
-| Method | Path           | Body                     | Response          |
-| ------ | -------------- | ------------------------ | ----------------- |
-| POST   | `/auth/login`  | `{ username, password }` | `{ token, user }` |
-| GET    | `/auth/me`     | —                        | `User`            |
-| POST   | `/auth/logout` | —                        | `204`             |
-| PUT    | `/auth/me`     | `ProfileUpdate`          | `User`            |
-| POST   | `/auth/password` | `{ current, next }`    | `204` (`400` wrong current password, `422` shorter than 8 or longer than 72 bytes) |
+| Method | Path             | Body                     | Response                                                                           |
+| ------ | ---------------- | ------------------------ | ---------------------------------------------------------------------------------- |
+| POST   | `/auth/login`    | `{ username, password }` | `{ token, user }`                                                                  |
+| GET    | `/auth/me`       | —                        | `User`                                                                             |
+| POST   | `/auth/logout`   | —                        | `204`                                                                              |
+| PUT    | `/auth/me`       | `ProfileUpdate`          | `User`                                                                             |
+| POST   | `/auth/password` | `{ current, next }`      | `204` (`400` wrong current password, `422` shorter than 8 or longer than 72 bytes) |
 
 Accounts are created on the server with `python -m app.cli create-admin` (see
 `backend/README.md`); there is no endpoint for it.
@@ -112,14 +112,14 @@ reference it. Deleting something an exam timetable or a schedule change still us
 **Streams.** A stream is the set of groups that attend one lecture together. There are
 two kinds:
 
-- *automatic*: made from the lecture itself. Different subjects have different streams
+- _automatic_: made from the lecture itself. Different subjects have different streams
   (AM: TI-261, TI-262, IA-261, IA-262; PC: TI-261, TI-262, SI-261, SI-262). To get one,
   send the groups instead of a stream id when creating the lecture's assignment:
   `"audience": { "kind": "stream", "groupIds": ["g1", "g2"] }`. The server finds the stream
   of that subject for exactly those groups, or creates it, and answers with
   `"audience": { "kind": "stream", "id": "…" }`. At least 2 groups; an automatic stream
   cannot be used for another subject.
-- *predefined*: made with `POST /streams` (a name and at least 2 `groupIds`), like FAF,
+- _predefined_: made with `POST /streams` (a name and at least 2 `groupIds`), like FAF,
   and used by any subject with `"audience": { "kind": "stream", "id": "…" }`.
 
 `GET /streams` lists both kinds.
@@ -145,34 +145,54 @@ or subject without a `faculty` is shared and any administrator may change it.
 // subjectId: the subject an automatic stream belongs to; null for a predefined stream
 
 // Subject — pairs per week from the study plan; 0.5 = every other week.
-// `language` ("ro" default, "ru", "en", "fr"): the groups it is for; AM in "ru" is a separate subject from AM in "ro"
-{ "id": "sub1", "code": "AM", "name": "Analiză matematică", "credits": 6, "year": 1,
+{ "id": "sub1", "code": "AM", "name": "Analiză matematică", "abbreviation": "AM", "credits": 6, "year": 1,
   "semester": 1, "hasMidterm1": true, "hasMidterm2": true, "hasExam": true,
-  "lecturePairs": 2, "seminarPairs": 1, "labPairs": 0, "language": "ro", "clusterIds": ["c1", "c5"] }
+  "lecturePairs": 2, "seminarPairs": 1, "labPairs": 0, "clusterIds": ["c1", "c5"] }
 
 // Assignment (teaching load). audience.kind is "stream" | "group" | "subgroup"
 { "id": "a1", "subjectId": "sub1", "type": "lecture", "teacherId": "t3",
   "audience": { "kind": "stream", "id": "s3" },
-  "pairsPerWeek": 2, "parity": "weekly", "roomType": "lecture", "equipment": [] }
+  "pairsPerWeek": 2, "roomType": "lecture", "equipment": [] }
 ```
 
 **Clusters.** A cluster is a year of study ("Year 1") or a speciality within a year ("FAF, year 1"). They are
 made automatically from the groups: a group `FAF-261` of year 1 is in "Year 1" and in "FAF, year 1" (the speciality
 is the group name without its number). The years (licență 1-4, master's 1-2) always exist, the others appear with
 the first group that needs them, and a cluster is never deleted by itself, so tags stay when its last group is
-removed. Clusters are read-only: `GET /clusters` (signed in) and `clusters` in `GET /dataset`.
+removed. Besides the year and the speciality there is a cluster for each language (`kind: "language"`, field `language`) and
+for each form of study (`kind: "form"`, field `studyForm`: full-time, reduced attendance, dual); they follow the groups
+too. An administrator can also make **custom** clusters (`kind: "custom"`, just a `name` and `groupIds`), for example
+"Frecvență redusă 2026".
+
+`GET /clusters` (signed in) and `clusters` in `GET /dataset` list all of them. Only custom clusters can be changed:
+`POST /clusters` `{ "name", "groupIds" }` (201), `PUT /clusters/{id}` (leaving `groupIds` out keeps the groups),
+`DELETE /clusters/{id}` (204; takes the tag off the subjects). A repeated name is a `409`, an empty name or an
+unknown group a `422`, changing an automatic cluster a `400`.
 
 ```json
-{ "id": "c5", "kind": "speciality", "cycle": "licenta", "year": 1, "speciality": "FAF",
-  "name": "FAF · Year 1", "groupIds": ["g1", "g2"] }
+{
+  "id": "c5",
+  "kind": "speciality",
+  "cycle": "licenta",
+  "year": 1,
+  "speciality": "FAF",
+  "name": "FAF · Year 1",
+  "groupIds": ["g1", "g2"]
+}
 ```
 
+`abbreviation` (optional) is what the timetable shows instead of the `code`; empty or missing = the code.
 `semester` is 1 or 2 (the semester of the year, default 1). `hasMidterm1`, `hasMidterm2` and `hasExam` are the
 assessment, all `true` by default; `evaluation` (`exam` / `atestari`) is still returned and follows `hasExam`, and a
 client that sends only `evaluation` still works.
 
 A subject is tagged with the clusters it is taught to by `clusterIds` (on `POST` and `PUT /subjects`; leaving the
-field out of a `PUT` keeps the tags, `[]` clears them; an unknown id is a `422`).
+field out of a `PUT` keeps the tags, `[]` clears them; an unknown id is a `422`; an unknown id is a `422`). When a subject is tagged with every speciality of a year (those that
+have groups), the server stores the year's tag instead ("Year 1").
+
+Tags also limit where a subject can be taught: `POST` / `PUT /assignments` is a `422` when the audience has a group the
+subject's tags do not allow (a subject tagged "Year 1" is not for a group of year 2; tags of one kind add up, tags of
+different kinds all have to fit). A subject without tags has no such limit.
 
 Activity types are `lecture`, `seminar`, `lab` and `project`. A project is held in an ordinary room
 (`roomType: "seminar"`) and has no pairs in the study plan, so it is not compared with it. A teacher's
@@ -236,6 +256,23 @@ Extra endpoints:
 
 `status` is `variant` (fresh from the generator), `draft` or `published`.
 
+### Importing a timetable file
+
+```
+POST /timetables/import-sheet?filename=orar.pdf     (admin)
+Content-Type: application/octet-stream               (the PDF or .xlsx file itself, at most 15 MB)
+→ { "rows": [ { "groups": ["AR-251","TCM-251"], "day": 0, "start": "08:00", "end": "09:30", "parity": "even",
+                "type": "lecture", "subject": "Analiza matematică II", "teacher": "Rusu Elena", "room": "5-I",
+                "source": "p1 08:00 AR-251/TCM-251" } ],
+    "warnings": [] }
+```
+
+Reads a faculty's weekly timetable as UTM publishes it (groups across the top, days and pair times down the
+left, a lecture shared by several groups as one wide cell, odd week above / even week below in a split cell)
+into rows. Nothing is saved: the client matches the rows to the assignments (`frontend/src/domain/timetableImport.ts`,
+which also reads our own CSV export) and saves the result with `PUT /timetables/{id}` as a `draft`.
+415 for other file types, 422 for a file that cannot be read.
+
 ## Generation (background job)
 
 Generation can take minutes, so it is a job the client polls.
@@ -247,7 +284,7 @@ Generation can take minutes, so it is a job the client polls.
 
 ```
 POST /generate            (admin)
-{ "groupIds": ["g1","g2"], "variants": 3, "iterations": 250, "seed": 42, "baseTimetableId": "tt1" }
+{ "groupIds": ["g1","g2"], "variants": 3, "iterations": 250, "seed": 42, "baseTimetableId": "tt1", "exampleTimetableId": "tt2" }
 → { "jobId": "job_123" }
 
 GET /generate/{jobId}
@@ -259,6 +296,9 @@ GET /generate/{jobId}
 
 - Only assignments whose audience touches one of `groupIds` are scheduled.
 - Lessons with `locked: true` in `baseTimetableId` must be kept exactly as they are.
+- `exampleTimetableId` (optional): a timetable to follow, e.g. an imported one. Its pairs start on the same day,
+  pair and room (another room that fits when theirs no longer does) whenever that clashes with nothing; the search
+  moves one away only when that lowers the soft score by more than 2 per pair moved. 404 if it does not exist.
 - Every variant must satisfy the hard constraints in report §2.1.3; `iterations`
   is a hint for effort (the frontend uses 80 / 250 / 700) — map it to a time limit.
 - The frontend polls once per second.
@@ -343,16 +383,16 @@ generated from the published timetable (each event has `lessonId`, labs a
 separate from the weekly one: `"2026-12-15"` whole day, `"2026-12-15|am"` before
 13:00, `"|pm"` after) and prefer the rooms the subject is taught in.
 
-| Method | Path                             | Role   | Notes                                                                                                                                                    |
-| ------ | -------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/exams`                         | public | `ExamEvent[]` of every faculty's **published** plans                                                                                                     |
-| GET    | `/exams/plans`                   | admin  | every plan of this faculty (all rounds, drafts and published)                                                                                            |
-| DELETE | `/exams/plans/{round}`           | admin  | delete this faculty's plan for that round                                                                                                                |
-| GET    | `/exams/plans/{round}`           | admin  | this faculty's `ExamPlan` (`round`: `midterm1`, `midterm2`, `session`, `remidterm1`, `remidterm2`, `reexam`) or `null`                                   |
+| Method | Path                             | Role   | Notes                                                                                                                                                                                                                                     |
+| ------ | -------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/exams`                         | public | `ExamEvent[]` of every faculty's **published** plans                                                                                                                                                                                      |
+| GET    | `/exams/plans`                   | admin  | every plan of this faculty (all rounds, drafts and published)                                                                                                                                                                             |
+| DELETE | `/exams/plans/{round}`           | admin  | delete this faculty's plan for that round                                                                                                                                                                                                 |
+| GET    | `/exams/plans/{round}`           | admin  | this faculty's `ExamPlan` (`round`: `midterm1`, `midterm2`, `session`, `remidterm1`, `remidterm2`, `reexam`) or `null`                                                                                                                    |
 | POST   | `/exams/plans/{round}/generate`  | admin  | new draft; other faculties' published events and this faculty's other rounds stay booked; returns the plan + `warnings` (count of exams that didn't fit). Optional body `{ "seed": 42 }` repeats a run; the same seed gives the same plan |
-| PUT    | `/exams/plans/{round}`           | admin  | save edited events                                                                                                                                       |
-| POST   | `/exams/plans/{round}/publish`   | admin  | make it public                                                                                                                                           |
-| POST   | `/exams/plans/{round}/unpublish` | admin  | back to draft                                                                                                                                            |
+| PUT    | `/exams/plans/{round}`           | admin  | save edited events                                                                                                                                                                                                                        |
+| POST   | `/exams/plans/{round}/publish`   | admin  | make it public                                                                                                                                                                                                                            |
+| POST   | `/exams/plans/{round}/unpublish` | admin  | back to draft                                                                                                                                                                                                                             |
 
 ```json
 // ExamEvent — an exam or its consultation, for one group

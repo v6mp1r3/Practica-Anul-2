@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends, Response
 from sqlalchemy import Connection, text
 
 from .. import repo
-from ..dataset import build_dataset
+from ..dataset import read_dataset
 from ..deps import CurrentUser, current_user, get_conn, require_admin
 from ..errors import ApiError
 from ..settings_io import save_settings
@@ -17,9 +17,9 @@ OTHER_FACULTY = "This record belongs to another faculty"
 
 
 @router.get("/dataset")
-def get_dataset(conn: Connection = Depends(get_conn)):
+def get_dataset():
     """Public: students and teachers read the timetable without signing in."""
-    return build_dataset(conn)
+    return read_dataset()
 
 
 @router.put("/settings")
@@ -169,8 +169,33 @@ for _name in repo.LOADERS:
 
 @router.get("/clusters")
 def list_clusters(_: CurrentUser = Depends(current_user), conn: Connection = Depends(get_conn)):
-    """The year and speciality clusters. They are made automatically from the groups, so they are read-only."""
+    """All the clusters. Year, speciality, language and form clusters follow the groups; custom ones are made by an administrator."""
     return repo.load_clusters(conn)
+
+
+def _cluster(conn: Connection, cid: int) -> dict:
+    return next(c for c in repo.load_clusters(conn) if c["id"] == str(cid))
+
+
+@router.post("/clusters", status_code=201)
+def create_cluster(data: dict = Body(...), _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    cid = repo.save_custom_cluster(conn, data)
+    conn.commit()
+    return _cluster(conn, cid)
+
+
+@router.put("/clusters/{cluster_id}")
+def update_cluster(cluster_id: str, data: dict = Body(...), _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    cid = repo.save_custom_cluster(conn, data, pid(cluster_id))
+    conn.commit()
+    return _cluster(conn, cid)
+
+
+@router.delete("/clusters/{cluster_id}", status_code=204)
+def delete_cluster(cluster_id: str, _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    repo.delete_custom_cluster(conn, pid(cluster_id))
+    conn.commit()
+    return Response(status_code=204)
 
 
 # ---------------------------------------------------------------- extra endpoints

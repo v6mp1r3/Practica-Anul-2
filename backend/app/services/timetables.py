@@ -10,6 +10,7 @@ from ..domain.score import SOFT_WEIGHTS, score_timetable
 from ..domain.validator import find_hard_conflicts
 from ..errors import ApiError
 from ..settings_io import current_semester
+from ..solver.generate import scope_assignments
 from ..util import iso_date, iso_ts, maybe_pid, pid, sid
 from .notify import notify
 
@@ -28,40 +29,60 @@ def load_lessons(conn: Connection, timetable_id: int) -> list[dict]:
     return [_lesson_json(r) for r in rows]
 
 
+def _load_many(conn: Connection, ids: list[int], with_lessons: bool = True) -> list[dict]:
+    """Several timetables in three queries (one round trip each, not three per timetable)."""
+    if not ids:
+        return []
+    rows = conn.execute(
+        text("select id, name, status::text as status, algorithm, score_hard, score_soft, score_breakdown, created_at, updated_at from timetable where id = any(cast(:i as bigint[]))"),
+        {"i": ids},
+    ).mappings().all()
+    groups: dict[int, list[str]] = {i: [] for i in ids}
+    for tid, gid in conn.execute(text("select timetable_id, group_id from timetable_group where timetable_id = any(cast(:i as bigint[])) order by timetable_id, group_id"), {"i": ids}):
+        groups[tid].append(sid(gid))
+    lessons: dict[int, list[dict]] = {i: [] for i in ids}
+    if with_lessons:
+        for r in conn.execute(
+            text(f"select l.timetable_id, {LESSON_COLUMNS} from lesson l where l.timetable_id = any(cast(:i as bigint[])) order by l.day, l.slot_index, l.id"), {"i": ids}
+        ).mappings():
+            lessons[r["timetable_id"]].append(_lesson_json(r))
+    by_id = {}
+    for r in rows:
+        t = {
+            "id": sid(r["id"]), "name": r["name"], "status": r["status"], "createdAt": iso_ts(r["created_at"]), "updatedAt": iso_ts(r["updated_at"]),
+            "algorithm": r["algorithm"] or "", "groupIds": groups[r["id"]], "lessons": lessons[r["id"]],
+        }
+        if r["score_hard"] is not None:
+            stored = r["score_breakdown"] or {}
+            breakdown = {k: stored[k] for k in SOFT_WEIGHTS if k in stored}  # jsonb forgets key order
+            t["score"] = {"hard": r["score_hard"], "soft": float(r["score_soft"]), "breakdown": breakdown}
+        by_id[r["id"]] = t
+    return [by_id[i] for i in ids if i in by_id]
+
+
 def load_timetable(conn: Connection, timetable_id: int, with_lessons: bool = True) -> dict:
-    r = conn.execute(
-        text("select id, name, status::text as status, algorithm, score_hard, score_soft, score_breakdown, created_at, updated_at from timetable where id = :id"), {"id": timetable_id}
-    ).mappings().first()
-    if not r:
+    found = _load_many(conn, [timetable_id], with_lessons)
+    if not found:
         raise ApiError(404, "Not found")
-    t = {
-        "id": sid(r["id"]), "name": r["name"], "status": r["status"], "createdAt": iso_ts(r["created_at"]), "updatedAt": iso_ts(r["updated_at"]),
-        "algorithm": r["algorithm"] or "",
-        "groupIds": [sid(g[0]) for g in conn.execute(text("select group_id from timetable_group where timetable_id = :t order by group_id"), {"t": timetable_id})],
-        "lessons": load_lessons(conn, timetable_id) if with_lessons else [],
-    }
-    if r["score_hard"] is not None:
-        stored = r["score_breakdown"] or {}
-        breakdown = {k: stored[k] for k in SOFT_WEIGHTS if k in stored}  # jsonb forgets key order
-        t["score"] = {"hard": r["score_hard"], "soft": float(r["score_soft"]), "breakdown": breakdown}
-    return t
+    return found[0]
 
 
 def list_timetables(conn: Connection) -> list[dict]:
     """The current semester's drafts, the published one and variants younger than a day."""
-    sem = current_semester(conn)
     ids = [
         r[0]
         for r in conn.execute(
-            text("select id from timetable where semester_id = :s and (status <> 'variant' or created_at > now() - interval '1 day') order by created_at desc, id desc"), {"s": sem.id}
+            text(
+                "select t.id from timetable t join semester s on s.id = t.semester_id and s.is_current "
+                "where t.status <> 'variant' or t.created_at > now() - interval '1 day' order by t.created_at desc, t.id desc"
+            )
         )
     ]
-    return [load_timetable(conn, i) for i in ids]
+    return _load_many(conn, ids)
 
 
 def published_row(conn: Connection) -> int | None:
-    sem = current_semester(conn)
-    return conn.execute(text("select id from timetable where semester_id = :s and status = 'published'"), {"s": sem.id}).scalar()
+    return conn.execute(text("select t.id from timetable t join semester s on s.id = t.semester_id and s.is_current where t.status = 'published'")).scalar()
 
 
 def get_published(conn: Connection) -> dict | None:
@@ -122,8 +143,14 @@ def _set_groups(conn: Connection, tid: int, group_ids: list[int]) -> None:
 
 
 def _store_score(conn: Connection, tid: int, ds: dict | None = None) -> None:
+    """Scored against the loads of its own groups (like the editor): a timetable of some groups, e.g. one
+    imported for a year of study, is not missing the pairs of all the others."""
     ds = ds or build_dataset(conn)
     lessons = load_lessons(conn, tid)
+    group_ids = [sid(g[0]) for g in conn.execute(text("select group_id from timetable_group where timetable_id = :t"), {"t": tid})]
+    if group_ids:
+        idx = DatasetIndex(ds)
+        ds = {**ds, "assignments": scope_assignments(ds, idx, group_ids)}
     score = score_timetable(ds, lessons)
     conn.execute(
         text("update timetable set score_hard = :h, score_soft = :s, score_breakdown = cast(:b as jsonb) where id = :t"),

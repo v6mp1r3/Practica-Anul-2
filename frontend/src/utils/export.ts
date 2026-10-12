@@ -1,7 +1,9 @@
 // CSV (spreadsheet) and iCalendar (phone calendar) exports of a timetable.
 import type { DatasetIndex } from '../domain/indexes';
+import { fmtDate } from '../domain/changes';
 import { splitCsvLine } from '../domain/csv';
 import type { Lesson, Settings } from '../domain/types';
+import { subjectLabel } from '../domain/subjects';
 
 const DAY_NAMES = ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică'];
 
@@ -27,14 +29,14 @@ function csvRows(lessons: Lesson[], idx: DatasetIndex, settings: Settings): (str
           l.slot + 1,
           settings.slots[l.slot]?.start ?? '',
           settings.slots[l.slot]?.end ?? '',
-          s?.code ?? '',
+          subjectLabel(s),
           s?.name ?? '',
           typeName[a.type],
           idx.teachers.get(a.teacherId)?.name ?? '',
           idx.audienceLabel(a.audience),
           idx.rooms.get(l.roomId)?.name ?? '',
           l.date ? '' : parityName[l.parity],
-          l.date ?? '',
+          l.date ? fmtDate(l.date) : '',
         ];
       })
   );
@@ -103,7 +105,7 @@ export function timetableToIcs(
       `DTSTART:${icsDate(start, slot.start)}`,
       `DTEND:${icsDate(start, slot.end)}`,
       ...(rrule ? [rrule] : []),
-      `SUMMARY:${icsText(`${subject?.code ?? ''} ${a.type === 'lecture' ? 'Curs' : a.type === 'lab' ? 'Laborator' : a.type === 'project' ? 'Proiect' : 'Seminar'}`)}`,
+      `SUMMARY:${icsText(`${subjectLabel(subject)} ${a.type === 'lecture' ? 'Curs' : a.type === 'lab' ? 'Laborator' : a.type === 'project' ? 'Proiect' : 'Seminar'}`)}`,
       `LOCATION:${icsText(idx.rooms.get(l.roomId)?.name ?? '')}`,
       `DESCRIPTION:${icsText(`${subject?.name ?? ''}\n${idx.teachers.get(a.teacherId)?.name ?? ''}\n${idx.audienceLabel(a.audience)}`)}`,
       'END:VEVENT',

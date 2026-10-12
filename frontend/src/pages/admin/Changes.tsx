@@ -5,7 +5,7 @@ import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { useMemo, useState } from 'react';
 import { api } from '../../api';
 import { Icon } from '../../components/Icon';
-import { Empty, Field, Modal, PageHeader, Segmented } from '../../components/ui';
+import { DateInput, Empty, Field, Modal, PageHeader, Segmented } from '../../components/ui';
 import { freeRoomsFor, freeTeachersFor, lessonsOnDate, parseDate, toDateString } from '../../domain/changes';
 import type { ChangeKind, Lesson, ScheduleChange } from '../../domain/types';
 import { filterLessons } from '../../domain/views';
@@ -229,9 +229,7 @@ function ChangeForm({
       <div className="stack">
         <div className="form-grid">
           <Field label={t('changes.date')}>
-            <input
-              className="input"
-              type="date"
+            <DateInput
               value={date}
               onChange={(e) => {
                 setDate(e.target.value);

@@ -446,3 +446,8 @@ img.avatar {
 .sidebar-lang > :last-child:not(:nth-child(2)) {
   justify-self: end;
 }
+
+/* a header whose actions always stay on their own line under the title */
+.page-header.stacked .titles {
+  flex-basis: 100%;
+}

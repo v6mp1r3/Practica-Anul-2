@@ -2,10 +2,11 @@ import { CycleTabs, groupInCycle, useCycle } from '../../components/CycleTabs';
 import { weeksLabel } from '../../domain/exams';
 import { useAdminScope } from '../../components/FacultyFilter';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, type GenerateProgress } from '../../api';
 import { Icon } from '../../components/Icon';
 import { PrecheckList } from '../../components/PrecheckList';
+import { GroupPicker } from '../../components/GroupPicker';
 import { Field, PageHeader, Segmented } from '../../components/ui';
 import { precheck } from '../../domain/precheck';
 import { SOFT_WEIGHTS } from '../../domain/score';
@@ -94,15 +95,20 @@ export default function Generate() {
   // licență | master's: generate one cycle at a time (the other keeps its published pairs)
   const [cycle, setCycle] = useCycle();
   const scopeGroups = dataset.groups.filter((g) => (!scope || g.faculty === scope) && groupInCycle(g, cycle));
-  const [groupIds, setGroupIds] = useState<string[]>(scopeGroups.map((g) => g.id));
+  // nothing is chosen at first: the administrator picks the groups to generate for
+  const [groupIds, setGroupIds] = useState<string[]>([]);
   useEffect(() => {
-    setGroupIds(dataset.groups.filter((g) => (!scope || g.faculty === scope) && groupInCycle(g, cycle)).map((g) => g.id));
-  }, [cycle, scope, dataset.groups]);
+    setGroupIds([]);
+  }, [cycle, scope]);
   const [form, setForm] = useState<'all' | StudyForm>('all');
   const [variants, setVariants] = useState(3);
   const [effort, setEffort] = useState<Effort>('normal');
   const [baseId, setBaseId] = useState('');
   const [drafts, setDrafts] = useState<Timetable[]>([]);
+  // a timetable to follow (e.g. one just imported: Orare → Importă orar sends ?example=id)
+  const [params] = useSearchParams();
+  const [exampleId, setExampleId] = useState(params.get('example') ?? '');
+  const [examples, setExamples] = useState<Timetable[]>([]);
   const [progress, setProgress] = useState<GenerateProgress | null>(null);
   const [result, setResult] = useState<Timetable[]>([]);
   // what to generate: the weekly timetable, or atestări / exams / retakes
@@ -113,6 +119,7 @@ export default function Generate() {
   useEffect(() => {
     api.listTimetables().then((list) => {
       setDrafts(list.filter((x) => x.status !== 'variant' && x.lessons.some((l) => l.locked)));
+      setExamples(list.filter((x) => x.status !== 'variant' && x.lessons.length > 0));
       setResult(list.filter((x) => x.status === 'variant'));
     });
   }, []);
@@ -120,14 +127,22 @@ export default function Generate() {
   const issues = useMemo(() => precheck(dataset, index), [dataset, index]);
   const hard = issues.filter((i) => i.severity === 'hard');
   const formGroups = scopeGroups.filter((g) => form === 'all' || g.studyForm === form);
-  const years = [...new Set(formGroups.map((g) => g.year))].sort();
   const running = progress !== null;
 
   async function run() {
     setProgress({ variant: 0, progress: 0 });
     setResult([]);
     try {
-      const out = await api.generate({ groupIds, variants, iterations: EFFORT[effort], baseTimetableId: baseId || undefined }, setProgress);
+      const out = await api.generate(
+        {
+          groupIds,
+          variants,
+          iterations: EFFORT[effort],
+          baseTimetableId: baseId || undefined,
+          exampleTimetableId: exampleId || undefined,
+        },
+        setProgress,
+      );
       setResult(out);
     } catch {
       toast(t('common.error'), 'error');
@@ -156,9 +171,6 @@ export default function Generate() {
     toast(t('generate.kept', { name: saved.name }));
     navigate(`/admin/timetables/${saved.id}`);
   }
-
-  const toggle = (ids: string[], on: boolean) =>
-    setGroupIds((cur) => (on ? [...new Set([...cur, ...ids])] : cur.filter((x) => !ids.includes(x))));
 
   return (
     <div className="page">
@@ -204,7 +216,8 @@ export default function Generate() {
                       value={form}
                       onChange={(f) => {
                         setForm(f);
-                        setGroupIds(scopeGroups.filter((g) => f === 'all' || g.studyForm === f).map((g) => g.id));
+                        // keep only the chosen groups of that form of study
+                        setGroupIds((cur) => cur.filter((id) => f === 'all' || index.groups.get(id)?.studyForm === f));
                       }}
                       options={[
                         { value: 'all', label: t('generate.allForms') },
@@ -216,31 +229,8 @@ export default function Generate() {
                     />
                   </Field>
                   <Field label={t('generate.groups')} hint={t('generate.groupsHint')}>
-                    <div className="stack" style={{ gap: 8 }}>
-                      {years.map((y) => {
-                        const ids = formGroups.filter((g) => g.year === y).map((g) => g.id);
-                        const all = ids.every((id) => groupIds.includes(id));
-                        return (
-                          <div key={y} className="row wrap">
-                            <label className="check" style={{ minWidth: 90, fontWeight: 600 }}>
-                              <input type="checkbox" checked={all} onChange={(e) => toggle(ids, e.target.checked)} />
-                              {t('groups.year')} {y}
-                            </label>
-                            <div className="checks">
-                              {ids.map((id) => (
-                                <label key={id} className="check">
-                                  <input type="checkbox" checked={groupIds.includes(id)} onChange={(e) => toggle([id], e.target.checked)} />
-                                  {index.groups.get(id)?.name}
-                                  {index.groups.get(id)?.studyForm !== 'full' && (
-                                    <span className="small muted">({t(`form.${index.groups.get(id)?.studyForm ?? 'full'}`)})</span>
-                                  )}
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {/* by year, then a row per specialty (TI, FAF…): a whole specialty or year at a click, with search */}
+                    <GroupPicker groups={formGroups} value={groupIds} onChange={setGroupIds} />
                   </Field>
                   <div className="form-grid">
                     <Field label={t('generate.variants')}>
@@ -264,6 +254,18 @@ export default function Generate() {
                       ]}
                     />
                   </Field>
+                  {examples.length > 0 && (
+                    <Field label={t('generate.example')} hint={t('generate.exampleHint')}>
+                      <Select className="select" value={exampleId} onChange={(e) => setExampleId(e.target.value)}>
+                        <option value="">{t('generate.noExample')}</option>
+                        {examples.map((x) => (
+                          <option key={x.id} value={x.id}>
+                            {x.name} ({x.lessons.length} {t('dash.pairs')})
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                  )}
                   {drafts.length > 0 && (
                     <Field label={t('generate.base')} hint={t('generate.baseHint')}>
                       <Select className="select" value={baseId} onChange={(e) => setBaseId(e.target.value)}>

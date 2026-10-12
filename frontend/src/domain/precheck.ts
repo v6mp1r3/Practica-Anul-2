@@ -2,7 +2,7 @@
 // that would make a good timetable impossible, so the admin fixes the data
 // instead of wondering why the solver struggles.
 import { DatasetIndex } from './indexes';
-import { parityWeight, range, slotKey } from './slots';
+import { range, slotKey } from './slots';
 import type { ActivityType, Dataset } from './types';
 
 export type PrecheckKind =
@@ -44,7 +44,7 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
     // weekly load: reduced-attendance loads happen in sessions, not every week
     const mine = ds.assignments.filter((a) => a.teacherId === t.id && !idx.isReduced(a));
     if (!mine.length) continue;
-    const load = mine.reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
+    const load = mine.reduce((n, a) => n + a.pairsPerWeek, 0);
     if (load > t.maxPairsPerWeek) {
       out.push({ kind: 'teacher-planned-overtime', severity: 'warning', subjectId: t.id, vars: { load, max: t.maxPairsPerWeek } });
     }
@@ -84,7 +84,7 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
         for (const sub of cohorts) {
           const got = relevant
             .filter((a) => sub === null || a.audience.kind !== 'subgroup' || a.audience.subgroup === sub)
-            .reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
+            .reduce((n, a) => n + a.pairsPerWeek, 0);
           if (got !== expected) {
             out.push({
               kind: 'plan-mismatch',
@@ -103,7 +103,7 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
     for (const sub of views) {
       const pairs = touching
         .filter((a) => sub === null || a.audience.kind !== 'subgroup' || a.audience.subgroup === sub)
-        .reduce((n, a) => n + a.pairsPerWeek * parityWeight(a.parity), 0);
+        .reduce((n, a) => n + a.pairsPerWeek, 0);
       const cap = idx.groupDays(g.id).length * idx.groupMaxPairs(g.id);
       if (pairs > cap) {
         out.push({ kind: 'group-overloaded', severity: 'hard', subjectId: g.id, vars: { pairs, cap } });

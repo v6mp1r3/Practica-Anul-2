@@ -5,6 +5,7 @@ import { useI18n } from '../i18n';
 import { Icon } from './Icon';
 import { Field } from './ui';
 import { Select } from './Select';
+import { subjectLabel } from '../domain/subjects';
 
 /** Details of the selected lesson, with manual room / time / lock changes. */
 export function LessonPanel({
@@ -47,7 +48,7 @@ export function LessonPanel({
     <div className="card">
       <div className="card-header">
         <span className={`badge ${a.type}`}>{t(`activity.${a.type}`)}</span>
-        <h3 style={{ minWidth: 0 }}>{subject?.code}</h3>
+        <h3 style={{ minWidth: 0 }}>{subjectLabel(subject)}</h3>
         <span className="spacer" />
         <button className="btn ghost sm icon" onClick={onClose} aria-label={t('common.close')}>
           <Icon name="x" size={15} />

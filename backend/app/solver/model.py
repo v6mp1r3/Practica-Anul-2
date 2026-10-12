@@ -22,7 +22,7 @@ from ortools.sat.python import cp_model
 
 from ..domain.indexes import DatasetIndex
 from ..domain.score import SOFT_WEIGHTS
-from ..domain.slots import in_week, lessons_overlap, parity_weight, slot_key
+from ..domain.slots import in_week, lessons_overlap, slot_key
 
 SCALE = 840  # 2 weeks x lcm(1..7): keeps every coefficient an integer
 MISSING_PENALTY = 500_000  # a pair left out costs far more than anything one pair can save (about 600 soft points)
@@ -49,10 +49,6 @@ class SolveResult:
     objective: int | None = None
     bound: float | None = None
     variables: int = 0
-
-
-def _weeks_of(parity: str) -> tuple[str, ...]:
-    return WEEKS if parity == "weekly" else (parity,)
 
 
 class _Occupancy:
@@ -139,7 +135,7 @@ def solve_weekly(
         fixed_at[(f["day"], f["slot"])].append(f)
 
     def clashes_fixed(a: dict, d: int, s: int, room_id: str) -> bool:
-        probe = {"day": d, "slot": s, "parity": a["parity"]}
+        probe = {"day": d, "slot": s, "parity": "weekly"}  # a teaching load is placed every week
         for f in fixed_at.get((d, s), ()):
             if not lessons_overlap(probe, f):
                 continue
@@ -191,7 +187,7 @@ def solve_weekly(
         for g, sub in idx.cohorts(a["audience"]):
             points += [(g, p) for p in group_points[g]] if sub is None else [(g, sub)]
         for (d, s), opts in X[a["id"]].items():
-            for w in _weeks_of(a["parity"]):
+            for w in WEEKS:
                 for room_id, v in opts:
                     groups[("teacher", a["teacherId"], d, s, w)].append(v)
                     groups[("room", room_id, d, s, w)].append(v)
@@ -227,7 +223,7 @@ def solve_weekly(
         pref = teacher.get("preferred") or []
         pref_rooms = {r["id"] for r in idx.preferred_rooms(a)}
         edge = bool(idx.subjects.get(a["subjectId"], {}).get("edgeOfDay"))
-        pw = parity_weight(a["parity"])
+        pw = 1.0  # a teaching load is placed every week
         for (d, s), opts in X[a["id"]].items():
             for room_id, v in opts:
                 c = 0.0
@@ -251,8 +247,7 @@ def solve_weekly(
                     continue
                 expr = sum(v for _, v in opts)
                 for w in score_weeks:
-                    if w == "weekly" or a["parity"] in ("weekly", w):
-                        terms[(d, w)][s].append(expr)
+                    terms[(d, w)][s].append(expr)
         for f in const_hits:
             if f.get("date") or f["day"] not in days or f["slot"] >= n_slots:
                 continue
@@ -311,7 +306,7 @@ def solve_weekly(
                     if not idx.subjects.get(a["subjectId"], {}).get("edgeOfDay"):
                         continue
                     for (dd, s), opts in X[a["id"]].items():
-                        if dd != d or s == 0 or s == n_slots - 1 or not (w == "weekly" or a["parity"] in ("weekly", w)):
+                        if dd != d or s == 0 or s == n_slots - 1:
                             continue
                         e = sum(v for _, v in opts) + occ.pre[s - 1] + occ.suf[s + 1] - 2
                         m = model.NewBoolVar("")
@@ -365,6 +360,6 @@ def solve_weekly(
         for (d, s), opts in X[a["id"]].items():
             for room_id, v in opts:
                 if solver.Value(v):
-                    placements.append(Placement(a["id"], d, s, room_id, a["parity"]))
+                    placements.append(Placement(a["id"], d, s, room_id, "weekly"))
     miss = {aid: solver.Value(v) for aid, v in missing.items() if solver.Value(v)}
     return SolveResult(name, placements, miss, int(round(solver.ObjectiveValue())), solver.BestObjectiveBound(), n_vars)

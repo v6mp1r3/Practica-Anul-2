@@ -3,7 +3,7 @@
 // ("08:00–13:00 · c. Programarea calculatoarelor · teacher · room").
 // One group (or a teacher): day by day. Several groups (a torent): a table
 // with the dates as rows and the groups as columns.
-import { parseDate, sessionDates, toDateString } from '../domain/changes';
+import { fmtDate, parseDate, sessionDates, toDateString } from '../domain/changes';
 import { evaluationOf, vacationOn } from '../domain/exams';
 import type { DatasetIndex } from '../domain/indexes';
 import { fmtTime } from '../domain/slots';
@@ -133,7 +133,7 @@ export function SessionTimetable({
                           <tr key={d} className={d === today ? 'today' : ''}>
                             <td className="fr-date">
                               <strong>{fmt(d, { weekday: 'long' })}</strong>
-                              <span>{fmt(d, { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                              <span>{fmtDate(d)}</span>
                             </td>
                             {off ? (
                               <td colSpan={columns.length} className="muted">

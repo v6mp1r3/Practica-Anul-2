@@ -33,16 +33,19 @@ function Ring({ value, total, label }: { value: number; total: number; label: st
   const r = 84;
   const c = 2 * Math.PI * r;
   const pct = total ? Math.min(1, value / total) : 0;
+  // long counts (1198/1198) get a smaller font so they stay inside the dotted circle
+  const text = `${value}/${total}`;
+  const fontSize = Math.min(24, 108 / (text.length * 0.6));
   return (
     <svg viewBox="0 0 220 220" className="dash-ring" role="img" aria-label={`${value}/${total} ${label}`}>
-      <circle cx="110" cy="110" r="62" fill="rgba(255,255,255,0.14)" />
+      <circle cx="110" cy="110" r="68" fill="rgba(255,255,255,0.14)" />
       {range(24).map((i) => {
         const a = (i / 24) * 2 * Math.PI;
         return (
           <circle
             key={i}
-            cx={110 + Math.sin(a) * 50}
-            cy={110 - Math.cos(a) * 50}
+            cx={110 + Math.sin(a) * 58}
+            cy={110 - Math.cos(a) * 58}
             r={i % 6 === 0 ? 1.8 : 1.1}
             fill="rgba(255,255,255,0.7)"
           />
@@ -61,8 +64,8 @@ function Ring({ value, total, label }: { value: number; total: number; label: st
         transform="rotate(-90 110 110)"
       />
       {pct > 0 && <circle cx={110 + Math.sin(pct * 2 * Math.PI) * r} cy={110 - Math.cos(pct * 2 * Math.PI) * r} r="7" fill="#fff" />}
-      <text x="110" y="112" textAnchor="middle" className="dash-ring-value">
-        {value}/{total}
+      <text x="110" y="112" textAnchor="middle" className="dash-ring-value" style={{ fontSize }}>
+        {text}
       </text>
       <text x="110" y="134" textAnchor="middle" className="dash-ring-label">
         {label.toUpperCase()}

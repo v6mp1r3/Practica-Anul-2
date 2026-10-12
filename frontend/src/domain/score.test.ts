@@ -14,7 +14,6 @@ const ds: Dataset = {
       teacherId: 't4',
       audience: { kind: 'group', id: 'g1' },
       pairsPerWeek: 2,
-      parity: 'weekly',
       roomType: 'seminar',
       equipment: [],
     },

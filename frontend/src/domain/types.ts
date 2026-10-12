@@ -233,17 +233,24 @@ export interface Group {
 }
 
 /**
- * A cluster is a year of study ("Year 1") or a speciality within a year ("FAF, year 1"). They are made
- * automatically from the groups (FAF-261 is in "year 1" and in "FAF, year 1"); subjects are tagged with them.
+ * A cluster is a year of study ("Year 1"), a speciality within a year ("FAF, year 1"), a language or a form of
+ * study (frecvență, frecvență redusă). They are made automatically from the groups (FAF-261 is in "year 1" and in
+ * "FAF, year 1"); an administrator can add custom ones. Subjects are tagged with them.
  */
 export interface Cluster {
   id: string;
-  kind: 'year' | 'speciality';
-  cycle: StudyCycle;
-  year: number;
+  /** year, speciality, language and form follow the groups; custom ones are made by an administrator. */
+  kind: 'year' | 'speciality' | 'language' | 'form' | 'custom';
+  /** Only year and speciality clusters. */
+  cycle?: StudyCycle;
+  year?: number;
   /** FAF, TI… (only for kind = 'speciality'). */
   speciality?: string;
-  /** Plain English name, e.g. "FAF · Year 1"; screens build their own text from the fields. */
+  /** Only language clusters. */
+  language?: Language;
+  /** Only form clusters: frecvență, frecvență redusă… */
+  studyForm?: StudyForm;
+  /** English name, e.g. "FAF · Year 1" or the name given to a custom cluster; screens build their own text from the fields. */
   name: string;
   /** Groups that belong to the cluster. */
   groupIds: string[];
@@ -266,6 +273,8 @@ export interface Subject {
   id: string;
   code: string;
   name: string;
+  /** Short name shown in the timetable instead of the code. */
+  abbreviation?: string;
   credits: number;
   year: number;
   /** Must be the first or last pair of the group's day (e.g. physical education). */
@@ -274,10 +283,6 @@ export interface Subject {
   faculty?: string;
   /** Licență (default) or master's study plan. */
   cycle?: StudyCycle;
-  /** Language it is taught in, i.e. which groups it is for (default Romanian). */
-  language?: Language;
-  /** Specialties (group name prefixes: FAF, TI…) whose study plan has it; empty = all. */
-  specialties?: string[];
   /** How the subject ends: with an exam in the session, or with the atestări only. Default exam. */
   evaluation?: 'exam' | 'atestari';
   /** Semester of the year (1 or 2). Default 1. */
@@ -311,7 +316,6 @@ export interface Assignment {
    * full-time hours, same lecture/seminar/lab mix). Used instead of pairsPerWeek.
    */
   pairsPerSession?: number;
-  parity: Parity;
   roomType: RoomType;
   equipment: string[];
 }

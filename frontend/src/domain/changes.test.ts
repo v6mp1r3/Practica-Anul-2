@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
-import { freeRoomsFor, freeTeachersFor, lessonsOnDate, parseDate, toDateString, upcomingChanges } from './changes';
+import { fmtDate, freeRoomsFor, freeTeachersFor, lessonsOnDate, parseDate, parseDateInput, toDateString, upcomingChanges } from './changes';
 import { DatasetIndex } from './indexes';
 import type { Lesson, ScheduleChange } from './types';
 
@@ -118,5 +118,18 @@ describe('sessionDates', () => {
       '2026-10-17',
       '2026-10-18',
     ]);
+  });
+});
+
+describe('dates day/month/year', () => {
+  it('writes them day/month/year', () => {
+    expect(fmtDate('2026-10-09')).toBe('09/10/2026');
+  });
+  it('reads what people type', () => {
+    expect(parseDateInput('09/10/2026')).toBe('2026-10-09');
+    expect(parseDateInput('9.10.26')).toBe('2026-10-09');
+    expect(parseDateInput('2026-10-09')).toBe('2026-10-09');
+    expect(parseDateInput('31/02/2026')).toBeNull();
+    expect(parseDateInput('10/2026')).toBeNull();
   });
 });

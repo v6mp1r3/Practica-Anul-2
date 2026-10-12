@@ -607,7 +607,6 @@ function a(
   teacherId: string,
   audience: Audience,
   pairsPerWeek = 1,
-  parity: Assignment['parity'] = 'weekly',
   equipment: string[] = [],
 ): Assignment {
   return {
@@ -617,7 +616,6 @@ function a(
     teacherId,
     audience,
     pairsPerWeek,
-    parity,
     roomType: type === 'project' ? 'seminar' : type, // project hours use ordinary rooms
     equipment: type === 'lab' && equipment.length === 0 ? ['calculatoare'] : equipment,
   };
@@ -635,28 +633,28 @@ export const seedAssignments: Assignment[] = [
   // Year 1 — lectures per programme stream
   a('sub3', 'lecture', 't5', stream('s1')),
   a('sub3', 'lecture', 't10', stream('s2')),
-  a('sub5', 'lecture', 't7', stream('s1'), 1, 'odd'),
-  a('sub5', 'lecture', 't7', stream('s2'), 1, 'even'),
+  a('sub5', 'lecture', 't7', stream('s1'), 1),
+  a('sub5', 'lecture', 't7', stream('s2'), 1),
   // Year 1 — seminars per group
   ...['g1', 'g2', 'g3', 'g4'].flatMap((g, i) => [
     a('sub1', 'seminar', i < 2 ? 't4' : 't2', group(g)),
     a('sub2', 'seminar', i < 2 ? 't14' : 't4', group(g)),
-    a('sub4', 'seminar', 't4', group(g), 1, i % 2 === 0 ? 'odd' : 'even'),
+    a('sub4', 'seminar', 't4', group(g), 1),
     a('sub6', 'seminar', 't9', group(g)),
   ]),
   // Physical education — first or last pair of the day, in the sports hall
-  ...['g1', 'g2', 'g3', 'g4'].map((g) => a('sub15', 'seminar', 't20', group(g), 1, 'weekly', ['sport'])),
+  ...['g1', 'g2', 'g3', 'g4'].map((g) => a('sub15', 'seminar', 't20', group(g), 1, ['sport'])),
   // Year 1 — labs with the whole group (30-seat computer labs)
   a('sub3', 'lab', 't1', group('g1'), 2),
   a('sub3', 'lab', 't6', group('g2'), 2),
   a('sub3', 'lab', 't11', group('g3'), 2),
   a('sub3', 'lab', 't6', group('g4'), 2),
   // FAF-251's AC labs need A01 (14 seats, electronics): the only group split into subgroups
-  a('sub5', 'lab', 't8', sub('g1', 1), 1, 'odd', ['calculatoare', 'electronică']),
-  a('sub5', 'lab', 't8', sub('g1', 2), 1, 'even', ['calculatoare', 'electronică']),
-  a('sub5', 'lab', 't8', group('g2'), 1, 'odd'),
-  a('sub5', 'lab', 't13', group('g3'), 1, 'odd'),
-  a('sub5', 'lab', 't13', group('g4'), 1, 'even'),
+  a('sub5', 'lab', 't8', sub('g1', 1), 1, ['calculatoare', 'electronică']),
+  a('sub5', 'lab', 't8', sub('g1', 2), 1, ['calculatoare', 'electronică']),
+  a('sub5', 'lab', 't8', group('g2'), 1),
+  a('sub5', 'lab', 't13', group('g3'), 1),
+  a('sub5', 'lab', 't13', group('g4'), 1),
   // Year 2
   a('sub7', 'lecture', 't1', stream('s4')),
   a('sub8', 'lecture', 't10', stream('s4')),
@@ -667,8 +665,8 @@ export const seedAssignments: Assignment[] = [
     a('sub10', 'seminar', 't14', group(g)),
     a('sub7', 'lab', g === 'g6' ? 't1' : 't6', group(g)),
     a('sub8', 'lab', 't11', group(g)),
-    a('sub9', 'lab', 't13', group(g), 1, 'odd'),
-    a('sub11', 'lab', 't8', group(g), 1, 'weekly', ['calculatoare', 'echipament rețea']),
+    a('sub9', 'lab', 't13', group(g), 1),
+    a('sub11', 'lab', 't8', group(g), 1, ['calculatoare', 'echipament rețea']),
   ]),
   // Years 3 and 4 — one group each, after lunch
   a('sub16', 'lecture', 't21', group('g13')),
@@ -686,8 +684,8 @@ export const seedAssignments: Assignment[] = [
   ...['g10', 'g11', 'g12'].flatMap((g) => [
     a('sub12', 'seminar', 't18', group(g)),
     a('sub14', 'seminar', 't15', group(g)),
-    a('sub13', 'lab', 't16', group(g), 1, 'weekly', ['laborator fizică']),
-    a('sub14', 'lab', 't19', group(g), 1, 'weekly', ['electronică']),
+    a('sub13', 'lab', 't16', group(g), 1, ['laborator fizică']),
+    a('sub14', 'lab', 't19', group(g), 1, ['electronică']),
   ]),
   // Reduced attendance (FR Anul I: TI-251FR, TI-252FR, CR-251FR) — pairs per session, on session dates;
   // lectures for the whole torent
@@ -701,22 +699,22 @@ export const seedAssignments: Assignment[] = [
   a('sub10', 'seminar', 't14', group('g9')),
   a('sub7', 'lab', 't6', group('g9')),
   a('sub8', 'lab', 't1', group('g9')),
-  a('sub9', 'lab', 't13', group('g9'), 1, 'odd'),
-  a('sub11', 'lab', 't8', group('g9'), 1, 'weekly', ['calculatoare', 'echipament rețea']),
+  a('sub9', 'lab', 't13', group('g9'), 1),
+  a('sub11', 'lab', 't8', group('g9'), 1, ['calculatoare', 'echipament rețea']),
   // Master's (IS-251M, TLC-251M) — evening classes
   a('sub20', 'lecture', 't21', group('g15')),
   a('sub20', 'lab', 't22', group('g15')),
   a('sub21', 'lecture', 't14', group('g15')),
   a('sub21', 'seminar', 't14', group('g15')),
   a('sub22', 'lecture', 't15', group('g16')),
-  a('sub22', 'lab', 't19', group('g16'), 1, 'weekly', ['electronică']),
+  a('sub22', 'lab', 't19', group('g16'), 1, ['electronică']),
   // FR Anul I — the other two groups' seminars and labs (CR-251FR's lab in half groups, room A01)
   { ...a('sub1', 'seminar', 't4', group('g17')), pairsPerSession: 3 },
   { ...a('sub3', 'lab', 't11', group('g17'), 2), pairsPerSession: 6 },
   { ...a('sub6', 'seminar', 't9', group('g17')), pairsPerSession: 2 },
   { ...a('sub1', 'seminar', 't4', group('g18')), pairsPerSession: 3 },
-  { ...a('sub3', 'lab', 't6', sub('g18', 1), 2, 'weekly', ['calculatoare', 'electronică']), pairsPerSession: 6 },
-  { ...a('sub3', 'lab', 't6', sub('g18', 2), 2, 'weekly', ['calculatoare', 'electronică']), pairsPerSession: 6 },
+  { ...a('sub3', 'lab', 't6', sub('g18', 1), 2, ['calculatoare', 'electronică']), pairsPerSession: 6 },
+  { ...a('sub3', 'lab', 't6', sub('g18', 2), 2, ['calculatoare', 'electronică']), pairsPerSession: 6 },
   { ...a('sub6', 'seminar', 't9', group('g18')), pairsPerSession: 2 },
 ];
 

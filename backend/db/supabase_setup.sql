@@ -45,6 +45,36 @@ end $$;
 -- Design: Database_Design.pdf (next to the internship report). 45 tables, every table linked to the others by foreign keys.
 -- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
 
+-- EduSchedule database schema
+-- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
+-- Design: Database_Design.pdf (next to the internship report). 46 tables, every table linked to the others by foreign keys.
+-- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
+
+-- EduSchedule database schema
+-- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
+-- Design: Database_Design.pdf (next to the internship report). 46 tables, every table linked to the others by foreign keys.
+-- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
+
+-- EduSchedule database schema
+-- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
+-- Design: Database_Design.pdf (next to the internship report). 46 tables, every table linked to the others by foreign keys.
+-- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
+
+-- EduSchedule database schema
+-- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
+-- Design: Database_Design.pdf (next to the internship report). 46 tables, every table linked to the others by foreign keys.
+-- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
+
+-- EduSchedule database schema
+-- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
+-- Design: Database_Design.pdf (next to the internship report). 46 tables, every table linked to the others by foreign keys.
+-- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
+
 begin;
 
 -- ---------------------------------------------------------------- enums
@@ -331,12 +361,12 @@ create table subject (
   id            bigint generated always as identity primary key,
   code          text not null check (code = upper(code)),
   name          text not null,
+  abbreviation  text check (abbreviation is null or length(trim(abbreviation)) > 0),   -- shown in the timetable instead of the code
   credits       numeric(4, 1) not null check (credits >= 0),
   year          smallint not null check (year between 1 and 6),
   semester      smallint not null default 1 check (semester in (1, 2)),   -- semester of the year
   faculty_id    bigint references faculty (id) on delete set null,    -- NULL = shared by all faculties
   cycle         study_cycle not null default 'licenta',
-  language      study_language not null default 'ro',                -- language it is taught in (for the groups of that language)
   evaluation    evaluation_kind not null default 'exam',            -- kept in step with has_exam
   has_midterm1  boolean not null default true,                        -- assessment: Midterm 1, Midterm 2, Exam
   has_midterm2  boolean not null default true,
@@ -346,7 +376,7 @@ create table subject (
   seminar_pairs numeric(3, 1) not null default 0 check (seminar_pairs >= 0),
   lab_pairs     numeric(3, 1) not null default 0 check (lab_pairs >= 0)
 );
-create unique index subject_code_unique on subject (code, cycle, coalesce(faculty_id, 0), language);
+create unique index subject_code_unique on subject (code, cycle, coalesce(faculty_id, 0));
 create index subject_faculty_idx on subject (faculty_id);
 
 -- A stream (torent) is the set of groups that attend one lecture together.
@@ -411,18 +441,39 @@ begin
   return sid;
 end $$;
 
--- Clusters: the year (Year 1..4) and the speciality within a year (FAF year 1, TI year 3...). They are made
--- automatically from the groups (trigger below): FAF-261 gives "year 1" and "FAF, year 1". A subject is tagged
+-- Clusters: the year (Year 1..4), the speciality within a year (FAF year 1, TI year 3...), the language and the form
+-- of study (frecvență, frecvență redusă). They are made automatically from the groups (trigger below): FAF-261
+-- gives "year 1" and "FAF, year 1". An administrator can also make custom clusters. A subject is tagged
 -- with the clusters it belongs to (subject_cluster). A cluster is never deleted automatically, so tags stay when
 -- the last group of a speciality is removed.
 create table cluster (
   id         bigint generated always as identity primary key,
-  cycle      study_cycle not null default 'licenta',
-  year       smallint not null check (year >= 1),
-  speciality text check (speciality is null or speciality = upper(speciality)),     -- NULL = the whole year
-  kind       text generated always as (case when speciality is null then 'year' else 'speciality' end) stored
+  kind       text not null check (kind in ('year', 'speciality', 'language', 'form', 'custom')),
+  cycle      study_cycle,                                                           -- only year and speciality clusters
+  year       smallint check (year >= 1),                                            -- only year and speciality clusters
+  speciality text check (speciality is null or speciality = upper(speciality)),     -- only speciality clusters
+  language   study_language,                                                        -- only language clusters
+  study_form study_form,                                                            -- only form clusters (frecvență, frecvență redusă...)
+  name       text check (name is null or length(trim(name)) > 0),                   -- only custom clusters (made by an administrator)
+  check (case kind
+    when 'year'       then cycle is not null and year is not null and speciality is null and language is null and study_form is null and name is null
+    when 'speciality' then cycle is not null and year is not null and speciality is not null and language is null and study_form is null and name is null
+    when 'language'   then language is not null and cycle is null and year is null and speciality is null and study_form is null and name is null
+    when 'form'       then study_form is not null and cycle is null and year is null and speciality is null and language is null and name is null
+    else name is not null and cycle is null and year is null and speciality is null and language is null and study_form is null end)
 );
-create unique index cluster_unique on cluster (cycle, year, coalesce(speciality, ''));
+create unique index cluster_unique on cluster (cycle, year, coalesce(speciality, '')) where kind in ('year', 'speciality');
+create unique index cluster_unique_language on cluster (language) where kind = 'language';
+create unique index cluster_unique_form on cluster (study_form) where kind = 'form';
+create unique index cluster_custom_name on cluster (lower(trim(name))) where kind = 'custom';
+
+-- the groups of a custom cluster (the groups of the other clusters are worked out from the groups themselves)
+create table cluster_group (
+  cluster_id bigint not null references cluster (id) on delete cascade,
+  group_id   bigint not null references student_group (id) on delete cascade,
+  primary key (cluster_id, group_id)
+);
+create index cluster_group_group_idx on cluster_group (group_id);
 
 create table subject_cluster (
   subject_id bigint not null references subject (id) on delete cascade,
@@ -437,12 +488,15 @@ create function speciality_of(group_name text) returns text language sql immutab
 
 create function ensure_group_clusters() returns trigger language plpgsql as $$
 begin
-  insert into cluster (cycle, year, speciality)
-  values (new.cycle, new.year, null), (new.cycle, new.year, speciality_of(new.name))
-  on conflict (cycle, year, coalesce(speciality, '')) do nothing;
+  insert into cluster (kind, cycle, year, speciality, language, study_form)
+  values ('year', new.cycle, new.year, null, null, null),
+         ('speciality', new.cycle, new.year, speciality_of(new.name), null, null),
+         ('language', null, null, null, new.language, null),
+         ('form', null, null, null, null, new.study_form)
+  on conflict do nothing;
   return new;
 end $$;
-create trigger student_group_clusters after insert or update of name, year, cycle on student_group
+create trigger student_group_clusters after insert or update of name, year, cycle, language, study_form on student_group
   for each row execute function ensure_group_clusters();
 
 create table room_preferred_subject (
@@ -469,7 +523,6 @@ create table assignment (
   subgroup_no       smallint check (subgroup_no between 1 and 4),
   pairs_per_week    numeric(3, 1) not null check (pairs_per_week >= 1),
   pairs_per_session numeric(3, 1) check (pairs_per_session > 0),      -- reduced-attendance groups
-  parity            parity not null default 'weekly',
   room_type         room_type not null,
   check (
     (audience_kind = 'stream'   and stream_id is not null and group_id is null     and subgroup_no is null) or
@@ -758,15 +811,18 @@ from semester s, (values ('licenta'), ('master')) cy (c), (values ('15:15'), ('1
 where s.is_current;
 
 -- the year clusters that always exist (licență 1-4, master's 1-2); the others are made from the groups
-insert into cluster (cycle, year)
-select 'licenta'::study_cycle, y from generate_series(1, 4) y
+insert into cluster (kind, cycle, year)
+select 'year', 'licenta'::study_cycle, y from generate_series(1, 4) y
 union all
-select 'master'::study_cycle, y from generate_series(1, 2) y
+select 'year', 'master'::study_cycle, y from generate_series(1, 2) y
 on conflict do nothing;
+-- the languages and forms of study
+insert into cluster (kind, language) select 'language', l from unnest(enum_range(null::study_language)) l on conflict do nothing;
+insert into cluster (kind, study_form) select 'form', f from unnest(enum_range(null::study_form)) f on conflict do nothing;
 
 commit;
 
--- Result: should show 45 tables, 72 foreign keys, 45 with row level security, 14 faculties, 7 time slots.
+-- Result: should show 46 tables, 74 foreign keys, 46 with row level security, 14 faculties, 7 time slots.
 select
   (select count(*) from pg_tables where schemaname = 'public')                                   as tables,
   (select count(*) from pg_constraint c join pg_namespace n on n.oid = c.connamespace

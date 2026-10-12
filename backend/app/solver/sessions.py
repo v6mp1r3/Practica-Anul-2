@@ -52,7 +52,7 @@ class _Board:
         return any((self.idx.assignment_of(o) or {}).get("subjectId") == subject_id for o in self.by_date_group.get((d, group_id), ()))
 
 
-def place_sessions(ds: dict, idx: DatasetIndex, loads: list[dict], existing: list[dict], rng: random.Random, new_id) -> list[dict]:
+def place_sessions(ds: dict, idx: DatasetIndex, loads: list[dict], existing: list[dict], rng: random.Random, new_id, example: list[dict] | None = None) -> list[dict]:
     board = _Board(idx, existing)
     placed: list[dict] = []
     settings = ds["settings"]
@@ -74,6 +74,23 @@ def place_sessions(ds: dict, idx: DatasetIndex, loads: list[dict], existing: lis
             rooms.sort(key=lambda r: (r["id"] not in preferred, r["capacity"]))
             max_per_day = min(idx.group_max_pairs(g) for g in group_ids)
             remaining = a.get("pairsPerSession") if a.get("pairsPerSession") is not None else a["pairsPerWeek"]
+            # an example timetable's pairs on this session's dates come first, where they were
+            for ex in example or []:
+                if remaining <= 0:
+                    break
+                if ex["assignmentId"] != a["id"] or ex.get("date") not in dates or ex["slot"] >= n_slots:
+                    continue
+                day = date.fromisoformat(ex["date"]).weekday()
+                if slot_key(day, ex["slot"]) in teacher.get("unavailable", []):
+                    continue
+                at = lambda rid: {"id": new_id(), "assignmentId": a["id"], "day": day, "slot": ex["slot"], "roomId": rid, "parity": "weekly", "date": ex["date"]}
+                room = next((r for r in sorted(rooms, key=lambda r: r["id"] != ex["roomId"]) if not board.clashes(at(r["id"]), a)), None)
+                if room is None:
+                    continue
+                l = at(room["id"])
+                board.add(l)
+                placed.append(l)
+                remaining -= 1
             while remaining > 0:
                 best = None
                 k = min(MAX_BLOCK, int(remaining))

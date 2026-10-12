@@ -1,10 +1,21 @@
 // In-browser implementation of the API contract. Data lives in localStorage so
 // the whole app can be used (and demoed) without the backend.
 import { seedDataset, seedNotifications, seedUsers } from '../data/seed';
-import { generateTimetable } from '../domain/generator';
+import { generateTimetable, scopeAssignments } from '../domain/generator';
 import { scoreTimetable } from '../domain/score';
 import { findHardConflicts } from '../domain/validator';
-import type { Assignment, Dataset, ExamPlan, Notification, NotificationKind, Role, ScheduleChange, Timetable, User } from '../domain/types';
+import type {
+  Assignment,
+  Cluster,
+  Dataset,
+  ExamPlan,
+  Notification,
+  NotificationKind,
+  Role,
+  ScheduleChange,
+  Timetable,
+  User,
+} from '../domain/types';
 import { generateExams, generateMidterms } from '../domain/exams';
 import { DatasetIndex } from '../domain/indexes';
 import { createRng } from '../domain/rng';
@@ -409,7 +420,8 @@ export function createMockApi(): Api {
 
     // public: anyone can see the timetable, rooms and teachers without signing in
     async getDataset() {
-      return delay({ ...store.dataset, clusters: deriveClusters(store.dataset.groups) });
+      const custom = (store.dataset.clusters ?? []).filter((c) => c.kind === 'custom');
+      return delay({ ...store.dataset, clusters: [...deriveClusters(store.dataset.groups), ...custom] });
     },
     async saveSettings(settings) {
       requireRole('admin');
@@ -462,6 +474,29 @@ export function createMockApi(): Api {
       return delay(created);
     },
 
+    async saveCluster(c) {
+      requireRole('admin');
+      const name = c.name.trim();
+      if (!name) throw new ApiError(422, 'A cluster needs a name');
+      const all = store.dataset.clusters ?? [];
+      if (all.some((x) => x.kind === 'custom' && x.id !== c.id && x.name.toLowerCase() === name.toLowerCase()))
+        throw new ApiError(409, 'A cluster with this name already exists');
+      const groupIds = [...new Set(c.groupIds)];
+      const existing = c.id ? all.find((x) => x.id === c.id && x.kind === 'custom') : undefined;
+      if (c.id && !existing) throw new ApiError(404, 'Not found');
+      const saved: Cluster = existing ? Object.assign(existing, { name, groupIds }) : { id: uid('c'), kind: 'custom', name, groupIds };
+      store.dataset.clusters = existing ? all : [...all, saved];
+      persist();
+      return delay(saved);
+    },
+    async deleteCluster(id) {
+      requireRole('admin');
+      store.dataset.clusters = (store.dataset.clusters ?? []).filter((x) => x.id !== id);
+      for (const s of store.dataset.subjects) if (s.clusterIds) s.clusterIds = s.clusterIds.filter((x) => x !== id);
+      persist();
+      return delay(undefined);
+    },
+
     async updateAvailability(teacherId, data) {
       // Only the administration enters and edits availability; teachers just see it
       requireRole('admin');
@@ -488,7 +523,11 @@ export function createMockApi(): Api {
         ...t,
         status: t.status === 'variant' ? 'draft' : t.status,
         updatedAt: new Date().toISOString(),
-        score: scoreTimetable(store.dataset, t.lessons),
+        // against the loads of its own groups, like the editor
+        score: scoreTimetable(
+          t.groupIds.length ? { ...store.dataset, assignments: scopeAssignments(store.dataset, t.groupIds) } : store.dataset,
+          t.lessons,
+        ),
       };
       const i = store.timetables.findIndex((x) => x.id === t.id);
       if (i >= 0) store.timetables[i] = saved;
@@ -580,10 +619,16 @@ export function createMockApi(): Api {
       return delay(store.timetables.find((t) => t.status === 'published') ?? null);
     },
 
+    async readTimetableSheet() {
+      // reading PDF / Excel sheets is done by the backend; the demo reads our CSV only
+      throw new ApiError(501, 'PDF and Excel files can be read in live mode only');
+    },
+
     async generate(req, onProgress) {
       requireRole('admin');
       const base = req.baseTimetableId ? store.timetables.find((t) => t.id === req.baseTimetableId) : undefined;
       const fixed = base?.lessons.filter((l) => l.locked) ?? [];
+      const example = req.exampleTimetableId ? store.timetables.find((t) => t.id === req.exampleTimetableId)?.lessons : undefined;
       // Other groups' published pairs (e.g. another faculty) stay in place and booked
       const selected = new Set(req.groupIds);
       const keep =
@@ -596,7 +641,7 @@ export function createMockApi(): Api {
       for (let v = 0; v < req.variants; v++) {
         const result = await generateTimetable(
           store.dataset,
-          { groupIds: req.groupIds, seed: seed0 + v * 7919, iterations: req.iterations, fixed, keep },
+          { groupIds: req.groupIds, seed: seed0 + v * 7919, iterations: req.iterations, fixed, keep, example },
           (p, best) => onProgress?.({ variant: v, progress: (v + p) / req.variants, best }),
         );
         out.push({

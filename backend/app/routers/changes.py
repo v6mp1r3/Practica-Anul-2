@@ -3,7 +3,9 @@ from fastapi import APIRouter, Body, Depends, Response
 from sqlalchemy import Connection, text
 
 from ..dataset import build_dataset
+from ..db import get_engine
 from ..deps import CurrentUser, get_conn, require_admin
+from ..memo import Memo
 from ..domain.changes import free_rooms_for, free_teachers_for, lesson_of_change
 from ..domain.indexes import DatasetIndex
 from ..errors import ApiError
@@ -40,10 +42,18 @@ def load_changes(conn: Connection, ids: list[int] | None = None) -> list[dict]:
     return [_json(r) for r in rows]
 
 
+def _read_changes():
+    with get_engine().connect() as conn:
+        return load_changes(conn)
+
+
+_changes = Memo(_read_changes)
+
+
 @router.get("")
-def list_changes(conn: Connection = Depends(get_conn)):
-    """Public."""
-    return load_changes(conn)
+def list_changes():
+    """Public (from memory, memo.py)."""
+    return _changes.get()
 
 
 @router.post("", status_code=201)

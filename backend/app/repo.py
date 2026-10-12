@@ -330,8 +330,8 @@ def load_subjects(conn: Connection, ids: Iterable[int] | None = None) -> list[di
     where, p = _ids_clause("s.id", ids)
     rows = _all(
         conn,
-        "select s.id, s.code, s.name, s.credits, s.year, s.semester, s.edge_of_day, f.name as faculty, s.cycle::text as cycle, s.has_midterm1, s.has_midterm2, s.has_exam, "
-        f"s.language::text as language, s.lecture_pairs, s.seminar_pairs, s.lab_pairs from subject s left join faculty f on f.id = s.faculty_id{where} order by s.id",
+        "select s.id, s.code, s.name, s.abbreviation, s.credits, s.year, s.semester, s.edge_of_day, f.name as faculty, s.cycle::text as cycle, s.has_midterm1, s.has_midterm2, s.has_exam, "
+        f"s.lecture_pairs, s.seminar_pairs, s.lab_pairs from subject s left join faculty f on f.id = s.faculty_id{where} order by s.id",
         p,
     )
     tags: dict[int, list[str]] = defaultdict(list)
@@ -344,10 +344,11 @@ def load_subjects(conn: Connection, ids: Iterable[int] | None = None) -> list[di
             "id": sid(r["id"]), "code": r["code"], "name": r["name"], "credits": num(r["credits"]), "year": r["year"], "semester": r["semester"], "edgeOfDay": r["edge_of_day"], "clusterIds": tags[r["id"]],
             "cycle": r["cycle"], "hasMidterm1": r["has_midterm1"], "hasMidterm2": r["has_midterm2"], "hasExam": r["has_exam"],
             "evaluation": "exam" if r["has_exam"] else "atestari", "lecturePairs": num(r["lecture_pairs"]), "seminarPairs": num(r["seminar_pairs"]), "labPairs": num(r["lab_pairs"]),
-            "language": r["language"],
         }
         if r["faculty"]:
             s["faculty"] = r["faculty"]
+        if r["abbreviation"]:
+            s["abbreviation"] = r["abbreviation"]
         out.append(s)
     return out
 
@@ -357,23 +358,21 @@ def save_subject(conn: Connection, data: dict, sub_id: int | None = None) -> int
     has_exam = data["hasExam"] if data.get("hasExam") is not None else data.get("evaluation") != "atestari"
     params = {
         "sm": data.get("semester") or 1, "m1": data.get("hasMidterm1") is not False, "m2": data.get("hasMidterm2") is not False, "hx": bool(has_exam),
-        "code": data["code"].strip().upper(), "name": data["name"], "credits": data["credits"], "year": data["year"],
+        "code": data["code"].strip().upper(), "name": data["name"], "abbr": (data.get("abbreviation") or "").strip() or None, "credits": data["credits"], "year": data["year"],
         "fid": faculty_id_by_name(conn, data.get("faculty")), "cycle": data.get("cycle") or "licenta", "ev": "exam" if has_exam else "atestari",
         "edge": bool(data.get("edgeOfDay")), "lec": data.get("lecturePairs") or 0, "sem": data.get("seminarPairs") or 0, "lab": data.get("labPairs") or 0,
-        "lang": data.get("language") or "ro",
     }
     if sub_id is None:
         sub_id = conn.execute(
-            text("insert into subject (code, name, credits, year, semester, faculty_id, cycle, evaluation, has_midterm1, has_midterm2, has_exam, edge_of_day, lecture_pairs, seminar_pairs, lab_pairs, language) "
-                 "values (:code, :name, :credits, :year, :sm, :fid, cast(:cycle as study_cycle), cast(:ev as evaluation_kind), :m1, :m2, :hx, :edge, :lec, :sem, :lab, cast(:lang as study_language)) returning id"),
+            text("insert into subject (code, name, abbreviation, credits, year, semester, faculty_id, cycle, evaluation, has_midterm1, has_midterm2, has_exam, edge_of_day, lecture_pairs, seminar_pairs, lab_pairs) "
+                 "values (:code, :name, :abbr, :credits, :year, :sm, :fid, cast(:cycle as study_cycle), cast(:ev as evaluation_kind), :m1, :m2, :hx, :edge, :lec, :sem, :lab) returning id"),
             params,
         ).scalar_one()
         _save_tags(conn, sub_id, data.get("clusterIds") or [])
         return sub_id
     n = conn.execute(
-        text("update subject set code=:code, name=:name, credits=:credits, year=:year, semester=:sm, faculty_id=:fid, cycle=cast(:cycle as study_cycle), "
-             "evaluation=cast(:ev as evaluation_kind), has_midterm1=:m1, has_midterm2=:m2, has_exam=:hx, edge_of_day=:edge, lecture_pairs=:lec, seminar_pairs=:sem, lab_pairs=:lab, "
-             "language=cast(:lang as study_language) where id=:id"),
+        text("update subject set code=:code, name=:name, abbreviation=:abbr, credits=:credits, year=:year, semester=:sm, faculty_id=:fid, cycle=cast(:cycle as study_cycle), "
+             "evaluation=cast(:ev as evaluation_kind), has_midterm1=:m1, has_midterm2=:m2, has_exam=:hx, edge_of_day=:edge, lecture_pairs=:lec, seminar_pairs=:sem, lab_pairs=:lab where id=:id"),
         {**params, "id": sub_id},
     ).rowcount
     if not n:
@@ -383,8 +382,24 @@ def save_subject(conn: Connection, data: dict, sub_id: int | None = None) -> int
     return sub_id
 
 
+def collapse_tags(cluster_ids: set[str], clusters: list[dict]) -> set[str]:
+    """A subject tagged with every speciality of a year (the ones that have groups) is for the whole year: those tags
+    become the year's ("Year 1")."""
+    out = set(cluster_ids)
+    years = {(c["cycle"], c["year"]): c["id"] for c in clusters if c["kind"] == "year"}
+    specs: dict[tuple, set[str]] = defaultdict(set)
+    for c in clusters:
+        if c["kind"] == "speciality" and c["groupIds"]:
+            specs[(c["cycle"], c["year"])].add(c["id"])
+    for key, ids in specs.items():
+        if key in years and ids <= out:
+            out = (out - ids) | {years[key]}
+    return out
+
+
 def _save_tags(conn: Connection, subject_id: int, cluster_ids: list) -> None:
-    _replace(conn, "subject_cluster", "subject_id", subject_id, ["cluster_id"], [(pid(c),) for c in sorted({str(c) for c in cluster_ids}, key=lambda x: (len(x), x))])
+    tags = collapse_tags({str(c) for c in cluster_ids}, load_clusters(conn))
+    _replace(conn, "subject_cluster", "subject_id", subject_id, ["cluster_id"], [(pid(c),) for c in sorted(tags, key=lambda x: (len(x), x))])
 
 
 # ---------------------------------------------------------------- clusters
@@ -395,27 +410,80 @@ def _speciality(group_name: str) -> str:
     return re.sub(r"-\d+$", "", group_name).upper()
 
 
-def cluster_name(cycle: str, year: int, speciality: str | None) -> str:
-    prefix = "Master · " if cycle == "master" else ""
-    return f"{prefix}{speciality} · Year {year}" if speciality else f"{prefix}Year {year}"
+FORM_NAMES = {"full": "Full-time", "reduced": "Reduced attendance", "dual": "Dual"}
+
+
+def cluster_name(r: dict) -> str:
+    if r["kind"] == "language":
+        return f"Language · {r['language'].upper()}"
+    if r["kind"] == "form":
+        return FORM_NAMES.get(r["study_form"], r["study_form"])
+    if r["kind"] == "custom":
+        return r["name"]
+    prefix = "Master · " if r["cycle"] == "master" else ""
+    return f"{prefix}{r['speciality']} · Year {r['year']}" if r["speciality"] else f"{prefix}Year {r['year']}"
 
 
 def load_clusters(conn: Connection) -> list[dict]:
-    """The clusters (made automatically from the groups) with the groups that belong to each."""
-    rows = _all(conn, "select id, kind, cycle::text as cycle, year, speciality from cluster", {})
+    """The clusters with the groups that belong to each: made automatically from the groups (year, speciality,
+    language, form of study) or by an administrator (custom)."""
+    rows = _all(conn, "select id, kind, cycle::text as cycle, year, speciality, language::text as language, study_form::text as study_form, name from cluster", {})
     members: dict[tuple, list[str]] = defaultdict(list)
-    for g in _all(conn, "select id, name, cycle::text as cycle, year from student_group order by id", {}):
-        members[(g["cycle"], g["year"], None)].append(sid(g["id"]))
-        members[(g["cycle"], g["year"], _speciality(g["name"]))].append(sid(g["id"]))
-    rows.sort(key=lambda r: (r["cycle"] != "licenta", r["year"], r["speciality"] is not None, r["speciality"] or ""))
+    for g in _all(conn, "select id, name, cycle::text as cycle, year, language::text as language, study_form::text as study_form from student_group order by id", {}):
+        for key in (("year", g["cycle"], g["year"], None), ("speciality", g["cycle"], g["year"], _speciality(g["name"])),
+                    ("language", g["language"]), ("form", g["study_form"])):
+            members[key].append(sid(g["id"]))
+    custom: dict[int, list[str]] = defaultdict(list)
+    for m in _all(conn, "select cluster_id, group_id from cluster_group order by group_id", {}):
+        custom[m["cluster_id"]].append(sid(m["group_id"]))
+    order = {"year": 0, "speciality": 0, "language": 1, "form": 2, "custom": 3}
+    rows.sort(key=lambda r: (order[r["kind"]], r["cycle"] != "licenta", r["year"] or 0, r["speciality"] is not None, r["speciality"] or "",
+                             (["ro", "ru", "en", "fr"] + [r["language"]]).index(r["language"]) if r["language"] else 0,
+                             (["full", "reduced", "dual"] + [r["study_form"]]).index(r["study_form"]) if r["study_form"] else 0, (r["name"] or "").lower()))
     out = []
     for r in rows:
-        c = {"id": sid(r["id"]), "kind": r["kind"], "cycle": r["cycle"], "year": r["year"], "name": cluster_name(r["cycle"], r["year"], r["speciality"]),
-             "groupIds": members[(r["cycle"], r["year"], r["speciality"])]}
-        if r["speciality"]:
-            c["speciality"] = r["speciality"]
+        k = r["kind"]
+        ids = custom[r["id"]] if k == "custom" else members[
+            ("language", r["language"]) if k == "language" else ("form", r["study_form"]) if k == "form" else (k, r["cycle"], r["year"], r["speciality"])]
+        c = {"id": sid(r["id"]), "kind": k, "name": cluster_name(r), "groupIds": ids}
+        for key, field in (("cycle", "cycle"), ("year", "year"), ("speciality", "speciality"), ("language", "language"), ("studyForm", "study_form")):
+            if r[field] is not None:
+                c[key] = r[field]
         out.append(c)
     return out
+
+
+def save_custom_cluster(conn: Connection, data: dict, cluster_id: int | None = None) -> int:
+    """A cluster made by an administrator: a name and the groups in it. The other clusters follow the groups."""
+    name = (data.get("name") or "").strip()
+    if not name:
+        raise ApiError(422, "A cluster needs a name")
+    group_ids = sorted({pid(g) for g in data.get("groupIds") or []})
+    if group_ids and conn.execute(text("select count(*) from student_group where id = any(cast(:g as bigint[]))"), {"g": group_ids}).scalar_one() != len(group_ids):
+        raise ApiError(422, "Unknown group")
+    clash = conn.execute(text("select id from cluster where kind = 'custom' and lower(trim(name)) = lower(:n) and id is distinct from :id"), {"n": name, "id": cluster_id}).first()
+    if clash:
+        raise ApiError(409, "A cluster with this name already exists")
+    new = cluster_id is None
+    if new:
+        cluster_id = conn.execute(text("insert into cluster (kind, name) values ('custom', :n) returning id"), {"n": name}).scalar_one()
+    else:
+        if not conn.execute(text("update cluster set name = :n where id = :id and kind = 'custom'"), {"n": name, "id": cluster_id}).rowcount:
+            raise _not_custom(conn, cluster_id)
+    if new or "groupIds" in data:  # an update that does not mention the groups leaves them as they are
+        _replace(conn, "cluster_group", "cluster_id", cluster_id, ["group_id"], [(g,) for g in group_ids])
+    return cluster_id
+
+
+def delete_custom_cluster(conn: Connection, cluster_id: int) -> None:
+    if not conn.execute(text("delete from cluster where id = :id and kind = 'custom'"), {"id": cluster_id}).rowcount:
+        raise _not_custom(conn, cluster_id)
+
+
+def _not_custom(conn: Connection, cluster_id: int) -> ApiError:
+    if conn.execute(text("select 1 from cluster where id = :id"), {"id": cluster_id}).first():
+        return ApiError(400, "Only custom clusters can be changed; the others follow the groups")
+    return ApiError(404, "Not found")
 
 
 # ---------------------------------------------------------------- assignments
@@ -426,7 +494,7 @@ def load_assignments(conn: Connection, ids: Iterable[int] | None = None) -> list
     rows = _all(
         conn,
         "select a.id, a.subject_id, a.activity_type::text as type, a.teacher_id, a.audience_kind::text as kind, a.stream_id, a.group_id, a.subgroup_no, "
-        f"a.pairs_per_week, a.pairs_per_session, a.parity::text as parity, a.room_type::text as room_type from assignment a{where} order by a.id",
+        f"a.pairs_per_week, a.pairs_per_session, a.room_type::text as room_type from assignment a{where} order by a.id",
         p,
     )
     if not rows:
@@ -444,7 +512,7 @@ def load_assignments(conn: Connection, ids: Iterable[int] | None = None) -> list
             aud = {"kind": "subgroup", "id": sid(r["group_id"]), "subgroup": r["subgroup_no"]}
         a = {
             "id": sid(r["id"]), "subjectId": sid(r["subject_id"]), "type": r["type"], "teacherId": sid(r["teacher_id"]), "audience": aud,
-            "pairsPerWeek": num(r["pairs_per_week"]), "parity": r["parity"], "roomType": r["room_type"], "equipment": equip[r["id"]],
+            "pairsPerWeek": num(r["pairs_per_week"]), "roomType": r["room_type"], "equipment": equip[r["id"]],
         }
         if r["pairs_per_session"] is not None:
             a["pairsPerSession"] = num(r["pairs_per_session"])
@@ -462,10 +530,30 @@ def audience_group_ids(conn: Connection, audience: dict) -> list[int]:
     return [pid(audience["id"])]
 
 
+def groups_allowed_by_tags(conn: Connection, subject_id: int) -> set[int] | None:
+    """The groups a subject can be given to, from its tags (a subject tagged "Year 1" is not for a group of year 2);
+    None when it has no tags. Tags of one kind add up, tags of different kinds all have to fit."""
+    tagged = {pid(r[0]) for r in conn.execute(text("select cluster_id from subject_cluster where subject_id = :s"), {"s": subject_id}).all()}
+    if not tagged:
+        return None
+    by_kind: dict[str, set[int]] = defaultdict(set)
+    for c in load_clusters(conn):
+        if pid(c["id"]) in tagged:
+            by_kind[c["kind"]] |= {pid(g) for g in c["groupIds"]}
+    allowed: set[int] | None = None
+    for ids in by_kind.values():
+        allowed = ids if allowed is None else allowed & ids
+    return allowed
+
+
 def save_assignment(conn: Connection, data: dict, assignment_id: int | None = None) -> int:
     aud = data["audience"]
     kind = aud["kind"]
     subject_id = pid(data["subjectId"])
+    if kind in ("stream", "group", "subgroup"):
+        allowed = groups_allowed_by_tags(conn, subject_id)
+        if allowed is not None and not set(audience_group_ids(conn, aud)) <= allowed:
+            raise ApiError(422, "This subject is not taught to that group (see its cluster tags)")
     stream_id = group_id = subgroup = None
     if kind == "stream":
         if aud.get("id") not in (None, ""):
@@ -485,18 +573,18 @@ def save_assignment(conn: Connection, data: dict, assignment_id: int | None = No
         raise ApiError(422, f"Unknown audience kind: {kind}")
     params = {
         "sub": subject_id, "teacher": pid(data["teacherId"]), "type": data["type"], "kind": kind, "stream": stream_id, "group": group_id, "sg": subgroup,
-        "ppw": data["pairsPerWeek"], "pps": data.get("pairsPerSession"), "parity": data.get("parity") or "weekly", "room": data["roomType"],
+        "ppw": data["pairsPerWeek"], "pps": data.get("pairsPerSession"), "room": data["roomType"],
     }
     if assignment_id is None:
         assignment_id = conn.execute(
-            text("insert into assignment (subject_id, teacher_id, activity_type, audience_kind, stream_id, group_id, subgroup_no, pairs_per_week, pairs_per_session, parity, room_type) "
-                 "values (:sub, :teacher, cast(:type as activity_type), cast(:kind as audience_kind), :stream, :group, :sg, :ppw, :pps, cast(:parity as parity), cast(:room as room_type)) returning id"),
+            text("insert into assignment (subject_id, teacher_id, activity_type, audience_kind, stream_id, group_id, subgroup_no, pairs_per_week, pairs_per_session, room_type) "
+                 "values (:sub, :teacher, cast(:type as activity_type), cast(:kind as audience_kind), :stream, :group, :sg, :ppw, :pps, cast(:room as room_type)) returning id"),
             params,
         ).scalar_one()
     else:
         n = conn.execute(
             text("update assignment set subject_id=:sub, teacher_id=:teacher, activity_type=cast(:type as activity_type), audience_kind=cast(:kind as audience_kind), "
-                 "stream_id=:stream, group_id=:group, subgroup_no=:sg, pairs_per_week=:ppw, pairs_per_session=:pps, parity=cast(:parity as parity), room_type=cast(:room as room_type) where id=:id"),
+                 "stream_id=:stream, group_id=:group, subgroup_no=:sg, pairs_per_week=:ppw, pairs_per_session=:pps, room_type=cast(:room as room_type) where id=:id"),
             {**params, "id": assignment_id},
         ).rowcount
         if not n:

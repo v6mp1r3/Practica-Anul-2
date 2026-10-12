@@ -5,7 +5,7 @@ import { api, API_MODE } from '../../api';
 import { resetMockData } from '../../api/mock';
 import { useAdminScope } from '../../components/FacultyFilter';
 import { Icon } from '../../components/Icon';
-import { Field, PageHeader, Segmented, Switch, TimeInput, useClock } from '../../components/ui';
+import { DateInput, Field, PageHeader, Segmented, Switch, TimeInput, useClock } from '../../components/ui';
 import { fmtTime, parseTime, range } from '../../domain/slots';
 import { DEFAULT_EVALUATION, DEFAULT_MASTER, evaluationOf, midtermRange, teachingWeek } from '../../domain/exams';
 import { parseDate, toDateString } from '../../domain/changes';
@@ -27,6 +27,7 @@ import { useAuth } from '../../state/auth';
 import { useData, useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { Select } from '../../components/Select';
+import { GroupPicker } from '../../components/GroupPicker';
 
 const toMin = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -162,14 +163,10 @@ export default function Setup() {
   // Stagii de practică: the faculty's groups, by cycle and year
   const scope = useAdminScope();
   const myGroupIds = dataset.groups.filter((g) => !scope || g.faculty === scope).map((g) => g.id);
-  const periodGroupSets = (['licenta', 'master'] as StudyCycle[]).flatMap((cy) => {
-    const inCy = dataset.groups.filter((g) => myGroupIds.includes(g.id) && (g.cycle ?? 'licenta') === cy);
-    return [...new Set(inCy.map((g) => g.year))].sort().map((y) => ({
-      key: `${cy}-${y}`,
-      label: `${t(`cycle.${cy}`)} · ${t('groups.year')} ${y}`,
-      groups: inCy.filter((g) => g.year === y).sort((a, b) => a.name.localeCompare(b.name)),
-    }));
-  });
+  // a period's groups: licență and master's each in the group picker (by year, then a line per specialty)
+  const periodCycles = (['licenta', 'master'] as StudyCycle[])
+    .map((cy) => ({ cycle: cy, groups: dataset.groups.filter((g) => myGroupIds.includes(g.id) && (g.cycle ?? 'licenta') === cy) }))
+    .filter((x) => x.groups.length > 0);
   // Licență | Master: master's tab shows licență's settings with the master overrides on top
   const [evCycle, setEvCycle] = useState<StudyCycle>('licenta');
   const [shiftCycle, setShiftCycle] = useState<StudyCycle>('licenta');
@@ -414,9 +411,7 @@ export default function Setup() {
                 <span className="small muted" style={{ minWidth: 70 }}>
                   {t('setup.session')} {i + 1}
                 </span>
-                <input
-                  className="input"
-                  type="date"
+                <DateInput
                   style={{ width: 170 }}
                   value={sess.start}
                   aria-label={`${t('setup.session')} ${i + 1} — ${t('setup.start')}`}
@@ -428,9 +423,7 @@ export default function Setup() {
                   }
                 />
                 <span className="muted">–</span>
-                <input
-                  className="input"
-                  type="date"
+                <DateInput
                   style={{ width: 170 }}
                   value={sess.end}
                   min={sess.start}
@@ -724,12 +717,7 @@ export default function Setup() {
                       </Field>
                     ) : (
                       <Field label={t('setup.semesterStart')}>
-                        <input
-                          className="input"
-                          type="date"
-                          value={semesterStartOf(ev.semesterStart)}
-                          onChange={(e) => setEv({ semesterStart: e.target.value })}
-                        />
+                        <DateInput value={semesterStartOf(ev.semesterStart)} onChange={(e) => setEv({ semesterStart: e.target.value })} />
                       </Field>
                     )}
                     <Field label={t('setup.midtermWeeks')}>
@@ -814,10 +802,8 @@ export default function Setup() {
                             {t('setup.period')} {i + 1}
                           </span>
                           {(['start', 'end'] as const).map((edge) => (
-                            <input
+                            <DateInput
                               key={edge}
-                              className="input"
-                              type="date"
                               style={{ width: 170 }}
                               value={r[edge]}
                               min={edge === 'end' ? r.start : undefined}
@@ -975,10 +961,8 @@ export default function Setup() {
                       ))}
                     </Select>
                     {(['start', 'end'] as const).map((edge) => (
-                      <input
+                      <DateInput
                         key={edge}
-                        className="input"
-                        type="date"
                         style={{ width: 170 }}
                         value={p[edge]}
                         min={edge === 'end' ? p.start : undefined}
@@ -1007,35 +991,11 @@ export default function Setup() {
                   </div>
                   {/* which groups: by cycle and year (other faculties' groups in it stay as they are) */}
                   <div className="period-groups">
-                    {periodGroupSets.map((set_) => (
-                      <div key={set_.key} className="row wrap" style={{ gap: 8 }}>
-                        <button
-                          type="button"
-                          className="btn ghost sm"
-                          onClick={() => {
-                            const all = set_.groups.every((g) => p.groupIds.includes(g.id));
-                            const ids = set_.groups.map((g) => g.id);
-                            setPeriod({
-                              groupIds: all ? p.groupIds.filter((g) => !ids.includes(g)) : [...new Set([...p.groupIds, ...ids])],
-                            });
-                          }}
-                        >
-                          {set_.label}
-                        </button>
-                        <div className="checks">
-                          {set_.groups.map((g) => (
-                            <label key={g.id} className="check">
-                              <input
-                                type="checkbox"
-                                checked={p.groupIds.includes(g.id)}
-                                onChange={(e) =>
-                                  setPeriod({ groupIds: e.target.checked ? [...p.groupIds, g.id] : p.groupIds.filter((x) => x !== g.id) })
-                                }
-                              />
-                              {g.name}
-                            </label>
-                          ))}
-                        </div>
+                    {periodCycles.map(({ cycle: cy, groups }) => (
+                      <div key={cy} className="stack" style={{ gap: 6 }}>
+                        {periodCycles.length > 1 && <strong className="small">{t(`cycle.${cy}`)}</strong>}
+                        {/* other faculties' groups already in the period stay as they are */}
+                        <GroupPicker groups={groups} value={p.groupIds} onChange={(groupIds) => setPeriod({ groupIds })} />
                       </div>
                     ))}
                   </div>

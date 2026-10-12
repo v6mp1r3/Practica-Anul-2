@@ -16,7 +16,7 @@ from typing import Callable
 
 from ..domain.indexes import DatasetIndex
 from ..domain.score import score_timetable
-from .greedy import construct
+from .greedy import adopt_example, construct
 from .model import Placement, solve_weekly
 from .sessions import place_sessions
 
@@ -32,6 +32,9 @@ class Generated:
     steps: int  # LNS steps tried
     improved: int  # LNS steps that found something not worse
     missing: int  # pairs the solver could not place (contradictory data)
+
+
+EXAMPLE_WEIGHT = 2  # search cost of moving one pair away from the example timetable (= a missed preferred room)
 
 
 def _better(x: dict, y: dict) -> bool:
@@ -64,6 +67,7 @@ def generate_timetable(
     workers: int | None = None,
     initial_share: float = 0.2,
     repair_seconds: float = 2.0,
+    example: list[dict] | None = None,
 ) -> Generated:
     started = time.monotonic()
     idx = DatasetIndex(ds)
@@ -95,9 +99,39 @@ def generate_timetable(
     def as_lessons(ps: list[Placement]) -> list[dict]:
         return [p.as_lesson(new_id()) for p in ps]
 
-    # ---- starting point: a quick heuristic timetable, so there is always a complete answer to improve
+    # ---- an example timetable to follow: its pairs first, where they were (they may still move later)
     base = keep + locked
-    todo = deficits(locked)
+    adopted = as_lessons(adopt_example(ds, idx, deficits(locked), base, example or []))
+    example_at: dict[tuple, int] = {}
+    for l in example or []:
+        if not l.get("date"):
+            k = (l["assignmentId"], l["day"], l["slot"])
+            example_at[k] = example_at.get(k, 0) + 1
+
+    def away(ls: list[dict]) -> int:
+        """Pairs not where the example has them (0 without an example)."""
+        if not example_at:
+            return 0
+        left = dict(example_at)
+        n = 0
+        for l in ls:
+            k = (l["assignmentId"], l["day"], l["slot"])
+            if left.get(k, 0) > 0:
+                left[k] -= 1
+            elif l["id"] not in keep_ids and not l.get("date"):
+                n += 1
+        return n
+
+    def accept(cand: dict, cand_ls: list[dict], cur: dict, cur_ls: list[dict]) -> bool:
+        """Not worse; with an example, leaving it costs EXAMPLE_WEIGHT per pair."""
+        if not example_at:
+            return _better(cand, cur)
+        return cand["hard"] < cur["hard"] or (cand["hard"] == cur["hard"] and cand["soft"] + EXAMPLE_WEIGHT * away(cand_ls) <= cur["soft"] + EXAMPLE_WEIGHT * away(cur_ls))
+
+    keep_ids = {l["id"] for l in keep}
+    # ---- starting point: a quick heuristic timetable, so there is always a complete answer to improve
+    base = base + adopted
+    todo = deficits(locked + adopted)
     start = as_lessons(construct(ds, idx, todo, base, rng))
     lessons = base + start
     score = score_timetable(weekly_ds, lessons, idx)
@@ -109,12 +143,11 @@ def generate_timetable(
     if first.status in ("OPTIMAL", "FEASIBLE"):
         candidate = base + as_lessons(first.placements)
         cand_score = score_timetable(weekly_ds, candidate, idx)
-        if _better(cand_score, score):  # never worse than the heuristic
+        if accept(cand_score, candidate, score, lessons):  # never worse than the heuristic
             lessons, score = candidate, cand_score
     tick(initial_share, score)
 
     # ---- Algorithm 2: Large Neighborhood Search with CP-SAT as the repair step
-    keep_ids = {l["id"] for l in keep}
     k = 6
     stale = 0
     steps = improved = 0
@@ -151,7 +184,7 @@ def generate_timetable(
         else:
             candidate = rest + as_lessons(res.placements)
             cand_score = score_timetable(weekly_ds, candidate, idx)
-            if _better(cand_score, score):
+            if accept(cand_score, candidate, score, lessons):
                 if cand_score["hard"] < score["hard"] or cand_score["soft"] < score["soft"]:
                     stale, k = 0, 6
                 else:
@@ -167,7 +200,7 @@ def generate_timetable(
 
     # ---- reduced attendance: dated session pairs around everything else
     if reduced:
-        lessons = lessons + place_sessions(ds, idx, reduced, lessons, rng, new_id)
+        lessons = lessons + place_sessions(ds, idx, reduced, lessons, rng, new_id, example)
     final = score_timetable({**ds, "assignments": scoped}, lessons, idx)
     tick(1.0, final)
     return Generated(lessons, final, seed, time.monotonic() - started, steps, improved, sum(deficits(lessons).values()))

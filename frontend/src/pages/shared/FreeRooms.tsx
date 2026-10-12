@@ -1,31 +1,97 @@
 import { useState } from 'react';
-import { TimetableGrid } from '../../components/TimetableGrid';
-import { Empty, Field, PageHeader, Segmented } from '../../components/ui';
+import { SessionsSection } from '../../components/SessionTimetable';
+import { Legend, TimetableGrid } from '../../components/TimetableGrid';
+import { Field, PageHeader, Segmented } from '../../components/ui';
 import { freeRooms } from '../../domain/availability';
-import { fmtTime, weekDays } from '../../domain/slots';
+import { fmtTime, paritiesOverlap, weekDays } from '../../domain/slots';
+import { subjectLabel } from '../../domain/subjects';
 import type { Parity } from '../../domain/types';
+import { useRoomFilters } from '../../components/RoomFilters';
 import { useEquipment } from '../../components/useEquipment';
-import { dayIndexOf, weekParityOf } from '../../domain/views';
+import { dayIndexOf, gridDays, inWeek, sessionPairsThisWeek, weekParityOf } from '../../domain/views';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { Select } from '../../components/Select';
+
+const ROOM_KEY = 'eduschedule:freeRooms:room';
 
 /** Find an empty room for studying, a consultation or a make-up class. */
 export default function FreeRooms() {
   const { t } = useI18n();
   const { dataset, index, published } = useDataset();
+  const equipment = useEquipment();
   const days = weekDays(dataset.settings);
   const today = days.includes(dayIndexOf(new Date())) ? dayIndexOf(new Date()) : days[0];
   const [day, setDay] = useState(today);
   const [slot, setSlot] = useState(0);
   const [week, setWeek] = useState<Parity>(dataset.settings.weekParity ? weekParityOf(new Date()) : 'weekly');
-  const [minCapacity, setMinCapacity] = useState(0);
-  const [equipment, setEquipment] = useState('');
-  const eq = useEquipment();
+  // the same room filters as Săli: block, floor, seats, equipment
+  const roomFilters = useRoomFilters(dataset.rooms);
+  const rooms = roomFilters.filtered;
 
   const lessons = published?.lessons ?? [];
-  const opts = { minCapacity, equipment };
-  const list = freeRooms(dataset.rooms, lessons, day, slot, week, opts);
+  // the week grid has its own odd / even / both switch
+  const [gridWeek, setGridWeek] = useState<Parity>(week);
+  const freeInGrid = (d: number, s: number) => freeRooms(rooms, lessons, d, s, gridWeek);
+  // checking one room at the chosen day, pair and week
+  const allRooms = [...dataset.rooms].sort((a, b) => a.name.localeCompare(b.name, 'ro', { numeric: true }));
+  // the room whose week is shown (as on Orar profesori): the last one looked at, or the first; '' = all rooms
+  const [checkId, setCheckIdState] = useState(() => {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(ROOM_KEY);
+    } catch {
+      /* ignore */
+    }
+    return saved !== null && (saved === '' || index.rooms.has(saved)) ? saved : (allRooms[0]?.id ?? '');
+  });
+  const setCheckId = (id: string) => {
+    setCheckIdState(id);
+    try {
+      localStorage.setItem(ROOM_KEY, id);
+    } catch {
+      /* ignore */
+    }
+  };
+  const checked = index.rooms.get(checkId);
+  const occupying = checked
+    ? lessons.filter((l) => !l.date && l.roomId === checked.id && l.day === day && l.slot === slot && paritiesOverlap(l.parity, week))
+    : [];
+  // the chosen room's pairs: the week (odd / even / both) and the session dates
+  const roomLessons = checked ? lessons.filter((l) => l.roomId === checked.id) : [];
+  // plus this week's frecvență redusă pairs on their day; Saturday and Sunday when the room has such pairs
+  const roomWeek = [
+    ...roomLessons.filter((l) => !l.date && inWeek(l, gridWeek)),
+    ...(gridWeek === 'weekly' || !dataset.settings.weekParity || gridWeek === weekParityOf(new Date())
+      ? sessionPairsThisWeek(roomLessons)
+      : []),
+  ];
+  const roomDays = gridDays(dataset.settings, roomLessons);
+  // today only: the rooms free in the current pair (or the next one, between pairs), in this week
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const toMin = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+  const todaySlot = days.includes(dayIndexOf(now)) ? dataset.settings.slots.findIndex((x) => toMin(x.end) > nowMinutes) : -1;
+  const todayList =
+    todaySlot >= 0 ? freeRooms(rooms, lessons, dayIndexOf(now), todaySlot, dataset.settings.weekParity ? weekParityOf(now) : 'weekly') : [];
+
+  // a room's week, or every room's free count ("Toate sălile")
+  const roomPicker = (
+    <Select
+      className="select pill"
+      style={{ minWidth: 170 }}
+      value={checkId}
+      onChange={(e) => setCheckId(e.target.value)}
+      aria-label={t('freeRooms.check')}
+    >
+      <option value="">{t('freeRooms.allRooms')}</option>
+      {allRooms.map((r) => (
+        <option key={r.id} value={r.id}>
+          {r.name}
+        </option>
+      ))}
+    </Select>
+  );
 
   return (
     <div className="page">
@@ -54,25 +120,45 @@ export default function FreeRooms() {
                 ))}
               </Select>
             </Field>
-            <Field label={t('freeRooms.minCapacity')}>
-              <input
-                className="input"
-                type="number"
-                min={0}
-                value={minCapacity}
-                onChange={(e) => setMinCapacity(Number(e.target.value) || 0)}
-              />
-            </Field>
-            <Field label={t('freeRooms.equipment')}>
-              <Select className="select" value={equipment} onChange={(e) => setEquipment(e.target.value)}>
-                <option value="">{t('freeRooms.anyEquipment')}</option>
-                {eq.options.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
+            {/* one room: is it free at this day and pair? */}
+            <Field label={t('freeRooms.check')}>
+              <Select className="select" value={checkId} onChange={(e) => setCheckId(e.target.value)} aria-label={t('freeRooms.check')}>
+                <option value="">{t('freeRooms.checkPick')}</option>
+                {allRooms.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
                   </option>
                 ))}
               </Select>
             </Field>
+          </div>
+          {checked && (
+            <div className="card-body" style={{ paddingTop: 0 }}>
+              {occupying.length === 0 ? (
+                <span className="badge success">{t('freeRooms.isFree', { room: checked.name })}</span>
+              ) : (
+                <span className="row wrap" style={{ gap: 8 }}>
+                  <span className="badge danger">{t('freeRooms.isBusy', { room: checked.name })}</span>
+                  {occupying.map((l) => {
+                    const a = index.assignmentOf(l)!;
+                    return (
+                      <span key={l.id} className="small muted">
+                        {subjectLabel(index.subjects.get(a.subjectId))} · {t(`activity.${a.type}`)} · {index.audienceLabel(a.audience)} ·{' '}
+                        {index.teachers.get(a.teacherId)?.name}
+                      </span>
+                    );
+                  })}
+                </span>
+              )}
+            </div>
+          )}
+          <div className="filter-bar">
+            {roomFilters.controls}
+            {roomFilters.filtering && (
+              <button className="btn ghost sm" onClick={roomFilters.reset}>
+                {t('filters.reset')}
+              </button>
+            )}
           </div>
           {dataset.settings.weekParity && (
             <div className="card-body" style={{ paddingTop: 0 }}>
@@ -80,6 +166,8 @@ export default function FreeRooms() {
                 value={week}
                 onChange={setWeek}
                 options={[
+                  // both weeks: free (or shown) for the odd and the even week together
+                  { value: 'weekly', label: t('tt.weekAll') },
                   { value: 'odd', label: t('tt.weekOdd') },
                   { value: 'even', label: t('tt.weekEven') },
                 ]}
@@ -88,52 +176,122 @@ export default function FreeRooms() {
           )}
         </div>
 
-        <div className="card">
-          <div className="card-header">
-            <h2>{t('freeRooms.result', { count: list.length })}</h2>
-          </div>
-          {list.length === 0 ? (
-            <Empty>{t('freeRooms.none')}</Empty>
+        {/* today: how many rooms are free now */}
+        <div className="card free-now">
+          {todaySlot < 0 ? (
+            <span className="muted">{t(days.includes(dayIndexOf(now)) ? 'freeRooms.noPairsToday' : 'freeRooms.dayOff')}</span>
           ) : (
-            <div className="card-body row wrap" style={{ gap: 10 }}>
-              {list.map((r) => (
-                <div key={r.id} className="card" style={{ padding: '10px 14px', minWidth: 150 }}>
-                  <strong>{r.name}</strong>
-                  <div className="small muted">
-                    {r.capacity} {t('rooms.capacity').toLowerCase()}
-                  </div>
-                  {r.equipment.length > 0 && <div className="small muted">{eq.list(r.equipment)}</div>}
-                </div>
-              ))}
+            <div className="free-now-count">
+              <strong>{todayList.length}</strong>
+              <span>{t('freeRooms.today', { pair: todaySlot + 1 })}</span>
             </div>
           )}
         </div>
 
-        <div>
-          <h2 style={{ marginBottom: 4 }}>{t('freeRooms.overview')}</h2>
-          <p className="small muted" style={{ marginBottom: 10 }}>
-            {t('freeRooms.overviewHint')}
-          </p>
-          <TimetableGrid
-            className="avail"
-            settings={dataset.settings}
-            index={index}
-            lessons={[]}
-            onCellClick={(d, s) => {
-              setDay(d);
-              setSlot(s);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            cellClass={(d, s) =>
-              d === day && s === slot
-                ? 'state-consultation'
-                : freeRooms(dataset.rooms, lessons, d, s, week, opts).length
-                  ? 'state-free'
-                  : 'state-unavailable'
-            }
-            renderCell={(d, s) => freeRooms(dataset.rooms, lessons, d, s, week, opts).length}
-          />
-        </div>
+        {checked ? (
+          // one room: its week, like a teacher's timetable; the pairs it is free say so
+          <div>
+            <div className="row wrap" style={{ gap: 12, marginBottom: 4 }}>
+              <h2>{t('freeRooms.roomTimetable', { room: checked.name })}</h2>
+              {roomPicker}
+              <span className="small muted">
+                {[`${checked.capacity} ${t('rooms.capacity').toLowerCase()}`, ...checked.equipment.map((e) => equipment.label(e))].join(
+                  ' · ',
+                )}
+              </span>
+              {dataset.settings.weekParity && (
+                <Segmented
+                  value={gridWeek}
+                  onChange={setGridWeek}
+                  options={[
+                    { value: 'weekly', label: t('tt.weekAll') },
+                    { value: 'odd', label: t('tt.weekOdd') },
+                    { value: 'even', label: t('tt.weekEven') },
+                  ]}
+                />
+              )}
+            </div>
+            <p className="small muted" style={{ marginBottom: 10 }}>
+              {t('freeRooms.roomHint')}
+            </p>
+            <TimetableGrid
+              settings={dataset.settings}
+              index={index}
+              lessons={roomWeek}
+              days={roomDays}
+              hide={['room']}
+              today={dayIndexOf(now)}
+              renderCell={(d, s) =>
+                roomWeek.some((l) => l.day === d && l.slot === s) ? null : <span className="room-free">{t('freeRooms.free')}</span>
+              }
+            />
+            <Legend />
+            <SessionsSection dataset={dataset} index={index} lessons={roomLessons} hide={['room']} />
+          </div>
+        ) : (
+          <div>
+            <div className="row wrap" style={{ gap: 12, marginBottom: 4 }}>
+              <h2>{t('freeRooms.overview')}</h2>
+              {roomPicker}
+              {dataset.settings.weekParity && (
+                <Segmented
+                  value={gridWeek}
+                  onChange={setGridWeek}
+                  options={[
+                    { value: 'weekly', label: t('tt.weekAll') },
+                    { value: 'odd', label: t('tt.weekOdd') },
+                    { value: 'even', label: t('tt.weekEven') },
+                  ]}
+                />
+              )}
+            </div>
+            <p className="small muted" style={{ marginBottom: 10 }}>
+              {t('freeRooms.overviewHint')}
+            </p>
+            <TimetableGrid
+              className="avail"
+              settings={dataset.settings}
+              index={index}
+              lessons={[]}
+              // today's column and the line at the current time, as on Profesori disponibili
+              today={dayIndexOf(now)}
+              onCellClick={(d, s) => {
+                setDay(d);
+                setSlot(s);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              cellClass={(d, s) =>
+                d === day && s === slot ? 'state-consultation' : freeInGrid(d, s).length ? 'state-free' : 'state-unavailable'
+              }
+              // the number of free rooms; clicking it opens the list of them (searchable)
+              renderCell={(d, s) => {
+                const free = freeInGrid(d, s);
+                if (!free.length) return 0;
+                return (
+                  <Select
+                    className="select cell-select"
+                    value=""
+                    onChange={(e) => {
+                      setDay(d);
+                      setSlot(s);
+                      setWeek(gridWeek);
+                      setCheckId(e.target.value);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    aria-label={t('freeRooms.find')}
+                  >
+                    <option value="">{free.length}</option>
+                    {free.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name} · {r.capacity} {t('rooms.capacity').toLowerCase()}
+                      </option>
+                    ))}
+                  </Select>
+                );
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -77,6 +77,8 @@ export function createHttpApi(baseUrl: string): Api {
     update: (name, item) => request('PUT', `/${name}/${item.id}`, item),
     remove: (name, id) => request('DELETE', `/${name}/${id}`),
     importSubjects: (subjects) => request('POST', '/subjects/import', { subjects }),
+    saveCluster: (c) => (c.id ? request('PUT', `/clusters/${c.id}`, c) : request('POST', '/clusters', c)),
+    deleteCluster: (id) => request('DELETE', `/clusters/${id}`),
 
     updateAvailability: (teacherId, data) => request('PUT', `/teachers/${teacherId}/availability`, data),
 
@@ -87,6 +89,19 @@ export function createHttpApi(baseUrl: string): Api {
     publishTimetable: (id) => request('POST', `/timetables/${id}/publish`),
     unpublishTimetable: (id) => request('POST', `/timetables/${id}/unpublish`),
     getPublished: () => request('GET', '/timetables/published'),
+    async readTimetableSheet(file) {
+      const token = getToken();
+      const res = await fetch(`${baseUrl}/timetables/import-sheet?filename=${encodeURIComponent(file.name)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: file,
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}));
+        throw new ApiError(res.status, detail.message ?? res.statusText);
+      }
+      return res.json();
+    },
 
     // Generation is a background job: start it, then poll until it is done.
     async generate(req, onProgress) {

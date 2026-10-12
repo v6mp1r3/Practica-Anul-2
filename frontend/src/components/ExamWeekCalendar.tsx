@@ -10,6 +10,7 @@ import { dateLocale, useI18n } from '../i18n';
 import type { CalendarEntry } from './ExamCalendar';
 import { useHolidayName } from './Holidays';
 import { Icon } from './Icon';
+import { subjectLabel } from '../domain/subjects';
 
 const PX_PER_MIN = 1.15;
 const SNAP = 15;
@@ -235,7 +236,7 @@ export function ExamWeekCalendar({
                       onClick={onEdit ? () => onEdit(e.id) : undefined}
                       title={[
                         e.label,
-                        `${subject?.code} · ${subject?.name}`,
+                        `${subjectLabel(subject)} · ${subject?.name}`,
                         `${fmtTime(e.start, settings.timeFormat)}–${fmtTime(e.end, settings.timeFormat)}`,
                         e.groupLabel,
                         index.teachers.get(e.teacherId)?.name,
@@ -245,7 +246,7 @@ export function ExamWeekCalendar({
                         .join('\n')}
                     >
                       <strong>
-                        {subject?.code}
+                        {subjectLabel(subject)}
                         {!hide.includes('group') && ` · ${e.groupLabel}`}
                       </strong>
                       <span>

@@ -1,10 +1,12 @@
 // The contract between the web client and the backend. Every method here maps
 // to one endpoint in docs/API.md.
+import type { ImportRow } from '../domain/timetableImport';
 import type {
   ExamEvent,
   ExamPlan,
   ExamRound,
   Assignment,
+  Cluster,
   Dataset,
   Group,
   Notification,
@@ -46,6 +48,8 @@ export interface GenerateRequest {
   seed?: number;
   /** Timetable whose locked lessons must be kept. */
   baseTimetableId?: string;
+  /** Timetable to follow as an example: its pairs stay where they are whenever they still fit. */
+  exampleTimetableId?: string;
 }
 
 export interface GenerateProgress {
@@ -82,6 +86,9 @@ export interface Api {
   update<K extends CollectionName>(name: K, item: Collections[K]): Promise<Collections[K]>;
   remove(name: CollectionName, id: string): Promise<void>;
   importSubjects(subjects: Omit<Subject, 'id'>[]): Promise<Subject[]>;
+  /** Creates (no id) or renames a custom cluster and sets its groups. The automatic clusters follow the groups and cannot be saved. */
+  saveCluster(cluster: { id?: string; name: string; groupIds: string[] }): Promise<Cluster>;
+  deleteCluster(id: string): Promise<void>;
 
   updateAvailability(teacherId: string, data: AvailabilityUpdate): Promise<Teacher>;
 
@@ -98,6 +105,9 @@ export interface Api {
   unpublishTimetable(id: string): Promise<Timetable>;
   /** The timetable students and teachers see; null before the first publish. */
   getPublished(): Promise<Timetable | null>;
+
+  /** A faculty's timetable file (PDF or Excel) read into rows; nothing is saved. Live mode only. */
+  readTimetableSheet(file: File): Promise<{ rows: ImportRow[]; warnings: string[] }>;
 
   generate(req: GenerateRequest, onProgress?: (p: GenerateProgress) => void): Promise<Timetable[]>;
 

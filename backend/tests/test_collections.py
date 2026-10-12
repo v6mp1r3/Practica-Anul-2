@@ -88,8 +88,8 @@ def test_deleting_removes_the_assignments_that_use_it(client, admin):
 
 def test_assignment_roundtrip(client, admin):
     w = World(client, admin)
-    a = create(client, admin, "assignments", assignment(w.s1["id"], w.t1["id"], {"kind": "subgroup", "id": w.g1["id"], "subgroup": 2}, type="lab", roomType="lab", equipment=["calculatoare"], pairsPerWeek=0.5 + 0.5, parity="odd", pairsPerSession=2))
-    assert a["audience"] == {"kind": "subgroup", "id": w.g1["id"], "subgroup": 2} and a["equipment"] == ["calculatoare"] and a["pairsPerSession"] == 2 and a["parity"] == "odd"
+    a = create(client, admin, "assignments", assignment(w.s1["id"], w.t1["id"], {"kind": "subgroup", "id": w.g1["id"], "subgroup": 2}, type="lab", roomType="lab", equipment=["calculatoare"], pairsPerWeek=0.5 + 0.5, pairsPerSession=2))
+    assert a["audience"] == {"kind": "subgroup", "id": w.g1["id"], "subgroup": 2} and a["equipment"] == ["calculatoare"] and a["pairsPerSession"] == 2 and "parity" not in a
     a["pairsPerWeek"] = 2
     a["audience"] = {"kind": "group", "id": w.g2["id"]}
     out = client.put(f"/api/assignments/{a['id']}", json=a, headers=admin).json()
