@@ -34,28 +34,30 @@ export default function Groups() {
   const { clusters: all = [] } = dataset;
   const clusterLabel = useClusterLabel();
   const [managing, setManaging] = useState(false);
-  // years whose specialty rows are open (closed at first, so the table stays short)
-  const [openYears, setOpenYears] = useState<Set<number>>(new Set());
-  // a year's specialty rows grow open from nothing and shrink back: they are on the page while open or closing
-  // ("mounted"), and "grown" one frame after they were put there, so the height has something to animate from
-  const [mountedYears, setMountedYears] = useState<Set<number>>(new Set());
-  const [grownYears, setGrownYears] = useState<Set<number>>(new Set());
-  const without = (set: Set<number>, y: number) => {
+  // What is unfolded: a section ("sec:year", "sec:language", "sec:form") or a year's specialties ("year:2").
+  // Everything starts closed, so the table stays short. Folded rows grow open from nothing and shrink back:
+  // they are on the page while open or closing ("mounted"), and "grown" one frame after they were put
+  // there, so the height has something to animate from.
+  const [opened, setOpened] = useState<Set<string>>(new Set());
+  const [mounted, setMounted] = useState<Set<string>>(new Set());
+  const [grown, setGrown] = useState<Set<string>>(new Set());
+  const without = (set: Set<string>, key: string) => {
     const next = new Set(set);
-    next.delete(y);
+    next.delete(key);
     return next;
   };
-  const toggleYear = (y: number) => {
-    if (openYears.has(y)) {
-      setOpenYears((cur) => without(cur, y));
-      setGrownYears((cur) => without(cur, y));
-      window.setTimeout(() => setMountedYears((cur) => without(cur, y)), ROW_MS);
+  const toggle = (key: string) => {
+    if (opened.has(key)) {
+      setOpened((cur) => without(cur, key));
+      setGrown((cur) => without(cur, key));
+      window.setTimeout(() => setMounted((cur) => without(cur, key)), ROW_MS);
       return;
     }
-    setOpenYears((cur) => new Set(cur).add(y));
-    setMountedYears((cur) => new Set(cur).add(y));
-    requestAnimationFrame(() => requestAnimationFrame(() => setGrownYears((cur) => new Set(cur).add(y))));
+    setOpened((cur) => new Set(cur).add(key));
+    setMounted((cur) => new Set(cur).add(key));
+    requestAnimationFrame(() => requestAnimationFrame(() => setGrown((cur) => new Set(cur).add(key))));
   };
+  const yearKey = (y: number | undefined) => `year:${y ?? 1}`;
   const specCount = (y: number) =>
     clusters.filter(({ c, groups }) => c.kind === 'speciality' && (c.year ?? 1) === y && groups.length > 0).length;
   // clusters whose groups are all shown
@@ -303,32 +305,57 @@ export default function Groups() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>{t('clusters.title')}</th>
+                    {/* fixed widths: the columns stay put while sections open and close */}
+                    <th style={{ width: '24%' }}>{t('clusters.title')}</th>
                     <th>{t('groups.groups')}</th>
-                    <th style={{ whiteSpace: 'nowrap' }}>{t('clusters.groupCount')}</th>
-                    <th>{t('groups.size')}</th>
+                    <th style={{ width: '11%', whiteSpace: 'nowrap' }}>{t('clusters.groupCount')}</th>
+                    <th style={{ width: '9%' }}>{t('groups.size')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {/* one section per kind (year, language, form, own), each with a line saying what it groups by */}
                   {(['year', 'language', 'form', 'custom'] as const).map((kind) => {
-                    const rows = clusters.filter(
-                      ({ c }) => c.kind === kind || (kind === 'year' && c.kind === 'speciality' && mountedYears.has(c.year ?? 1)),
-                    );
-                    if (!rows.length) return null;
+                    // the year, language and form sections open with their arrow; your own clusters are always shown
+                    const folds = kind !== 'custom';
+                    const sec = `sec:${kind}`;
+                    const own = clusters.filter(({ c }) => c.kind === kind);
+                    if (!own.length) return null;
+                    const rows =
+                      folds && !mounted.has(sec)
+                        ? []
+                        : clusters.filter(
+                            ({ c }) => c.kind === kind || (kind === 'year' && c.kind === 'speciality' && mounted.has(yearKey(c.year))),
+                          );
                     return (
                       <Fragment key={kind}>
                         <tr className="cluster-section">
                           <td colSpan={4}>
-                            <strong>{t(`clusters.section.${kind}`)}</strong>
+                            {folds ? (
+                              <button
+                                type="button"
+                                className="cluster-year-btn cluster-section-btn"
+                                aria-expanded={opened.has(sec)}
+                                onClick={() => toggle(sec)}
+                              >
+                                <span className={`chev ${opened.has(sec) ? 'open' : ''}`} aria-hidden="true">
+                                  ›
+                                </span>
+                                <strong>{t(`clusters.section.${kind}`)}</strong>
+                                <span className="badge">{own.length}</span>
+                              </button>
+                            ) : (
+                              <strong>{t(`clusters.section.${kind}`)}</strong>
+                            )}
                             <span className="small muted"> — {t(`clusters.section.${kind}.hint`)}</span>
                           </td>
                         </tr>
                         {rows.map(({ c, groups }) => {
-                          // a specialty row's cells grow from no height (see .row-grow)
+                          // a folded row's cells grow from no height (see .row-grow): a section's rows with the
+                          // section, a specialty's with its section and its year
                           const sub = c.kind === 'speciality';
+                          const isGrown = grown.has(sec) && (!sub || grown.has(yearKey(c.year)));
                           const cell = (content: ReactNode) =>
-                            sub ? (
+                            folds ? (
                               <div className="row-grow">
                                 <div>
                                   <div className="row-pad">{content}</div>
@@ -338,18 +365,18 @@ export default function Groups() {
                               content
                             );
                           return (
-                            <tr key={c.id} className={sub ? `cluster-sub ${grownYears.has(c.year ?? 1) ? 'grown' : ''}` : ''}>
+                            <tr key={c.id} className={folds ? `cluster-fold ${sub ? 'cluster-sub' : ''} ${isGrown ? 'grown' : ''}` : ''}>
                               <td>
                                 {cell(
                                   c.kind === 'year' ? (
                                     <button
                                       type="button"
                                       className="cluster-year-btn"
-                                      aria-expanded={openYears.has(c.year ?? 1)}
+                                      aria-expanded={opened.has(yearKey(c.year))}
                                       title={t('clusters.showSpecs')}
-                                      onClick={() => toggleYear(c.year ?? 1)}
+                                      onClick={() => toggle(yearKey(c.year))}
                                     >
-                                      <span className={`chev ${openYears.has(c.year ?? 1) ? 'open' : ''}`} aria-hidden="true">
+                                      <span className={`chev ${opened.has(yearKey(c.year)) ? 'open' : ''}`} aria-hidden="true">
                                         ›
                                       </span>
                                       <strong>{clusterLabel(c)}</strong>

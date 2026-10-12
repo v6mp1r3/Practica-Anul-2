@@ -1843,6 +1843,13 @@ tr.cluster-section td {
 .cluster-year-btn {
   white-space: nowrap;
 }
+/* a section's heading opens its clusters: the arrow and title as large as the heading was */
+.cluster-section-btn {
+  gap: 8px;
+}
+.cluster-section-btn {
+  align-items: center;
+}
 
 /* ---------- motion: opening and closing smoothly (one gentle curve everywhere) ---------- */
 :root {
@@ -1892,15 +1899,16 @@ tr.cluster-section td {
 .cluster-year-btn:hover .chev {
   color: var(--text);
 }
-/* Clustere: a specialty row grows from no height to its own (its cells' padding moves inside, so it can be 0) */
-tr.cluster-sub > td {
+/* Clustere: a folded row (a section's, or a year's specialty) grows from no height to its own
+   (its cells' padding moves inside, so it can be 0) */
+tr.cluster-fold > td {
   padding: 0;
   /* the line under the row takes no room, so a closed row is really 0 high */
   border-bottom: 0;
   box-shadow: inset 0 -1px 0 transparent;
   transition: box-shadow var(--motion);
 }
-tr.cluster-sub.grown > td {
+tr.cluster-fold.grown > td {
   box-shadow: inset 0 -1px 0 var(--border);
 }
 .row-grow {
@@ -1911,7 +1919,7 @@ tr.cluster-sub.grown > td {
     grid-template-rows var(--motion),
     opacity var(--motion);
 }
-tr.cluster-sub.grown .row-grow {
+tr.cluster-fold.grown .row-grow {
   grid-template-rows: 1fr;
   opacity: 1;
 }
@@ -1954,7 +1962,7 @@ details[open]::details-content {
   .collapse,
   .collapse.open,
   .row-grow,
-  tr.cluster-sub > td,
+  tr.cluster-fold > td,
   details::details-content {
     transition: none;
   }
