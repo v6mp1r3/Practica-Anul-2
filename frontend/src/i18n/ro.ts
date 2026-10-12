@@ -153,7 +153,8 @@ export const ro = {
   'form.reduced': 'Frecvență redusă',
   'form.dual': 'Dual',
   'groups.studyForm': 'Forma de învățământ',
-  'groups.confirmDelete': 'Ștergi grupa „{name}”? Dispare și din orare și din orarele de examene, iar sarcinile ei didactice se șterg. Nu se poate anula.',
+  'groups.confirmDelete':
+    'Ștergi grupa „{name}”? Dispare și din orare și din orarele de examene, iar sarcinile ei didactice se șterg. Nu se poate anula.',
   'groups.dualFirst': 'Dual: prima grupă',
   'groups.dualSecond': 'Dual: a doua grupă',
   'groups.dualRequired': 'O grupă duală are două grupe diferite, fiecare cu un nume',

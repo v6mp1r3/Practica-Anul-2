@@ -153,7 +153,8 @@ export const en: Record<MessageKey, string> = {
   'form.reduced': 'Reduced attendance',
   'form.dual': 'Dual',
   'groups.studyForm': 'Form of study',
-  'groups.confirmDelete': 'Delete the group “{name}”? It also disappears from the timetables and exam timetables, and its teaching loads are removed. This cannot be undone.',
+  'groups.confirmDelete':
+    'Delete the group “{name}”? It also disappears from the timetables and exam timetables, and its teaching loads are removed. This cannot be undone.',
   'groups.dualFirst': 'Dual: first group',
   'groups.dualSecond': 'Dual: second group',
   'groups.dualRequired': 'A dual group needs two different groups, each with a name',
