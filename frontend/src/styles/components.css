@@ -1835,7 +1835,8 @@ tr.cluster-sub .badge {
   background: var(--surface);
 }
 tr.cluster-section td {
-  background: var(--surface);
+  /* no background of its own: the card's is the same, and a square one would cover its rounded corners */
+  background: transparent;
   padding-top: 18px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border-strong);
@@ -1849,6 +1850,10 @@ tr.cluster-section td {
 }
 .cluster-section-btn {
   align-items: center;
+}
+/* a closed section at the very bottom: some room before the card's edge */
+.table tr.cluster-section:last-child td {
+  padding-bottom: 16px;
 }
 
 /* ---------- motion: opening and closing smoothly (one gentle curve everywhere) ---------- */
@@ -1910,6 +1915,10 @@ tr.cluster-fold > td {
 }
 tr.cluster-fold.grown > td {
   box-shadow: inset 0 -1px 0 var(--border);
+}
+/* the last row: no line, the card's rounded edge is under it */
+tr.cluster-fold.grown:last-child > td {
+  box-shadow: none;
 }
 .row-grow {
   display: grid;
