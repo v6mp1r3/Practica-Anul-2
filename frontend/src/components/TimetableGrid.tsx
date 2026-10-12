@@ -75,6 +75,8 @@ export interface GridProps {
   today?: Day;
   /** Days off this week (by day index): the column shows the holiday instead of lessons. */
   dayOff?: (string | undefined)[];
+  /** A line under the day's name (e.g. its date, when the grid is one particular week). */
+  dayNote?: (day: Day) => ReactNode;
   /** Enables drag & drop; called with the new slot. */
   onMove?: (lessonId: string, day: Day, slot: SlotIndex) => void;
   /** Tells the grid whether dropping a lesson at a slot would be conflict-free. */
@@ -98,6 +100,7 @@ export function TimetableGrid({
   dimOthers = false,
   today,
   dayOff,
+  dayNote,
   onMove,
   canDrop,
   onLessonClick,
@@ -123,6 +126,7 @@ export function TimetableGrid({
         {days.map((d) => (
           <div key={d} className={`tt-head ${d === today ? 'today' : ''} ${dayOff?.[d] ? 'holiday-col' : ''}`}>
             {t(`day.${d}` as 'day.0')}
+            {dayNote && <div className="small tt-head-note">{dayNote(d)}</div>}
             {dayOff?.[d] && <div className="small">{dayOff[d]}</div>}
           </div>
         ))}

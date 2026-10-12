@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
 import { range, slotKey } from '../domain/slots';
 import type { Settings, SlotKey } from '../domain/types';
@@ -21,6 +21,7 @@ export function AvailabilityPicker({
   onChange,
   allowConsultation = true,
   readOnly = false,
+  locked,
 }: {
   settings: Settings;
   index: DatasetIndex;
@@ -29,6 +30,8 @@ export function AvailabilityPicker({
   allowConsultation?: boolean;
   /** Show the grid without editing (teachers see what the administration set). */
   readOnly?: boolean;
+  /** Pairs that can't be marked (the teacher's own lessons): what to show there instead. */
+  locked?: (day: number, slot: number) => ReactNode | undefined;
 }) {
   const { t } = useI18n();
   const [brush, setBrush] = useState<Brush>('unavailable');
@@ -43,6 +46,7 @@ export function AvailabilityPicker({
           : 'free';
 
   function paint(day: number, slot: number) {
+    if (locked?.(day, slot)) return;
     const k = slotKey(day, slot);
     const without = (list: SlotKey[]) => list.filter((x) => x !== k);
     // Clicking a cell that already has the brush state clears it
@@ -82,9 +86,11 @@ export function AvailabilityPicker({
         lessons={[]}
         // also frecvență redusă's weekend sessions: every working day
         days={range(settings.workingDays)}
-        cellClass={(d, s) => `state-${stateOf(slotKey(d, s))}`}
+        cellClass={(d, s) => (locked?.(d, s) ? 'state-lesson' : `state-${stateOf(slotKey(d, s))}`)}
         onCellClick={readOnly ? undefined : paint}
         renderCell={(d, s) => {
+          const lesson = locked?.(d, s);
+          if (lesson) return lesson;
           const st = stateOf(slotKey(d, s));
           return st === 'free' ? '' : label[st];
         }}

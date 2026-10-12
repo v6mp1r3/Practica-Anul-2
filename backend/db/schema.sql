@@ -229,6 +229,19 @@ create table teacher_exam_unavailability (
   primary key (teacher_id, date, part)
 );
 
+-- pairs a teacher can't hold on one particular date (set by the teacher or an administrator); the timetable stays as it is
+create table teacher_date_unavailability (
+  teacher_id bigint not null references teacher (id) on delete cascade,
+  date       date not null,
+  slot_index smallint not null references time_slot (slot_index),
+  primary key (teacher_id, date, slot_index)
+);
+
+-- a 'teacher' account belongs to one teacher (declared here: app_user comes before teacher)
+alter table app_user add column teacher_id bigint references teacher (id) on delete cascade;
+create unique index app_user_one_per_teacher on app_user (teacher_id) where teacher_id is not null;
+alter table app_user add constraint app_user_teacher_check check (role <> 'teacher' or teacher_id is not null);
+
 create table room (
   id         bigint generated always as identity primary key,
   name       text not null,

@@ -61,7 +61,16 @@ export interface GenerateProgress {
 export interface AvailabilityUpdate {
   unavailable: SlotKey[];
   preferred: SlotKey[];
+  /** Kept as it is when a teacher saves (only the administration sets it). */
   consultation?: SlotKey;
+  /** See Teacher.unavailableOn; left out = unchanged. */
+  unavailableOn?: string[];
+}
+
+/** What an administrator changes on a teacher's account: the login name, or a new password. */
+export interface UserUpdate {
+  username?: string;
+  password?: string;
 }
 
 export interface Api {
@@ -73,7 +82,7 @@ export interface Api {
   /** Accounts (institution administrator only). */
   listUsers(): Promise<User[]>;
   createUser(user: NewUser): Promise<User>;
-  updateUser(user: User): Promise<User>;
+  updateUser(id: string, changes: UserUpdate): Promise<User>;
   deleteUser(id: string): Promise<void>;
   /** Fails with 400 when the current password is wrong. */
   changePassword(current: string, next: string): Promise<void>;

@@ -24,6 +24,7 @@ import FreeRooms from './pages/shared/FreeRooms';
 import Account from './pages/shared/Account';
 import Notifications from './pages/shared/Notifications';
 import TeacherAvailability from './pages/shared/TeacherAvailability';
+import MyAvailability from './pages/teacher/MyAvailability';
 import { StudentSchedule, TeacherSchedule } from './pages/public/Schedule';
 import { AuthProvider, useAuth } from './state/auth';
 import { DataProvider, useData } from './state/data';
@@ -63,6 +64,15 @@ function AppRoutes() {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/account" element={<Account />} />
         <Route path="/browse" element={<Browse />} />
+      </Route>
+      <Route
+        element={
+          <RequireRole roles={['teacher']}>
+            <Layout />
+          </RequireRole>
+        }
+      >
+        <Route path="/my-availability" element={<MyAvailability />} />
       </Route>
       {/* Public, no sign-in: students pick their group, teachers pick themselves */}
       <Route

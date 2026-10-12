@@ -63,6 +63,14 @@ describe('freeTeachersFor', () => {
     expect(ids).not.toContain('t7');
     expect(ids.length).toBeGreaterThan(5);
   });
+  it('leaves out a teacher who marked that date and pair as unavailable', () => {
+    const ds = structuredClone(seedDataset);
+    const someone = freeTeachersFor(ds, idx, lessons, [], ODD_MONDAY, lessons[0])[0];
+    ds.teachers.find((t) => t.id === someone.id)!.unavailableOn = [`${ODD_MONDAY}:1`];
+    const i = new DatasetIndex(ds);
+    expect(freeTeachersFor(ds, i, lessons, [], ODD_MONDAY, lessons[0]).map((t) => t.id)).not.toContain(someone.id);
+    expect(freeTeachersFor(ds, i, lessons, [], '2026-09-21', lessons[0]).map((t) => t.id)).toContain(someone.id);
+  });
   it('lists teachers of the same activity type first', () => {
     const list = freeTeachersFor(seedDataset, idx, lessons, [], ODD_MONDAY, lessons[0]);
     const firstNonLecturer = list.findIndex((t) => !t.activityTypes.includes('lecture'));
