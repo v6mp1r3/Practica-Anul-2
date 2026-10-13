@@ -942,6 +942,16 @@ export function createMockApi(): Api {
         0,
       );
     },
+    async listPublicNotifications() {
+      // students, without an account: every change for every group (not the administration's own)
+      return delay(
+        store.notifications
+          .filter((n) => !n.roles.length || n.roles.includes('student'))
+          .slice(0, 200)
+          .map((n) => ({ ...n, teacherIds: undefined, read: false })),
+        0,
+      );
+    },
     async markNotificationsRead(ids) {
       const u = currentUser();
       store.readIds[u.id] = [...new Set([...(store.readIds[u.id] ?? []), ...ids])];

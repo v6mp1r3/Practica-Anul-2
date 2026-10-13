@@ -64,7 +64,6 @@ function AppRoutes() {
             </RequireRole>
           }
         >
-          <Route path="/notifications" element={<Notifications />} />
           <Route path="/account" element={<Account />} />
           <Route path="/browse" element={<Browse />} />
         </Route>
@@ -89,6 +88,7 @@ function AppRoutes() {
           <Route path="/profesori" element={<TeacherSchedule />} />
           <Route path="/rooms" element={<FreeRooms />} />
           <Route path="/teachers" element={<TeacherAvailability />} />
+          <Route path="/notifications" element={<Notifications />} />
         </Route>
         <Route
           path="/admin"

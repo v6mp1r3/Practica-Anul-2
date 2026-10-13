@@ -27,7 +27,8 @@ The administration has accounts (`role: "admin"`), and so can teachers
 (`role: "teacher"`, tied to one teacher by `teacherId`): a teacher signs in only to
 set their own availability (`PUT /teachers/{id}/availability`, see Users). Students
 don't sign in: the reads they need are **public** (no token) —
-`GET /dataset`, `GET /timetables/published`, `GET /changes` and `GET /exams`.
+`GET /dataset`, `GET /timetables/published`, `GET /changes`, `GET /exams` and
+`GET /notifications/public`.
 
 A signed-in **teacher** can, besides the public reads: use `/auth/*` (their profile and
 password), read and mark their notifications (`/notifications`), set their own
@@ -385,10 +386,17 @@ already busy at that slot on that date (`422`).
 
 ## Notifications
 
-| Method | Path                  | Role | Body / response                                    |
-| ------ | --------------------- | ---- | -------------------------------------------------- |
-| GET    | `/notifications`      | any  | notifications that concern the caller, with `read` |
-| POST   | `/notifications/read` | any  | `{ ids: string[] }` → `204`                        |
+| Method | Path                    | Role   | Body / response                                    |
+| ------ | ----------------------- | ------ | -------------------------------------------------- |
+| GET    | `/notifications`        | any    | notifications that concern the caller, with `read` |
+| POST   | `/notifications/read`   | any    | `{ ids: string[] }` → `204`                        |
+| GET    | `/notifications/public` | public | the newest 200 meant for everyone (`read: false`)  |
+
+Who gets what: **students** (no account) read `/notifications/public` — every change, for
+every group (a room or teacher change of any group, a timetable published, updated or
+withdrawn), but not the administration's own (e.g. `availability`); the browser keeps
+which ones were read. A **teacher** gets the general ones and only the targeted ones about
+their own pairs. An **administrator** gets all of them.
 
 ```json
 {

@@ -17,6 +17,8 @@ interface Data {
   loading: boolean;
   refresh: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
+  /** Mark as read: on the server when signed in, in this browser otherwise (students). */
+  markNotificationsRead: (ids: string[]) => Promise<void>;
   /** The institution's default time format (Configurare). */
   institutionTimeFormat: TimeFormat;
   /** This person's own choice on this device ('' = follow the institution). */
@@ -33,6 +35,23 @@ const DataContext = createContext<Data | null>(null);
 // brought up to date when the server answers (live mode only; the demo data
 // is already in this browser).
 const CACHE_KEY = 'eduschedule:cache:v1';
+
+// Without an account, which notifications this browser has read (the newest few hundred are enough)
+const READ_KEY = 'eduschedule:notifications:read';
+function readIds(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? '[]') as string[]);
+  } catch {
+    return new Set();
+  }
+}
+function rememberRead(ids: string[]) {
+  try {
+    localStorage.setItem(READ_KEY, JSON.stringify([...new Set([...ids, ...readIds()])].slice(0, 500)));
+  } catch {
+    /* private window: they just show as new again */
+  }
+}
 interface Cached {
   dataset: Dataset;
   published: Timetable | null;
@@ -118,9 +137,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [exams, setExams] = useState<ExamEvent[]>(cached?.exams ?? []);
   const [loading, setLoading] = useState(false);
 
+  // signed in: one's own notifications; without an account (students): everyone's changes, read state kept here
   const refreshNotifications = useCallback(async () => {
-    setNotifications(await api.listNotifications());
-  }, []);
+    if (signedIn) {
+      setNotifications(await api.listNotifications());
+      return;
+    }
+    const read = readIds();
+    setNotifications((await api.listPublicNotifications()).map((n) => ({ ...n, read: read.has(n.id) })));
+  }, [signedIn]);
+
+  const markNotificationsRead = useCallback(
+    async (ids: string[]) => {
+      if (signedIn) await api.markNotificationsRead(ids);
+      else rememberRead(ids);
+      await refreshNotifications();
+    },
+    [signedIn, refreshNotifications],
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -131,7 +165,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setChanges(fresh.changes);
       setExams(fresh.exams);
       writeCache(fresh);
-      if (signedIn) await refreshNotifications();
+      await refreshNotifications().catch(() => undefined);
     } finally {
       setLoading(false);
     }
@@ -152,11 +186,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  // notifications are per person: after signing in, cleared after signing out
+  // notifications follow who is looking: one's own after signing in, the public ones otherwise
   useEffect(() => {
-    if (signedIn) refreshNotifications().catch(() => undefined);
-    else setNotifications([]);
-  }, [signedIn, refreshNotifications]);
+    setNotifications([]);
+    refreshNotifications().catch(() => undefined);
+  }, [refreshNotifications]);
 
   const index = useMemo(() => (dataset ? new DatasetIndex(dataset) : null), [dataset]);
 
@@ -171,6 +205,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loading,
       refresh,
       refreshNotifications,
+      markNotificationsRead,
       institutionTimeFormat,
       myTimeFormat,
       setMyTimeFormat,
@@ -185,6 +220,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loading,
       refresh,
       refreshNotifications,
+      markNotificationsRead,
       institutionTimeFormat,
       myTimeFormat,
       setMyTimeFormat,

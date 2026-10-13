@@ -59,6 +59,37 @@ def list_for(conn: Connection, user_id: int, role: str, teacher_id: int | None =
     return out
 
 
+# what students see without an account: every change, for every group (not the administration's own, e.g. availability)
+PUBLIC_LIMIT = 200
+
+
+def list_public(conn: Connection) -> list[dict]:
+    """GET /notifications/public: the newest notifications meant for everyone; the browser keeps what was read."""
+    rows = conn.execute(
+        text(
+            "select n.id, n.created_at, n.kind::text as kind, n.params, n.title, n.body, n.roles::text[] as roles "
+            "from notification n where cardinality(n.roles) = 0 or 'student' = any(n.roles) "
+            "order by n.created_at desc, n.id desc limit :lim"
+        ),
+        {"lim": PUBLIC_LIMIT},
+    ).mappings().all()
+    ids = [r["id"] for r in rows]
+    groups: dict[int, list[str]] = {}
+    for r in conn.execute(text("select notification_id, group_id from notification_group where notification_id = any(cast(:i as bigint[])) order by group_id"), {"i": ids}):
+        groups.setdefault(r[0], []).append(sid(r[1]))
+    out = []
+    for r in rows:
+        n = {"id": sid(r["id"]), "createdAt": iso_ts(r["created_at"]), "title": r["title"], "body": r["body"], "roles": list(r["roles"] or []), "read": False}
+        if r["kind"]:
+            n["kind"] = r["kind"]
+        if r["params"]:
+            n["params"] = r["params"]
+        if r["id"] in groups:
+            n["groupIds"] = groups[r["id"]]
+        out.append(n)
+    return out
+
+
 def mark_read(conn: Connection, user_id: int, ids: list[str]) -> None:
     keys = []
     for i in ids:

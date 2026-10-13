@@ -90,7 +90,8 @@ export function Layout() {
       document.body.classList.remove('menu-open');
     };
   }, [open]);
-  const unread = user ? notifications.filter((n) => !n.read).length : 0;
+  // everyone gets notifications: the signed-in their own, students (no account) every group's changes
+  const unread = notifications.filter((n) => !n.read).length;
   const nav = (user && NAV[user.role]) || PUBLIC_NAV;
 
   return (
@@ -115,16 +116,12 @@ export function Layout() {
               ))}
             </div>
           ))}
-          {user && (
-            <>
-              <div className="nav-section" />
-              <NavLink to="/notifications">
-                <Icon name="bell" />
-                {t('nav.notifications')}
-                {unread > 0 && <span className="count">{unread}</span>}
-              </NavLink>
-            </>
-          )}
+          <div className="nav-section" />
+          <NavLink to="/notifications">
+            <Icon name="bell" />
+            {t('nav.notifications')}
+            {unread > 0 && <span className="count">{unread}</span>}
+          </NavLink>
         </nav>
         <div className="sidebar-footer">
           {user ? (
@@ -182,7 +179,13 @@ export function Layout() {
               </NavLink>
             </>
           ) : (
-            <LanguageSwitch />
+            <>
+              <NavLink to="/notifications" className="btn ghost icon topbar-bell" aria-label={t('nav.notifications')}>
+                <Icon name="bell" />
+                {unread > 0 && <span className="count">{unread}</span>}
+              </NavLink>
+              <LanguageSwitch />
+            </>
           )}
         </header>
         <div className="panel">

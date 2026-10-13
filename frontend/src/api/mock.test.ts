@@ -115,3 +115,13 @@ describe('the demo refuses what the server refuses', () => {
       });
   });
 });
+
+describe('notifications without an account', () => {
+  it('shows students every change but not the administration’s own', async () => {
+    await api.logout();
+    const list = await api.listPublicNotifications();
+    expect(list.length).toBeGreaterThan(0);
+    expect(list.every((n) => !n.roles.length || n.roles.includes('student'))).toBe(true);
+    expect(list.some((n) => n.kind === 'availability')).toBe(false); // added for the administration by an earlier test
+  });
+});

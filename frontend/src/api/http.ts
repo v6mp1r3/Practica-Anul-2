@@ -133,6 +133,7 @@ export function createHttpApi(baseUrl: string): Api {
     deleteChange: (id) => request('DELETE', `/changes/${id}`),
 
     listNotifications: () => request('GET', '/notifications'),
+    listPublicNotifications: () => request('GET', '/notifications/public'),
     markNotificationsRead: (ids) => request('POST', '/notifications/read', { ids }),
   };
 }
