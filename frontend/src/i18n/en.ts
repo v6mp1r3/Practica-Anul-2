@@ -853,4 +853,7 @@ export const en: Record<MessageKey, string> = {
   'exams.movedClash': 'Moved, but it clashes: {text}',
   'exams.pickGroupHint':
     'There are {count} evaluations for all groups, side by side. Pick a group or a stream above to move them easily between days.',
+  'setup.semesterFixed': 'The same for every faculty; the next semester is started on the server.',
+  'timetables.notYours': 'This timetable has another faculty’s groups: only that faculty’s administrator can change it.',
+  'timetables.unpublishFirst': 'The published timetable can’t be deleted. Unpublish it first.',
 };

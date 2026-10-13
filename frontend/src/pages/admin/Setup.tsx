@@ -9,7 +9,7 @@ import { DateInput, Field, PageHeader, Segmented, Switch, TimeInput, useClock } 
 import { fmtTime, parseTime, range } from '../../domain/slots';
 import { DEFAULT_EVALUATION, DEFAULT_MASTER, evaluationOf, midtermRange, teachingWeek } from '../../domain/exams';
 import { parseDate, toDateString } from '../../domain/changes';
-import { semesterChoices, semesterOf, semesterStartOf } from '../../domain/holidays';
+import { semesterStartOf } from '../../domain/holidays';
 import {
   STUDY_FORMS,
   type EvaluationSettings,
@@ -45,6 +45,12 @@ export function buildSlots(start: string, lessonMinutes: number, breakMinutes: n
   }
   return out;
 }
+
+/** "Calculatoare, Informatică și Microelectronică (FCIM)": the administrator's faculty, with its code. */
+const facultyName = (name?: string) => {
+  const f = UTM_FACULTIES.find((x) => x.name === name);
+  return f ? `${f.name.replace(/^Facultatea (de )?/, '')} (${f.code})` : (name ?? '');
+};
 
 /** "Toamna 2026/2027" in the viewer's language. */
 const semesterLabel = (value: string, t: (k: 'setup.autumn' | 'setup.spring') => string) =>
@@ -152,8 +158,7 @@ export default function Setup() {
   const { institutionTimeFormat } = useData();
   const [s, setS] = useState<Settings>({ ...dataset.settings, timeFormat: institutionTimeFormat });
   const [breakMin, setBreakMin] = useState(15);
-  const { user, setUser } = useAuth();
-  const [faculty, setFaculty] = useState(user?.faculty ?? '');
+  const { user } = useAuth();
   const clock = useClock();
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState<number | string | null>(null);
@@ -265,18 +270,6 @@ export default function Setup() {
       await api.saveSettings({ ...saved, ...own });
       // the form now shows exactly what was stored (e.g. empty rows dropped)
       setS((x) => ({ ...x, ...own }));
-      // the administrator's own faculty is part of their account (section 1)
-      if (section === 1 && user && faculty && faculty !== user.faculty) {
-        setUser(
-          await api.updateProfile({
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            emailNotifications: user.emailNotifications,
-            faculty,
-          }),
-        );
-      }
       await refresh();
       setJustSaved(section === 6 ? `6-${evCycle}-${evalTab}` : section);
     } catch {
@@ -298,10 +291,7 @@ export default function Setup() {
   const tabDirty = (tab: 'midterms' | 'finals', cycle: StudyCycle = evCycle) => evPart(s, cycle, tab) !== evPart(stored, cycle, tab);
   const cycleDirty = (cycle: StudyCycle) => tabDirty('midterms', cycle) || tabDirty('finals', cycle);
   const dirty = (section: number) =>
-    section === 6
-      ? tabDirty(evalTab)
-      : SECTION_KEYS[section].some((k) => k !== 'institutionName' && norm(k, s[k]) !== norm(k, stored[k])) ||
-        (section === 1 && !!faculty && faculty !== user?.faculty);
+    section === 6 ? tabDirty(evalTab) : SECTION_KEYS[section].some((k) => k !== 'institutionName' && norm(k, s[k]) !== norm(k, stored[k]));
   const step = (n: number) => ({
     onSave: () => save(n),
     saving,
@@ -338,29 +328,16 @@ export default function Setup() {
       <div className="stack">
         <Step n={1} {...step(1)} title={t('setup.institution')} required>
           <div className="form-grid">
-            {/* UTM only: the institution is fixed, the administrator picks their faculty */}
+            {/* fixed, shown for reference: the institution is UTM, the faculty comes with the administrator's
+                account, and the semester is the whole university's (started on the server, for every faculty) */}
             <Field label={t('setup.institutionName')}>
               <input className="input" value={UTM_NAME} readOnly disabled />
             </Field>
             <Field label={t('setup.myFaculty')}>
-              <Select value={faculty} onChange={(e) => setFaculty(e.target.value)} aria-label={t('setup.myFaculty')}>
-                <option value="">{t('setup.chooseFaculty')}</option>
-                {UTM_FACULTIES.map((f) => (
-                  <option key={f.code} value={f.name}>
-                    {f.name.replace(/^Facultatea (de )?/, '')} ({f.code})
-                  </option>
-                ))}
-              </Select>
+              <input className="input" value={facultyName(user?.faculty)} title={user?.faculty} readOnly disabled />
             </Field>
-            <Field label={t('setup.semester')}>
-              {/* only this academic year's two semesters; a new year takes over by itself */}
-              <Select value={semesterOf(s.semester)} onChange={(e) => set('semester', e.target.value)} aria-label={t('setup.semester')}>
-                {semesterChoices().map((v) => (
-                  <option key={v} value={v}>
-                    {semesterLabel(v, t)}
-                  </option>
-                ))}
-              </Select>
+            <Field label={t('setup.semester')} hint={t('setup.semesterFixed')}>
+              <input className="input" value={semesterLabel(s.semester, t)} readOnly disabled />
             </Field>
           </div>
         </Step>

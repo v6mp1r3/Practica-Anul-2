@@ -1,7 +1,7 @@
 import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../../api';
+import { api, ApiError } from '../../api';
 import { Icon } from '../../components/Icon';
 import { ImportTimetable } from '../../components/ImportTimetable';
 import { Empty, Loading, PageHeader } from '../../components/ui';
@@ -44,29 +44,53 @@ export default function Timetables() {
     load();
   }, [load]);
 
+  // what the server refused, in words: another faculty's groups, or deleting the published one
+  const refused = (e: unknown) =>
+    toast(
+      e instanceof ApiError && e.status === 403
+        ? t('timetables.notYours')
+        : e instanceof ApiError && e.status === 409
+          ? t('timetables.unpublishFirst')
+          : t('common.error'),
+      'error',
+    );
+
   async function duplicate(tt: Timetable) {
     const now = new Date().toISOString();
-    await api.saveTimetable({
-      ...tt,
-      id: `tt${Date.now().toString(36)}`,
-      name: `${tt.name} (${t('timetables.copy')})`,
-      status: 'draft',
-      createdAt: now,
-      updatedAt: now,
-    });
-    await load();
+    try {
+      await api.saveTimetable({
+        ...tt,
+        id: `tt${Date.now().toString(36)}`,
+        name: `${tt.name} (${t('timetables.copy')})`,
+        status: 'draft',
+        createdAt: now,
+        updatedAt: now,
+      });
+      await load();
+    } catch (e) {
+      refused(e);
+    }
   }
 
   async function remove(tt: Timetable) {
     if (!confirm(t('common.confirmDelete', { name: tt.name }))) return;
-    await api.deleteTimetable(tt.id);
-    setSelected((s) => s.filter((x) => x !== tt.id));
-    await load();
+    try {
+      await api.deleteTimetable(tt.id);
+      setSelected((s) => s.filter((x) => x !== tt.id));
+      await load();
+    } catch (e) {
+      refused(e);
+    }
   }
 
   async function publish(tt: Timetable) {
     if (tt.score?.hard && !confirm(t('timetables.publishWithConflicts', { count: tt.score.hard }))) return;
-    if (!(await publishSafely(tt.id, (count) => toast(t('timetables.clashOnPublish', { count }), 'error')))) return;
+    try {
+      if (!(await publishSafely(tt.id, (count) => toast(t('timetables.clashOnPublish', { count }), 'error')))) return;
+    } catch (e) {
+      refused(e);
+      return;
+    }
     await Promise.all([load(), refresh()]);
     toast(t('timetables.publishedToast', { name: tt.name }));
   }
