@@ -101,7 +101,13 @@ export default function Dashboard() {
   const [groupId, setGroupId] = useState(scopeGroups[0]?.id ?? '');
 
   const load = () =>
-    api.listTimetables().then((all) => setList(scope ? all.filter((tt) => tt.groupIds.some((g) => scopeGroupIds.includes(g))) : all));
+    api
+      .listTimetables()
+      .then((all) => setList(scope ? all.filter((tt) => tt.groupIds.some((g) => scopeGroupIds.includes(g))) : all))
+      .catch(() => {
+        setList((l) => l ?? []);
+        toast(t('common.error'), 'error');
+      });
   useEffect(() => {
     load();
   }, []);

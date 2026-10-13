@@ -859,6 +859,12 @@ export const ro = {
   'setup.semesterFixed': 'Același pentru toate facultățile; semestrul următor se pornește pe server.',
   'timetables.notYours': 'Orarul are grupe ale altei facultăți: doar administratorul ei îl poate schimba.',
   'timetables.unpublishFirst': 'Orarul publicat nu poate fi șters. Retrage-l mai întâi.',
+  'exams.loadFailed': 'Planul nu a putut fi citit. Nu genera din nou până nu se încarcă: ai înlocui planul existent.',
+  'common.retry': 'Reîncearcă',
+  'changes.notYours': 'Perechea aceasta e a altei facultăți: doar administratorul ei o poate schimba.',
+  'changes.roomBusy': 'Sala a fost ocupată între timp sau nu se potrivește perechii. Alege alta.',
+  'changes.teacherBusy': 'Profesorul a fost ocupat între timp sau e indisponibil atunci. Alege altul.',
+  'changes.noPair': 'Perechea nu are loc la data aceasta în orarul publicat.',
 } as const;
 
 export type MessageKey = keyof typeof ro;

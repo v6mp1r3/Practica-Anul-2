@@ -2023,3 +2023,17 @@ details[open]::details-content {
   padding: 8px 12px;
   justify-self: start;
 }
+
+/* a page's data could not be loaded: what happened, and a way to try again */
+.card.load-failed {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.card.load-failed span {
+  flex: 1;
+}

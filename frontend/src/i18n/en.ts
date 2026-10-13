@@ -856,4 +856,10 @@ export const en: Record<MessageKey, string> = {
   'setup.semesterFixed': 'The same for every faculty; the next semester is started on the server.',
   'timetables.notYours': 'This timetable has another faculty’s groups: only that faculty’s administrator can change it.',
   'timetables.unpublishFirst': 'The published timetable can’t be deleted. Unpublish it first.',
+  'exams.loadFailed': 'The plan couldn’t be loaded. Don’t generate again until it loads: that would replace the existing plan.',
+  'common.retry': 'Try again',
+  'changes.notYours': 'This pair belongs to another faculty: only its administrator can change it.',
+  'changes.roomBusy': 'The room got taken meanwhile or doesn’t fit the pair. Pick another one.',
+  'changes.teacherBusy': 'The teacher got busy meanwhile or is unavailable then. Pick another one.',
+  'changes.noPair': 'That pair doesn’t take place on this date in the published timetable.',
 };

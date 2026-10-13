@@ -34,10 +34,16 @@ export default function Timetables() {
   const { dataset } = useData();
   const load = useCallback(
     () =>
-      api.listTimetables().then((all) => {
-        const mine = dataset ? facultyGroupIds(dataset, scope) : [];
-        setList(scope ? all.filter((tt) => tt.groupIds.some((g) => mine.includes(g))) : all);
-      }),
+      api
+        .listTimetables()
+        .then((all) => {
+          const mine = dataset ? facultyGroupIds(dataset, scope) : [];
+          setList(scope ? all.filter((tt) => tt.groupIds.some((g) => mine.includes(g))) : all);
+        })
+        .catch(() => {
+          setList((l) => l ?? []);
+          toast(t('common.error'), 'error');
+        }),
     [scope, dataset],
   );
   useEffect(() => {
@@ -96,9 +102,13 @@ export default function Timetables() {
   }
 
   async function unpublish(tt: Timetable) {
-    if (!(await unpublishWithConfirm(tt, scope || undefined, t))) return;
-    await Promise.all([load(), refresh()]);
-    toast(t('timetables.unpublishedToast'));
+    try {
+      if (!(await unpublishWithConfirm(tt, scope || undefined, t))) return;
+      await Promise.all([load(), refresh()]);
+      toast(t('timetables.unpublishedToast'));
+    } catch (e) {
+      refused(e);
+    }
   }
 
   if (!list) return <Loading />;
@@ -238,14 +248,22 @@ function EvaluationPlans() {
   const sorted = [...plans].sort((a, b) => ROUND_ORDER.indexOf(a.round) - ROUND_ORDER.indexOf(b.round));
 
   async function setStatus(p: ExamPlan, publish: boolean) {
-    await (publish ? api.publishExamPlan(p.round) : api.unpublishExamPlan(p.round));
-    await Promise.all([load(), refresh()]);
-    toast(t(publish ? 'exams.publishedToast' : 'exams.unpublishedToast'));
+    try {
+      await (publish ? api.publishExamPlan(p.round) : api.unpublishExamPlan(p.round));
+      await Promise.all([load(), refresh()]);
+      toast(t(publish ? 'exams.publishedToast' : 'exams.unpublishedToast'));
+    } catch {
+      toast(t('common.error'), 'error');
+    }
   }
   async function remove(p: ExamPlan) {
     if (!confirm(t('common.confirmDelete', { name: name(p.round) }))) return;
-    await api.deleteExamPlan(p.round);
-    await Promise.all([load(), refresh()]);
+    try {
+      await api.deleteExamPlan(p.round);
+      await Promise.all([load(), refresh()]);
+    } catch {
+      toast(t('common.error'), 'error');
+    }
   }
 
   return (

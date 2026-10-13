@@ -52,10 +52,14 @@ export default function Subjects() {
 
   async function confirmImport() {
     if (!preview) return;
-    await api.importSubjects(preview.subjects);
-    await refresh();
-    toast(t('subjects.imported', { count: preview.subjects.length }));
-    setPreview(null);
+    try {
+      await api.importSubjects(preview.subjects);
+      await refresh();
+      toast(t('subjects.imported', { count: preview.subjects.length }));
+      setPreview(null);
+    } catch {
+      toast(t('common.error'), 'error');
+    }
   }
 
   // filters: specialty, year, evaluation, activity in the study plan

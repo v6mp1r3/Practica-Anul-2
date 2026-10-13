@@ -3,15 +3,21 @@ import { notificationText } from '../../components/notificationText';
 import { Empty, PageHeader } from '../../components/ui';
 import { dateLocale, useI18n } from '../../i18n';
 import { useData } from '../../state/data';
+import { useToast } from '../../state/toast';
 
 export default function Notifications() {
   const { t, lang } = useI18n();
+  const toast = useToast();
   const { notifications, refreshNotifications, index } = useData();
   const unread = notifications.filter((n) => !n.read);
 
   async function markAll() {
-    await api.markNotificationsRead(unread.map((n) => n.id));
-    await refreshNotifications();
+    try {
+      await api.markNotificationsRead(unread.map((n) => n.id));
+      await refreshNotifications();
+    } catch {
+      toast(t('common.error'), 'error');
+    }
   }
 
   return (

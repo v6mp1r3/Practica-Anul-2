@@ -54,10 +54,25 @@ export default function Evaluations() {
   const inClass = (round === 'midterm1' || round === 'midterm2') && !separate;
   const midterm = round === 'midterm1' || round === 'midterm2';
 
+  // 'failed': the plan could not be read — the page must not look like "no plan yet" (Generate would replace it)
+  const [loading, setLoading] = useState<'loading' | 'ok' | 'failed'>('loading');
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
+    let live = true; // switching rounds quickly: only the last answer counts
     setPlan(null);
-    api.getExamPlan(round).then(setPlan);
-  }, [round]);
+    setLoading('loading');
+    api
+      .getExamPlan(round)
+      .then((p) => {
+        if (!live) return;
+        setPlan(p);
+        setLoading('ok');
+      })
+      .catch(() => live && setLoading('failed'));
+    return () => {
+      live = false;
+    };
+  }, [round, attempt]);
 
   // atestări happen during the semester: the published classes of those days count too
   const classes = useMemo(
@@ -125,6 +140,8 @@ export default function Evaluations() {
       setPlan(result);
       toast(t('exams.generatedToast', { count: result.events.filter((e) => e.kind === 'exam').length }));
       if (result.warnings) toast(t('exams.unplacedToast', { count: result.warnings }), 'error');
+    } catch {
+      toast(t('common.error'), 'error');
     } finally {
       setBusy(false);
     }
@@ -132,9 +149,16 @@ export default function Evaluations() {
 
   async function setStatus(publish: boolean) {
     if (!plan) return;
-    setPlan(publish ? await api.publishExamPlan(round) : await api.unpublishExamPlan(round));
-    await refresh();
-    toast(t(publish ? 'exams.publishedToast' : 'exams.unpublishedToast'));
+    setBusy(true);
+    try {
+      setPlan(publish ? await api.publishExamPlan(round) : await api.unpublishExamPlan(round));
+      await refresh();
+      toast(t(publish ? 'exams.publishedToast' : 'exams.unpublishedToast'));
+    } catch {
+      toast(t('common.error'), 'error');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function saveEdit(edited: ExamEvent) {
@@ -187,7 +211,7 @@ export default function Evaluations() {
             {plan && (
               <span className={`badge ${plan.status === 'published' ? 'success' : 'primary'}`}>{t(`exams.status.${plan.status}`)}</span>
             )}
-            <button className="btn" onClick={generate} disabled={busy}>
+            <button className="btn" onClick={generate} disabled={busy || loading !== 'ok'}>
               <Icon name="zap" size={15} />
               {plan ? t('exams.regenerate') : t('exams.generate')}
             </button>
@@ -241,6 +265,15 @@ export default function Evaluations() {
         )}
       </div>
 
+      {loading === 'failed' && (
+        <div className="card load-failed" role="alert">
+          <span>{t('exams.loadFailed')}</span>
+          <button className="btn sm" onClick={() => setAttempt((n) => n + 1)}>
+            {t('common.retry')}
+          </button>
+        </div>
+      )}
+
       {problems.length > 0 && (
         <div className="card" style={{ marginBottom: 16 }}>
           <ul className="card-body small exam-problems">
@@ -279,7 +312,13 @@ export default function Evaluations() {
         />
       </div>
 
-      {editing && <EditEvent event={editing} onClose={() => setEditing(null)} onSave={saveEdit} />}
+      {editing && (
+        <EditEvent
+          event={editing}
+          onClose={() => setEditing(null)}
+          onSave={(e) => saveEdit(e).catch(() => toast(t('common.error'), 'error'))}
+        />
+      )}
     </div>
   );
 }
