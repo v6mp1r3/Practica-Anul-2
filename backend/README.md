@@ -38,7 +38,7 @@ transaction pooler (6543) work.
 
 To create the tables, paste `db/supabase_setup.sql` into the Supabase SQL Editor (or run
 `psql "$DATABASE_URL" -f db/schema.sql -f db/seed.sql`). If you created them earlier, also run the files
-in `db/migrations/` you have not run yet, in order:
+in `db/migrations/` you have not run yet, in this order (by number):
 
 | File | What it does |
 | --- | --- |
@@ -48,15 +48,16 @@ in `db/migrations/` you have not run yet, in order:
 | `004_project_activity_and_half_pairs.sql` | Adds the kind of pair "project" and half-pair loads. **Needed**, run it on its own. |
 | `005_clusters.sql` | Adds the clusters (made from the groups) and the subject tags. **Needed.** |
 | `005_subject_language.sql` | Adds French and gives every subject a language of instruction (AM in Russian is separate from AM in Romanian). **Needed.** |
+| `006_subject_semester_assessment.sql` | Adds the semester and the assessment (Midterm 1, Midterm 2, Exam) to subjects. **Needed.** |
+| `007_cluster_language_form_custom.sql` | Adds the language and form-of-study clusters and the custom clusters. **Needed**, after 005. |
 | `008_remove_subject_language.sql` | Removes the language of subjects and merges the per-language copies of a subject into one (the Romanian one is kept). **Run it in one transaction.** |
+| `009_remove_assignment_parity.sql` | Removes the odd/even choice from teaching loads (the placed pairs keep theirs). **Needed.** |
 | `010_subject_abbreviation.sql` | Adds the abbreviation of a subject, shown in the timetable instead of its code. **Needed.** |
+| `011_teacher_accounts.sql` | Teacher logins: links an account to a teacher (`app_user.teacher_id`) and adds `teacher_date_unavailability` (hours a teacher can't make on one date). **Needed**: without it every sign-in fails. |
 | `012_dual_group_parts.sql` | Adds `group_dual`: the two parts (name, program, size) of a dual group. **Needed.** |
 | `013_group_delete_cascade.sql` | A deleted group also leaves the exam timetable (it already left the timetables). **Needed.** |
 | `014_dual_one_size.sql` | A dual group has one number of students; its two parts keep only a name and a program. **Needed.** |
 | `015_dual_group_specialities.sql` | A dual group belongs to the speciality of each of its two groups. **Needed.** |
-| `009_remove_assignment_parity.sql` | Removes the odd/even choice from teaching loads (the placed pairs keep theirs). **Needed.** |
-| `007_cluster_language_form_custom.sql` | Adds the language and form-of-study clusters and the custom clusters. **Needed**, after 005. |
-| `006_subject_semester_assessment.sql` | Adds the semester and the assessment (Midterm 1, Midterm 2, Exam) to subjects. **Needed.** |
 
 The backend connects with the database password and bypasses row-level security; every table has RLS on with no
 policies, so Supabase's own public API can read nothing.
