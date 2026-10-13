@@ -24,6 +24,8 @@ if TEST_URL:
     os.environ["SOLVER_WORKERS"] = "4"
     # tests change the database directly too: always read the dataset afresh
     os.environ["DATASET_CACHE_SECONDS"] = "0"
+    # the semester switches only when a test asks (test_semester_clock.py), not with today's date
+    os.environ["AUTO_SEMESTER"] = "0"
 
 
 def _plain(url: str) -> str:

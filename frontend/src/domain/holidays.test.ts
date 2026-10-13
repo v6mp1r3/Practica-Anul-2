@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { academicYearOf, autoHolidays, holidaysOf, orthodoxEaster, semesterChoices, semesterOf, semesterStartOf } from './holidays';
+import {
+  academicYearOf,
+  autoHolidays,
+  dueSemester,
+  semesterOrder,
+  holidaysOf,
+  orthodoxEaster,
+  semesterChoices,
+  semesterOf,
+  semesterStartOf,
+} from './holidays';
 
 describe('days off, every year', () => {
   it('knows Orthodox Easter', () => {
@@ -56,5 +66,17 @@ describe('a new academic year takes over by itself', () => {
   it('starts the new year on the Monday of the week of 1 September', () => {
     expect(semesterStartOf('2026-08-31', new Date(2026, 9, 6))).toBe('2026-08-31');
     expect(semesterStartOf('2026-08-31', new Date(2027, 8, 10))).toBe('2027-08-30');
+  });
+});
+
+describe('dueSemester', () => {
+  it('starts spring with the winter break and autumn with the summer break', () => {
+    expect(dueSemester(new Date(2026, 9, 13))).toBe('Toamna 2026/2027');
+    expect(dueSemester(new Date(2026, 11, 27))).toBe('Toamna 2026/2027');
+    expect(dueSemester(new Date(2026, 11, 28))).toBe('Primăvara 2026/2027');
+    expect(dueSemester(new Date(2027, 5, 30))).toBe('Primăvara 2026/2027');
+    expect(dueSemester(new Date(2027, 6, 1))).toBe('Toamna 2027/2028');
+    expect(dueSemester(new Date(2026, 11, 21), { '2026:winter': { start: '2026-12-21', end: '2027-01-10' } })).toBe('Primăvara 2026/2027');
+    expect(semesterOrder('Primăvara 2026/2027')).toBeGreaterThan(semesterOrder('Toamna 2026/2027'));
   });
 });

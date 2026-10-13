@@ -74,8 +74,11 @@ part of the timetables, streams, clusters, schedule changes and exam plans (docs
 .venv/bin/python -m app.cli set-password --username ion.sirbu
 ```
 
-A new semester starts for every faculty at once, so it is started here, not in Configurare. It begins
-with the current semester's settings; restart the backend afterwards:
+A new semester starts for every faculty at once, and by itself: spring becomes the current semester on
+the first day of the winter break (the Monday of the week of 28 December, or where Zile libere și vacanțe
+moved it), and the next autumn on the first day of the summer break (1 July), so the faculties build the
+timetable during the break (`app/semester_clock.py`). It keeps the current settings. To start one at
+another time, do it here, then restart the backend:
 
 ```bash
 .venv/bin/python -m app.cli new-semester --label "Primăvara 2026/2027"
@@ -153,9 +156,9 @@ old plan; the response also says how many exams did not fit (`warnings`). `{"see
 - **Sign-in is limited:** 8 failed attempts for one account in 10 minutes lock it for a while (`429`), counted in
   the memory of one server process. Tokens are not revoked: logging out only makes the client forget its token,
   and a token stays valid until it expires (12 h) even after a password change.
-- **Settings belong to a semester.** `python -m app.cli new-semester --label "Toamna 2027/2028"` starts a new
-  semester and makes it current (`PUT /settings` refuses another label); timetables, exam plans and the calendar
-  are per semester.
+- **Settings belong to a semester.** A new one becomes current by itself with the winter or summer break, or with
+  `python -m app.cli new-semester --label "Toamna 2027/2028"` (`PUT /settings` refuses another label);
+  timetables, exam plans and the calendar are per semester.
 - **Pair times are shared** by all semesters. Removing a pair time that a timetable or an availability still uses
   is refused (`409`).
 - **Queries are plain SQL** (SQLAlchemy Core `text()`), so the `.sql` files are the only description of the schema.

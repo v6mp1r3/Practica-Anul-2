@@ -60,7 +60,9 @@ EduSchedule is for UTM only: `Settings.institutionName` is fixed and
 `Settings.faculties` is UTM's 14 faculties. The admin's faculty can't be changed
 with `PUT /auth/me` (`403` for another one). Settings (`PUT /settings`) are shared,
 but the semester can't be changed there (`403`): a new semester starts for every
-faculty at once, on the server (`python -m app.cli new-semester`).
+faculty at once, by itself — spring on the first day of the winter break, the next
+autumn on the first day of the summer break — or on the server
+(`python -m app.cli new-semester`).
 
 ## Auth
 

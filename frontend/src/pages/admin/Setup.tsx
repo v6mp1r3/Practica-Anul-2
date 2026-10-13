@@ -329,14 +329,15 @@ export default function Setup() {
         <Step n={1} {...step(1)} title={t('setup.institution')} required>
           <div className="form-grid">
             {/* fixed, shown for reference: the institution is UTM, the faculty comes with the administrator's
-                account, and the semester is the whole university's (started on the server, for every faculty) */}
+                account, and the semester is the whole university's (the next one starts with the winter or
+                summer break, so there is time to build its timetable) */}
             <Field label={t('setup.institutionName')}>
               <input className="input" value={UTM_NAME} readOnly disabled />
             </Field>
             <Field label={t('setup.myFaculty')}>
               <input className="input" value={facultyName(user?.faculty)} title={user?.faculty} readOnly disabled />
             </Field>
-            <Field label={t('setup.semester')} hint={t('setup.semesterFixed')}>
+            <Field label={t('setup.semester')}>
               <input className="input" value={semesterLabel(s.semester, t)} readOnly disabled />
             </Field>
           </div>

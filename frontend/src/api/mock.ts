@@ -21,6 +21,7 @@ import { generateExams, generateMidterms } from '../domain/exams';
 import { DatasetIndex } from '../domain/indexes';
 import { createRng } from '../domain/rng';
 import { deriveClusters } from '../domain/clusters';
+import { dueSemester, semesterOrder } from '../domain/holidays';
 import { freeRoomsFor, freeTeachersFor, lessonOfChange } from '../domain/changes';
 import { ApiError } from './http';
 import type { Api, CollectionName, Collections } from './types';
@@ -494,6 +495,13 @@ export function createMockApi(): Api {
 
     // public: anyone can see the timetable, rooms and teachers without signing in
     async getDataset() {
+      // the next semester starts with the winter (or summer) break, like on the server
+      const st = store.dataset.settings;
+      const due = dueSemester(new Date(), st.evaluation?.holidayOverrides);
+      if (semesterOrder(due) > semesterOrder(st.semester)) {
+        st.semester = due;
+        persist();
+      }
       const custom = (store.dataset.clusters ?? []).filter((c) => c.kind === 'custom');
       return delay({ ...store.dataset, clusters: [...deriveClusters(store.dataset.groups), ...custom] });
     },

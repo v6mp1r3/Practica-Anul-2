@@ -856,7 +856,6 @@ export const ro = {
   'exams.movedClash': 'Mutat, dar se suprapune: {text}',
   'exams.pickGroupHint':
     'Sunt {count} evaluări pentru toate grupele, una lângă alta. Alege o grupă sau un torent mai sus ca să le poți muta ușor între zile.',
-  'setup.semesterFixed': 'Același pentru toate facultățile; semestrul următor se pornește pe server.',
   'timetables.notYours': 'Orarul are grupe ale altei facultăți: doar administratorul ei îl poate schimba.',
   'timetables.unpublishFirst': 'Orarul publicat nu poate fi șters. Retrage-l mai întâi.',
   'exams.loadFailed': 'Planul nu a putut fi citit. Nu genera din nou până nu se încarcă: ai înlocui planul existent.',
