@@ -1,7 +1,7 @@
 // Data checks run before generation (report §1.4.4, point 4): they catch input
 // that would make a good timetable impossible, so the admin fixes the data
 // instead of wondering why the solver struggles.
-import { DatasetIndex } from './indexes';
+import { DatasetIndex, teaches } from './indexes';
 import { range, slotKey } from './slots';
 import type { ActivityType, Dataset } from './types';
 
@@ -42,7 +42,7 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
 
   for (const t of ds.teachers) {
     // weekly load: reduced-attendance loads happen in sessions, not every week
-    const mine = ds.assignments.filter((a) => a.teacherId === t.id && !idx.isReduced(a));
+    const mine = ds.assignments.filter((a) => teaches(a, t.id) && !idx.isReduced(a));
     if (!mine.length) continue;
     const load = mine.reduce((n, a) => n + a.pairsPerWeek, 0);
     if (load > t.maxPairsPerWeek) {

@@ -1,5 +1,5 @@
 // Helpers to slice a timetable by group, teacher, room or day.
-import type { DatasetIndex } from './indexes';
+import { teaches, type DatasetIndex } from './indexes';
 import { paritiesOverlap, weekDays } from './slots';
 import type { Day, Lesson, Parity, Settings, SlotIndex, Stream } from './types';
 
@@ -18,7 +18,7 @@ export function filterLessons(idx: DatasetIndex, lessons: Lesson[], f: ViewFilte
   return lessons.filter((l) => {
     const a = idx.assignmentOf(l);
     if (!a) return false;
-    if (f.kind === 'teacher') return a.teacherId === f.id;
+    if (f.kind === 'teacher') return teaches(a, f.id);
     if (f.kind === 'room') return l.roomId === f.id;
     return idx
       .cohorts(a.audience)
@@ -58,7 +58,7 @@ export const dayIndexOf = (date: Date) => (date.getDay() + 6) % 7;
 
 /** Teacher load in pairs per week (biweekly pairs count as half). */
 export function teacherLoad(idx: DatasetIndex, lessons: Lesson[], teacherId: string): number {
-  return lessons.filter((l) => idx.assignmentOf(l)?.teacherId === teacherId).reduce((n, l) => n + (l.parity === 'weekly' ? 1 : 0.5), 0);
+  return lessons.filter((l) => teaches(idx.assignmentOf(l), teacherId)).reduce((n, l) => n + (l.parity === 'weekly' ? 1 : 0.5), 0);
 }
 
 /**

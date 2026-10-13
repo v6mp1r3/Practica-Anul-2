@@ -4,6 +4,7 @@
 //  - every week: unavailable / preferred hours, used when the next timetable is generated
 // The administration sees every change (and gets a notification).
 import { useState } from 'react';
+import { teaches } from '../../domain/indexes';
 import { api } from '../../api';
 import { AvailabilityPicker, type AvailabilityValue } from '../../components/AvailabilityPicker';
 import { WeekAvailability } from '../../components/WeekAvailability';
@@ -35,7 +36,7 @@ export default function MyAvailability() {
   const dirty = usual !== null || dated !== null;
 
   // the teacher's weekly pairs (either week): locked in the "every week" grid
-  const mine = (published?.lessons ?? []).filter((l) => !l.date && index.assignmentOf(l)?.teacherId === teacher.id);
+  const mine = (published?.lessons ?? []).filter((l) => !l.date && teaches(index.assignmentOf(l), teacher.id));
   const lessonAt = (d: number, s: number) => {
     const here = mine.filter((l) => l.day === d && l.slot === s);
     if (!here.length) return undefined;

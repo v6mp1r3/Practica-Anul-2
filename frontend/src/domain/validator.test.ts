@@ -95,4 +95,34 @@ describe('findHardConflicts', () => {
       'hours-missing',
     ]);
   });
+
+  it('keeps every teacher of a project busy, not only the main one', () => {
+    // t6 holds the project of g3 together with t3, who also gives the stream lecture
+    const withProject: Dataset = {
+      ...ds,
+      assignments: [
+        ...ds.assignments,
+        {
+          id: 'proj',
+          subjectId: 'sub1',
+          type: 'project',
+          teacherId: 't6',
+          coTeacherIds: ['t3'],
+          audience: { kind: 'group', id: 'g3' },
+          pairsPerWeek: 1,
+          roomType: 'seminar',
+          equipment: [],
+        },
+      ],
+    };
+    const at = (slot: number) => [
+      L('1', 'lec', 0, 1, 'r2'),
+      L('2', 'lab1', 0, 2, 'r8', 'odd'),
+      L('3', 'lab2', 0, 2, 'r9'),
+      L('4', 'proj', 0, slot, 'r4'),
+    ];
+    const conflicts = (lessons: Lesson[]) => findHardConflicts(withProject, lessons);
+    expect(conflicts(at(3))).toEqual([]);
+    expect(conflicts(at(1))).toEqual([expect.objectContaining({ kind: 'teacher-clash', subjectId: 't3' })]);
+  });
 });

@@ -1,7 +1,7 @@
 """Port of frontend/src/domain/validator.ts: the hard constraints a timetable must satisfy."""
 from collections import defaultdict
 
-from .indexes import DatasetIndex
+from .indexes import DatasetIndex, teacher_ids
 from .slots import lessons_overlap, slot_key
 
 
@@ -24,8 +24,9 @@ def find_hard_conflicts(ds: dict, lessons: list[dict], idx: DatasetIndex | None 
                 if not ax or not ay:
                     continue
                 base = {"severity": "hard", "lessonIds": [x["id"], y["id"]], "day": x["day"], "slot": x["slot"]}
-                if ax["teacherId"] == ay["teacherId"]:
-                    out.append({**base, "kind": "teacher-clash", "subjectId": ax["teacherId"]})
+                shared = [t for t in teacher_ids(ax) if t in teacher_ids(ay)]
+                if shared:
+                    out.append({**base, "kind": "teacher-clash", "subjectId": shared[0]})
                 if x["roomId"] == y["roomId"]:
                     out.append({**base, "kind": "room-clash", "subjectId": x["roomId"]})
                 if idx.audiences_overlap(ax["audience"], ay["audience"]):
@@ -42,9 +43,10 @@ def find_hard_conflicts(ds: dict, lessons: list[dict], idx: DatasetIndex | None 
             out.append({**base, "kind": "outside-hours", "subjectId": a["id"]})
         if l["day"] < settings["workingDays"] and l["day"] not in idx.allowed_days(a):
             out.append({**base, "kind": "wrong-day", "subjectId": a["id"]})
-        teacher = idx.teachers.get(a["teacherId"])
-        if teacher and slot_key(l["day"], l["slot"]) in teacher["unavailable"]:
-            out.append({**base, "kind": "teacher-unavailable", "subjectId": teacher["id"]})
+        for tid in teacher_ids(a):
+            teacher = idx.teachers.get(tid)
+            if teacher and slot_key(l["day"], l["slot"]) in teacher["unavailable"]:
+                out.append({**base, "kind": "teacher-unavailable", "subjectId": teacher["id"]})
         room = idx.rooms.get(l["roomId"])
         if room:
             if room["capacity"] < idx.audience_size(a["audience"]):

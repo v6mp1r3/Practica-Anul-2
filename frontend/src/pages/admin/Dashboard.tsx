@@ -10,7 +10,8 @@ import { Icon } from '../../components/Icon';
 import { PrecheckList } from '../../components/PrecheckList';
 import { PageHeader } from '../../components/ui';
 import { toDateString } from '../../domain/changes';
-import { scopeAssignments } from '../../domain/generator';
+import { loadDrift, scopeAssignments } from '../../domain/generator';
+import { findHardConflicts } from '../../domain/validator';
 import { precheck } from '../../domain/precheck';
 import { fmtTime, range, weekDays } from '../../domain/slots';
 import type { ActivityType, Lesson, Timetable } from '../../domain/types';
@@ -112,6 +113,17 @@ export default function Dashboard() {
     ? scopeAssignments(dataset, shown.groupIds, index).reduce((n, a) => n + index.requiredPairs(a), 0)
     : dataset.assignments.reduce((n, a) => n + index.requiredPairs(a), 0);
   const placed = shown?.lessons.length ?? 0;
+  // checked against the data as it is now: a load added or changed since the timetable was made shows up here
+  const live = useMemo(() => {
+    if (!shown) return null;
+    const scoped = { ...dataset, assignments: scopeAssignments(dataset, shown.groupIds, index) };
+    const drift = loadDrift(dataset, shown.lessons, shown.groupIds, index);
+    return {
+      hard: findHardConflicts(scoped, shown.lessons, index).length,
+      toPlace: drift.missing.reduce((n, m) => n + m.count, 0),
+      tooMany: drift.extra.reduce((n, m) => n + m.count, 0),
+    };
+  }, [shown, dataset, index]);
 
   const typeOf = (l: Lesson) => index.assignmentOf(l)?.type ?? 'lecture';
   const groupLessons = shown ? filterLessons(index, shown.lessons, { kind: 'group', id: groupId }).filter((l) => !l.date) : [];
@@ -148,6 +160,17 @@ export default function Dashboard() {
             <div>
               <h2>{published ? t('dashboard.published') : t('dash.latest')}</h2>
               <p>{shown ? shown.name : t('dashboard.notPublished')}</p>
+              {shown && live && (live.toPlace > 0 || live.tooMany > 0) && (
+                <Link to={`/admin/timetables/${shown.id}`} className="badge warning">
+                  {t('editor.outdated')}:{' '}
+                  {[
+                    live.toPlace && t('editor.toPlace', { count: live.toPlace }),
+                    live.tooMany && t('editor.tooMany', { count: live.tooMany }),
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
+                </Link>
+              )}
             </div>
           </div>
           <Ring value={placed} total={required} label={t('dash.pairs')} />
@@ -157,7 +180,7 @@ export default function Dashboard() {
               <span>{t('dashboard.generate')}</span>
             </Link>
             <div className="dash-block">
-              <strong>{shown?.score?.hard ?? 0}</strong>
+              <strong>{live?.hard ?? 0}</strong>
               <span>{t('dash.conflicts')}</span>
             </div>
             <Link to="/admin/timetables" className="dash-block">

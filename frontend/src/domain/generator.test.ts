@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
-import { generateTimetable, scopeAssignments } from './generator';
+import { dropExtra, generateTimetable, loadDrift, placeMissing, scopeAssignments } from './generator';
 import { DatasetIndex } from './indexes';
-import type { Lesson } from './types';
+import type { Dataset, Lesson } from './types';
 import { findHardConflicts } from './validator';
 
 const allGroups = seedDataset.groups.map((g) => g.id);
@@ -99,5 +99,32 @@ describe('parts of the day per year of study', () => {
     // nearly everything inside its shift
     const outside = lessons.filter((l) => idx.shiftDistance(idx.assignmentOf(l)!, l.slot) > 0).length;
     expect(outside / lessons.length).toBeLessThan(0.1);
+  });
+});
+
+describe('after the data changed', () => {
+  it('places a new teaching load around the pairs already there, which stay put', async () => {
+    const before = await generateTimetable(seedDataset, { groupIds: allGroups, seed: 5, iterations: 20 });
+    const base = seedDataset.assignments.find((a) => a.audience.kind === 'group' && a.type === 'seminar')!;
+    const changed: Dataset = { ...seedDataset, assignments: [...seedDataset.assignments, { ...base, id: 'new', pairsPerWeek: 2 }] };
+    expect(loadDrift(changed, before.lessons, allGroups).missing).toEqual([expect.objectContaining({ count: 2 })]);
+    const after = placeMissing(changed, before.lessons, allGroups, 1);
+    expect(after.placed).toBe(2);
+    for (const l of before.lessons) expect(after.lessons).toContainEqual(l);
+    expect(findHardConflicts(changed, after.lessons)).toEqual([]);
+  });
+
+  it('takes out the pairs a load no longer needs, never a locked one', async () => {
+    const { lessons } = await generateTimetable(seedDataset, { groupIds: allGroups, seed: 5, iterations: 5 });
+    const a = seedDataset.assignments.find((x) => x.pairsPerWeek === 2)!;
+    const own = lessons.filter((l) => l.assignmentId === a.id);
+    const locked = lessons.map((l) => (l.id === own[1].id ? { ...l, locked: true } : l));
+    const fewer: Dataset = {
+      ...seedDataset,
+      assignments: seedDataset.assignments.map((x) => (x.id === a.id ? { ...x, pairsPerWeek: 1 } : x)),
+    };
+    const res = dropExtra(fewer, locked, allGroups);
+    expect(res.removed).toBe(1);
+    expect(res.lessons.filter((l) => l.assignmentId === a.id)).toEqual([expect.objectContaining({ id: own[1].id, locked: true })]);
   });
 });

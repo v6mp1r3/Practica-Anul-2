@@ -6,14 +6,13 @@ import math
 import random
 from collections import defaultdict
 
-from ..domain.indexes import DatasetIndex
+from ..domain.indexes import DatasetIndex, teacher_ids
 from ..domain.slots import slot_key
 from .model import WEEKS, Placement
 
 
 def _difficulty(a: dict, idx: DatasetIndex) -> float:
-    t = idx.teachers.get(a["teacherId"], {})
-    return idx.audience_size(a["audience"]) / 10 + (4 if a["type"] == "lab" else 0) + len(t.get("unavailable", [])) / 3 + len(a["equipment"]) * 2
+    return idx.audience_size(a["audience"]) / 10 + (4 if a["type"] == "lab" else 0) + len(idx.teacher_unavailable(a)) / 3 + len(a["equipment"]) * 2
 
 
 class _Busy:
@@ -33,7 +32,8 @@ class _Busy:
 
     def _keys(self, a: dict, d: int, s: int, room_id: str, parity: str = "weekly"):
         for w in (WEEKS if parity not in WEEKS else (parity,)):
-            yield ("t", a["teacherId"], d, s, w)
+            for t in teacher_ids(a):
+                yield ("t", t, d, s, w)
             yield ("r", room_id, d, s, w)
             for g, sub in self.idx.cohorts(a["audience"]):
                 for p in (self.points[g] if sub is None else (sub,)):
@@ -44,7 +44,8 @@ class _Busy:
 
     def add(self, a: dict, d: int, s: int, room_id: str, parity: str = "weekly") -> None:
         self.used.update(self._keys(a, d, s, room_id, parity))
-        self.teacher_slots[(a["teacherId"], d)].append(s)
+        for t in teacher_ids(a):
+            self.teacher_slots[(t, d)].append(s)
         for g, _ in self.idx.cohorts(a["audience"]):
             self.group_slots[(g, d)].append(s)
             self.subject_days.add((g, d, a["subjectId"]))
@@ -66,6 +67,7 @@ def construct(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dic
     out: list[Placement] = []
     for a in order:
         teacher = idx.teachers.get(a["teacherId"], {})
+        unavailable = idx.teacher_unavailable(a)
         size = idx.audience_size(a["audience"])
         preferred = {r["id"] for r in idx.preferred_rooms(a)}
         rooms = sorted(
@@ -78,7 +80,7 @@ def construct(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dic
             best = None
             for d in idx.allowed_days(a):
                 for s in range(n_slots):
-                    if slot_key(d, s) in teacher.get("unavailable", []):
+                    if slot_key(d, s) in unavailable:
                         continue
                     c = 4 * idx.shift_distance(a, s)
                     if not shifted:
@@ -99,7 +101,8 @@ def construct(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dic
                             c += 6
                         if (g, d, a["subjectId"]) in busy.subject_days:
                             c += 3
-                    c += 3 * gap_delta(busy.teacher_slots[(a["teacherId"], d)])
+                    for t in teacher_ids(a):
+                        c += 3 * gap_delta(busy.teacher_slots[(t, d)])
                     if slot_key(d, s) in (teacher.get("preferred") or []):
                         c -= 1
                     c += rng.random() * 1.2
@@ -132,7 +135,7 @@ def adopt_example(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list
         if not a or ex.get("date") or left.get(a["id"], 0) <= 0:
             continue
         d, s, parity = ex["day"], ex["slot"], ex.get("parity", "weekly")
-        if s >= n_slots or d not in idx.allowed_days(a) or slot_key(d, s) in idx.teachers.get(a["teacherId"], {}).get("unavailable", []):
+        if s >= n_slots or d not in idx.allowed_days(a) or slot_key(d, s) in idx.teacher_unavailable(a):
             continue
         size = idx.audience_size(a["audience"])
         ok = [r for r in ds["rooms"] if r["capacity"] >= size and idx.room_fits(a, r) and idx.has_equipment(a, r)]

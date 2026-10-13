@@ -2,6 +2,11 @@
 import math
 
 
+def teacher_ids(a: dict) -> list[str]:
+    """The teacher of a load and the other teachers who hold its pairs with them (a project can have several)."""
+    return [a["teacherId"], *(t for t in a.get("coTeacherIds") or [] if t != a["teacherId"])]
+
+
 class DatasetIndex:
     def __init__(self, ds: dict):
         self.ds = ds
@@ -100,6 +105,14 @@ class DatasetIndex:
 
     def assignment_of(self, lesson: dict) -> dict | None:
         return self.assignments.get(lesson["assignmentId"])
+
+    def teacher_unavailable(self, a: dict) -> set[str]:
+        """The slots when any of the load's teachers is unavailable."""
+        return {k for t in teacher_ids(a) for k in self.teachers.get(t, {}).get("unavailable", [])}
+
+    @staticmethod
+    def share_teacher(a: dict, b: dict) -> bool:
+        return not set(teacher_ids(a)).isdisjoint(teacher_ids(b))
 
     @staticmethod
     def room_fits(assignment: dict, room: dict) -> bool:

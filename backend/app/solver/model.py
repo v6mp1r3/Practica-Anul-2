@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 
 from ortools.sat.python import cp_model
 
-from ..domain.indexes import DatasetIndex
+from ..domain.indexes import DatasetIndex, teacher_ids
 from ..domain.score import SOFT_WEIGHTS
 from ..domain.slots import in_week, lessons_overlap, slot_key
 
@@ -140,7 +140,7 @@ def solve_weekly(
             if not lessons_overlap(probe, f):
                 continue
             fa = idx.assignment_of(f)
-            if fa["teacherId"] == a["teacherId"] or f["roomId"] == room_id or idx.audiences_overlap(fa["audience"], a["audience"]):
+            if idx.share_teacher(fa, a) or f["roomId"] == room_id or idx.audiences_overlap(fa["audience"], a["audience"]):
                 return True
         return False
 
@@ -149,13 +149,13 @@ def solve_weekly(
     var_info: dict[int, tuple[dict, int, int, str]] = {}
     n_vars = 0
     for a in loads:
-        teacher = idx.teachers.get(a["teacherId"], {})
+        unavailable = idx.teacher_unavailable(a)
         size = idx.audience_size(a["audience"])
         rooms = [r for r in ds["rooms"] if r["capacity"] >= size and idx.room_fits(a, r) and idx.has_equipment(a, r)]
         X[a["id"]] = {}
         for d in idx.allowed_days(a):
             for s in range(n_slots):
-                if slot_key(d, s) in teacher.get("unavailable", []):
+                if slot_key(d, s) in unavailable:
                     continue
                 options = []
                 for r in rooms:
@@ -189,7 +189,8 @@ def solve_weekly(
         for (d, s), opts in X[a["id"]].items():
             for w in WEEKS:
                 for room_id, v in opts:
-                    groups[("teacher", a["teacherId"], d, s, w)].append(v)
+                    for t in teacher_ids(a):
+                        groups[("teacher", t, d, s, w)].append(v)
                     groups[("room", room_id, d, s, w)].append(v)
                     for pt in points:
                         groups[("group", pt, d, s, w)].append(v)
@@ -259,9 +260,10 @@ def solve_weekly(
     # teachers
     by_teacher: dict[str, list[dict]] = defaultdict(list)
     for a in loads:
-        by_teacher[a["teacherId"]].append(a)
+        for t in teacher_ids(a):
+            by_teacher[t].append(a)
     for tid, tl in by_teacher.items():
-        const_hits = [f for f in fixed if idx.assignment_of(f)["teacherId"] == tid]
+        const_hits = [f for f in fixed if tid in teacher_ids(idx.assignment_of(f))]
         for (d, w), occ in collect(tl, const_hits, days_all).items():
             if not occ.used():
                 continue

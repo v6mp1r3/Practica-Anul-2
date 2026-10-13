@@ -8,6 +8,18 @@ export interface Cohort {
 
 const byId = <T extends { id: string }>(items: T[]) => new Map(items.map((i) => [i.id, i]));
 
+/** The teacher of a load and the other teachers who hold its pairs with them (a project can have several). */
+export const teacherIdsOf = (a: Pick<Assignment, 'teacherId' | 'coTeacherIds'>): string[] => [
+  a.teacherId,
+  ...(a.coTeacherIds ?? []).filter((t) => t !== a.teacherId),
+];
+
+/** Is the teacher one of the load's teachers? */
+export const teaches = (a: Assignment | undefined, teacherId: string): boolean => !!a && teacherIdsOf(a).includes(teacherId);
+
+/** Do two loads have a teacher in common? */
+export const shareTeacher = (a: Assignment, b: Assignment): boolean => teacherIdsOf(a).some((t) => teacherIdsOf(b).includes(t));
+
 /** Lookup tables over a dataset, built once per validation/generation run. */
 export class DatasetIndex {
   readonly teachers: Map<string, Teacher>;
@@ -138,6 +150,19 @@ export class DatasetIndex {
 
   assignmentOf(lesson: Lesson): Assignment | undefined {
     return this.assignments.get(lesson.assignmentId);
+  }
+
+  /** The slots when any of the load's teachers is unavailable. */
+  teacherUnavailable(a: Assignment): Set<string> {
+    return new Set(teacherIdsOf(a).flatMap((t) => this.teachers.get(t)?.unavailable ?? []));
+  }
+
+  /** "Popescu Ion, Ionescu Ana": every teacher of the load. */
+  teacherNames(a: Assignment): string {
+    return teacherIdsOf(a)
+      .map((t) => this.teachers.get(t)?.name)
+      .filter(Boolean)
+      .join(', ');
   }
 
   /**

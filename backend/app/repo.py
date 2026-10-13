@@ -573,6 +573,9 @@ def load_assignments(conn: Connection, ids: Iterable[int] | None = None) -> list
     equip: dict[int, list[str]] = defaultdict(list)
     for r in _all(conn, "select ae.assignment_id, e.name from assignment_equipment ae join equipment e on e.id = ae.equipment_id where ae.assignment_id = any(cast(:k as bigint[])) order by e.name", {"k": [r["id"] for r in rows]}):
         equip[r["assignment_id"]].append(r["name"])
+    co: dict[int, list[str]] = defaultdict(list)
+    for r in _all(conn, "select assignment_id, teacher_id from assignment_co_teacher where assignment_id = any(cast(:k as bigint[])) order by teacher_id", {"k": [r["id"] for r in rows]}):
+        co[r["assignment_id"]].append(sid(r["teacher_id"]))
     out = []
     for r in rows:
         if r["kind"] == "stream":
@@ -587,6 +590,8 @@ def load_assignments(conn: Connection, ids: Iterable[int] | None = None) -> list
         }
         if r["pairs_per_session"] is not None:
             a["pairsPerSession"] = num(r["pairs_per_session"])
+        if co[r["id"]]:
+            a["coTeacherIds"] = co[r["id"]]
         out.append(a)
     return out
 
@@ -661,6 +666,9 @@ def save_assignment(conn: Connection, data: dict, assignment_id: int | None = No
         if not n:
             raise ApiError(404, "Not found")
     _replace(conn, "assignment_equipment", "assignment_id", assignment_id, ["equipment_id"], [(e,) for e in ensure_equipment(conn, data.get("equipment") or [])])
+    # only a project is held by several teachers together
+    co = {pid(t) for t in data.get("coTeacherIds") or []} - {params["teacher"]} if data["type"] == "project" else set()
+    _replace(conn, "assignment_co_teacher", "assignment_id", assignment_id, ["teacher_id"], [(t,) for t in sorted(co)])
     return assignment_id
 
 

@@ -1,6 +1,6 @@
 // Soft constraints (report §2.1.3) turned into a weighted penalty, plus the
 // warnings the dean's office sees before publishing (overtime, consultation…).
-import { DatasetIndex, type Cohort } from './indexes';
+import { DatasetIndex, teacherIdsOf, teaches, type Cohort } from './indexes';
 import { parityWeight, range } from './slots';
 import type { Conflict, Dataset, Lesson, Parity, Score, ScoreBreakdown } from './types';
 import { findHardConflicts } from './validator';
@@ -66,8 +66,8 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
   // Teachers: gaps and preferred periods
   const byTeacher = new Map<string, Lesson[]>();
   for (const l of lessons) {
-    const t = idx.assignmentOf(l)?.teacherId;
-    if (t) byTeacher.set(t, [...(byTeacher.get(t) ?? []), l]);
+    const a = idx.assignmentOf(l);
+    for (const t of a ? teacherIdsOf(a) : []) byTeacher.set(t, [...(byTeacher.get(t) ?? []), l]);
   }
   for (const [tid, tl] of byTeacher) {
     for (const week of weeks) {
@@ -147,11 +147,15 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
   const weeks = weeksFor(ds);
 
   for (const t of ds.teachers) {
-    const tl = lessons.filter((l) => !l.date && idx.assignmentOf(l)?.teacherId === t.id);
+    const tl = lessons.filter((l) => !l.date && teaches(idx.assignmentOf(l), t.id));
     if (!tl.length) continue;
     const load = tl.reduce((n, l) => n + parityWeight(l.parity), 0);
     if (load > t.maxPairsPerWeek)
       out.push({ kind: 'teacher-overtime', severity: 'warning', lessonIds: tl.map((l) => l.id), subjectId: t.id });
+    // a kind of pair taken off the teacher (or a load given to them) after the timetable was made
+    const wrongType = tl.filter((l) => !t.activityTypes.includes(idx.assignmentOf(l)!.type));
+    if (wrongType.length)
+      out.push({ kind: 'teacher-wrong-type', severity: 'warning', lessonIds: wrongType.map((l) => l.id), subjectId: t.id });
     for (const d of days) {
       for (const week of weeks) {
         const dl = tl.filter((l) => l.day === d && inWeek(l, week));

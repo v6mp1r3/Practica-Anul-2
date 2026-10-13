@@ -226,3 +226,19 @@ def test_generate_follows_an_example_timetable():
     moved = generate_timetable(ds, ["g1", "g2", "g3"], seed=77, seconds=3, workers=2, example=first.lessons)
     assert moved.score["hard"] == 0 and moved.missing == 0
     assert all(f"{l['day']}:{l['slot']}" not in ds["teachers"][0]["unavailable"] for l in moved.lessons if l["assignmentId"] in ("a1", "a6", "a7"))
+
+
+def test_every_teacher_of_a_project_is_busy_in_its_pairs():
+    ds = tiny()
+    # t1 gives the lecture a1 and holds the project of g3 together with t2
+    ds["assignments"].append(load("p1", "pc", "t2", {"kind": "group", "id": "g3"}, "project", 1, room_type="seminar", coTeacherIds=["t1"]))
+    idx = DatasetIndex(ds)
+    lec = {"id": "X", "assignmentId": "a1", "day": 0, "slot": 1, "roomId": "r1", "parity": "weekly"}
+    proj = {"id": "Y", "assignmentId": "p1", "day": 0, "slot": 1, "roomId": "r2", "parity": "weekly"}
+    assert [c["kind"] for c in find_hard_conflicts(ds, [lec, proj], idx) if c["kind"] == "teacher-clash"] == ["teacher-clash"]
+    res = solve_weekly(ds, idx, need_of(ds), [], 3, seed=1, workers=4)
+    assert res.status in ("OPTIMAL", "FEASIBLE") and not res.missing
+    lessons = lessons_of(res.placements)
+    assert find_hard_conflicts(ds, lessons) == []
+    t1_slots = [(l["day"], l["slot"]) for l in lessons if "t1" in (idx.assignments[l["assignmentId"]]["teacherId"], *idx.assignments[l["assignmentId"]].get("coTeacherIds", []))]
+    assert len(t1_slots) == len(set(t1_slots))

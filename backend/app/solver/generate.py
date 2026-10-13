@@ -165,7 +165,7 @@ def generate_timetable(
             if strategy == "byDay":
                 pool = [l for l in movable if l["day"] == pivot["day"]]
             elif strategy == "byTeacher":
-                pool = [l for l in movable if idx.assignment_of(l)["teacherId"] == pa["teacherId"]]
+                pool = [l for l in movable if idx.share_teacher(idx.assignment_of(l), pa)]
             elif strategy == "byGroup":
                 g = idx.cohorts(pa["audience"])[0][0]
                 pool = [l for l in movable if idx.audience_touches_group(idx.assignment_of(l)["audience"], g)]

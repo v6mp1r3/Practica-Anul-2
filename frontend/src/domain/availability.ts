@@ -1,5 +1,5 @@
 // "Who/what is free when?" queries used by the student and teacher pages.
-import type { DatasetIndex } from './indexes';
+import { teaches, type DatasetIndex } from './indexes';
 import { paritiesOverlap, slotKey } from './slots';
 import type { Day, Lesson, Parity, Room, SlotIndex } from './types';
 
@@ -39,7 +39,7 @@ export function teacherStateAt(
   const k = slotKey(day, slot);
   if (t.consultation === k) return 'consultation';
   const teaching = lessons.some(
-    (l) => !l.date && l.day === day && l.slot === slot && paritiesOverlap(l.parity, week) && idx.assignmentOf(l)?.teacherId === teacherId,
+    (l) => !l.date && l.day === day && l.slot === slot && paritiesOverlap(l.parity, week) && teaches(idx.assignmentOf(l), teacherId),
   );
   if (teaching) return 'teaching';
   if (t.unavailable.includes(k)) return 'unavailable';

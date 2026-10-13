@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { api } from '../../api';
 import { CrudPage } from '../../components/CrudPage';
 import { needsSplit } from '../../domain/rooms';
+import { teacherIdsOf } from '../../domain/indexes';
 import { GroupPicker } from '../../components/GroupPicker';
 import { useClusterLabel } from '../../components/ClusterPicker';
 import { deriveClusters, groupsForSubject } from '../../domain/clusters';
@@ -55,7 +56,7 @@ export default function Assignments() {
       itemLabel={(x) => `${index.subjects.get(x.subjectId)?.code} ${t(`activity.${x.type}`)} · ${index.audienceLabel(x.audience)}`}
       sortText={(x) => `${index.subjects.get(x.subjectId)?.name} ${t(`activity.${x.type}`)} ${index.audienceLabel(x.audience)}`}
       searchText={(x) =>
-        `${index.subjects.get(x.subjectId)?.code} ${index.subjects.get(x.subjectId)?.name} ${index.teachers.get(x.teacherId)?.name} ${index.audienceLabel(x.audience)}`
+        `${index.subjects.get(x.subjectId)?.code} ${index.subjects.get(x.subjectId)?.name} ${index.teacherNames(x)} ${index.audienceLabel(x.audience)}`
       }
       headerActions={
         <>
@@ -95,17 +96,23 @@ export default function Assignments() {
         },
         {
           label: t('assignments.teacher'),
-          sort: (x) => index.teachers.get(x.teacherId)?.name ?? '',
+          sort: (x) => index.teacherNames(x),
           render: (x) => {
-            const teacher = index.teachers.get(x.teacherId);
+            // a project can have several teachers
+            const teachers = teacherIdsOf(x).flatMap((id) => index.teachers.get(id) ?? []);
             return (
               <span>
-                {teacher?.name}
-                {teacher && !teacher.activityTypes.includes(x.type) && (
-                  <span className="badge warning" style={{ marginLeft: 6 }}>
-                    !
+                {teachers.map((teacher, i) => (
+                  <span key={teacher.id}>
+                    {i > 0 && ', '}
+                    {teacher.name}
+                    {!teacher.activityTypes.includes(x.type) && (
+                      <span className="badge warning" style={{ marginLeft: 6 }}>
+                        !
+                      </span>
+                    )}
                   </span>
-                )}
+                ))}
               </span>
             );
           },
@@ -167,6 +174,11 @@ export default function Assignments() {
       }
       renderForm={(d, set) => {
         const teacher = index.teachers.get(d.teacherId);
+        const coTeacherIds = d.type === 'project' ? (d.coTeacherIds ?? []) : [];
+        // those who teach this kind of class first, then by name
+        const teacherOrder = [...dataset.teachers].sort(
+          (a, b) => Number(b.activityTypes.includes(d.type)) - Number(a.activityTypes.includes(d.type)) || a.name.localeCompare(b.name),
+        );
         // the groups this subject can be given to, from its tags
         const formGroups = groupsFor(d.subjectId);
         const split = needsSplit(index, dataset.rooms, d);
@@ -211,6 +223,8 @@ export default function Assignments() {
                     const type = e.target.value as ActivityType;
                     set({
                       type,
+                      // only a project is held by several teachers
+                      ...(type === 'project' ? {} : { coTeacherIds: undefined }),
                       // rooms have no fixed type: only a lab needs a laboratory, any other class an ordinary room
                       roomType: (type === 'project' ? 'seminar' : type) as RoomType,
                       equipment: type === 'lab' && !d.equipment.length ? ['calculatoare'] : d.equipment,
@@ -228,21 +242,42 @@ export default function Assignments() {
                 label={t('assignments.teacher')}
                 hint={teacher && !teacher.activityTypes.includes(d.type) ? t('assignments.teacherTypeWarning') : undefined}
               >
-                <Select className="select" value={d.teacherId} onChange={(e) => set({ teacherId: e.target.value })}>
-                  {[...dataset.teachers]
-                    .sort(
-                      (a, b) =>
-                        Number(b.activityTypes.includes(d.type)) - Number(a.activityTypes.includes(d.type)) || a.name.localeCompare(b.name),
-                    )
-                    .map((x) => (
-                      <option key={x.id} value={x.id}>
-                        {x.name}
-                        {x.activityTypes.includes(d.type) ? '' : ' *'}
-                      </option>
-                    ))}
+                <Select
+                  className="select"
+                  value={d.teacherId}
+                  // the main teacher is not also one of the others
+                  onChange={(e) => set({ teacherId: e.target.value, coTeacherIds: d.coTeacherIds?.filter((id) => id !== e.target.value) })}
+                >
+                  {teacherOrder.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
+                      {x.activityTypes.includes(d.type) ? '' : ' *'}
+                    </option>
+                  ))}
                 </Select>
               </Field>
             </div>
+
+            {d.type === 'project' && (
+              <Field
+                label={t('assignments.coTeachers')}
+                hint={
+                  coTeacherIds.some((id) => !index.teachers.get(id)?.activityTypes.includes(d.type))
+                    ? t('assignments.teacherTypeWarning')
+                    : t('assignments.coTeachersHint')
+                }
+              >
+                <MultiSelect
+                  value={coTeacherIds}
+                  onChange={(ids) => set({ coTeacherIds: ids })}
+                  options={teacherOrder
+                    .filter((x) => x.id !== d.teacherId)
+                    .map((x) => ({ value: x.id, label: `${x.name}${x.activityTypes.includes(d.type) ? '' : ' *'}`, short: x.name }))}
+                  placeholder={t('assignments.coTeachersPlaceholder')}
+                  aria-label={t('assignments.coTeachers')}
+                />
+              </Field>
+            )}
 
             <Field label={t('assignments.audience')} hint={t('assignments.groupsHint')}>
               {subjectTags.length > 0 && (

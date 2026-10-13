@@ -188,7 +188,7 @@ function ChangeForm({
 
   const label = (l: Lesson) => {
     const a = index.assignmentOf(l);
-    return `${l.slot + 1} · ${fmtTime(dataset.settings.slots[l.slot]?.start, dataset.settings.timeFormat)} — ${a ? index.subjects.get(a.subjectId)?.code : ''} ${a ? t(`activity.${a.type}`) : ''} · ${a ? index.audienceLabel(a.audience) : ''} · ${index.rooms.get(l.roomId)?.name} · ${a ? index.teachers.get(a.teacherId)?.name : ''}`;
+    return `${l.slot + 1} · ${fmtTime(dataset.settings.slots[l.slot]?.start, dataset.settings.timeFormat)} — ${a ? index.subjects.get(a.subjectId)?.code : ''} ${a ? t(`activity.${a.type}`) : ''} · ${a ? index.audienceLabel(a.audience) : ''} · ${index.rooms.get(l.roomId)?.name} · ${a ? index.teacherNames(a) : ''}`;
   };
 
   async function save() {

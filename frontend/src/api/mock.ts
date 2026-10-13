@@ -17,7 +17,7 @@ import type {
   User,
 } from '../domain/types';
 import { generateExams, generateMidterms } from '../domain/exams';
-import { DatasetIndex } from '../domain/indexes';
+import { DatasetIndex, teacherIdsOf } from '../domain/indexes';
 import { createRng } from '../domain/rng';
 import { deriveClusters } from '../domain/clusters';
 import { ApiError } from './http';
@@ -332,6 +332,28 @@ function withSubjectStream<T extends Pick<Assignment, 'audience' | 'subjectId'>>
   return { ...a, audience: { kind: 'stream', id: stream.id } };
 }
 
+/** Like the server: only a project keeps other teachers besides its main one. */
+function withCoTeachers(a: Assignment): Assignment {
+  const { coTeacherIds, ...rest } = a;
+  const co = a.type === 'project' ? [...new Set(coTeacherIds ?? [])].filter((t) => t !== a.teacherId) : [];
+  return co.length ? { ...rest, coTeacherIds: co } : rest;
+}
+
+/** Like the server: after a data change every timetable is scored again (new loads, availability, rooms, ...). */
+function rescoreTimetables() {
+  store.timetables = store.timetables.map((t) =>
+    t.status === 'variant'
+      ? t
+      : {
+          ...t,
+          score: scoreTimetable(
+            t.groupIds.length ? { ...store.dataset, assignments: scopeAssignments(store.dataset, t.groupIds) } : store.dataset,
+            t.lessons,
+          ),
+        },
+  );
+}
+
 function collection<K extends CollectionName>(name: K): Collections[K][] {
   return store.dataset[name] as Collections[K][];
 }
@@ -438,6 +460,7 @@ export function createMockApi(): Api {
     async saveSettings(settings) {
       requireRole('admin');
       store.dataset.settings = settings;
+      rescoreTimetables();
       persist();
       return delay(settings);
     },
@@ -448,9 +471,10 @@ export function createMockApi(): Api {
     },
     async create(name, item) {
       requireRole('admin');
-      if (name === 'assignments') item = withSubjectStream(item as unknown as Assignment) as unknown as typeof item;
+      if (name === 'assignments') item = withCoTeachers(withSubjectStream(item as unknown as Assignment)) as unknown as typeof item;
       const created = { ...item, id: uid(name[0]) } as Collections[typeof name];
       collection(name).push(created);
+      rescoreTimetables();
       persist();
       return delay(created);
     },
@@ -459,8 +483,9 @@ export function createMockApi(): Api {
       const list = collection(name);
       const i = list.findIndex((x) => x.id === item.id);
       if (i < 0) throw new ApiError(404, 'Not found');
-      if (name === 'assignments') item = withSubjectStream(item as unknown as Assignment) as unknown as typeof item;
+      if (name === 'assignments') item = withCoTeachers(withSubjectStream(item as unknown as Assignment)) as unknown as typeof item;
       list[i] = item;
+      rescoreTimetables();
       persist();
       return delay(item);
     },
@@ -471,9 +496,9 @@ export function createMockApi(): Api {
       if (i >= 0) list.splice(i, 1);
       if (name !== 'assignments') {
         // Drop teaching loads that pointed at the deleted record
-        store.dataset.assignments = store.dataset.assignments.filter(
-          (a) => a.teacherId !== id && a.subjectId !== id && a.audience.id !== id,
-        );
+        store.dataset.assignments = store.dataset.assignments
+          .filter((a) => a.teacherId !== id && a.subjectId !== id && a.audience.id !== id)
+          .map((a) => (a.coTeacherIds?.includes(id) ? withCoTeachers({ ...a, coTeacherIds: a.coTeacherIds.filter((t) => t !== id) }) : a));
       }
       if (name === 'groups') {
         // a deleted group just disappears from the streams, timetables and exam timetables
@@ -485,14 +510,14 @@ export function createMockApi(): Api {
         );
         for (const p of store.examPlans ?? []) p.events = p.events.filter((e) => e.groupId !== id);
       }
-      if (name !== 'assignments') {
-        const alive = new Set(store.dataset.assignments.map((a) => a.id));
-        for (const t of store.timetables) {
-          t.groupIds = t.groupIds.filter((g) => g !== id);
-          t.lessons = t.lessons.filter((l) => alive.has(l.assignmentId));
-        }
-        store.changes = store.changes.filter((c) => alive.has(c.assignmentId));
+      // like the database: the pairs (and date changes) of a deleted teaching load go with it
+      const alive = new Set(store.dataset.assignments.map((a) => a.id));
+      for (const t of store.timetables) {
+        if (name === 'groups') t.groupIds = t.groupIds.filter((g) => g !== id);
+        t.lessons = t.lessons.filter((l) => alive.has(l.assignmentId));
       }
+      store.changes = store.changes.filter((c) => alive.has(c.assignmentId));
+      rescoreTimetables();
       persist();
       return delay(undefined);
     },
@@ -500,6 +525,7 @@ export function createMockApi(): Api {
       requireRole('admin');
       const created = subjects.map((s) => ({ ...s, id: uid('s') }));
       store.dataset.subjects.push(...created);
+      rescoreTimetables();
       persist();
       return delay(created);
     },
@@ -516,6 +542,7 @@ export function createMockApi(): Api {
       if (c.id && !existing) throw new ApiError(404, 'Not found');
       const saved: Cluster = existing ? Object.assign(existing, { name, groupIds }) : { id: uid('c'), kind: 'custom', name, groupIds };
       store.dataset.clusters = existing ? all : [...all, saved];
+      rescoreTimetables();
       persist();
       return delay(saved);
     },
@@ -523,6 +550,7 @@ export function createMockApi(): Api {
       requireRole('admin');
       store.dataset.clusters = (store.dataset.clusters ?? []).filter((x) => x.id !== id);
       for (const s of store.dataset.subjects) if (s.clusterIds) s.clusterIds = s.clusterIds.filter((x) => x !== id);
+      rescoreTimetables();
       persist();
       return delay(undefined);
     },
@@ -538,6 +566,7 @@ export function createMockApi(): Api {
       if (u.role === 'admin') t.consultation = consultation;
       if (data.unavailableOn && !data.unavailableOn.length) delete t.unavailableOn;
       if (u.role === 'teacher') notify('availability', { name: u.name, teacherId }, ['admin']);
+      rescoreTimetables();
       persist();
       return delay(t);
     },
@@ -644,8 +673,13 @@ export function createMockApi(): Api {
       notify('unpublished', { name: t.name }, [], {
         groupIds: [...mine],
         teacherIds: [
-          ...new Set(withdrawn.map((l) => store.dataset.assignments.find((a) => a.id === l.assignmentId)?.teacherId ?? '')),
-        ].filter(Boolean),
+          ...new Set(
+            withdrawn.flatMap((l) => {
+              const a = store.dataset.assignments.find((x) => x.id === l.assignmentId);
+              return a ? teacherIdsOf(a) : [];
+            }),
+          ),
+        ],
       });
       persist();
       return delay(result);
@@ -783,7 +817,7 @@ export function createMockApi(): Api {
             : a.audience.kind === 'stream'
               ? (store.dataset.streams.find((x) => x.id === a.audience.id)?.groupIds ?? [])
               : [a.audience.id];
-          const teacherIds = [a?.teacherId, change.teacherId].filter((x): x is string => !!x);
+          const teacherIds = [...(a ? teacherIdsOf(a) : []), change.teacherId].filter((x): x is string => !!x);
           return { groupIds, teacherIds };
         })(),
       );

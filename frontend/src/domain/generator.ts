@@ -2,7 +2,7 @@
 // developed and demoed before the backend solver (CP-SAT + LNS) is ready.
 // Stage 1 builds a timetable greedily; stage 2 improves it with Large
 // Neighborhood Search (report, Algorithm 2). Locked lessons are never moved.
-import { DatasetIndex } from './indexes';
+import { DatasetIndex, shareTeacher, teacherIdsOf } from './indexes';
 import { createRng, type Rng } from './rng';
 import { placeSessions } from './sessions';
 import { scoreTimetable } from './score';
@@ -48,7 +48,7 @@ class Occupancy {
   private keys(l: Lesson, a: Assignment) {
     const k = slotKey(l.day, l.slot);
     return {
-      teacher: `${a.teacherId}@${k}`,
+      teachers: teacherIdsOf(a).map((t) => `${t}@${k}`),
       room: `${l.roomId}@${k}`,
       groups: [...new Set(this.idx.cohorts(a.audience).map((c) => `${c.groupId}@${k}`))],
     };
@@ -68,7 +68,7 @@ class Occupancy {
   add(l: Lesson) {
     const a = this.idx.assignmentOf(l)!;
     const k = this.keys(l, a);
-    Occupancy.push(this.teacher, k.teacher, l);
+    k.teachers.forEach((t) => Occupancy.push(this.teacher, t, l));
     Occupancy.push(this.room, k.room, l);
     k.groups.forEach((g) => Occupancy.push(this.group, g, l));
   }
@@ -76,7 +76,7 @@ class Occupancy {
   remove(l: Lesson) {
     const a = this.idx.assignmentOf(l)!;
     const k = this.keys(l, a);
-    Occupancy.drop(this.teacher, k.teacher, l);
+    k.teachers.forEach((t) => Occupancy.drop(this.teacher, t, l));
     Occupancy.drop(this.room, k.room, l);
     k.groups.forEach((g) => Occupancy.drop(this.group, g, l));
   }
@@ -86,7 +86,7 @@ class Occupancy {
     const k = this.keys(l, a);
     const clash = (others: Lesson[] | undefined, extra?: (o: Lesson) => boolean) =>
       (others ?? []).some((o) => o.id !== l.id && paritiesOverlap(o.parity, l.parity) && (!extra || extra(o)));
-    if (clash(this.teacher.get(k.teacher)) || clash(this.room.get(k.room))) return false;
+    if (k.teachers.some((t) => clash(this.teacher.get(t))) || clash(this.room.get(k.room))) return false;
     return !k.groups.some((g) =>
       clash(this.group.get(g), (o) => this.idx.audiencesOverlap(this.idx.assignmentOf(o)!.audience, a.audience)),
     );
@@ -164,7 +164,7 @@ class Builder {
       });
       if (sameSubject) c += 3;
     }
-    c += 3 * gapDelta(this.daySlots((l) => this.idx.assignmentOf(l)!.teacherId === a.teacherId, day));
+    for (const tid of teacherIdsOf(a)) c += 3 * gapDelta(this.daySlots((l) => teacherIdsOf(this.idx.assignmentOf(l)!).includes(tid), day));
     if (t?.preferred.includes(slotKey(day, slot))) c -= 1;
     return c + this.rng.next() * 1.2;
   }
@@ -172,7 +172,7 @@ class Builder {
   /** Place one pair of `a`; returns false if no conflict-free spot exists. */
   place(a: Assignment): boolean {
     const { settings } = this.ds;
-    const teacher = this.idx.teachers.get(a.teacherId);
+    const unavailable = this.idx.teacherUnavailable(a);
     const size = this.idx.audienceSize(a.audience);
     const preferred = new Set(this.idx.preferredRooms(a).map((r) => r.id));
     const rooms = this.ds.rooms
@@ -184,7 +184,7 @@ class Builder {
     let bestCost = Infinity;
     for (const day of this.idx.allowedDays(a)) {
       for (const slot of range(settings.slots.length)) {
-        if (teacher?.unavailable.includes(slotKey(day, slot))) continue;
+        if (unavailable.has(slotKey(day, slot))) continue;
         const cost = this.cost(a, day, slot);
         if (cost >= bestCost) continue;
         for (const room of rooms) {
@@ -204,9 +204,8 @@ class Builder {
 
   /** Put a pair where the example has it: same day and pair, its room or another that fits; false if that clashes now. */
   adopt(ex: Lesson, a: Assignment): boolean {
-    const teacher = this.idx.teachers.get(a.teacherId);
     if (ex.slot >= this.ds.settings.slots.length || !this.idx.allowedDays(a).includes(ex.day)) return false;
-    if (teacher?.unavailable.includes(slotKey(ex.day, ex.slot))) return false;
+    if (this.idx.teacherUnavailable(a).has(slotKey(ex.day, ex.slot))) return false;
     const size = this.idx.audienceSize(a.audience);
     const ok = (r: Room) => r.capacity >= size && this.idx.roomFits(a, r) && this.idx.hasEquipment(a, r);
     const same = this.idx.rooms.get(ex.roomId);
@@ -243,8 +242,7 @@ class Builder {
 
 /** Hardest first: big audiences, labs (few rooms), teachers with little availability. */
 function difficulty(a: Assignment, idx: DatasetIndex): number {
-  const t = idx.teachers.get(a.teacherId);
-  return idx.audienceSize(a.audience) / 10 + (a.type === 'lab' ? 4 : 0) + (t?.unavailable.length ?? 0) / 3 + a.equipment.length * 2;
+  return idx.audienceSize(a.audience) / 10 + (a.type === 'lab' ? 4 : 0) + idx.teacherUnavailable(a).size / 3 + a.equipment.length * 2;
 }
 
 function construct(ds: Dataset, idx: DatasetIndex, scoped: Assignment[], fixed: Lesson[], rng: Rng, example: Lesson[] = []): Builder {
@@ -285,7 +283,7 @@ function lnsStep(ds: Dataset, idx: DatasetIndex, current: Lesson[], currentScore
   const seedA = idx.assignmentOf(seed)!;
   let pool = movable;
   if (strategy === 'byDay') pool = movable.filter((l) => l.day === seed.day);
-  if (strategy === 'byTeacher') pool = movable.filter((l) => idx.assignmentOf(l)!.teacherId === seedA.teacherId);
+  if (strategy === 'byTeacher') pool = movable.filter((l) => shareTeacher(idx.assignmentOf(l)!, seedA));
   if (strategy === 'byGroup') {
     const g = idx.cohorts(seedA.audience)[0]?.groupId;
     pool = movable.filter((l) => idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, g));
@@ -377,4 +375,74 @@ export async function generateTimetable(
   score = scoreTimetable({ ...ds, assignments: scoped }, lessons, idx);
   onProgress?.(1, score);
   return { lessons, score, seed: opts.seed };
+}
+
+/** How a timetable differs from its teaching loads after the data changed (new loads, more or fewer pairs). */
+export interface LoadDrift {
+  /** Loads with fewer pairs placed than they need, and how many are missing. */
+  missing: { assignment: Assignment; count: number }[];
+  /** Loads with more pairs placed than they need, and how many are too many. */
+  extra: { assignment: Assignment; count: number }[];
+}
+
+export function loadDrift(ds: Dataset, lessons: Lesson[], groupIds: string[], idx = new DatasetIndex(ds)): LoadDrift {
+  const placed = new Map<string, number>();
+  for (const l of lessons) placed.set(l.assignmentId, (placed.get(l.assignmentId) ?? 0) + 1);
+  const out: LoadDrift = { missing: [], extra: [] };
+  for (const a of scopeAssignments(ds, groupIds, idx)) {
+    const need = idx.requiredPairs(a);
+    const have = placed.get(a.id) ?? 0;
+    if (have < need) out.missing.push({ assignment: a, count: Math.ceil(need - have) });
+    // 2 pairs for a load of 1.5 is not one too many: removing one would leave it short
+    if (have - need >= 1) out.extra.push({ assignment: a, count: Math.floor(have - need) });
+  }
+  return out;
+}
+
+/**
+ * Place only what the timetable lacks (a new teaching load, a load given more pairs), around the pairs it
+ * already has, which stay where they are. Pairs that fit nowhere without a clash are left out and counted.
+ */
+export function placeMissing(
+  ds: Dataset,
+  lessons: Lesson[],
+  groupIds: string[],
+  seed = Date.now(),
+): { lessons: Lesson[]; placed: number; unplaced: number } {
+  const idx = new DatasetIndex(ds);
+  const rng = createRng(seed);
+  const { missing } = loadDrift(ds, lessons, groupIds, idx);
+  const b = new Builder(ds, idx, rng);
+  // session pairs (on a date) keep their weekday and pair busy too: a new weekly pair would meet them some week
+  for (const l of lessons) if (idx.assignmentOf(l)) b.add(l);
+  let placed = 0;
+  let unplaced = 0;
+  const weekly = missing.filter((m) => !idx.isReduced(m.assignment));
+  for (const { assignment, count } of weekly.sort((x, y) => difficulty(y.assignment, idx) - difficulty(x.assignment, idx))) {
+    for (let i = 0; i < count; i++) {
+      if (b.place(assignment)) placed++;
+      else unplaced++;
+    }
+  }
+  const added = b.lessons.filter((l) => !lessons.includes(l));
+  // reduced attendance: a load with no session pairs yet gets them on the session dates
+  const reduced = missing.filter((m) => idx.isReduced(m.assignment));
+  const fresh = reduced.filter((m) => !lessons.some((l) => l.assignmentId === m.assignment.id)).map((m) => m.assignment);
+  const sessions = fresh.length ? placeSessions(ds, idx, fresh, [...lessons, ...added], rng) : [];
+  placed += sessions.length;
+  unplaced += reduced.reduce((n, m) => n + m.count, 0) - sessions.length;
+  return { lessons: [...lessons, ...added, ...sessions], placed, unplaced };
+}
+
+/** Take out the pairs a load no longer needs (its pairs per week went down); locked pairs stay. */
+export function dropExtra(ds: Dataset, lessons: Lesson[], groupIds: string[]): { lessons: Lesson[]; removed: number } {
+  const { extra } = loadDrift(ds, lessons, groupIds);
+  const gone = new Set<string>();
+  for (const { assignment, count } of extra) {
+    const own = lessons.filter((l) => l.assignmentId === assignment.id && !l.locked);
+    // the last ones of the week go first
+    own.sort((x, y) => (y.date ?? '').localeCompare(x.date ?? '') || y.day - x.day || y.slot - x.slot);
+    own.slice(0, count).forEach((l) => gone.add(l.id));
+  }
+  return { lessons: lessons.filter((l) => !gone.has(l.id)), removed: gone.size };
 }

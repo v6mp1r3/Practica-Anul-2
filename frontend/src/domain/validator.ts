@@ -1,6 +1,6 @@
 // Conflict validator — the same hard constraints the solver must respect
 // (report §2.1.3). Runs in the browser so the editor can show clashes live.
-import { DatasetIndex } from './indexes';
+import { DatasetIndex, teacherIdsOf } from './indexes';
 import { lessonsOverlap } from './overlap';
 import { slotKey } from './slots';
 import type { Conflict, Dataset, Lesson } from './types';
@@ -32,7 +32,8 @@ export function findHardConflicts(ds: Dataset, lessons: Lesson[], idx = new Data
         const ay = idx.assignmentOf(y);
         if (!ax || !ay) continue;
         const base = { severity: 'hard' as const, lessonIds: [x.id, y.id], day: x.day, slot: x.slot };
-        if (ax.teacherId === ay.teacherId) out.push({ ...base, kind: 'teacher-clash', subjectId: ax.teacherId });
+        const shared = teacherIdsOf(ax).find((t) => teacherIdsOf(ay).includes(t));
+        if (shared) out.push({ ...base, kind: 'teacher-clash', subjectId: shared });
         if (x.roomId === y.roomId) out.push({ ...base, kind: 'room-clash', subjectId: x.roomId });
         if (idx.audiencesOverlap(ax.audience, ay.audience)) {
           out.push({ ...base, kind: 'group-clash', subjectId: idx.cohorts(ax.audience)[0]?.groupId ?? '' });
@@ -52,9 +53,11 @@ export function findHardConflicts(ds: Dataset, lessons: Lesson[], idx = new Data
     if (l.day < settings.workingDays && !idx.allowedDays(a).includes(l.day)) {
       out.push({ ...base, kind: 'wrong-day', subjectId: a.id });
     }
-    const teacher = idx.teachers.get(a.teacherId);
-    if (teacher?.unavailable.includes(slotKey(l.day, l.slot))) {
-      out.push({ ...base, kind: 'teacher-unavailable', subjectId: teacher.id });
+    for (const tid of teacherIdsOf(a)) {
+      const teacher = idx.teachers.get(tid);
+      if (teacher?.unavailable.includes(slotKey(l.day, l.slot))) {
+        out.push({ ...base, kind: 'teacher-unavailable', subjectId: teacher.id });
+      }
     }
     const room = idx.rooms.get(l.roomId);
     if (room) {

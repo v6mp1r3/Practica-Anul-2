@@ -57,6 +57,8 @@ in `db/migrations/` you have not run yet, in order:
 | `009_remove_assignment_parity.sql` | Removes the odd/even choice from teaching loads (the placed pairs keep theirs). **Needed.** |
 | `007_cluster_language_form_custom.sql` | Adds the language and form-of-study clusters and the custom clusters. **Needed**, after 005. |
 | `006_subject_semester_assessment.sql` | Adds the semester and the assessment (Midterm 1, Midterm 2, Exam) to subjects. **Needed.** |
+| `016_assignment_co_teachers.sql` | A project can have several teachers (`assignment_co_teacher`). **Needed.** |
+| `017_timetable_rescore.sql` | Re-scoring the timetables after a data change no longer changes their "Updated" date. **Needed.** |
 
 The backend connects with the database password and bypasses row-level security; every table has RLS on with no
 policies, so Supabase's own public API can read nothing.

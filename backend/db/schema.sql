@@ -510,6 +510,14 @@ create table assignment_equipment (
   primary key (assignment_id, equipment_id)
 );
 
+-- the other teachers of a project, who hold its pairs together with the main teacher
+create table assignment_co_teacher (
+  assignment_id bigint not null references assignment (id) on delete cascade,
+  teacher_id    bigint not null references teacher (id) on delete cascade,
+  primary key (assignment_id, teacher_id)
+);
+create index assignment_co_teacher_teacher_idx on assignment_co_teacher (teacher_id);
+
 -- ---------------------------------------------------------------- timetables
 create table timetable (
   id              bigint generated always as identity primary key,
@@ -526,7 +534,10 @@ create table timetable (
 );
 create unique index timetable_one_published on timetable (semester_id) where status = 'published';
 create index timetable_semester_idx on timetable (semester_id, status);
-create trigger timetable_updated before update on timetable for each row execute function set_updated_at();
+-- a new score after the data changed is not an edit of the timetable: only its own fields move updated_at
+create trigger timetable_updated before update on timetable for each row
+  when ((old.name, old.status, old.algorithm, old.semester_id) is distinct from (new.name, new.status, new.algorithm, new.semester_id))
+  execute function set_updated_at();
 
 create table timetable_group (
   timetable_id bigint not null references timetable (id) on delete cascade,

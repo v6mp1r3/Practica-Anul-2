@@ -1,7 +1,7 @@
 """Port of frontend/src/domain/score.ts: soft constraints turned into a weighted penalty."""
 from collections import defaultdict
 
-from .indexes import DatasetIndex
+from .indexes import DatasetIndex, teacher_ids
 from .slots import in_week, parity_weight
 from .validator import find_hard_conflicts
 
@@ -64,8 +64,8 @@ def score_timetable(ds: dict, all_lessons: list[dict], idx: DatasetIndex | None 
     by_teacher: dict[str, list[dict]] = defaultdict(list)
     for l in lessons:
         a = idx.assignment_of(l)
-        if a:
-            by_teacher[a["teacherId"]].append(l)
+        for tid in teacher_ids(a) if a else []:
+            by_teacher[tid].append(l)
     for tid, tl in by_teacher.items():
         for week in weeks:
             for d in days:

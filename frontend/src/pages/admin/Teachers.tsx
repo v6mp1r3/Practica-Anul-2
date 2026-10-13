@@ -1,4 +1,5 @@
 import { OtherFaculty, facultyView, useAdminScope } from '../../components/FacultyFilter';
+import { teaches } from '../../domain/indexes';
 import { AvailabilityPicker } from '../../components/AvailabilityPicker';
 import { ExamAvailabilityPicker } from '../../components/ExamAvailabilityPicker';
 import { TeacherAccount } from '../../components/TeacherAccount';
@@ -45,7 +46,7 @@ export default function Teachers() {
   const filtering = !!(title || department || activity);
 
   const today = toDateString(new Date());
-  const plannedLoad = (id: string) => dataset.assignments.filter((a) => a.teacherId === id).reduce((n, a) => n + a.pairsPerWeek, 0);
+  const plannedLoad = (id: string) => dataset.assignments.filter((a) => teaches(a, id)).reduce((n, a) => n + a.pairsPerWeek, 0);
 
   return (
     <CrudPage

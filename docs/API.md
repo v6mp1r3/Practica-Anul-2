@@ -172,6 +172,10 @@ or subject without a `faculty` is shared and any administrator may change it.
 { "id": "a1", "subjectId": "sub1", "type": "lecture", "teacherId": "t3",
   "audience": { "kind": "stream", "id": "s3" },
   "pairsPerWeek": 2, "roomType": "lecture", "equipment": [] }
+
+// A project can have more teachers, who hold its pairs together with teacherId (ignored for other types)
+{ "id": "a2", "subjectId": "sub4", "type": "project", "teacherId": "t3", "coTeacherIds": ["t5", "t8"],
+  "audience": { "kind": "group", "id": "g1" }, "pairsPerWeek": 1, "roomType": "seminar", "equipment": [] }
 ```
 
 **Clusters.** A cluster is a year of study ("Year 1") or a speciality within a year ("FAF, year 1"). They are
