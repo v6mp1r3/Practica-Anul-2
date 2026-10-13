@@ -6,7 +6,7 @@ from ..db import get_engine
 from ..deps import CurrentUser, current_user, get_conn, require_admin
 from ..memo import Memo
 from ..errors import ApiError
-from ..importers import read_sheet
+from ..importers import MAX_BYTES, read_sheet
 from ..services import timetables as svc
 from ..util import pid
 
@@ -31,7 +31,15 @@ def list_timetables(_: CurrentUser = Depends(require_admin)):
 async def import_sheet(request: Request, filename: str = Query(""), _: CurrentUser = Depends(require_admin)):
     """A faculty's timetable as published (PDF or Excel), read into rows: groups, day, time, week, type,
     subject, teacher and room. Nothing is saved; the client matches the rows and saves a draft."""
-    return read_sheet(filename, await request.body())
+    # read at most the limit (+1 byte to know it is over), instead of the whole upload into memory
+    if int(request.headers.get("content-length") or 0) > MAX_BYTES:
+        raise ApiError(413, "The file is larger than 15 MB")
+    data = bytearray()
+    async for chunk in request.stream():
+        data += chunk
+        if len(data) > MAX_BYTES:
+            raise ApiError(413, "The file is larger than 15 MB")
+    return read_sheet(filename, bytes(data))
 
 
 def _read_published():
