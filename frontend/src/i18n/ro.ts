@@ -463,6 +463,9 @@ export const ro = {
   'assignments.coTeachersPlaceholder': 'Doar profesorul principal',
   'assignments.required': 'Alege disciplina, profesorul și studenții.',
   'assignments.pairsMin': 'Cel puțin o pereche pe săptămână.',
+  'assignments.pairsHalf': 'Perechile pe săptămână merg din jumătate în jumătate: 0,5, 1, 1,5, 2…',
+  'assignments.pairsHint':
+    '0,5 = o pereche la două săptămâni (pară sau impară). O pereche poate și alterna: în săptămânile impare la o oră, în cele pare la alta (alege săptămâna pe fiecare pereche din orar).',
 
   'generate.subtitle': 'Generează mai multe variante care respectă toate constrângerile obligatorii, apoi alege una.',
   'generate.settings': 'Parametri',
@@ -653,6 +656,7 @@ export const ro = {
   'conflict.room-equipment': 'Sala {name} nu are echipamentul necesar',
   'conflict.hours-missing': '{name}: lipsesc perechi',
   'conflict.hours-extra': '{name}: perechi în plus',
+  'conflict.hours-uneven': '{name}: perechi repartizate inegal între săptămânile pare și impare',
   'conflict.outside-hours': '{name}: în afara programului',
   'conflict.wrong-day': '{name}: zi nepermisă pentru forma de învățământ',
   'conflict.teacher-overtime': '{name} depășește sarcina planificată',

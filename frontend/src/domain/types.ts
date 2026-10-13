@@ -396,6 +396,7 @@ export type ConflictKind =
   | 'room-equipment'
   | 'hours-missing'
   | 'hours-extra'
+  | 'hours-uneven'
   | 'outside-hours'
   | 'wrong-day'
   | 'teacher-overtime'

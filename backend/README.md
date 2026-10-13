@@ -59,6 +59,7 @@ in `db/migrations/` you have not run yet, in order:
 | `006_subject_semester_assessment.sql` | Adds the semester and the assessment (Midterm 1, Midterm 2, Exam) to subjects. **Needed.** |
 | `016_assignment_co_teachers.sql` | A project can have several teachers (`assignment_co_teacher`). **Needed.** |
 | `017_timetable_rescore.sql` | Re-scoring the timetables after a data change no longer changes their "Updated" date. **Needed.** |
+| `018_half_pairs.sql` | Teaching loads can have half pairs (0.5 = one pair every other week). **Needed.** |
 
 The backend connects with the database password and bypasses row-level security; every table has RLS on with no
 policies, so Supabase's own public API can read nothing.

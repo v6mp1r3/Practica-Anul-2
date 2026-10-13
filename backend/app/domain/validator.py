@@ -3,6 +3,7 @@ from collections import defaultdict
 
 from .indexes import DatasetIndex, teacher_ids
 from .slots import lessons_overlap, slot_key
+from .weeks import week_counts, week_excess, week_need
 
 
 def find_hard_conflicts(ds: dict, lessons: list[dict], idx: DatasetIndex | None = None) -> list[dict]:
@@ -56,15 +57,27 @@ def find_hard_conflicts(ds: dict, lessons: list[dict], idx: DatasetIndex | None 
             if not idx.has_equipment(a, room):
                 out.append({**base, "kind": "room-equipment", "subjectId": room["id"]})
 
-    # every assignment gets exactly its required number of pairs
-    placed: dict[str, list[str]] = defaultdict(list)
+    # every assignment gets exactly its required number of pairs; a weekly load in odd and in even weeks alike
+    placed: dict[str, list[dict]] = defaultdict(list)
     for l in lessons:
-        placed[l["assignmentId"]].append(l["id"])
+        placed[l["assignmentId"]].append(l)
     for a in ds["assignments"]:
-        ids = placed.get(a["id"], [])
-        need = idx.required_pairs(a)
-        if len(ids) < need:
-            out.append({"kind": "hours-missing", "severity": "hard", "lessonIds": ids, "subjectId": a["id"]})
-        if len(ids) > need:
-            out.append({"kind": "hours-extra", "severity": "hard", "lessonIds": ids, "subjectId": a["id"]})
+        own = placed.get(a["id"], [])
+        ids = [l["id"] for l in own]
+        base = {"severity": "hard", "lessonIds": ids, "subjectId": a["id"]}
+        if idx.is_reduced(a):
+            need = idx.required_pairs(a)
+            if len(ids) < need:
+                out.append({**base, "kind": "hours-missing"})
+            if len(ids) > need:
+                out.append({**base, "kind": "hours-extra"})
+            continue
+        weekly = [l for l in own if not l.get("date")]
+        if week_excess(a["pairsPerWeek"], weekly):
+            out.append({**base, "kind": "hours-extra"})
+        elif week_need(a["pairsPerWeek"], weekly):
+            odd, even = week_counts(weekly)
+            # the right number of pairs, all in one kind of week: odd weeks have more and even weeks fewer
+            whole = odd + even >= round(2 * a["pairsPerWeek"])
+            out.append({**base, "kind": "hours-uneven" if whole else "hours-missing"})
     return out

@@ -535,7 +535,7 @@ create table assignment (
   stream_id         bigint references stream (id) on delete cascade,
   group_id          bigint references student_group (id) on delete cascade,
   subgroup_no       smallint check (subgroup_no between 1 and 4),
-  pairs_per_week    numeric(3, 1) not null check (pairs_per_week >= 1),
+  pairs_per_week    numeric(3, 1) not null check (pairs_per_week >= 0.5 and pairs_per_week * 2 = floor(pairs_per_week * 2)),  -- 0.5 = every other week
   pairs_per_session numeric(3, 1) check (pairs_per_session > 0),      -- reduced-attendance groups
   room_type         room_type not null,
   check (

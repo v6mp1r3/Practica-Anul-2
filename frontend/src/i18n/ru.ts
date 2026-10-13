@@ -463,6 +463,9 @@ export const ru: Record<MessageKey, string> = {
   'assignments.coTeachersPlaceholder': 'Только основной преподаватель',
   'assignments.required': 'Выберите дисциплину, преподавателя и студентов.',
   'assignments.pairsMin': 'Минимум одна пара в неделю.',
+  'assignments.pairsHalf': 'Пары в неделю идут с шагом 0,5: 0,5, 1, 1,5, 2…',
+  'assignments.pairsHint':
+    '0,5 = одна пара раз в две недели (чётную или нечётную). Пара может и чередоваться: в нечётные недели в одно время, в чётные в другое (неделю выбирают у каждой пары в расписании).',
 
   'generate.subtitle': 'Сгенерируйте несколько вариантов, соблюдающих все обязательные ограничения, и выберите один.',
   'generate.settings': 'Параметры',
@@ -653,6 +656,7 @@ export const ru: Record<MessageKey, string> = {
   'conflict.room-equipment': 'В аудитории {name} нет нужного оборудования',
   'conflict.hours-missing': '{name}: не хватает пар',
   'conflict.hours-extra': '{name}: лишние пары',
+  'conflict.hours-uneven': '{name}: пары неравномерно распределены между чётными и нечётными неделями',
   'conflict.outside-hours': '{name}: вне рабочего времени',
   'conflict.wrong-day': '{name}: день недоступен для этой формы обучения',
   'conflict.teacher-overtime': '{name} превышает плановую нагрузку',

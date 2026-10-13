@@ -194,3 +194,13 @@ def test_project_hours_and_half_pair_loads(client, admin):
     a = create(client, admin, "assignments", assignment(w.s1["id"], t["id"], {"kind": "group", "id": w.g1["id"]}, type="project", roomType="seminar"))
     assert a["type"] == "project" and a["roomType"] == "seminar"
     assert client.post("/api/teachers", json=teacher(email="z@example.md", activityTypes=["dance"]), headers=admin).status_code == 422
+
+
+def test_a_teaching_load_can_have_half_pairs(client, admin):
+    w = World(client, admin)
+    half = assignment(w.s1["id"], w.t1["id"], {"kind": "group", "id": w.g1["id"]}, pairsPerWeek=0.5)
+    assert create(client, admin, "assignments", half)["pairsPerWeek"] == 0.5
+    assert create(client, admin, "assignments", {**half, "pairsPerWeek": 1.5, "type": "seminar"})["pairsPerWeek"] == 1.5
+    # halves only, and at least one
+    for bad in (0.3, 0, 1.2):
+        assert client.post("/api/assignments", json={**half, "type": "lab", "pairsPerWeek": bad}, headers=admin).status_code >= 400

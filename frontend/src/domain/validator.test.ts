@@ -23,7 +23,8 @@ const ds: Dataset = {
       type: 'lab',
       teacherId: 't1',
       audience: { kind: 'subgroup', id: 'g1', subgroup: 1 },
-      pairsPerWeek: 1,
+      // every other week: the odd-week pair below is all of it
+      pairsPerWeek: 0.5,
       roomType: 'lab',
       equipment: ['calculatoare'],
     },
@@ -72,8 +73,26 @@ describe('findHardConflicts', () => {
   });
 
   it('does not flag odd and even lessons sharing a room', () => {
-    const lessons = [L('1', 'lec', 0, 1, 'r2'), L('2', 'lab1', 0, 3, 'r8', 'odd'), L('3', 'lab2', 0, 3, 'r8', 'even')];
+    // lab2 alternates: even weeks Monday pair 4, odd weeks Tuesday pair 4 (still one pair per week)
+    const lessons = [
+      L('1', 'lec', 0, 1, 'r2'),
+      L('2', 'lab1', 0, 3, 'r8', 'odd'),
+      L('3', 'lab2', 0, 3, 'r8', 'even'),
+      L('4', 'lab2', 1, 3, 'r9', 'odd'),
+    ];
     expect(kinds(lessons)).toEqual([]);
+  });
+
+  it('counts pairs week by week: half pairs, alternating pairs, and an uneven split', () => {
+    const rest = [L('1', 'lec', 0, 1, 'r2'), L('2', 'lab1', 0, 2, 'r8', 'odd')];
+    // a load of 1 alternating between two times is complete
+    expect(kinds([...rest, L('3', 'lab2', 0, 3, 'r9', 'odd'), L('4', 'lab2', 1, 3, 'r9', 'even')])).toEqual([]);
+    // one pair every other week is half of it
+    expect(kinds([...rest, L('3', 'lab2', 0, 3, 'r9', 'even')])).toEqual(['hours-missing']);
+    // two odd-week pairs: one pair per week in total, but none in even weeks
+    expect(kinds([...rest, L('3', 'lab2', 0, 3, 'r9', 'odd'), L('4', 'lab2', 1, 3, 'r9', 'odd')])).toEqual(['hours-uneven']);
+    // a weekly pair for a load of 0.5 is too much
+    expect(kinds([L('1', 'lec', 0, 1, 'r2'), L('2', 'lab1', 0, 2, 'r8'), L('3', 'lab2', 0, 3, 'r9')])).toEqual(['hours-extra']);
   });
 
   it('flags teacher unavailability, room capacity and room type', () => {

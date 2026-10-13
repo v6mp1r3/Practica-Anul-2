@@ -463,6 +463,9 @@ export const en: Record<MessageKey, string> = {
   'assignments.coTeachersPlaceholder': 'Only the main teacher',
   'assignments.required': 'Pick a subject, a teacher and the students.',
   'assignments.pairsMin': 'At least one pair per week.',
+  'assignments.pairsHalf': 'Pairs per week go in halves: 0.5, 1, 1.5, 2…',
+  'assignments.pairsHint':
+    '0.5 = one pair every other week (odd or even). A pair can also alternate: odd weeks at one time, even weeks at another (set the week on each pair in the timetable).',
 
   'generate.subtitle': 'Generate several variants that respect every hard constraint, then pick one.',
   'generate.settings': 'Parameters',
@@ -653,6 +656,7 @@ export const en: Record<MessageKey, string> = {
   'conflict.room-equipment': 'Room {name} lacks the required equipment',
   'conflict.hours-missing': '{name}: pairs missing',
   'conflict.hours-extra': '{name}: extra pairs',
+  'conflict.hours-uneven': '{name}: pairs unevenly split between odd and even weeks',
   'conflict.outside-hours': '{name}: outside working hours',
   'conflict.wrong-day': '{name}: day not allowed for this form of study',
   'conflict.teacher-overtime': '{name} is over their planned load',

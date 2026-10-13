@@ -1,6 +1,7 @@
 // Conflict validator — the same hard constraints the solver must respect
 // (report §2.1.3). Runs in the browser so the editor can show clashes live.
 import { DatasetIndex, teacherIdsOf } from './indexes';
+import { halvesOf, weekCounts, weekExcess, weekNeed } from './weeks';
 import { lessonsOverlap } from './overlap';
 import { slotKey } from './slots';
 import type { Conflict, Dataset, Lesson } from './types';
@@ -67,14 +68,25 @@ export function findHardConflicts(ds: Dataset, lessons: Lesson[], idx = new Data
     }
   }
 
-  // Every assignment gets exactly its required number of pairs
-  const placed = new Map<string, string[]>();
-  for (const l of lessons) placed.set(l.assignmentId, [...(placed.get(l.assignmentId) ?? []), l.id]);
+  // Every assignment gets exactly its required number of pairs; a weekly load in odd and in even weeks alike
+  const placed = new Map<string, Lesson[]>();
+  for (const l of lessons) placed.set(l.assignmentId, [...(placed.get(l.assignmentId) ?? []), l]);
   for (const a of ds.assignments) {
-    const ids = placed.get(a.id) ?? [];
-    const need = idx.requiredPairs(a);
-    if (ids.length < need) out.push({ kind: 'hours-missing', severity: 'hard', lessonIds: ids, subjectId: a.id });
-    if (ids.length > need) out.push({ kind: 'hours-extra', severity: 'hard', lessonIds: ids, subjectId: a.id });
+    const own = placed.get(a.id) ?? [];
+    const base = { severity: 'hard' as const, lessonIds: own.map((l) => l.id), subjectId: a.id };
+    if (idx.isReduced(a)) {
+      const need = idx.requiredPairs(a);
+      if (own.length < need) out.push({ ...base, kind: 'hours-missing' });
+      if (own.length > need) out.push({ ...base, kind: 'hours-extra' });
+      continue;
+    }
+    const weekly = own.filter((l) => !l.date);
+    if (weekExcess(a.pairsPerWeek, weekly)) out.push({ ...base, kind: 'hours-extra' });
+    else if (halvesOf(weekNeed(a.pairsPerWeek, weekly))) {
+      const [odd, even] = weekCounts(weekly);
+      // the right number of pairs, all in one kind of week: odd weeks have more and even weeks fewer
+      out.push({ ...base, kind: odd + even >= Math.round(2 * a.pairsPerWeek) ? 'hours-uneven' : 'hours-missing' });
+    }
   }
 
   return out;

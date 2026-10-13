@@ -176,6 +176,7 @@ def test_first_or_last_pair_only_subjects():
 
 def test_generate_improves_and_keeps_what_it_must():
     ds = tiny()
+    next(a for a in ds["assignments"] if a["id"] == "a6")["pairsPerWeek"] = 0.5  # every other week: its odd-week pair is all of it
     kept = {"id": "K1", "assignmentId": "a6", "day": 0, "slot": 2, "roomId": "r2", "parity": "odd"}  # g3's lessons are "another faculty's"
     locked = {"id": "Lk", "assignmentId": "a2", "day": 3, "slot": 2, "roomId": "r4", "parity": "weekly", "locked": True}
     seen = []
@@ -242,3 +243,32 @@ def test_every_teacher_of_a_project_is_busy_in_its_pairs():
     assert find_hard_conflicts(ds, lessons) == []
     t1_slots = [(l["day"], l["slot"]) for l in lessons if "t1" in (idx.assignments[l["assignmentId"]]["teacherId"], *idx.assignments[l["assignmentId"]].get("coTeacherIds", []))]
     assert len(t1_slots) == len(set(t1_slots))
+
+
+def test_half_pairs_go_to_odd_or_even_weeks():
+    ds = tiny()
+    loads = {a["id"]: a for a in ds["assignments"]}
+    loads["a6"]["pairsPerWeek"] = 0.5  # every other week
+    loads["a7"]["pairsPerWeek"] = 1.5  # every week, plus every other week
+    r = generate_timetable(ds, ["g1", "g2", "g3"], seed=3, seconds=4, workers=2)
+    assert r.missing == 0 and find_hard_conflicts(ds, r.lessons) == []
+    parities = lambda aid: sorted(l["parity"] for l in r.lessons if l["assignmentId"] == aid)
+    assert parities("a6") in (["odd"], ["even"])
+    assert len(parities("a7")) == 2 and parities("a7").count("weekly") == 1
+
+
+def test_an_alternating_pair_counts_as_one_pair_per_week():
+    ds = tiny()
+    idx = DatasetIndex(ds)
+    lesson = lambda lid, aid, d, s, room, parity: {"id": lid, "assignmentId": aid, "day": d, "slot": s, "roomId": room, "parity": parity}
+    sem = lambda *ls: [c["kind"] for c in find_hard_conflicts({**ds, "assignments": [idx.assignments["a2"]]}, list(ls), idx)]
+    # a2 is one seminar per week: odd weeks Monday pair 2, even weeks Monday pair 3
+    assert sem(lesson("x", "a2", 0, 1, "r2", "odd"), lesson("y", "a2", 0, 2, "r2", "even")) == []
+    assert sem(lesson("x", "a2", 0, 1, "r2", "odd")) == ["hours-missing"]
+    assert sem(lesson("x", "a2", 0, 1, "r2", "odd"), lesson("y", "a2", 0, 2, "r2", "odd")) == ["hours-uneven"]
+    # improving the timetable keeps it complete: a freed odd-week pair comes back in odd weeks
+    fixed = [lesson("x", "a2", 0, 1, "r2", "odd"), lesson("y", "a2", 1, 2, "r2", "even")]
+    r = generate_timetable(ds, ["g1", "g2", "g3"], seed=8, seconds=4, example=fixed, workers=2)
+    own = [l for l in r.lessons if l["assignmentId"] == "a2"]
+    assert find_hard_conflicts(ds, r.lessons) == [] and r.missing == 0
+    assert sorted(l["parity"] for l in own) in (["even", "odd"], ["weekly"])

@@ -8,7 +8,8 @@ from collections import defaultdict
 
 from ..domain.indexes import DatasetIndex, teacher_ids
 from ..domain.slots import slot_key
-from .model import WEEKS, Placement
+from ..domain.weeks import WeekNeed
+from .model import WEEKS, Placement, as_need
 
 
 def _difficulty(a: dict, idx: DatasetIndex) -> float:
@@ -51,8 +52,28 @@ class _Busy:
             self.subject_days.add((g, d, a["subjectId"]))
 
 
-def construct(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dict], rng: random.Random) -> list[Placement]:
-    """Place `need[a]` pairs of each load around `fixed`; pairs that fit nowhere are simply not placed."""
+def _tasks(n: WeekNeed) -> list[tuple[str, ...]]:
+    """The pairs to place, each with the weeks it may take: every week, odd only, even only, or odd or even."""
+    w = n.weekly
+    return [("weekly",)] * w + [("odd",)] * (n.odd - w) + [("even",)] * (n.even - w) + [("odd", "even")] * n.either
+
+
+def take(n: WeekNeed, parity: str) -> WeekNeed | None:
+    """What is left after placing a pair of that parity, or None if the load does not need it."""
+    if parity == "weekly":
+        return WeekNeed(n.odd - 1, n.even - 1, n.either) if n.odd > 0 and n.even > 0 else None
+    mine = n.odd if parity == "odd" else n.even
+    if mine > 0:
+        return WeekNeed(n.odd - 1, n.even, n.either) if parity == "odd" else WeekNeed(n.odd, n.even - 1, n.either)
+    if n.either > 0:
+        return WeekNeed(n.odd, n.even, n.either - 1)
+    return None
+
+
+def construct(ds: dict, idx: DatasetIndex, need: dict, fixed: list[dict], rng: random.Random) -> list[Placement]:
+    """Place what each load needs (`need[a]`: a number of weekly pairs or a WeekNeed) around `fixed`; pairs that
+    fit nowhere are simply not placed."""
+    need = {a: as_need(v) for a, v in need.items()}
     settings = ds["settings"]
     n_slots = len(settings["slots"])
     busy = _Busy(idx)
@@ -61,7 +82,7 @@ def construct(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dic
         if a and not f.get("date"):
             busy.add(a, f["day"], f["slot"], f["roomId"], f.get("parity", "weekly"))
     shifted = bool(settings.get("yearShifts"))
-    order = [a for a in idx.assignments.values() if need.get(a["id"], 0) > 0]
+    order = [a for a in idx.assignments.values() if need.get(a["id"])]
     rng.shuffle(order)
     order.sort(key=lambda a: -_difficulty(a, idx))
     out: list[Placement] = []
@@ -76,7 +97,7 @@ def construct(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dic
         )
         edge = bool(idx.subjects.get(a["subjectId"], {}).get("edgeOfDay"))
         groups = [g for g, _ in idx.cohorts(a["audience"])]
-        for _ in range(need[a["id"]]):
+        for weeks in _tasks(need[a["id"]]):
             best = None
             for d in idx.allowed_days(a):
                 for s in range(n_slots):
@@ -108,18 +129,20 @@ def construct(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dic
                     c += rng.random() * 1.2
                     if best is not None and c >= best[0]:
                         continue
-                    room = next((r for r in rooms if busy.free(a, d, s, r["id"])), None)
-                    if room:
-                        best = (c, d, s, room["id"])
+                    for parity in weeks:
+                        room = next((r for r in rooms if busy.free(a, d, s, r["id"], parity)), None)
+                        if room:
+                            best = (c, d, s, room["id"], parity)
+                            break
             if best is None:
                 break
-            _, d, s, room_id = best
-            busy.add(a, d, s, room_id)
-            out.append(Placement(a["id"], d, s, room_id, "weekly"))
+            _, d, s, room_id, parity = best
+            busy.add(a, d, s, room_id, parity)
+            out.append(Placement(a["id"], d, s, room_id, parity))
     return out
 
 
-def adopt_example(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list[dict], example: list[dict]) -> list[Placement]:
+def adopt_example(ds: dict, idx: DatasetIndex, need: dict, fixed: list[dict], example: list[dict]) -> list[Placement]:
     """An example timetable's pairs where they were (same day and pair; its room, or another that fits),
     as long as that still clashes with nothing and the load still needs the pair."""
     n_slots = len(ds["settings"]["slots"])
@@ -128,13 +151,14 @@ def adopt_example(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list
         a = idx.assignment_of(f)
         if a and not f.get("date"):
             busy.add(a, f["day"], f["slot"], f["roomId"], f.get("parity", "weekly"))
-    left = dict(need)
+    left = {a: as_need(v) for a, v in need.items()}
     out: list[Placement] = []
     for ex in example:
         a = idx.assignments.get(ex["assignmentId"])
-        if not a or ex.get("date") or left.get(a["id"], 0) <= 0:
-            continue
         d, s, parity = ex["day"], ex["slot"], ex.get("parity", "weekly")
+        rest = take(left[a["id"]], parity) if a and not ex.get("date") and left.get(a["id"]) else None
+        if rest is None:
+            continue
         if s >= n_slots or d not in idx.allowed_days(a) or slot_key(d, s) in idx.teacher_unavailable(a):
             continue
         size = idx.audience_size(a["audience"])
@@ -145,5 +169,5 @@ def adopt_example(ds: dict, idx: DatasetIndex, need: dict[str, int], fixed: list
             continue
         busy.add(a, d, s, room["id"], parity)
         out.append(Placement(a["id"], d, s, room["id"], parity))
-        left[a["id"]] -= 1
+        left[a["id"]] = rest
     return out

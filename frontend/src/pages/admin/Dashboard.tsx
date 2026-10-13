@@ -13,7 +13,7 @@ import { toDateString } from '../../domain/changes';
 import { loadDrift, scopeAssignments } from '../../domain/generator';
 import { findHardConflicts } from '../../domain/validator';
 import { precheck } from '../../domain/precheck';
-import { fmtTime, range, weekDays } from '../../domain/slots';
+import { fmtTime, parityWeight, range, weekDays } from '../../domain/slots';
 import type { ActivityType, Lesson, Timetable } from '../../domain/types';
 import { filterLessons, weekParityOf } from '../../domain/views';
 import { dateLocale, useI18n } from '../../i18n';
@@ -112,7 +112,8 @@ export default function Dashboard() {
   const required = shown
     ? scopeAssignments(dataset, shown.groupIds, index).reduce((n, a) => n + index.requiredPairs(a), 0)
     : dataset.assignments.reduce((n, a) => n + index.requiredPairs(a), 0);
-  const placed = shown?.lessons.length ?? 0;
+  // pairs per week: an odd- or even-week pair is half of one (session pairs count one each)
+  const placed = (shown?.lessons ?? []).reduce((n, l) => n + (l.date ? 1 : parityWeight(l.parity)), 0);
   // checked against the data as it is now: a load added or changed since the timetable was made shows up here
   const live = useMemo(() => {
     if (!shown) return null;

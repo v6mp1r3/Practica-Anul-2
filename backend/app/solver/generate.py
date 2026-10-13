@@ -8,7 +8,6 @@ returned with the result, and reduced-attendance groups get their dated session 
 
 No database in here: the function takes the dataset (the JSON of GET /dataset) and returns lessons, so it can
 be tested on its own."""
-import math
 import random
 import time
 from dataclasses import dataclass
@@ -16,6 +15,7 @@ from typing import Callable
 
 from ..domain.indexes import DatasetIndex
 from ..domain.score import score_timetable
+from ..domain.weeks import WeekNeed, week_need
 from .greedy import adopt_example, construct
 from .model import Placement, solve_weekly
 from .sessions import place_sessions
@@ -31,7 +31,7 @@ class Generated:
     seconds: float
     steps: int  # LNS steps tried
     improved: int  # LNS steps that found something not worse
-    missing: int  # pairs the solver could not place (contradictory data)
+    missing: float  # pairs per week the solver could not place (contradictory data); 0.5 = one odd or even week
 
 
 EXAMPLE_WEIGHT = 2  # search cost of moving one pair away from the example timetable (= a missed preferred room)
@@ -87,14 +87,19 @@ def generate_timetable(
         if progress:
             progress(min(1.0, max(0.0, p)), score)
 
-    def required(a: dict) -> int:
-        return math.ceil(idx.required_pairs(a) - 1e-9)
-
-    def deficits(lessons: list[dict]) -> dict[str, int]:
-        have: dict[str, int] = {}
+    def deficits(lessons: list[dict]) -> dict[str, WeekNeed]:
+        """What each weekly load still needs, in odd and in even weeks (an odd-week pair taken out is needed again
+        in odd weeks; a load of 0.5 needs one pair in either)."""
+        own: dict[str, list[dict]] = {}
         for l in lessons:
-            have[l["assignmentId"]] = have.get(l["assignmentId"], 0) + 1
-        return {a["id"]: required(a) - have.get(a["id"], 0) for a in weekly if required(a) - have.get(a["id"], 0) > 0}
+            if not l.get("date"):
+                own.setdefault(l["assignmentId"], []).append(l)
+        out = {}
+        for a in weekly:
+            n = week_need(a["pairsPerWeek"], own.get(a["id"], []))
+            if n:
+                out[a["id"]] = n
+        return out
 
     def as_lessons(ps: list[Placement]) -> list[dict]:
         return [p.as_lesson(new_id()) for p in ps]
@@ -172,9 +177,7 @@ def generate_timetable(
             destroyed = rng.sample(pool, min(k, len(pool)))
         gone = {l["id"] for l in destroyed}
         rest = [l for l in lessons if l["id"] not in gone]
-        need = dict(missing_now)
-        for l in destroyed:
-            need[l["assignmentId"]] = need.get(l["assignmentId"], 0) + 1
+        need = deficits(rest)
         steps += 1
         budget = min(repair_seconds, deadline - time.monotonic())
         res = solve_weekly(ds, idx, need, rest, budget, rng.randrange(1 << 30), workers,
@@ -203,4 +206,4 @@ def generate_timetable(
         lessons = lessons + place_sessions(ds, idx, reduced, lessons, rng, new_id, example)
     final = score_timetable({**ds, "assignments": scoped}, lessons, idx)
     tick(1.0, final)
-    return Generated(lessons, final, seed, time.monotonic() - started, steps, improved, sum(deficits(lessons).values()))
+    return Generated(lessons, final, seed, time.monotonic() - started, steps, improved, sum(n.halves for n in deficits(lessons).values()) / 2)

@@ -128,3 +128,47 @@ describe('after the data changed', () => {
     expect(res.lessons.filter((l) => l.assignmentId === a.id)).toEqual([expect.objectContaining({ id: own[1].id, locked: true })]);
   });
 });
+
+describe('odd and even weeks', () => {
+  const groupIds = seedDataset.groups.map((g) => g.id);
+  const loads = seedDataset.assignments.filter((a) => !new DatasetIndex(seedDataset).isReduced(a));
+
+  it('places a half pair in odd or even weeks, and 1.5 as a weekly pair plus a half', async () => {
+    const half = loads[0];
+    const oneAndHalf = loads[1];
+    const ds: Dataset = {
+      ...seedDataset,
+      assignments: seedDataset.assignments.map((a) =>
+        a.id === half.id ? { ...a, pairsPerWeek: 0.5 } : a.id === oneAndHalf.id ? { ...a, pairsPerWeek: 1.5 } : a,
+      ),
+    };
+    const { lessons } = await generateTimetable(ds, { groupIds, seed: 2, iterations: 30 });
+    expect(findHardConflicts(ds, lessons)).toEqual([]);
+    const parities = (id: string) =>
+      lessons
+        .filter((l) => l.assignmentId === id)
+        .map((l) => l.parity)
+        .sort();
+    expect(['odd', 'even']).toContain(parities(half.id).join());
+    expect(parities(oneAndHalf.id)).toHaveLength(2);
+    expect(parities(oneAndHalf.id)).toContain('weekly');
+  });
+
+  it('makes a pair alternate: set it to odd weeks, then place the even-week pair elsewhere', async () => {
+    const { lessons } = await generateTimetable(seedDataset, { groupIds, seed: 6, iterations: 10 });
+    const one = lessons.find((l) => loads.some((a) => a.id === l.assignmentId && a.pairsPerWeek === 1))!;
+    const odd = lessons.map((l) => (l.id === one.id ? { ...l, parity: 'odd' as const } : l));
+    expect(loadDrift(seedDataset, odd, groupIds).missing).toEqual([
+      expect.objectContaining({ count: 0.5, need: { odd: 0, even: 1, either: 0 } }),
+    ]);
+    const res = placeMissing(seedDataset, odd, groupIds, 3);
+    expect(res.placed).toBe(0.5);
+    expect(
+      res.lessons
+        .filter((l) => l.assignmentId === one.assignmentId)
+        .map((l) => l.parity)
+        .sort(),
+    ).toEqual(['even', 'odd']);
+    expect(findHardConflicts(seedDataset, res.lessons)).toEqual([]);
+  });
+});

@@ -168,9 +168,14 @@ export default function Assignments() {
           ? d.audience.kind === 'stream'
             ? t('assignments.streamMin')
             : t('assignments.required')
-          : (index.isReduced(d) ? (d.pairsPerSession ?? d.pairsPerWeek) : d.pairsPerWeek) < 1
-            ? t('assignments.pairsMin')
-            : null
+          : index.isReduced(d)
+            ? (d.pairsPerSession ?? d.pairsPerWeek) < 1
+              ? t('assignments.pairsMin')
+              : null
+            : // whole pairs or halves: 0.5 is one pair every other week
+              d.pairsPerWeek < 0.5 || (d.pairsPerWeek * 2) % 1
+              ? t('assignments.pairsHalf')
+              : null
       }
       renderForm={(d, set) => {
         const teacher = index.teachers.get(d.teacherId);
@@ -332,11 +337,12 @@ export default function Assignments() {
                   />
                 </Field>
               ) : (
-                <Field label={t('assignments.pairs')}>
+                <Field label={t('assignments.pairs')} hint={t('assignments.pairsHint')}>
                   <input
                     className="input"
                     type="number"
-                    min={1}
+                    min={0.5}
+                    step={0.5}
                     max={10}
                     value={d.pairsPerWeek}
                     onChange={(e) => set({ pairsPerWeek: Number(e.target.value) || 0 })}
