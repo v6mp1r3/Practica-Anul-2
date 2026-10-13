@@ -27,8 +27,13 @@ The administration has accounts (`role: "admin"`), and so can teachers
 (`role: "teacher"`, tied to one teacher by `teacherId`): a teacher signs in only to
 set their own availability (`PUT /teachers/{id}/availability`, see Users). Students
 don't sign in: the reads they need are **public** (no token) —
-`GET /dataset`, `GET /timetables/published` and `GET /changes`. Everything else
-needs an admin token.
+`GET /dataset`, `GET /timetables/published`, `GET /changes` and `GET /exams`.
+
+A signed-in **teacher** can, besides the public reads: use `/auth/*` (their profile and
+password), read and mark their notifications (`/notifications`), set their own
+availability (`PUT /teachers/{their teacherId}/availability`, not the consultation hour),
+read the collections and clusters (`GET /{collection}`, `GET /clusters`), and open the
+published timetable by id. Everything else needs an admin token (`403` for a teacher).
 
 Every `admin` account belongs to one faculty (`User.faculty`), set when the account
 is created on the server; there is no administrator above the faculties. An admin
@@ -66,6 +71,9 @@ faculty at once, on the server (`python -m app.cli new-semester`).
 | POST   | `/auth/logout`   | —                        | `204`                                                                              |
 | PUT    | `/auth/me`       | `ProfileUpdate`          | `User`                                                                             |
 | POST   | `/auth/password` | `{ current, next }`      | `204` (`400` wrong current password, `422` shorter than 8 or longer than 72 bytes) |
+
+`PUT /auth/me` changes only the fields it is sent (e.g. leaving out `emailNotifications`
+keeps it as it was); `avatar` is a small data URL, at most 512 kB (`413` otherwise).
 
 Administrator accounts are created on the server with `python -m app.cli create-admin`
 (see `backend/README.md`); teacher accounts by an administrator (Users, below).
