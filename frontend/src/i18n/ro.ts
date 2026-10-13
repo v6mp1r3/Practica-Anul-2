@@ -459,7 +459,7 @@ export const ro = {
   'assignments.allGroups': 'Toate grupele',
   'assignments.teacherTypeWarning': 'Acest profesor nu are bifat acest tip de activitate.',
   'assignments.coTeachers': 'Alți profesori',
-  'assignments.coTeachersHint': 'Un proiect poate fi ținut de mai mulți profesori împreună: toți au perechile lui în același timp.',
+  'assignments.coTeachersHint': 'O pereche poate fi ținută de mai mulți profesori împreună: toți o au în același timp.',
   'assignments.coTeachersPlaceholder': 'Doar profesorul principal',
   'assignments.required': 'Alege disciplina, profesorul și studenții.',
   'assignments.pairsMin': 'Cel puțin o pereche pe săptămână.',

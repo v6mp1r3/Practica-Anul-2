@@ -79,7 +79,7 @@ export function lessonOfChange(ds: Dataset, lessons: Lesson[], c: ScheduleChange
 
 /**
  * Effective room and teachers of a lesson on a date, after the changes for that date:
- * a substitute takes the place of the main teacher, a project's other teachers stay.
+ * a substitute takes the place of the main teacher, the other teachers stay.
  */
 function effective(idx: DatasetIndex, lesson: Lesson, changes: ScheduleChange[]) {
   const mine = changes.filter((c) => c.assignmentId === lesson.assignmentId && c.slot === lesson.slot);

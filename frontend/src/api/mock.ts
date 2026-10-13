@@ -332,10 +332,10 @@ function withSubjectStream<T extends Pick<Assignment, 'audience' | 'subjectId'>>
   return { ...a, audience: { kind: 'stream', id: stream.id } };
 }
 
-/** Like the server: only a project keeps other teachers besides its main one. */
+/** Like the server: the other teachers, without repeats or the main one. */
 function withCoTeachers(a: Assignment): Assignment {
   const { coTeacherIds, ...rest } = a;
-  const co = a.type === 'project' ? [...new Set(coTeacherIds ?? [])].filter((t) => t !== a.teacherId) : [];
+  const co = [...new Set(coTeacherIds ?? [])].filter((t) => t !== a.teacherId);
   return co.length ? { ...rest, coTeacherIds: co } : rest;
 }
 

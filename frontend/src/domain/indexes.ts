@@ -8,7 +8,7 @@ export interface Cohort {
 
 const byId = <T extends { id: string }>(items: T[]) => new Map(items.map((i) => [i.id, i]));
 
-/** The teacher of a load and the other teachers who hold its pairs with them (a project can have several). */
+/** The teacher of a load and the other teachers who hold its pairs with them (any class can have several). */
 export const teacherIdsOf = (a: Pick<Assignment, 'teacherId' | 'coTeacherIds'>): string[] => [
   a.teacherId,
   ...(a.coTeacherIds ?? []).filter((t) => t !== a.teacherId),

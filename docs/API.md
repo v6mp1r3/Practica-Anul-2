@@ -173,7 +173,7 @@ or subject without a `faculty` is shared and any administrator may change it.
   "audience": { "kind": "stream", "id": "s3" },
   "pairsPerWeek": 2, "roomType": "lecture", "equipment": [] }
 
-// A project can have more teachers, who hold its pairs together with teacherId (ignored for other types)
+// Any class can have more teachers, who hold its pairs together with teacherId
 { "id": "a2", "subjectId": "sub4", "type": "project", "teacherId": "t3", "coTeacherIds": ["t5", "t8"],
   "audience": { "kind": "group", "id": "g1" }, "pairsPerWeek": 1, "roomType": "seminar", "equipment": [] }
 ```

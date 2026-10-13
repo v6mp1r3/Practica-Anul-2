@@ -3,7 +3,7 @@ import math
 
 
 def teacher_ids(a: dict) -> list[str]:
-    """The teacher of a load and the other teachers who hold its pairs with them (a project can have several)."""
+    """The teacher of a load and the other teachers who hold its pairs with them (any class can have several)."""
     return [a["teacherId"], *(t for t in a.get("coTeacherIds") or [] if t != a["teacherId"])]
 
 

@@ -186,7 +186,7 @@ def test_a_data_change_scores_the_timetables_again(client, admin):
     assert client.get(f"/api/timetables/{t['id']}", headers=admin).json()["score"]["hard"] == 2
 
 
-def test_a_project_keeps_all_its_teachers_busy(client, admin):
+def test_a_class_keeps_all_its_teachers_busy(client, admin):
     w = World(client, admin)
     proj = create(client, admin, "assignments", assignment(w.s1["id"], w.t1["id"], {"kind": "group", "id": w.g1["id"]}, type="project", roomType="seminar", coTeacherIds=[w.t2["id"], w.t1["id"]]))
     # the main teacher is not repeated among the others
@@ -194,6 +194,8 @@ def test_a_project_keeps_all_its_teachers_busy(client, admin):
     other = w.seminar(w.s2, w.t2, w.g2)
     clash = save(client, admin, "P", [w.g1["id"], w.g2["id"]], [lesson(proj["id"], 0, 1, w.r1["id"], "a"), lesson(other["id"], 0, 1, w.r2["id"], "b")])
     assert clash["score"]["hard"] == 1  # t2 is in both
-    # another kind of class has one teacher only
-    sem = client.put(f"/api/assignments/{proj['id']}", json={**proj, "type": "seminar"}, headers=admin).json()
-    assert "coTeacherIds" not in sem
+    # a lab (any kind of class) keeps its other teachers too, and they can be taken off again
+    lab = client.put(f"/api/assignments/{proj['id']}", json={**proj, "type": "lab", "roomType": "lab"}, headers=admin).json()
+    assert lab["coTeacherIds"] == [w.t2["id"]]
+    solo = client.put(f"/api/assignments/{proj['id']}", json={**lab, "coTeacherIds": []}, headers=admin).json()
+    assert "coTeacherIds" not in solo

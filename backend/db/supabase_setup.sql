@@ -568,7 +568,7 @@ create table assignment_equipment (
   primary key (assignment_id, equipment_id)
 );
 
--- the other teachers of a project, who hold its pairs together with the main teacher
+-- the other teachers of a class, who hold its pairs together with the main teacher
 create table assignment_co_teacher (
   assignment_id bigint not null references assignment (id) on delete cascade,
   teacher_id    bigint not null references teacher (id) on delete cascade,

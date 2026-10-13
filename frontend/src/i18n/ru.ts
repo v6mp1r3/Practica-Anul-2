@@ -459,7 +459,7 @@ export const ru: Record<MessageKey, string> = {
   'assignments.allGroups': 'Все группы',
   'assignments.teacherTypeWarning': 'У этого преподавателя не отмечен этот тип занятий.',
   'assignments.coTeachers': 'Другие преподаватели',
-  'assignments.coTeachersHint': 'Проект могут вести несколько преподавателей вместе: у всех его пары в одно и то же время.',
+  'assignments.coTeachersHint': 'Занятие могут вести несколько преподавателей вместе: у всех эти пары в одно и то же время.',
   'assignments.coTeachersPlaceholder': 'Только основной преподаватель',
   'assignments.required': 'Выберите дисциплину, преподавателя и студентов.',
   'assignments.pairsMin': 'Минимум одна пара в неделю.',

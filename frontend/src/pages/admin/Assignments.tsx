@@ -98,7 +98,7 @@ export default function Assignments() {
           label: t('assignments.teacher'),
           sort: (x) => index.teacherNames(x),
           render: (x) => {
-            // a project can have several teachers
+            // a class can have several teachers
             const teachers = teacherIdsOf(x).flatMap((id) => index.teachers.get(id) ?? []);
             return (
               <span>
@@ -174,7 +174,7 @@ export default function Assignments() {
       }
       renderForm={(d, set) => {
         const teacher = index.teachers.get(d.teacherId);
-        const coTeacherIds = d.type === 'project' ? (d.coTeacherIds ?? []) : [];
+        const coTeacherIds = d.coTeacherIds ?? [];
         // those who teach this kind of class first, then by name
         const teacherOrder = [...dataset.teachers].sort(
           (a, b) => Number(b.activityTypes.includes(d.type)) - Number(a.activityTypes.includes(d.type)) || a.name.localeCompare(b.name),
@@ -223,8 +223,6 @@ export default function Assignments() {
                     const type = e.target.value as ActivityType;
                     set({
                       type,
-                      // only a project is held by several teachers
-                      ...(type === 'project' ? {} : { coTeacherIds: undefined }),
                       // rooms have no fixed type: only a lab needs a laboratory, any other class an ordinary room
                       roomType: (type === 'project' ? 'seminar' : type) as RoomType,
                       equipment: type === 'lab' && !d.equipment.length ? ['calculatoare'] : d.equipment,
@@ -258,26 +256,24 @@ export default function Assignments() {
               </Field>
             </div>
 
-            {d.type === 'project' && (
-              <Field
-                label={t('assignments.coTeachers')}
-                hint={
-                  coTeacherIds.some((id) => !index.teachers.get(id)?.activityTypes.includes(d.type))
-                    ? t('assignments.teacherTypeWarning')
-                    : t('assignments.coTeachersHint')
-                }
-              >
-                <MultiSelect
-                  value={coTeacherIds}
-                  onChange={(ids) => set({ coTeacherIds: ids })}
-                  options={teacherOrder
-                    .filter((x) => x.id !== d.teacherId)
-                    .map((x) => ({ value: x.id, label: `${x.name}${x.activityTypes.includes(d.type) ? '' : ' *'}`, short: x.name }))}
-                  placeholder={t('assignments.coTeachersPlaceholder')}
-                  aria-label={t('assignments.coTeachers')}
-                />
-              </Field>
-            )}
+            <Field
+              label={t('assignments.coTeachers')}
+              hint={
+                coTeacherIds.some((id) => !index.teachers.get(id)?.activityTypes.includes(d.type))
+                  ? t('assignments.teacherTypeWarning')
+                  : t('assignments.coTeachersHint')
+              }
+            >
+              <MultiSelect
+                value={coTeacherIds}
+                onChange={(ids) => set({ coTeacherIds: ids })}
+                options={teacherOrder
+                  .filter((x) => x.id !== d.teacherId)
+                  .map((x) => ({ value: x.id, label: `${x.name}${x.activityTypes.includes(d.type) ? '' : ' *'}`, short: x.name }))}
+                placeholder={t('assignments.coTeachersPlaceholder')}
+                aria-label={t('assignments.coTeachers')}
+              />
+            </Field>
 
             <Field label={t('assignments.audience')} hint={t('assignments.groupsHint')}>
               {subjectTags.length > 0 && (

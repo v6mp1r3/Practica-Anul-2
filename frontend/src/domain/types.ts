@@ -322,7 +322,7 @@ export interface Assignment {
   subjectId: string;
   type: ActivityType;
   teacherId: string;
-  /** A project can be held by several teachers at once: the others besides teacherId. */
+  /** A class can be held by several teachers at once: the others besides teacherId. */
   coTeacherIds?: string[];
   audience: Audience;
   pairsPerWeek: number;

@@ -459,7 +459,7 @@ export const en: Record<MessageKey, string> = {
   'assignments.allGroups': 'All groups',
   'assignments.teacherTypeWarning': 'This teacher does not have this activity type checked.',
   'assignments.coTeachers': 'Other teachers',
-  'assignments.coTeachersHint': 'A project can be held by several teachers together: they all have its pairs at the same time.',
+  'assignments.coTeachersHint': 'A class can be held by several teachers together: they all have its pairs at the same time.',
   'assignments.coTeachersPlaceholder': 'Only the main teacher',
   'assignments.required': 'Pick a subject, a teacher and the students.',
   'assignments.pairsMin': 'At least one pair per week.',
