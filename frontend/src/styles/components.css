@@ -1073,6 +1073,24 @@ table.table {
 .xw-card.dragging {
   opacity: 0.4;
 }
+/* dropping there would clash: red, with what it clashes with */
+.xw-ghost.bad {
+  border-color: var(--danger);
+  /* solid, above the cards under it, so the text reads */
+  background: var(--surface);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  z-index: 6;
+  color: var(--danger);
+  min-width: 180px;
+  height: auto !important;
+  min-height: 40px;
+}
+.xw-ghost-clash {
+  display: block;
+  font-weight: 500;
+  line-height: 1.3;
+  margin-top: 2px;
+}
 .xw-ghost {
   position: absolute;
   left: 2px;
@@ -1988,4 +2006,20 @@ details[open]::details-content {
 .th-sort:hover,
 .th-sort:focus-visible {
   color: var(--text);
+}
+
+/* Evaluări: every conflict, each saying what clashes (a long list scrolls) */
+.exam-problems {
+  margin: 0;
+  padding-left: 36px;
+  max-height: 220px;
+  overflow-y: auto;
+  display: grid;
+  gap: 4px;
+}
+.badge.exam-many {
+  white-space: normal;
+  line-height: 1.4;
+  padding: 8px 12px;
+  justify-self: start;
 }

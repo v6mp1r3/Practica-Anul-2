@@ -846,4 +846,14 @@ export const ru: Record<MessageKey, string> = {
   'teacherAccount.confirmDelete': 'Удалить аккаунт «{username}»? Преподаватель больше не сможет войти.',
   'teacherAccount.taken': 'Такой логин уже есть, или у преподавателя уже есть аккаунт.',
   'teacherAccount.short': 'Пароль должен быть не короче 8 символов.',
+  'exams.clash.teacher': 'У {who} одновременно {a} и {b}',
+  'exams.clash.room': 'Аудитория {who} занята одновременно: {a} и {b}',
+  'exams.clash.group': 'У группы {who} одновременно {a} и {b}',
+  'exams.clash.class.teacher': '{who} ведёт {b} во время {a}',
+  'exams.clash.class.room': 'В аудитории {who} занятие ({b}) во время {a}',
+  'exams.clash.class.group': 'У группы {who} занятие ({b}) во время {a}',
+  'exams.clashMore': '(и ещё {count})',
+  'exams.movedClash': 'Перенесено, но есть пересечение: {text}',
+  'exams.pickGroupHint':
+    'Для всех групп {count} аттестаций рядом друг с другом. Выберите группу или поток выше, чтобы легко переносить их между днями.',
 };

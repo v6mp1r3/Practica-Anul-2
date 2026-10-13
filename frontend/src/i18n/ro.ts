@@ -846,6 +846,16 @@ export const ro = {
   'teacherAccount.confirmDelete': 'Ștergi contul „{username}”? Profesorul nu va mai putea intra.',
   'teacherAccount.taken': 'Utilizatorul există deja, sau profesorul are deja cont.',
   'teacherAccount.short': 'Parola trebuie să aibă cel puțin 8 caractere.',
+  'exams.clash.teacher': '{who} are în același timp {a} și {b}',
+  'exams.clash.room': 'Sala {who} e ocupată în același timp de {a} și {b}',
+  'exams.clash.group': 'Grupa {who} are în același timp {a} și {b}',
+  'exams.clash.class.teacher': '{who} predă {b} în timpul {a}',
+  'exams.clash.class.room': 'Sala {who} are oră ({b}) în timpul {a}',
+  'exams.clash.class.group': 'Grupa {who} are oră ({b}) în timpul {a}',
+  'exams.clashMore': '(și încă {count})',
+  'exams.movedClash': 'Mutat, dar se suprapune: {text}',
+  'exams.pickGroupHint':
+    'Sunt {count} evaluări pentru toate grupele, una lângă alta. Alege o grupă sau un torent mai sus ca să le poți muta ușor între zile.',
 } as const;
 
 export type MessageKey = keyof typeof ro;

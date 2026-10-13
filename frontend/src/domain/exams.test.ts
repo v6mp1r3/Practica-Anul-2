@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
 import {
+  classClashes,
+  eventClashes,
   groupPeriodWeeks,
   evaluationForGroup,
   midtermRange,
@@ -233,5 +235,26 @@ describe('master’s', () => {
     // evening classes (master's part of the day)
     for (const l of lessons.filter((x) => idx.audienceTouchesGroup(idx.assignmentOf(x)!.audience, 'g15')))
       expect(l.slot).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('eventClashes and classClashes (Evaluări, moving a card)', () => {
+  const idx = new DatasetIndex(seedDataset);
+  const base = { kind: 'exam' as const, round: 'midterm1' as const, subjectId: 's1', date: '2026-10-19', start: '08:00', end: '09:30' };
+  const a = { ...base, id: 'a', groupId: 'g1', teacherId: 't1', roomId: 'r1' };
+  it('names what is double-booked: teacher, room or group', () => {
+    expect(eventClashes(a, [{ ...base, id: 'b', groupId: 'g2', teacherId: 't1', roomId: 'r2' }])[0].what).toBe('teacher');
+    expect(eventClashes(a, [{ ...base, id: 'b', groupId: 'g2', teacherId: 't2', roomId: 'r1' }])[0].what).toBe('room');
+    expect(eventClashes(a, [{ ...base, id: 'b', groupId: 'g1', teacherId: 't2', roomId: 'r2' }])[0].what).toBe('group');
+    expect(eventClashes(a, [{ ...base, id: 'b', groupId: 'g2', teacherId: 't2', roomId: 'r2' }])).toEqual([]);
+    expect(eventClashes(a, [{ ...base, id: 'b', groupId: 'g1', teacherId: 't1', roomId: 'r1', start: '09:30', end: '11:00' }])).toEqual([]);
+  });
+  it('finds a class of that date at the same time, but not the atestare’s own class', () => {
+    const asg = seedDataset.assignments.find((x) => x.teacherId === 't1')!;
+    // 19 Oct 2026 is a Monday: a weekly class on Monday, pair 1 (08:00)
+    const lesson = { id: 'L', assignmentId: asg.id, day: 0, slot: 0, roomId: 'r9', parity: 'weekly' as const };
+    expect(classClashes(seedDataset, idx, a, [lesson]).map((c) => c.what)).toEqual(['teacher']);
+    expect(classClashes(seedDataset, idx, { ...a, lessonId: 'L' }, [lesson])).toEqual([]);
+    expect(classClashes(seedDataset, idx, { ...a, start: '13:30', end: '15:00' }, [lesson])).toEqual([]);
   });
 });

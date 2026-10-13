@@ -843,4 +843,14 @@ export const en: Record<MessageKey, string> = {
   'teacherAccount.confirmDelete': 'Delete the account “{username}”? The teacher won’t be able to sign in any more.',
   'teacherAccount.taken': 'That username is taken, or the teacher already has an account.',
   'teacherAccount.short': 'The password must be at least 8 characters.',
+  'exams.clash.teacher': '{who} has {a} and {b} at the same time',
+  'exams.clash.room': 'Room {who} is taken at the same time by {a} and {b}',
+  'exams.clash.group': 'Group {who} has {a} and {b} at the same time',
+  'exams.clash.class.teacher': '{who} teaches {b} during {a}',
+  'exams.clash.class.room': 'Room {who} has a class ({b}) during {a}',
+  'exams.clash.class.group': 'Group {who} has a class ({b}) during {a}',
+  'exams.clashMore': '(and {count} more)',
+  'exams.movedClash': 'Moved, but it clashes: {text}',
+  'exams.pickGroupHint':
+    'There are {count} evaluations for all groups, side by side. Pick a group or a stream above to move them easily between days.',
 };

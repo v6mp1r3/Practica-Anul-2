@@ -13,7 +13,9 @@ import { ROUNDS, RoundPicker } from '../../components/RoundPicker';
 import { Icon } from '../../components/Icon';
 import { Select } from '../../components/Select';
 import { DateInput, Empty, Field, Modal, PageHeader, TimeInput } from '../../components/ui';
-import { evaluationOf, findExamProblems, type ExamProblem } from '../../domain/exams';
+import { classClashes, eventClashes, evaluationOf, findExamProblems, type ExamProblem } from '../../domain/exams';
+import { fmtDate } from '../../domain/changes';
+import { subjectLabel } from '../../domain/subjects';
 import type { ExamEvent, ExamPlan, ExamRound } from '../../domain/types';
 import { streamChoices } from '../../domain/views';
 import { useI18n } from '../../i18n';
@@ -24,6 +26,8 @@ const toMin = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + m;
 };
+// more evaluations than fit side by side in a week: picking a group makes them movable between days
+const MANY = 60;
 const toHHMM = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
 
 export default function Evaluations() {
@@ -55,14 +59,64 @@ export default function Evaluations() {
     api.getExamPlan(round).then(setPlan);
   }, [round]);
 
-  // clashes with this plan and with other faculties' published events
+  // atestări happen during the semester: the published classes of those days count too
+  const classes = useMemo(
+    () => (midterm || round === 'remidterm1' || round === 'remidterm2' ? (published?.lessons ?? []) : []),
+    [midterm, round, published],
+  );
+  // clashes with this plan, with other faculties' published events and with classes
+  const others = useMemo(() => (plan ? exams.filter((e) => !plan.events.some((p) => p.id === e.id)) : []), [plan, exams]);
   const problems = useMemo<ExamProblem[]>(() => {
     if (!plan) return [];
-    const others = exams.filter((e) => !plan.events.some((p) => p.id === e.id));
     const mine = new Set(plan.events.map((e) => e.id));
-    return findExamProblems(dataset, [...plan.events, ...others]).filter((p) => p.ids.some((id) => mine.has(id)));
-  }, [plan, exams, dataset]);
+    return findExamProblems(dataset, [...plan.events, ...others], classes, index).filter((p) => p.ids.some((id) => mine.has(id)));
+  }, [plan, others, dataset, classes, index]);
   const problemIds = new Set(problems.flatMap((p) => p.ids));
+
+  // "ALGA · FAF-261, 12/10 08:00": an event in a conflict message
+  const eventLabel = (e: ExamEvent) =>
+    `${subjectLabel(index.subjects.get(e.subjectId))} · ${index.groups.get(e.groupId)?.name ?? ''}, ${fmtDate(e.date).slice(0, 5)} ${e.start}`;
+  const lessonLabel = (lessonId: string) => {
+    const a = index.assignments.get(classes.find((l) => l.id === lessonId)?.assignmentId ?? '');
+    return a ? `${subjectLabel(index.subjects.get(a.subjectId))} ${t(`activity.${a.type}`).toLowerCase()}` : '';
+  };
+  // who is double-booked: the teacher, the room or the group of the (first) event
+  const whoOf = (e: ExamEvent, what: 'teacher' | 'room' | 'group') =>
+    what === 'teacher'
+      ? index.teachers.get(e.teacherId)?.name
+      : what === 'room'
+        ? index.rooms.get(e.roomId)?.name
+        : index.groups.get(e.groupId)?.name;
+  const allEvents = useMemo(() => new Map([...(plan?.events ?? []), ...others].map((e) => [e.id, e])), [plan, others]);
+  function describe(p: ExamProblem): string {
+    if (p.kind === 'gap') return t('exams.problem.gap', { group: index.groups.get(p.groupId)?.name ?? '', days: p.days });
+    const a = allEvents.get(p.ids[0]);
+    if (!a) return t(`exams.problem.${p.what}`);
+    if (p.kind === 'class')
+      return t(`exams.clash.class.${p.what}`, { who: whoOf(a, p.what) ?? '', a: eventLabel(a), b: lessonLabel(p.lessonId) });
+    const b = allEvents.get(p.ids[1]);
+    return b
+      ? t(`exams.clash.${p.what}`, { who: whoOf(a, p.what) ?? '', a: eventLabel(a), b: eventLabel(b) })
+      : t(`exams.problem.${p.what}`);
+  }
+
+  /** What an event would clash with at a new date and start (same length): the first clash, and how many more. */
+  function clashesAt(id: string, date: string, start: string): string | null {
+    const e = plan?.events.find((x) => x.id === id);
+    if (!e) return null;
+    const end = toHHMM(toMin(start) + toMin(e.end) - toMin(e.start));
+    const { lessonId: _held, ...free } = e;
+    const moved: ExamEvent = e.date === date && e.start === start ? e : { ...free, date, start, end };
+    const withEvents = eventClashes(moved, [...(plan?.events ?? []), ...others]).map((c) =>
+      t(`exams.clash.${c.what}`, { who: whoOf(moved, c.what) ?? '', a: eventLabel(moved), b: eventLabel(c.other) }),
+    );
+    const withClasses = classClashes(dataset, index, moved, classes).map((c) =>
+      t(`exams.clash.class.${c.what}`, { who: whoOf(moved, c.what) ?? '', a: eventLabel(moved), b: lessonLabel(c.lesson.id) }),
+    );
+    const all = [...withEvents, ...withClasses];
+    if (!all.length) return null;
+    return all.length > 1 ? `${all[0]} ${t('exams.clashMore', { count: all.length - 1 })}` : all[0];
+  }
 
   async function generate() {
     setBusy(true);
@@ -98,10 +152,21 @@ export default function Evaluations() {
   /** Drag & drop: same length, new date and start (an atestare moved off its class is unlinked from it). */
   async function move(id: string, date: string, start: string) {
     const e = plan?.events.find((x) => x.id === id);
-    if (!e) return;
+    if (!plan || !e) return;
     const end = toHHMM(toMin(start) + toMin(e.end) - toMin(e.start));
     if (e.date === date && e.start === start) return;
-    await saveEdit({ ...e, date, start, end });
+    const clash = clashesAt(id, date, start);
+    // shown at once; saving the whole plan takes a moment
+    const { lessonId: _held, ...unlinked } = e;
+    const before = plan;
+    setPlan({ ...plan, events: plan.events.map((x) => (x.id === id ? { ...unlinked, date, start, end } : x)) });
+    try {
+      await saveEdit({ ...e, date, start, end });
+      if (clash) toast(t('exams.movedClash', { text: clash }), 'error');
+    } catch {
+      setPlan(before);
+      toast(t('common.error'), 'error');
+    }
   }
 
   // the filter is a group, or a stream: all of its groups
@@ -178,13 +243,9 @@ export default function Evaluations() {
 
       {problems.length > 0 && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <ul className="card-body small" style={{ margin: 0, paddingLeft: 36 }}>
-            {problems.slice(0, 8).map((p, i) => (
-              <li key={i}>
-                {p.kind === 'gap'
-                  ? t('exams.problem.gap', { group: index.groups.get(p.groupId)?.name ?? '', days: p.days })
-                  : t(`exams.problem.${p.what}`)}
-              </li>
+          <ul className="card-body small exam-problems">
+            {problems.map((p, i) => (
+              <li key={i}>{describe(p)}</li>
             ))}
           </ul>
         </div>
@@ -202,6 +263,9 @@ export default function Evaluations() {
           <p className="small muted">{t('exams.retakeNote', { w: ev.midtermRetakeWeeks[round === 'remidterm1' ? 0 : 1] })}</p>
         )}
         {(round === 'session' || round === 'reexam') && <p className="small muted">{t('exams.finalsNote')}</p>}
+        {!groupId && shown.length > MANY && (
+          <div className="badge primary exam-many">{t('exams.pickGroupHint', { count: shown.length })}</div>
+        )}
         <ExamWeekCalendar
           entries={examEntries(shown, index, t)}
           index={index}
@@ -210,6 +274,7 @@ export default function Evaluations() {
           vacations={ev.vacations}
           onEdit={(id) => setEditing(plan?.events.find((e) => e.id === id) ?? null)}
           onMove={move}
+          checkDrop={clashesAt}
           empty={<Empty>{midterm && !published ? t('tt.notPublished') : t('exams.none')}</Empty>}
         />
       </div>
