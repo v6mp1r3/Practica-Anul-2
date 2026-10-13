@@ -272,3 +272,18 @@ def test_an_alternating_pair_counts_as_one_pair_per_week():
     own = [l for l in r.lessons if l["assignmentId"] == "a2"]
     assert find_hard_conflicts(ds, r.lessons) == [] and r.missing == 0
     assert sorted(l["parity"] for l in own) in (["even", "odd"], ["weekly"])
+
+
+def test_a_teacher_off_in_odd_weeks_only():
+    ds = tiny()
+    t1 = next(t for t in ds["teachers"] if t["id"] == "t1")
+    t1["unavailableOdd"] = [f"{d}:{s}" for d in range(5) for s in range(6)]  # t1 never comes in odd weeks
+    lec = {"id": "x", "assignmentId": "a1", "day": 0, "slot": 1, "roomId": "r1", "parity": "even"}
+    kinds = lambda parity: [c["kind"] for c in find_hard_conflicts(ds, [{**lec, "parity": parity}]) if c["kind"] == "teacher-unavailable"]
+    assert kinds("even") == [] and kinds("odd") == ["teacher-unavailable"] and kinds("weekly") == ["teacher-unavailable"]
+    # t1's loads can't go every week; a half load of theirs goes to even weeks
+    next(a for a in ds["assignments"] if a["id"] == "a6")["pairsPerWeek"] = 0.5
+    r = generate_timetable(ds, ["g3"], seed=2, seconds=3, workers=2)
+    a6 = [l for l in r.lessons if l["assignmentId"] == "a6"]
+    assert [l["parity"] for l in a6] == ["even"]
+    assert not [c for c in find_hard_conflicts(ds, r.lessons) if c["kind"] == "teacher-unavailable"]

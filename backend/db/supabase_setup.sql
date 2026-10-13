@@ -289,7 +289,9 @@ create table teacher_slot_pref (
   day        smallint not null check (day between 0 and 6),
   slot_index smallint not null references time_slot (slot_index),
   kind       slot_pref_kind not null,
-  primary key (teacher_id, day, slot_index, kind)
+  parity     parity not null default 'weekly',                        -- unavailable in odd / even weeks only
+  primary key (teacher_id, day, slot_index, kind, parity),
+  constraint teacher_slot_pref_weekly_unless_unavailable check (parity = 'weekly' or kind = 'unavailable')
 );
 create unique index teacher_one_consultation on teacher_slot_pref (teacher_id) where kind = 'consultation';
 

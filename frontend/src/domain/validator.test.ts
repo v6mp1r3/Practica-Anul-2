@@ -144,4 +144,19 @@ describe('findHardConflicts', () => {
     expect(conflicts(at(3))).toEqual([]);
     expect(conflicts(at(1))).toEqual([expect.objectContaining({ kind: 'teacher-clash', subjectId: 't3' })]);
   });
+
+  it('checks a teacher who is off in one kind of week only against the weeks a pair runs in', () => {
+    // t3 (the stream lecture) can't come on Wednesdays, pair 2, in odd weeks only
+    const offOdd: Dataset = {
+      ...ds,
+      teachers: ds.teachers.map((x) => (x.id === 't3' ? { ...x, unavailable: [], unavailableOdd: ['2:1'] } : x)),
+    };
+    const at = (parity: Lesson['parity']) =>
+      findHardConflicts(offOdd, [L('1', 'lec', 2, 1, 'r2', parity), L('2', 'lab1', 0, 2, 'r8', 'odd'), L('3', 'lab2', 0, 2, 'r9')])
+        .map((c) => c.kind)
+        .filter((k) => k === 'teacher-unavailable');
+    expect(at('weekly')).toEqual(['teacher-unavailable']); // every week includes the odd ones
+    expect(at('odd')).toEqual(['teacher-unavailable']);
+    expect(at('even')).toEqual([]);
+  });
 });

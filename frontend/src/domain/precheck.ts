@@ -50,12 +50,13 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
     }
     const wrong = [...new Set(mine.filter((a) => !t.activityTypes.includes(a.type)).map((a) => a.type))];
     if (wrong.length) out.push({ kind: 'teacher-wrong-type', severity: 'warning', subjectId: t.id, vars: { types: wrong.join(', ') } });
-    const available =
-      totalSlots -
-      t.unavailable.filter((k) => {
+    // a pair off in one kind of week only is half a pair off
+    const inWeek = (keys: string[] = []) =>
+      keys.filter((k) => {
         const [d, s] = k.split(':').map(Number);
         return d < ds.settings.workingDays && s < ds.settings.slots.length;
       }).length;
+    const available = totalSlots - inWeek(t.unavailable) - (inWeek(t.unavailableOdd) + inWeek(t.unavailableEven)) / 2;
     const lessons = mine.reduce((n, a) => n + a.pairsPerWeek, 0);
     if (available < lessons) {
       out.push({ kind: 'teacher-too-unavailable', severity: 'hard', subjectId: t.id, vars: { available, needed: lessons } });

@@ -225,6 +225,9 @@
   background: var(--danger-soft);
   color: var(--danger);
 }
+.avail .tt-cell.state-unavailable.state-half {
+  background: repeating-linear-gradient(135deg, var(--danger-soft) 0 6px, transparent 6px 12px);
+}
 .avail .tt-cell.state-consultation {
   background: var(--primary-soft);
   color: var(--primary);

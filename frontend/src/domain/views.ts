@@ -39,6 +39,14 @@ export function lessonsAt(lessons: Lesson[], day: Day, slot: SlotIndex): Lesson[
 }
 
 /** Odd/even week of a date, counted from the semester start (1 Sept by default). */
+/** The kind of week a pair runs in: its parity, or for a pair on a date that date's week (when weeks alternate). */
+export function weekOf(settings: Pick<Settings, 'weekParity'>, lesson: Pick<Lesson, 'parity' | 'date'>): Parity {
+  if (!lesson.date) return lesson.parity;
+  if (!settings.weekParity) return 'weekly';
+  const [y, m, d] = lesson.date.split('-').map(Number);
+  return weekParityOf(new Date(y, m - 1, d));
+}
+
 export function weekParityOf(
   date: Date,
   semesterStart = new Date(date.getFullYear() - (date.getMonth() < 8 ? 1 : 0), 8, 1),

@@ -1,7 +1,8 @@
 // "Who/what is free when?" queries used by the student and teacher pages.
-import { teaches, type DatasetIndex } from './indexes';
+import { teaches, unavailableIn, type DatasetIndex } from './indexes';
 import { paritiesOverlap, slotKey } from './slots';
 import type { Day, Lesson, Parity, Room, SlotIndex } from './types';
+import { weekOf } from './views';
 
 export function freeRooms(
   rooms: Room[],
@@ -42,7 +43,8 @@ export function teacherStateAt(
     (l) => !l.date && l.day === day && l.slot === slot && paritiesOverlap(l.parity, week) && teaches(idx.assignmentOf(l), teacherId),
   );
   if (teaching) return 'teaching';
-  if (t.unavailable.includes(k)) return 'unavailable';
+  // in the week shown (a date's own week when there is one)
+  if (unavailableIn(t, date ? weekOf(idx.ds.settings, { parity: 'weekly', date }) : week).has(k)) return 'unavailable';
   if (date && t.unavailableOn?.includes(dateSlotKey(date, slot))) return 'unavailable';
   return 'free';
 }

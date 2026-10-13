@@ -88,7 +88,7 @@ def construct(ds: dict, idx: DatasetIndex, need: dict, fixed: list[dict], rng: r
     out: list[Placement] = []
     for a in order:
         teacher = idx.teachers.get(a["teacherId"], {})
-        unavailable = idx.teacher_unavailable(a)
+        unavailable = {p: idx.teacher_unavailable(a, p) for p in ("weekly", "odd", "even")}
         size = idx.audience_size(a["audience"])
         preferred = {r["id"] for r in idx.preferred_rooms(a)}
         rooms = sorted(
@@ -101,7 +101,8 @@ def construct(ds: dict, idx: DatasetIndex, need: dict, fixed: list[dict], rng: r
             best = None
             for d in idx.allowed_days(a):
                 for s in range(n_slots):
-                    if slot_key(d, s) in unavailable:
+                    free_weeks = tuple(p for p in weeks if slot_key(d, s) not in unavailable[p])
+                    if not free_weeks:
                         continue
                     c = 4 * idx.shift_distance(a, s)
                     if not shifted:
@@ -129,7 +130,7 @@ def construct(ds: dict, idx: DatasetIndex, need: dict, fixed: list[dict], rng: r
                     c += rng.random() * 1.2
                     if best is not None and c >= best[0]:
                         continue
-                    for parity in weeks:
+                    for parity in free_weeks:
                         room = next((r for r in rooms if busy.free(a, d, s, r["id"], parity)), None)
                         if room:
                             best = (c, d, s, room["id"], parity)
@@ -159,7 +160,7 @@ def adopt_example(ds: dict, idx: DatasetIndex, need: dict, fixed: list[dict], ex
         rest = take(left[a["id"]], parity) if a and not ex.get("date") and left.get(a["id"]) else None
         if rest is None:
             continue
-        if s >= n_slots or d not in idx.allowed_days(a) or slot_key(d, s) in idx.teacher_unavailable(a):
+        if s >= n_slots or d not in idx.allowed_days(a) or slot_key(d, s) in idx.teacher_unavailable(a, parity):
             continue
         size = idx.audience_size(a["audience"])
         ok = [r for r in ds["rooms"] if r["capacity"] >= size and idx.room_fits(a, r) and idx.has_equipment(a, r)]

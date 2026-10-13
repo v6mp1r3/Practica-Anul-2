@@ -1,7 +1,7 @@
 """Port of frontend/src/domain/changes.ts: which pairs happen on a date, which rooms and teachers are free."""
 from datetime import date
 
-from .indexes import DatasetIndex, teacher_ids
+from .indexes import DatasetIndex, teacher_ids, unavailable_in
 from .slots import day_index_of, in_week, parities_overlap, slot_key, week_parity_of
 
 
@@ -86,9 +86,10 @@ def free_teachers_for(ds: dict, idx: DatasetIndex, lessons: list[dict], changes:
     busy = {t for l in others for t in _effective(idx, l, same_day)[1]}
     key = slot_key(lesson["day"], lesson["slot"])
     dated = f"{d}:{lesson['slot']}"
+    week = idx.week_of({"date": d})  # the substitute's availability in that date's week
     ts = [
         t
         for t in ds["teachers"]
-        if t["id"] not in teacher_ids(a) and t["id"] not in busy and key not in t["unavailable"] and dated not in t.get("unavailableOn", [])
+        if t["id"] not in teacher_ids(a) and t["id"] not in busy and key not in unavailable_in(t, week) and dated not in t.get("unavailableOn", [])
     ]
     return sorted(ts, key=lambda t: (not (a["type"] in t["activityTypes"]), t["name"]))

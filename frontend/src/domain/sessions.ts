@@ -12,6 +12,7 @@ import type { Rng } from './rng';
 import { slotKey } from './slots';
 import type { Assignment, Dataset, Lesson } from './types';
 import { dayIndexOf } from './views';
+import { weekOf } from './views';
 
 const MAX_BLOCK = 3;
 
@@ -102,7 +103,8 @@ export function placeSessions(
       const holidays = evaluationOf(ds).vacations;
       const dates = sessionDates(session.start, session.end, days).filter((d) => !holidays.some((v) => v.start <= d && d <= v.end));
       if (!dates.length) continue;
-      const unavailable = idx.teacherUnavailable(a);
+      // a session pair is on a date: the teachers' unavailability in that date's week (odd or even) counts
+      const unavailableOn = (date: string) => idx.teacherUnavailable(a, weekOf(ds.settings, { parity: 'weekly', date }));
       const size = idx.audienceSize(a.audience);
       const preferred = new Set(idx.preferredRooms(a).map((r) => r.id));
       const rooms = ds.rooms
@@ -116,7 +118,7 @@ export function placeSessions(
         if (remaining <= 0) break;
         if (ex.assignmentId !== a.id || !ex.date || !dates.includes(ex.date) || ex.slot >= nSlots) continue;
         const day = weekdayOf(ex.date);
-        if (unavailable.has(slotKey(day, ex.slot))) continue;
+        if (unavailableOn(ex.date).has(slotKey(day, ex.slot))) continue;
         const at = (roomId: string): Lesson => ({
           id: newId(),
           assignmentId: a.id,
@@ -144,7 +146,7 @@ export function placeSessions(
             if (new Set(taken).size + k > maxPerDay) return;
             for (let start = 0; start + k <= nSlots; start++) {
               const slots = Array.from({ length: k }, (_, i) => start + i);
-              if (slots.some((s) => unavailable.has(slotKey(day, s)) || taken.includes(s))) continue;
+              if (slots.some((s) => unavailableOn(date).has(slotKey(day, s)) || taken.includes(s))) continue;
               // no gaps: the block must touch the group's other pairs that date
               let cost = 0;
               if (taken.length) {

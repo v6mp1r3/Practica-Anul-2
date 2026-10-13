@@ -311,6 +311,12 @@ export const ru: Record<MessageKey, string> = {
 
   'availability.free': 'Свободно',
   'availability.unavailable': 'Недоступно',
+  'availability.unavailableOdd': 'Недоступен · нечётные недели',
+  'availability.unavailableEven': 'Недоступен · чётные недели',
+  'availability.weeks': 'Недели:',
+  'availability.everyWeek': 'Каждую неделю',
+  'availability.weekOnlyHint':
+    'Заштрихованные пары недоступны только в одну из недель; выберите нечётную или чётную неделю, чтобы изменить их.',
   'availability.preferred': 'Предпочтительно',
   'availability.consultation': 'Консультации',
   'availability.brush': 'Отметить как:',

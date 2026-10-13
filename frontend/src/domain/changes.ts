@@ -1,9 +1,10 @@
 // One-off schedule changes ("Modificări în orar"): which pairs happen on a
 // given date, which rooms are free for a move, which teachers can substitute.
-import { DatasetIndex, teacherIdsOf, teaches } from './indexes';
+import { DatasetIndex, teacherIdsOf, teaches, unavailableIn } from './indexes';
 import { paritiesOverlap, slotKey } from './slots';
 import type { Dataset, Lesson, Room, ScheduleChange, Teacher } from './types';
 import { dayIndexOf, inWeek, weekParityOf } from './views';
+import { weekOf } from './views';
 
 /** "YYYY-MM-DD" → local Date at midnight (avoids UTC shifts of `new Date(str)`). */
 export function parseDate(s: string): Date {
@@ -135,7 +136,8 @@ export function freeTeachersFor(
       (t) =>
         !teaches(a, t.id) &&
         !busy.has(t.id) &&
-        !t.unavailable.includes(key) &&
+        // in that date's week (odd or even)
+        !unavailableIn(t, weekOf(ds.settings, { parity: 'weekly', date })).has(key) &&
         // not someone who said they can't come that day
         !t.unavailableOn?.includes(`${date}:${lesson.slot}`),
     )

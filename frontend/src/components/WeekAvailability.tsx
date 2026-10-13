@@ -5,7 +5,7 @@
 import { useState, type ReactNode } from 'react';
 import { dateSlotKey } from '../domain/availability';
 import { fmtDate, parseDate, toDateString } from '../domain/changes';
-import { teaches } from '../domain/indexes';
+import { teaches, unavailableIn } from '../domain/indexes';
 import { paritiesOverlap, slotKey } from '../domain/slots';
 import { subjectLabel } from '../domain/subjects';
 import type { Day, Lesson } from '../domain/types';
@@ -62,7 +62,7 @@ export function WeekAvailability({
   const stateOf = (d: Day, s: number): State => {
     if (lessons.some((l) => l.day === d && l.slot === s)) return 'lesson';
     if (teacher?.consultation === slotKey(d, s)) return 'consultation';
-    if (teacher?.unavailable.includes(slotKey(d, s))) return 'usual';
+    if (teacher && unavailableIn(teacher, weekParityOf(monday)).has(slotKey(d, s))) return 'usual';
     if (value.includes(dateSlotKey(dates[d], s))) return 'off';
     return dates[d] < today ? 'past' : 'free';
   };

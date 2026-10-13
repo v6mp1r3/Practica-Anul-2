@@ -31,7 +31,13 @@ export default function MyAvailability() {
 
   if (!teacher) return <Empty>{t('myAvail.noTeacher')}</Empty>;
 
-  const usualValue = usual ?? { unavailable: teacher.unavailable, preferred: teacher.preferred, consultation: teacher.consultation };
+  const usualValue = usual ?? {
+    unavailable: teacher.unavailable,
+    unavailableOdd: teacher.unavailableOdd,
+    unavailableEven: teacher.unavailableEven,
+    preferred: teacher.preferred,
+    consultation: teacher.consultation,
+  };
   const datedValue = dated ?? teacher.unavailableOn ?? [];
   const dirty = usual !== null || dated !== null;
 
@@ -63,6 +69,8 @@ export default function MyAvailability() {
       await api.updateAvailability(teacher.id, {
         // not over their own pairs (those were marked before the timetable gave them a class there)
         unavailable: usualValue.unavailable.filter((k) => !lessonAt(...parseSlotKey(k))),
+        unavailableOdd: (usualValue.unavailableOdd ?? []).filter((k) => !lessonAt(...parseSlotKey(k))),
+        unavailableEven: (usualValue.unavailableEven ?? []).filter((k) => !lessonAt(...parseSlotKey(k))),
         preferred: usualValue.preferred,
         unavailableOn: datedValue,
       });

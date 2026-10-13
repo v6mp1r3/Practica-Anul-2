@@ -310,6 +310,11 @@ export const en: Record<MessageKey, string> = {
 
   'availability.free': 'Free',
   'availability.unavailable': 'Unavailable',
+  'availability.unavailableOdd': 'Unavailable · odd weeks',
+  'availability.unavailableEven': 'Unavailable · even weeks',
+  'availability.weeks': 'Weeks:',
+  'availability.everyWeek': 'Every week',
+  'availability.weekOnlyHint': 'Striped pairs are off in one kind of week only; pick Odd or Even week to change them.',
   'availability.preferred': 'Preferred',
   'availability.consultation': 'Consultation',
   'availability.brush': 'Mark as:',

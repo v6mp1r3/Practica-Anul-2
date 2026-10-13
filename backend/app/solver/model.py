@@ -161,18 +161,16 @@ def solve_weekly(
     for a in loads:
         n = need[a["id"]]
         parities = [p for p, want in (("weekly", n.weekly), ("odd", n.odd - n.weekly + n.either), ("even", n.even - n.weekly + n.either)) if want > 0]
-        unavailable = idx.teacher_unavailable(a)
+        unavailable = {p: idx.teacher_unavailable(a, p) for p in parities}
         size = idx.audience_size(a["audience"])
         rooms = [r for r in ds["rooms"] if r["capacity"] >= size and idx.room_fits(a, r) and idx.has_equipment(a, r)]
         X[a["id"]] = {}
         for d in idx.allowed_days(a):
             for s in range(n_slots):
-                if slot_key(d, s) in unavailable:
-                    continue
                 options = []
                 for r in rooms:
                     for parity in parities:
-                        if clashes_fixed(a, d, s, r["id"], parity):
+                        if slot_key(d, s) in unavailable[parity] or clashes_fixed(a, d, s, r["id"], parity):
                             continue
                         v = model.NewBoolVar("")
                         options.append((r["id"], parity, v))

@@ -2,6 +2,17 @@
 import math
 
 
+def unavailable_in(teacher: dict, parity: str = "weekly") -> set[str]:
+    """Pairs ("day:slot") a teacher cannot take in that kind of week. A pair held every week needs them free in
+    both weeks, so their odd-only and even-only unavailability both count."""
+    out = set(teacher.get("unavailable") or [])
+    if parity in ("weekly", "odd"):
+        out |= set(teacher.get("unavailableOdd") or [])
+    if parity in ("weekly", "even"):
+        out |= set(teacher.get("unavailableEven") or [])
+    return out
+
+
 def teacher_ids(a: dict) -> list[str]:
     """The teacher of a load and the other teachers who hold its pairs with them (any class can have several)."""
     return [a["teacherId"], *(t for t in a.get("coTeacherIds") or [] if t != a["teacherId"])]
@@ -106,9 +117,19 @@ class DatasetIndex:
     def assignment_of(self, lesson: dict) -> dict | None:
         return self.assignments.get(lesson["assignmentId"])
 
-    def teacher_unavailable(self, a: dict) -> set[str]:
-        """The slots when any of the load's teachers is unavailable."""
-        return {k for t in teacher_ids(a) for k in self.teachers.get(t, {}).get("unavailable", [])}
+    def teacher_unavailable(self, a: dict, parity: str = "weekly") -> set[str]:
+        """The slots when any of the load's teachers is unavailable, for a pair of that parity."""
+        return {k for t in teacher_ids(a) for k in unavailable_in(self.teachers.get(t, {}), parity)}
+
+    def week_of(self, lesson: dict) -> str:
+        """The kind of week a pair runs in: its parity, or for a pair on a date that date's week."""
+        if lesson.get("date"):
+            from datetime import date
+
+            from .slots import week_parity_of
+
+            return week_parity_of(date.fromisoformat(lesson["date"])) if self.ds["settings"].get("weekParity") else "weekly"
+        return lesson.get("parity", "weekly")
 
     @staticmethod
     def share_teacher(a: dict, b: dict) -> bool:

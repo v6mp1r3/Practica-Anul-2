@@ -187,6 +187,9 @@ export interface Teacher {
   maxPairsPerWeek: number;
   activityTypes: ActivityType[];
   unavailable: SlotKey[];
+  /** Besides `unavailable` (every week): pairs the teacher can't take in odd weeks only, or in even weeks only. */
+  unavailableOdd?: SlotKey[];
+  unavailableEven?: SlotKey[];
   preferred: SlotKey[];
   /** Weekly consultation hour, if already fixed. */
   consultation?: SlotKey;

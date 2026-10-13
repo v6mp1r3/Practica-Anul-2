@@ -60,6 +60,9 @@ export interface GenerateProgress {
 
 export interface AvailabilityUpdate {
   unavailable: SlotKey[];
+  /** Unavailable in odd / even weeks only (see Teacher). */
+  unavailableOdd?: SlotKey[];
+  unavailableEven?: SlotKey[];
   preferred: SlotKey[];
   /** Kept as it is when a teacher saves (only the administration sets it). */
   consultation?: SlotKey;

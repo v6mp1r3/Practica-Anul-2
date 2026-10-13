@@ -310,6 +310,12 @@ export const ro = {
 
   'availability.free': 'Liber',
   'availability.unavailable': 'Indisponibil',
+  'availability.unavailableOdd': 'Indisponibil · săpt. impare',
+  'availability.unavailableEven': 'Indisponibil · săpt. pare',
+  'availability.weeks': 'Săptămâni:',
+  'availability.everyWeek': 'În fiecare săptămână',
+  'availability.weekOnlyHint':
+    'Perechile hașurate sunt indisponibile doar într-un fel de săptămână; alege săptămâna impară sau pară ca să le schimbi.',
   'availability.preferred': 'Preferat',
   'availability.consultation': 'Consultații',
   'availability.brush': 'Marchează ca:',

@@ -1,6 +1,7 @@
 // Conflict validator — the same hard constraints the solver must respect
 // (report §2.1.3). Runs in the browser so the editor can show clashes live.
-import { DatasetIndex, teacherIdsOf } from './indexes';
+import { DatasetIndex, teacherIdsOf, unavailableIn } from './indexes';
+import { weekOf } from './views';
 import { halvesOf, weekCounts, weekExcess, weekNeed } from './weeks';
 import { lessonsOverlap } from './overlap';
 import { slotKey } from './slots';
@@ -56,7 +57,7 @@ export function findHardConflicts(ds: Dataset, lessons: Lesson[], idx = new Data
     }
     for (const tid of teacherIdsOf(a)) {
       const teacher = idx.teachers.get(tid);
-      if (teacher?.unavailable.includes(slotKey(l.day, l.slot))) {
+      if (teacher && unavailableIn(teacher, weekOf(settings, l)).has(slotKey(l.day, l.slot))) {
         out.push({ ...base, kind: 'teacher-unavailable', subjectId: teacher.id });
       }
     }

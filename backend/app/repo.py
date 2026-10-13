@@ -94,8 +94,14 @@ def load_teachers(conn: Connection, ids: Iterable[int] | None = None) -> list[di
     for r in _all(conn, "select teacher_id, activity_type::text as v from teacher_activity_type where teacher_id = any(cast(:k as bigint[])) order by activity_type", {"k": keys}):
         types[r["teacher_id"]].append(r["v"])
     prefs: dict[tuple[int, str], list[str]] = defaultdict(list)
-    for r in _all(conn, "select teacher_id, kind::text as kind, day, slot_index from teacher_slot_pref where teacher_id = any(cast(:k as bigint[])) order by day, slot_index", {"k": keys}):
-        prefs[(r["teacher_id"], r["kind"])].append(f"{r['day']}:{r['slot_index']}")
+    for r in _all(
+        conn,
+        "select teacher_id, kind::text as kind, parity::text as parity, day, slot_index from teacher_slot_pref where teacher_id = any(cast(:k as bigint[])) order by day, slot_index",
+        {"k": keys},
+    ):
+        # unavailable every week, or in odd / even weeks only
+        kind = r["kind"] if r["parity"] == "weekly" else f"{r['kind']}-{r['parity']}"
+        prefs[(r["teacher_id"], kind)].append(f"{r['day']}:{r['slot_index']}")
     exams: dict[int, list[str]] = defaultdict(list)
     for r in _all(conn, "select teacher_id, date, part from teacher_exam_unavailability where teacher_id = any(cast(:k as bigint[])) order by date, part", {"k": keys}):
         d = iso_date(r["date"])
@@ -125,6 +131,9 @@ def load_teachers(conn: Connection, ids: Iterable[int] | None = None) -> list[di
             t["faculty"] = r["faculty"]
         if dated[r["id"]]:
             t["unavailableOn"] = dated[r["id"]]
+        for parity in ("odd", "even"):
+            if prefs[(r["id"], f"unavailable-{parity}")]:
+                t[f"unavailable{parity.title()}"] = prefs[(r["id"], f"unavailable-{parity}")]
         cons = prefs[(r["id"], "consultation")]
         if cons:
             t["consultation"] = cons[0]
@@ -152,17 +161,29 @@ def _save_dated(conn: Connection, tid: int, items: list[str]) -> None:
         )
 
 
-def _save_slot_prefs(conn: Connection, tid: int, unavailable: list[str], preferred: list[str], consultation: str | None) -> None:
-    rows: dict[tuple[int, int, str], None] = {}
-    for kind, keys in (("unavailable", unavailable), ("preferred", preferred), ("consultation", [consultation] if consultation else [])):
+def _save_slot_prefs(conn: Connection, tid: int, data: dict) -> None:
+    """Every-week unavailable and preferred pairs, the consultation hour, and (when sent) the pairs the teacher is
+    unavailable in odd or in even weeks only. A client that does not send those keeps them as they were."""
+    consultation = data.get("consultation")
+    groups = [("unavailable", "weekly", data.get("unavailable") or []), ("preferred", "weekly", data.get("preferred") or []),
+              ("consultation", "weekly", [consultation] if consultation else [])]
+    by_week = "unavailableOdd" in data or "unavailableEven" in data
+    if by_week:
+        groups += [("unavailable", "odd", data.get("unavailableOdd") or []), ("unavailable", "even", data.get("unavailableEven") or [])]
+    rows: dict[tuple[int, int, str, str], None] = {}
+    for kind, parity, keys in groups:
         for k in keys:
             d, s = _slot_parts(k)
-            rows[(d, s, kind)] = None
-    conn.execute(text("delete from teacher_slot_pref where teacher_id = :t"), {"t": tid})
+            rows[(d, s, kind, parity)] = None
+    # a pair unavailable every week is not also listed for one week
+    rows = {r: None for r in rows if r[3] == "weekly" or (r[0], r[1], "unavailable", "weekly") not in rows}
+    keep = "" if by_week else " and parity = 'weekly'"
+    conn.execute(text(f"delete from teacher_slot_pref where teacher_id = :t{keep}"), {"t": tid})
     if rows:
         conn.execute(
-            text("insert into teacher_slot_pref (teacher_id, day, slot_index, kind) values (:t, :d, :s, cast(:k as slot_pref_kind))"),
-            [{"t": tid, "d": d, "s": s, "k": k} for (d, s, k) in rows],
+            text("insert into teacher_slot_pref (teacher_id, day, slot_index, kind, parity) values (:t, :d, :s, cast(:k as slot_pref_kind), cast(:p as parity)) "
+                 "on conflict do nothing"),
+            [{"t": tid, "d": d, "s": s, "k": k, "p": p} for (d, s, k, p) in rows],
         )
 
 
@@ -191,7 +212,7 @@ def save_teacher(conn: Connection, data: dict, tid: int | None = None) -> int:
             text("insert into teacher_activity_type (teacher_id, activity_type) values (:t, cast(:a as activity_type))"),
             [{"t": tid, "a": a} for a in types],
         )
-    _save_slot_prefs(conn, tid, data.get("unavailable") or [], data.get("preferred") or [], data.get("consultation"))
+    _save_slot_prefs(conn, tid, data)
     conn.execute(text("delete from teacher_exam_unavailability where teacher_id = :t"), {"t": tid})
     ex: dict[tuple[str, str], None] = {}
     for item in data.get("examUnavailable") or []:
@@ -210,7 +231,7 @@ def save_teacher(conn: Connection, data: dict, tid: int | None = None) -> int:
 def save_availability(conn: Connection, tid: int, data: dict) -> None:
     if not conn.execute(text("select 1 from teacher where id = :id"), {"id": tid}).first():
         raise ApiError(404, "Not found")
-    _save_slot_prefs(conn, tid, data.get("unavailable") or [], data.get("preferred") or [], data.get("consultation"))
+    _save_slot_prefs(conn, tid, data)
     if "unavailableOn" in data:
         _save_dated(conn, tid, data["unavailableOn"] or [])
 

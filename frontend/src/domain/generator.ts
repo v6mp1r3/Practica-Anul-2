@@ -176,7 +176,7 @@ class Builder {
    */
   place(a: Assignment, weeks: Parity[] = ['weekly']): boolean {
     const { settings } = this.ds;
-    const unavailable = this.idx.teacherUnavailable(a);
+    const unavailable = new Map(weeks.map((p) => [p, this.idx.teacherUnavailable(a, p)]));
     const size = this.idx.audienceSize(a.audience);
     const preferred = new Set(this.idx.preferredRooms(a).map((r) => r.id));
     const rooms = this.ds.rooms
@@ -188,10 +188,12 @@ class Builder {
     let bestCost = Infinity;
     for (const day of this.idx.allowedDays(a)) {
       for (const slot of range(settings.slots.length)) {
-        if (unavailable.has(slotKey(day, slot))) continue;
+        // the kinds of week the teachers are free then
+        const free = weeks.filter((p) => !unavailable.get(p)!.has(slotKey(day, slot)));
+        if (!free.length) continue;
         const cost = this.cost(a, day, slot);
         if (cost >= bestCost) continue;
-        for (const parity of weeks) {
+        for (const parity of free) {
           const room = rooms.find((r) => this.occ.fits({ id: '', assignmentId: a.id, day, slot, roomId: r.id, parity }, a));
           if (room) {
             best = { id: newLessonId(), assignmentId: a.id, day, slot, roomId: room.id, parity };
@@ -209,7 +211,7 @@ class Builder {
   /** Put a pair where the example has it: same day and pair, its room or another that fits; false if that clashes now. */
   adopt(ex: Lesson, a: Assignment): boolean {
     if (ex.slot >= this.ds.settings.slots.length || !this.idx.allowedDays(a).includes(ex.day)) return false;
-    if (this.idx.teacherUnavailable(a).has(slotKey(ex.day, ex.slot))) return false;
+    if (this.idx.teacherUnavailable(a, ex.parity).has(slotKey(ex.day, ex.slot))) return false;
     const size = this.idx.audienceSize(a.audience);
     const ok = (r: Room) => r.capacity >= size && this.idx.roomFits(a, r) && this.idx.hasEquipment(a, r);
     const same = this.idx.rooms.get(ex.roomId);

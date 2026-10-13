@@ -1,7 +1,7 @@
 """Port of frontend/src/domain/validator.ts: the hard constraints a timetable must satisfy."""
 from collections import defaultdict
 
-from .indexes import DatasetIndex, teacher_ids
+from .indexes import DatasetIndex, teacher_ids, unavailable_in
 from .slots import lessons_overlap, slot_key
 from .weeks import week_counts, week_excess, week_need
 
@@ -46,7 +46,7 @@ def find_hard_conflicts(ds: dict, lessons: list[dict], idx: DatasetIndex | None 
             out.append({**base, "kind": "wrong-day", "subjectId": a["id"]})
         for tid in teacher_ids(a):
             teacher = idx.teachers.get(tid)
-            if teacher and slot_key(l["day"], l["slot"]) in teacher["unavailable"]:
+            if teacher and slot_key(l["day"], l["slot"]) in unavailable_in(teacher, idx.week_of(l)):
                 out.append({**base, "kind": "teacher-unavailable", "subjectId": teacher["id"]})
         room = idx.rooms.get(l["roomId"])
         if room:

@@ -1,4 +1,4 @@
-import type { Assignment, Audience, Dataset, Day, Group, Lesson, Room, Stream, Subject, Teacher, YearShift } from './types';
+import type { Assignment, Audience, Dataset, Day, Group, Lesson, Parity, Room, Stream, Subject, Teacher, YearShift } from './types';
 
 /** A slice of students: a whole group (subgroup = null) or one subgroup. */
 export interface Cohort {
@@ -13,6 +13,21 @@ export const teacherIdsOf = (a: Pick<Assignment, 'teacherId' | 'coTeacherIds'>):
   a.teacherId,
   ...(a.coTeacherIds ?? []).filter((t) => t !== a.teacherId),
 ];
+
+/**
+ * Pairs ("day:slot") a teacher can't take in that kind of week. A pair held every week needs them
+ * free in both weeks, so their odd-only and even-only unavailability both count.
+ */
+export function unavailableIn(
+  t: Pick<Teacher, 'unavailable' | 'unavailableOdd' | 'unavailableEven'>,
+  parity: Parity = 'weekly',
+): Set<string> {
+  return new Set([
+    ...t.unavailable,
+    ...(parity !== 'even' ? (t.unavailableOdd ?? []) : []),
+    ...(parity !== 'odd' ? (t.unavailableEven ?? []) : []),
+  ]);
+}
 
 /** Is the teacher one of the load's teachers? */
 export const teaches = (a: Assignment | undefined, teacherId: string): boolean => !!a && teacherIdsOf(a).includes(teacherId);
@@ -152,9 +167,14 @@ export class DatasetIndex {
     return this.assignments.get(lesson.assignmentId);
   }
 
-  /** The slots when any of the load's teachers is unavailable. */
-  teacherUnavailable(a: Assignment): Set<string> {
-    return new Set(teacherIdsOf(a).flatMap((t) => this.teachers.get(t)?.unavailable ?? []));
+  /** The slots when any of the load's teachers is unavailable, for a pair of that parity. */
+  teacherUnavailable(a: Assignment, parity: Parity = 'weekly'): Set<string> {
+    return new Set(
+      teacherIdsOf(a).flatMap((id) => {
+        const t = this.teachers.get(id);
+        return t ? [...unavailableIn(t, parity)] : [];
+      }),
+    );
   }
 
   /** "Popescu Ion, Ionescu Ana": every teacher of the load. */
