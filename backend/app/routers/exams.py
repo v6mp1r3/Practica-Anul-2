@@ -11,6 +11,7 @@ from ..deps import CurrentUser, get_conn, require_admin
 from ..memo import Memo
 from ..domain.indexes import DatasetIndex
 from ..errors import ApiError
+from ..scope import require_mine
 from ..services.timetables import get_published
 from ..settings_io import current_semester
 from ..solver.exams import generate_exams, generate_midterms
@@ -119,8 +120,10 @@ def _replace_events(conn: Connection, plan_id: int, events: list[dict]) -> None:
 
 @router.put("/plans/{round_}")
 def save_plan(round_: Round, data: dict = Body(...), user: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    events = data.get("events") or []
+    require_mine(conn, user, {e["groupId"] for e in events}, "An exam plan holds only your own faculty's groups")
     plan_id = _plan_row(conn, user, round_)
-    _replace_events(conn, plan_id, data.get("events") or [])
+    _replace_events(conn, plan_id, events)
     conn.commit()
     return _plan(conn, plan_id)
 

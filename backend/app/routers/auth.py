@@ -69,7 +69,10 @@ def update_profile(data: dict = Body(...), user: CurrentUser = Depends(current_u
     if "avatar" in data:
         sets["avatar"] = data["avatar"] or None
         sql += ", avatar_url = :avatar"
-    if data.get("faculty") is not None and user.role == "admin":
+    # the faculty comes with the account (python -m app.cli create-admin --faculty); it can't be switched here
+    if data.get("faculty") and user.role == "admin" and data["faculty"] != user.faculty:
+        if user.faculty_id is not None:
+            raise ApiError(403, "Your faculty is set with your account and can't be changed")
         sets["fid"] = repo.faculty_id_by_name(conn, data["faculty"])
         sql += ", faculty_id = :fid"
     conn.execute(text(sql + " where id = :id"), {**sets, "id": user.id})

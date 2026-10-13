@@ -47,10 +47,12 @@ def test_update_profile(client, admin):
     me = r.json()
     assert me["name"] == "Elena P." and me["email"] == "elena@utm.example" and me["emailNotifications"] is True
     assert client.put("/api/auth/me", json={"name": " "}, headers=admin).status_code == 422
-    # faculty must be one of the 14
-    assert client.put("/api/auth/me", json={"name": "E", "faculty": "Facultatea Inexistenta"}, headers=admin).status_code == 422
+    # the faculty comes with the account: it can't be switched (that would reach another faculty's data)
+    fcim = "Facultatea Calculatoare, Informatică și Microelectronică"
     fet = "Facultatea Electronică și Telecomunicații"
-    assert client.put("/api/auth/me", json={"name": "E", "faculty": fet}, headers=admin).json()["faculty"] == fet
+    assert client.put("/api/auth/me", json={"name": "E", "faculty": fet}, headers=admin).status_code == 403
+    assert client.put("/api/auth/me", json={"name": "E", "faculty": "Facultatea Inexistenta"}, headers=admin).status_code == 403
+    assert client.put("/api/auth/me", json={"name": "E", "faculty": fcim}, headers=admin).json()["faculty"] == fcim  # the same one is fine
     # avatar can be set and cleared
     assert client.put("/api/auth/me", json={"name": "E", "avatar": "data:image/png;base64,AA"}, headers=admin).json()["avatar"].startswith("data:")
     assert "avatar" not in client.put("/api/auth/me", json={"name": "E", "avatar": None}, headers=admin).json()

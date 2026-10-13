@@ -5,6 +5,8 @@ from sqlalchemy import Connection, text
 from ..dataset import build_dataset
 from ..db import get_engine
 from ..deps import CurrentUser, get_conn, require_admin
+from ..repo import audience_group_ids, load_assignments
+from ..scope import my_group_ids
 from ..memo import Memo
 from ..domain.changes import free_rooms_for, free_teachers_for, lesson_of_change
 from ..domain.indexes import DatasetIndex
@@ -56,8 +58,18 @@ def list_changes():
     return _changes.get()
 
 
+def _own_pair(conn: Connection, user: CurrentUser, assignment_id) -> None:
+    """A room or teacher is changed only on a pair that teaches one of the administrator's groups."""
+    found = load_assignments(conn, [pid(assignment_id)])
+    if not found:
+        raise ApiError(404, "Not found")
+    if not set(audience_group_ids(conn, found[0]["audience"])) & my_group_ids(conn, user):
+        raise ApiError(403, "This pair belongs to another faculty")
+
+
 @router.post("", status_code=201)
-def create_change(data: dict = Body(...), _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+def create_change(data: dict = Body(...), user: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    _own_pair(conn, user, data["assignmentId"])
     parse_date(data["date"])
     kind = data["kind"]
     published = get_published(conn)
@@ -107,7 +119,11 @@ def create_change(data: dict = Body(...), _: CurrentUser = Depends(require_admin
 
 
 @router.delete("/{change_id}", status_code=204)
-def delete_change(change_id: str, _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+def delete_change(change_id: str, user: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    row = conn.execute(text("select assignment_id from schedule_change where id = :id"), {"id": pid(change_id)}).first()
+    if not row:
+        raise ApiError(404, "Not found")
+    _own_pair(conn, user, row[0])
     if not conn.execute(text("delete from schedule_change where id = :id"), {"id": pid(change_id)}).rowcount:
         raise ApiError(404, "Not found")
     conn.commit()

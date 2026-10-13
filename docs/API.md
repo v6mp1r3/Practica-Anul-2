@@ -30,18 +30,32 @@ don't sign in: the reads they need are **public** (no token) —
 `GET /dataset`, `GET /timetables/published` and `GET /changes`. Everything else
 needs an admin token.
 
-Every `admin` account belongs to one faculty (`User.faculty`); there is no
-administrator above the faculties and no accounts page in the app — accounts are
-created on the server. An admin sees and changes only their own faculty's groups,
-subjects, teachers and rooms; another faculty's teacher or room shows up
-(read-only) only when it teaches or hosts this faculty's classes. Generation,
-publishing and unpublishing are per faculty. Settings (`PUT /settings`) are shared.
-Every group has a `faculty`.
+Every `admin` account belongs to one faculty (`User.faculty`), set when the account
+is created on the server; there is no administrator above the faculties. An admin
+sees and changes only their own faculty's groups, subjects, teachers and rooms;
+another faculty's teacher or room shows up (read-only) only when it teaches or
+hosts this faculty's classes. Generation, publishing and unpublishing are per
+faculty. Every group has a `faculty`.
+
+Writes that touch groups are limited to the admin's faculty (`403` otherwise):
+
+- a timetable is created with, published with, or deleted with only the admin's groups;
+  on an existing one (the published one has every faculty's) the admin changes only
+  their groups and the pairs teaching them — the other faculties' groups and pairs must
+  come back unchanged. The published timetable can't be deleted (`409`; unpublish it);
+- a stream is created with the admin's groups, and keeps another faculty's groups it
+  already has; a custom cluster holds only the admin's groups;
+- a schedule change is made or removed only on a pair teaching one of the admin's groups;
+- an exam plan holds only events of the admin's groups.
+
+A signed-in teacher reads only the published timetable (`GET /timetables/{id}` of a
+draft or variant is `404` for them).
 
 EduSchedule is for UTM only: `Settings.institutionName` is fixed and
-`Settings.faculties` is UTM's 14 faculties. An admin picks their own faculty in
-Configurare, which sends `faculty` in `PUT /auth/me` (it must be one of
-`Settings.faculties`).
+`Settings.faculties` is UTM's 14 faculties. The admin's faculty can't be changed
+with `PUT /auth/me` (`403` for another one). Settings (`PUT /settings`) are shared,
+but the semester can't be changed there (`403`): a new semester starts for every
+faculty at once, on the server (`python -m app.cli new-semester`).
 
 ## Auth
 

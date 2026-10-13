@@ -63,12 +63,21 @@ policies, so Supabase's own public API can read nothing.
 
 ### Accounts
 
-There is no accounts page: administrators are created on the server. Each belongs to one faculty
-(`FCIM`, `FET`, … see the `faculty` table) and changes only that faculty's groups, subjects, teachers and rooms.
+Administrators are created on the server; teacher accounts are made in the app (Profesori → a teacher →
+Cont). Each administrator belongs to one faculty (`FCIM`, `FET`, … see the `faculty` table), set here and not
+changeable in the app, and changes only that faculty's groups, subjects, teachers and rooms, and only its own
+part of the timetables, streams, clusters, schedule changes and exam plans (docs/API.md, Roles).
 
 ```bash
 .venv/bin/python -m app.cli create-admin --username ion.sirbu --name "Ion Sirbu" --faculty FET   # asks for a password
 .venv/bin/python -m app.cli set-password --username ion.sirbu
+```
+
+A new semester starts for every faculty at once, so it is started here, not in Configurare. It begins
+with the current semester's settings; restart the backend afterwards:
+
+```bash
+.venv/bin/python -m app.cli new-semester --label "Primăvara 2026/2027"
 ```
 
 Passwords are 8–72 bytes and stored as bcrypt hashes. Login returns a JWT (valid `JWT_EXPIRE_HOURS`, default 12)
@@ -143,8 +152,9 @@ old plan; the response also says how many exams did not fit (`warnings`). `{"see
 - **Sign-in is limited:** 8 failed attempts for one account in 10 minutes lock it for a while (`429`), counted in
   the memory of one server process. Tokens are not revoked: logging out only makes the client forget its token,
   and a token stays valid until it expires (12 h) even after a password change.
-- **Settings belong to a semester.** `PUT /settings` with a new `semester` label (`Toamna 2027/2028`) starts a new
-  semester and makes it current; timetables, exam plans and the calendar are per semester.
+- **Settings belong to a semester.** `python -m app.cli new-semester --label "Toamna 2027/2028"` starts a new
+  semester and makes it current (`PUT /settings` refuses another label); timetables, exam plans and the calendar
+  are per semester.
 - **Pair times are shared** by all semesters. Removing a pair time that a timetable or an availability still uses
   is refused (`409`).
 - **Queries are plain SQL** (SQLAlchemy Core `text()`), so the `.sql` files are the only description of the schema.
