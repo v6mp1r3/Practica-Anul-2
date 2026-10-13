@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import type { Role } from '../domain/types';
 import { useI18n, type MessageKey } from '../i18n';
@@ -7,7 +7,7 @@ import { useData } from '../state/data';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './Logo';
 import { Avatar } from '../pages/shared/Account';
-import { LanguageSwitch } from './ui';
+import { LanguageSwitch, Loading } from './ui';
 
 interface NavItem {
   to: string;
@@ -186,7 +186,10 @@ export function Layout() {
           )}
         </header>
         <div className="panel">
-          <Outlet />
+          {/* a page loading for the first time: the menu stays, only the page area waits */}
+          <Suspense fallback={<Loading />}>
+            <Outlet />
+          </Suspense>
         </div>
       </div>
     </div>
