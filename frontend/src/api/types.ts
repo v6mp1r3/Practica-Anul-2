@@ -2,6 +2,7 @@
 // to one endpoint in docs/API.md.
 import type { ImportRow } from '../domain/timetableImport';
 import type {
+  GenerationRules,
   ExamEvent,
   ExamPlan,
   ExamRound,
@@ -46,6 +47,10 @@ export interface GenerateRequest {
   /** Solver effort; the backend maps it to a time limit. */
   iterations: number;
   seed?: number;
+  /** Comfort rules: `false` makes a soft rule strict for this run (see GenerationRules). */
+  rules?: GenerationRules;
+  /** Semester of the year to generate for (1 = autumn, 2 = spring): only the subjects taught then are scheduled. All when omitted. */
+  semester?: 1 | 2;
   /** Timetable whose locked lessons must be kept. */
   baseTimetableId?: string;
   /** Timetable to follow as an example: its pairs stay where they are whenever they still fit. */

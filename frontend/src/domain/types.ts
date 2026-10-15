@@ -356,11 +356,30 @@ export interface Lesson {
 
 export type TimetableStatus = 'draft' | 'published' | 'variant';
 
+/**
+ * The comfort rules of a generation run. All are soft preferences by default; `false` makes one strict: the
+ * generator avoids it at almost any cost (but never by leaving a pair out). Hard rules (no clashes) always hold.
+ */
+export interface GenerationRules {
+  /** Students may have empty pairs between their classes. */
+  allowGroupGaps?: boolean;
+  /** Teachers may have empty pairs between their classes. */
+  allowTeacherGaps?: boolean;
+  /** A group may have fewer pairs on a day than the minimum. Not allowed unless set to true: the default is absolute. */
+  allowThinDays?: boolean;
+  /** A group may have more pairs on a day than the maximum. */
+  allowOverload?: boolean;
+  /** "First or last pair only" subjects (e.g. physical education) may sit mid-day. */
+  allowEdgeMisses?: boolean;
+}
+
 export interface ScoreBreakdown {
   teacherGaps: number;
   groupGaps: number;
   earlyStarts: number;
   dayOverload: number;
+  /** Days with fewer pairs than the minimum per day (in missing pairs, week by week). */
+  thinDays: number;
   unevenDays: number;
   preferenceMisses: number;
   /** Pairs not placed in one of their preferred ("de dorit") rooms. */

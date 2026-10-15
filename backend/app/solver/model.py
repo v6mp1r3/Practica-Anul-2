@@ -126,10 +126,12 @@ def solve_weekly(
     hint: list[Placement] | None = None,
     jitter: bool = True,
     fix: list[Placement] | None = None,
+    weights: dict | None = None,
 ) -> SolveResult:
     """Place what each listed teaching load still needs (`need[assignment id]`: a number of weekly pairs, or a WeekNeed
     with pairs for odd weeks, for even weeks and a half pair for either) around the `fixed` lessons. A load gets
     every-week pairs where both weeks need one, odd- or even-week pairs for the rest."""
+    W = weights or SOFT_WEIGHTS  # the usual soft weights, strict where the administrator switched a rule off
     settings = ds["settings"]
     n_slots = len(settings["slots"])
     rng = random.Random(seed)
@@ -251,12 +253,12 @@ def solve_weekly(
                 pw = 1.0 if parity == "weekly" else 0.5  # an odd/even-week pair counts half
                 c = 0.0
                 if pref and slot_key(d, s) not in pref:
-                    c += 0.5 * SOFT_WEIGHTS["preferenceMisses"]
+                    c += 0.5 * W["preferenceMisses"]
                 if pref_rooms and room_id not in pref_rooms:
-                    c += SOFT_WEIGHTS["roomMisses"] * pw
-                c += SOFT_WEIGHTS["shiftMisses"] * idx.shift_distance(a, s) * pw
+                    c += W["roomMisses"] * pw
+                c += W["shiftMisses"] * idx.shift_distance(a, s) * pw
                 if no_shifts and s == 0:
-                    c += SOFT_WEIGHTS["earlyStarts"] * pw
+                    c += W["earlyStarts"] * pw
                 add_obj(v, round(c * SCALE) + (rng.randint(0, 12) if jitter else 0))
 
     # occupancy per (entity, day, week): terms are the vars (grouped per assignment and slot) plus fixed pairs
@@ -292,7 +294,7 @@ def solve_weekly(
                 continue
             for g in occ.gap_terms():
                 if not isinstance(g, int):
-                    add_obj(g, round(SOFT_WEIGHTS["teacherGaps"] * share * SCALE))
+                    add_obj(g, round(W["teacherGaps"] * share * SCALE))
 
     # students: every (group, subgroup) view, as score.ts does
     for grp in ds["groups"]:
@@ -302,6 +304,7 @@ def solve_weekly(
         if not gdays:
             continue
         max_pairs = idx.group_max_pairs(gid)
+        min_pairs = settings["minPairsPerDayGroup"]
 
         def hits(cohort_list, view):
             return any(g == view[0] and (cs is None or view[1] is None or cs == view[1]) for g, cs in cohort_list)
@@ -312,6 +315,8 @@ def solve_weekly(
                 continue
             cf = [f for f in fixed if hits(idx.cohorts(idx.assignment_of(f)["audience"]), view)]
             occs = collect(vl, cf, gdays)
+            # pairs this view has in a week: a view with fewer than the minimum cannot reach it on any day
+            demand = len(cf) + sum(max(need[a["id"]].odd, need[a["id"]].even) for a in vl)
             per_week_loads: dict[str, list] = defaultdict(list)
             for (d, w), occ in occs.items():
                 if not occ.used():
@@ -319,13 +324,20 @@ def solve_weekly(
                     continue
                 for g in occ.gap_terms():
                     if not isinstance(g, int):
-                        add_obj(g, round(SOFT_WEIGHTS["groupGaps"] * share * SCALE))
+                        add_obj(g, round(W["groupGaps"] * share * SCALE))
                 load = sum(occ.o)
                 per_week_loads[w].append(load)
                 if len(occ.o) > max_pairs:
                     ex = model.NewIntVar(0, n_slots, "")
                     model.Add(ex >= load - max_pairs)
-                    add_obj(ex, round(SOFT_WEIGHTS["dayOverload"] * share * SCALE))
+                    add_obj(ex, round(W["dayOverload"] * share * SCALE))
+                # a day that is used needs the minimum number of pairs in this week (an odd-week pair does not
+                # count in even weeks): thin >= min x [day used] - load. "Used" only has lower bounds, so the
+                # solver cannot gain by claiming a day is used
+                if min_pairs > 1 and demand >= min_pairs:
+                    thin = model.NewIntVar(0, min_pairs, "")
+                    model.Add(thin >= min_pairs * occ.pre[-1] - load)
+                    add_obj(thin, round(W["thinDays"] * share * SCALE))
                 # first-or-last-pair-only subjects (e.g. sport) must not sit between other pairs
                 for a in vl:
                     if not idx.subjects.get(a["subjectId"], {}).get("edgeOfDay"):
@@ -339,7 +351,7 @@ def solve_weekly(
                         e = sum(vs) + occ.pre[s - 1] + occ.suf[s + 1] - 2
                         m = model.NewBoolVar("")
                         model.Add(m >= e)
-                        add_obj(m, round(SOFT_WEIGHTS["edgeMisses"] * share * SCALE))
+                        add_obj(m, round(W["edgeMisses"] * share * SCALE))
             # a balanced week: deviation of each day's load from the week's average load
             n_days = len(gdays)
             for w, loads_w in per_week_loads.items():
@@ -350,7 +362,7 @@ def solve_weekly(
                     dev = model.NewIntVar(0, n_days * n_slots, "")
                     model.Add(dev >= n_days * ld - total)
                     model.Add(dev >= total - n_days * ld)
-                    add_obj(dev, round(SOFT_WEIGHTS["unevenDays"] * share * SCALE / n_days))
+                    add_obj(dev, round(W["unevenDays"] * share * SCALE / n_days))
 
     for a in loads:
         for m in missing[a["id"]]:

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
 import { dropExtra, generateTimetable, loadDrift, placeMissing, scopeAssignments } from './generator';
 import { DatasetIndex } from './indexes';
+import { ABSOLUTE_WEIGHT, SOFT_WEIGHTS, STRICT_WEIGHT, weightsFor } from './score';
 import type { Dataset, Lesson } from './types';
+import { scoreTimetable } from './score';
 import { findHardConflicts } from './validator';
 
 const allGroups = seedDataset.groups.map((g) => g.id);
@@ -38,6 +40,35 @@ describe('generateTimetable', () => {
     const { lessons } = await generateTimetable(seedDataset, { groupIds: ['g5'], seed: 3, iterations: 10 });
     const scoped = new Set(scopeAssignments(seedDataset, ['g5']).map((a) => a.id));
     expect(lessons.every((l) => scoped.has(l.assignmentId))).toBe(true);
+  });
+
+  it('only schedules the subjects of the chosen semester', async () => {
+    const groupIds = ['g5'];
+    const all = scopeAssignments(seedDataset, groupIds);
+    const subject = seedDataset.subjects.find((s) => all.some((a) => a.subjectId === s.id))!;
+    const ds: Dataset = {
+      ...seedDataset,
+      subjects: seedDataset.subjects.map((s) => (s.id === subject.id ? { ...s, semester: 2 } : s)),
+    };
+    const ids = (semester?: 1 | 2) => new Set(scopeAssignments(ds, groupIds, new DatasetIndex(ds), semester).map((a) => a.subjectId));
+    expect(ids(2)).toEqual(new Set([subject.id]));
+    expect(ids(1).has(subject.id)).toBe(false);
+    expect(ids().has(subject.id)).toBe(true);
+    const r = await generateTimetable(ds, { groupIds, seed: 1, iterations: 20, semester: 2 });
+    const idx = new DatasetIndex(ds);
+    expect(r.lessons.length).toBeGreaterThan(0);
+    expect(r.lessons.every((l) => idx.assignmentOf(l)!.subjectId === subject.id)).toBe(true);
+  });
+
+  it('makes a comfort rule strict when it is switched off', async () => {
+    expect(weightsFor({ allowThinDays: true })).toEqual(SOFT_WEIGHTS);
+    // a day below the minimum is ruled out unless it is explicitly allowed
+    expect(weightsFor().thinDays).toBe(ABSOLUTE_WEIGHT);
+    const w = weightsFor({ allowGroupGaps: false, allowThinDays: true });
+    expect([w.groupGaps, w.thinDays, w.teacherGaps]).toEqual([STRICT_WEIGHT, SOFT_WEIGHTS.thinDays, SOFT_WEIGHTS.teacherGaps]);
+    // the score saved with the timetable keeps the usual weights, so variants stay comparable
+    const r = await generateTimetable(seedDataset, { groupIds: ['g5'], seed: 2, iterations: 20, rules: { allowGroupGaps: false } });
+    expect(r.score.soft).toBe(scoreTimetable({ ...seedDataset, assignments: scopeAssignments(seedDataset, ['g5']) }, r.lessons).soft);
   });
 
   it('never moves locked lessons', async () => {

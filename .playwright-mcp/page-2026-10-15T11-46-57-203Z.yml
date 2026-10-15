@@ -1,0 +1,39 @@
+- generic [ref=e2]:
+  - generic [ref=e5]:
+    - link "EduSchedule" [ref=e6] [cursor=pointer]:
+      - /url: /
+      - img "EduSchedule" [ref=e7]
+    - heading "Autentificare" [level=2] [ref=e24]
+    - generic [ref=e25]:
+      - generic [ref=e26]: Utilizator
+      - textbox "Utilizator" [ref=e27]
+    - generic [ref=e28]:
+      - generic [ref=e29]: Parolă
+      - textbox "Parolă" [ref=e30]
+    - button "Intră" [ref=e31] [cursor=pointer]
+    - group "Limba" [ref=e33]:
+      - button "RO" [pressed] [ref=e34] [cursor=pointer]
+      - button "RU" [ref=e35] [cursor=pointer]
+      - button "EN" [ref=e36] [cursor=pointer]
+    - paragraph [ref=e37]:
+      - text: Studenții nu au nevoie de cont.
+      - link "Vezi orarul" [ref=e38] [cursor=pointer]:
+        - /url: /studenti
+    - generic [ref=e39]:
+      - generic [ref=e40]: "Conturi demo (parola: demo)"
+      - button "Elena Popescu elena.popescu Calculatoare, Informatică și Microelectronică" [ref=e41] [cursor=pointer]:
+        - generic [ref=e42]:
+          - strong [ref=e43]: Elena Popescu
+          - text: elena.popescu
+        - generic [ref=e44]: Calculatoare, Informatică și Microelectronică
+      - button "Ion Sîrbu ion.sirbu Electronică și Telecomunicații" [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]:
+          - strong [ref=e47]: Ion Sîrbu
+          - text: ion.sirbu
+        - generic [ref=e48]: Electronică și Telecomunicații
+      - button "Daniel Rusu daniel.rusu Profesor" [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]:
+          - strong [ref=e51]: Daniel Rusu
+          - text: daniel.rusu
+        - generic [ref=e52]: Profesor
+  - status

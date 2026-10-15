@@ -7,16 +7,33 @@ import { api, type GenerateProgress } from '../../api';
 import { Icon } from '../../components/Icon';
 import { PrecheckList } from '../../components/PrecheckList';
 import { GroupPicker } from '../../components/GroupPicker';
-import { Field, PageHeader, Segmented } from '../../components/ui';
+import { Field, PageHeader, Segmented, Switch } from '../../components/ui';
 import { precheck } from '../../domain/precheck';
 import { SOFT_WEIGHTS } from '../../domain/score';
 import { RoundPicker } from '../../components/RoundPicker';
-import { STUDY_FORMS, type ExamRound, type ScoreBreakdown, type StudyForm, type Timetable } from '../../domain/types';
+import { STUDY_FORMS, type ExamRound, type GenerationRules, type ScoreBreakdown, type StudyForm, type Timetable } from '../../domain/types';
 import { evaluationOf } from '../../domain/exams';
 import { useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
 import { useToast } from '../../state/toast';
 import { Select } from '../../components/Select';
+import { loadRules, saveRules } from '../../utils/generationRules';
+
+/** The comfort rules that can be made strict, in the order shown: the rule, and the score line it is judged by. */
+const RULES: { rule: keyof GenerationRules; key: keyof ScoreBreakdown }[] = [
+  { rule: 'allowGroupGaps', key: 'groupGaps' },
+  { rule: 'allowTeacherGaps', key: 'teacherGaps' },
+  { rule: 'allowThinDays', key: 'thinDays' },
+  { rule: 'allowOverload', key: 'dayOverload' },
+  { rule: 'allowEdgeMisses', key: 'edgeMisses' },
+];
+const HARD_RULES = [
+  'generate.rulesHard1',
+  'generate.rulesHard2',
+  'generate.rulesHard3',
+  'generate.rulesHard4',
+  'generate.rulesHard5',
+] as const;
 
 const EFFORT = { quick: 150, normal: 250, thorough: 700 } as const;
 type Effort = keyof typeof EFFORT;
@@ -101,6 +118,11 @@ export default function Generate() {
     setGroupIds([]);
   }, [cycle, scope]);
   const [form, setForm] = useState<'all' | StudyForm>('all');
+  // semester of the year to generate for: the one the settings are on (autumn → 1, spring → 2)
+  const [semester, setSemester] = useState<1 | 2>(dataset.settings.semester.startsWith('Primăvara') ? 2 : 1);
+  // comfort rules: what the administrator chose last time (all allowed except days below the minimum, until changed)
+  const [rules, setRules] = useState(loadRules);
+  useEffect(() => saveRules(rules), [rules]);
   const [variants, setVariants] = useState(3);
   const [effort, setEffort] = useState<Effort>('normal');
   const [baseId, setBaseId] = useState('');
@@ -137,6 +159,8 @@ export default function Generate() {
         {
           groupIds,
           variants,
+          semester,
+          rules,
           iterations: EFFORT[effort],
           baseTimetableId: baseId || undefined,
           exampleTimetableId: exampleId || undefined,
@@ -228,6 +252,16 @@ export default function Generate() {
                       ]}
                     />
                   </Field>
+                  <Field label={t('generate.semester')} hint={t('generate.semesterHint')}>
+                    <Segmented
+                      value={String(semester)}
+                      onChange={(v) => setSemester(v === '2' ? 2 : 1)}
+                      options={[
+                        { value: '1', label: t('generate.semester1') },
+                        { value: '2', label: t('generate.semester2') },
+                      ]}
+                    />
+                  </Field>
                   <Field label={t('generate.groups')} hint={t('generate.groupsHint')}>
                     {/* by year, then a row per specialty (TI, FAF…): a whole specialty or year at a click, with search */}
                     <GroupPicker groups={formGroups} value={groupIds} onChange={setGroupIds} />
@@ -302,12 +336,54 @@ export default function Generate() {
                 </div>
               </div>
 
-              <div className="card">
-                <div className="card-header">
-                  <h2>{t('precheck.title')}</h2>
+              <div className="stack">
+                <div className="card">
+                  <div className="card-header">
+                    <h2>{t('generate.rules')}</h2>
+                  </div>
+                  <div className="card-body stack">
+                    <p className="muted small">{t('generate.rulesHint')}</p>
+                    <div className="stack" style={{ gap: 6 }}>
+                      <strong className="small">{t('generate.rulesHard')}</strong>
+                      {HARD_RULES.map((key) => (
+                        <div key={key} className="row small" style={{ gap: 8, alignItems: 'flex-start' }}>
+                          <Icon name="lock" />
+                          <span>{t(key)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="stack" style={{ gap: 10 }}>
+                      <strong className="small">{t('generate.rulesSoft')}</strong>
+                      {RULES.map(({ rule, key }) => (
+                        <div key={rule} className="row" style={{ justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                          <div>
+                            <div>{t(`generate.${rule}`)}</div>
+                            <div className="small muted">
+                              {t(
+                                rules[rule]
+                                  ? 'generate.ruleFlexible'
+                                  : rule === 'allowThinDays'
+                                    ? 'generate.ruleAbsolute'
+                                    : 'generate.ruleStrict',
+                                { weight: SOFT_WEIGHTS[key] },
+                              )}
+                            </div>
+                          </div>
+                          <Switch checked={rules[rule]} onChange={(v) => setRules({ ...rules, [rule]: v })} label={t(`generate.${rule}`)} />
+                        </div>
+                      ))}
+                      <p className="small muted">{t('generate.rulesOther')}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="card-body">
-                  <PrecheckList issues={issues} index={index} limit={10} />
+
+                <div className="card">
+                  <div className="card-header">
+                    <h2>{t('precheck.title')}</h2>
+                  </div>
+                  <div className="card-body">
+                    <PrecheckList issues={issues} index={index} limit={10} />
+                  </div>
                 </div>
               </div>
             </div>

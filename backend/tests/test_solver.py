@@ -1,14 +1,16 @@
 """The CP-SAT model and the LNS generator, on a small hand-made university (no database needed)."""
 import copy
+import random
 from collections import Counter
 
 import pytest
 
 from app.domain import score as score_module
 from app.domain.indexes import DatasetIndex
-from app.domain.score import score_timetable
+from app.domain.score import ABSOLUTE_WEIGHT, SOFT_WEIGHTS, STRICT_WEIGHT, score_timetable, weights_for
 from app.domain.validator import find_hard_conflicts
 from app.solver.generate import generate_timetable
+from app.solver.greedy import construct
 from app.solver.model import SCALE, solve_weekly
 
 pytestmark = pytest.mark.no_db
@@ -287,3 +289,88 @@ def test_a_teacher_off_in_odd_weeks_only():
     a6 = [l for l in r.lessons if l["assignmentId"] == "a6"]
     assert [l["parity"] for l in a6] == ["even"]
     assert not [c for c in find_hard_conflicts(ds, r.lessons) if c["kind"] == "teacher-unavailable"]
+
+
+def test_the_heuristic_leaves_no_gaps_in_odd_or_even_weeks():
+    # Monday has an odd-week pair at pair 1 and an even-week pair at pair 2. Looked at over both weeks together, pair 3
+    # seems to follow without a gap, but in odd weeks the group would have pairs 1 and 3 only. Gaps count per week.
+    from app.domain.weeks import WeekNeed
+
+    ds = tiny()
+    ds = {**ds, "assignments": [a for a in ds["assignments"] if a["id"] in ("a6", "a7")]}
+    next(a for a in ds["assignments"] if a["id"] == "a7")["subjectId"] = "am"  # not the same subject twice in a day
+    next(t for t in ds["teachers"] if t["id"] == "t1")["unavailableOdd"] = ["0:1"]
+    idx = DatasetIndex(ds)
+    fixed = [
+        {"id": "f1", "assignmentId": "a7", "day": 0, "slot": 0, "roomId": "r2", "parity": "odd"},
+        {"id": "f2", "assignmentId": "a7", "day": 0, "slot": 1, "roomId": "r2", "parity": "even"},
+    ]
+    for seed in range(20):
+        placed = lessons_of(construct(ds, idx, {"a6": WeekNeed(odd=1)}, fixed, random.Random(seed)))
+        assert [p["parity"] for p in placed] == ["odd"]
+        assert score_timetable(ds, fixed + placed, idx)["breakdown"]["groupGaps"] == 0, seed
+
+
+def test_generate_for_one_semester_only():
+    ds = tiny()
+    next(s for s in ds["subjects"] if s["id"] == "pc")["semester"] = 2  # the others have none: the 1st
+    subject_of = {a["id"]: a["subjectId"] for a in ds["assignments"]}
+    groups = ["g1", "g2", "g3"]
+    first = generate_timetable(ds, groups, seed=1, seconds=3, workers=2, semester=1)
+    second = generate_timetable(ds, groups, seed=1, seconds=3, workers=2, semester=2)
+    both = generate_timetable(ds, groups, seed=1, seconds=3, workers=2)
+    subjects = lambda r: {subject_of[l["assignmentId"]] for l in r.lessons}
+    assert subjects(first) == {"am", "sport"} and subjects(second) == {"pc"} and subjects(both) == {"am", "sport", "pc"}
+    assert first.missing == 0 and second.missing == 0
+    # another group's pairs of the other semester are not kept booked: the published timetable only holds the 1st
+    kept = generate_timetable(ds, ["g1"], seed=1, seconds=3, workers=2, semester=2, keep=first.lessons)
+    assert {subject_of[l["assignmentId"]] for l in kept.lessons} <= {"pc"}
+
+
+def test_a_day_below_the_minimum_is_penalised_week_by_week():
+    ds = tiny()
+    ds = {**ds, "assignments": [a for a in ds["assignments"] if a["id"] in ("a6", "a7")]}
+    assert ds["settings"]["minPairsPerDayGroup"] == 2
+    lesson = lambda lid, aid, slot, parity: {"id": lid, "assignmentId": aid, "day": 0, "slot": slot, "roomId": "r2", "parity": parity}
+    thin = lambda *ls: score_timetable(ds, list(ls))["breakdown"]["thinDays"]
+    # two pairs every week: fine
+    assert thin(lesson("x", "a6", 1, "weekly"), lesson("y", "a7", 2, "weekly")) == 0
+    # one pair every week: 1 missing pair in odd weeks and in even weeks
+    assert thin(lesson("x", "a6", 1, "weekly")) == 1
+    # an odd-week pair next to a weekly one: Monday has 2 pairs in odd weeks but only 1 in even weeks
+    assert thin(lesson("x", "a6", 1, "weekly"), lesson("y", "a7", 2, "odd")) == 0.5
+
+
+def test_switching_a_rule_off_makes_it_strict_in_the_search_and_in_the_objective(monkeypatch):
+    assert weights_for({"allowThinDays": True}) == SOFT_WEIGHTS
+    # a day below the minimum is ruled out unless it is explicitly allowed
+    assert weights_for(None)["thinDays"] == weights_for({"allowThinDays": False})["thinDays"] == ABSOLUTE_WEIGHT
+    w = weights_for({"allowGroupGaps": False, "allowThinDays": True})
+    assert w["groupGaps"] == STRICT_WEIGHT and w["thinDays"] == SOFT_WEIGHTS["thinDays"] and w["teacherGaps"] == SOFT_WEIGHTS["teacherGaps"]
+    # the model's objective is the soft score under the same weights, strict ones included
+    monkeypatch.setattr(score_module, "_js_round", lambda x: x)
+    ds = tiny()
+    idx = DatasetIndex(ds)
+    res = solve_weekly(ds, idx, need_of(ds), [], 1, seed=2, workers=4, weights=w)
+    assert not res.missing
+    pinned = solve_weekly(ds, idx, need_of(ds), [], 20, seed=1, workers=4, jitter=False, fix=res.placements, weights=w)
+    assert pinned.objective / SCALE == pytest.approx(score_timetable(ds, lessons_of(res.placements), weights=w)["soft"], abs=1e-6)
+
+
+def test_generate_with_strict_rules_saves_the_usual_score():
+    ds = tiny()
+    r = generate_timetable(ds, ["g1", "g2", "g3"], seed=4, seconds=4, workers=2, rules={"allowGroupGaps": False, "allowTeacherGaps": False, "allowThinDays": True})
+    assert r.missing == 0 and find_hard_conflicts(ds, r.lessons) == []
+    assert r.score["breakdown"]["groupGaps"] == 0 and r.score["breakdown"]["teacherGaps"] == 0
+    # comparable with other variants: the stored soft score uses the usual weights, not the strict ones
+    assert r.score["soft"] == score_timetable({**ds, "assignments": ds["assignments"]}, r.lessons)["soft"]
+
+
+def test_no_group_has_a_day_with_a_single_pair():
+    # g1's own seminar has to share its only free day with something else: the solver may not leave it alone on a day
+    ds = tiny()
+    ds["settings"]["formDays"]["full"] = [0, 1, 2]
+    for seed in (1, 2, 3):
+        r = generate_timetable(ds, ["g1", "g2", "g3"], seed=seed, seconds=4, workers=2)
+        assert r.score["breakdown"]["thinDays"] == 0, seed
+        assert r.missing == 0 and find_hard_conflicts(ds, r.lessons) == []

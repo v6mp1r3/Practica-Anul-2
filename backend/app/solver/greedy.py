@@ -29,6 +29,9 @@ class _Busy:
                     self.points[g].add(sub)
         self.group_slots: dict[tuple[str, int], list[int]] = defaultdict(list)
         self.teacher_slots: dict[tuple[str, int], list[int]] = defaultdict(list)
+        # occupied pairs per day and week: gaps are counted week by week, as the score does
+        self.group_week_slots: dict[tuple[str, int, str], list[int]] = defaultdict(list)
+        self.teacher_week_slots: dict[tuple[str, int, str], list[int]] = defaultdict(list)
         self.subject_days: set[tuple[str, int, str]] = set()
 
     def _keys(self, a: dict, d: int, s: int, room_id: str, parity: str = "weekly"):
@@ -45,10 +48,15 @@ class _Busy:
 
     def add(self, a: dict, d: int, s: int, room_id: str, parity: str = "weekly") -> None:
         self.used.update(self._keys(a, d, s, room_id, parity))
+        weeks = WEEKS if parity not in WEEKS else (parity,)
         for t in teacher_ids(a):
             self.teacher_slots[(t, d)].append(s)
+            for w in weeks:
+                self.teacher_week_slots[(t, d, w)].append(s)
         for g, _ in self.idx.cohorts(a["audience"]):
             self.group_slots[(g, d)].append(s)
+            for w in weeks:
+                self.group_week_slots[(g, d, w)].append(s)
             self.subject_days.add((g, d, a["subjectId"]))
 
 
@@ -116,25 +124,31 @@ def construct(ds: dict, idx: DatasetIndex, need: dict, fixed: list[dict], rng: r
 
                     for g in groups:
                         slots = busy.group_slots[(g, d)]
-                        c += 10 * gap_delta(slots)
                         if edge and slots and min(slots) < s < max(slots):
                             c += 12
                         if len(set(slots)) >= idx.group_max_pairs(g):
                             c += 6
                         if (g, d, a["subjectId"]) in busy.subject_days:
                             c += 3
-                    for t in teacher_ids(a):
-                        c += 3 * gap_delta(busy.teacher_slots[(t, d)])
                     if slot_key(d, s) in (teacher.get("preferred") or []):
                         c -= 1
                     c += rng.random() * 1.2
-                    if best is not None and c >= best[0]:
-                        continue
                     for parity in free_weeks:
+                        # gaps are per week: an odd-week pair only fills or opens a gap in odd weeks
+                        weeks_hit = WEEKS if parity not in WEEKS else (parity,)
+                        gc = 0.0
+                        for w in weeks_hit:
+                            for g in groups:
+                                gc += 10 * gap_delta(busy.group_week_slots[(g, d, w)])
+                            for t in teacher_ids(a):
+                                gc += 3 * gap_delta(busy.teacher_week_slots[(t, d, w)])
+                        gc *= 1 / len(WEEKS)
+                        if best is not None and c + gc >= best[0]:
+                            continue
                         room = next((r for r in rooms if busy.free(a, d, s, r["id"], parity)), None)
                         if room:
-                            best = (c, d, s, room["id"], parity)
-                            break
+                            best = (c + gc, d, s, room["id"], parity)
+                    c += rng.random() * 1.2
             if best is None:
                 break
             _, d, s, room_id, parity = best

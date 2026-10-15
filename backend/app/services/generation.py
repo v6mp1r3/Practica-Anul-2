@@ -16,6 +16,7 @@ from ..deps import CurrentUser
 from ..errors import ApiError
 from ..memo import forget_all
 from ..settings_io import current_semester
+from ..domain.score import RULE_WEIGHT
 from ..solver.generate import generate_timetable
 from ..util import maybe_pid, pid, sid
 from . import timetables as tt
@@ -42,6 +43,12 @@ def start(conn: Connection, user: CurrentUser, req: dict) -> str:
     seed = req.get("seed")
     if seed is not None and not isinstance(seed, int):
         raise ApiError(422, "seed must be a whole number")
+    semester = req.get("semester")
+    if semester is not None and (isinstance(semester, bool) or semester not in (1, 2)):
+        raise ApiError(422, "semester must be 1 or 2")
+    rules = req.get("rules")
+    if rules is not None and (not isinstance(rules, dict) or any(k not in RULE_WEIGHT or not isinstance(v, bool) for k, v in rules.items())):
+        raise ApiError(422, f"rules must map {', '.join(RULE_WEIGHT)} to true or false")
     rows = conn.execute(text("select id, faculty_id from student_group where id = any(cast(:g as bigint[]))"), {"g": group_ids}).all()
     if len(rows) != len(group_ids):
         raise ApiError(422, "Unknown group")
@@ -53,7 +60,7 @@ def start(conn: Connection, user: CurrentUser, req: dict) -> str:
     example = req.get("exampleTimetableId")
     if example is not None and (maybe_pid(example) is None or not conn.execute(text("select 1 from timetable where id = :i"), {"i": maybe_pid(example)}).first()):
         raise ApiError(404, "The example timetable does not exist")
-    params = {"groupIds": [sid(g) for g in group_ids], "variants": variants, "iterations": iterations, "seed": seed,
+    params = {"groupIds": [sid(g) for g in group_ids], "variants": variants, "iterations": iterations, "seed": seed, "semester": semester, "rules": rules,
               "baseTimetableId": sid(maybe_pid(base)) if base is not None else None,
               "exampleTimetableId": sid(maybe_pid(example)) if example is not None else None, "live": {"variant": 0, "progress": 0, "best": None}}
     job_id = conn.execute(
@@ -130,7 +137,7 @@ def _run(job_id: int, user_id: int) -> None:
                     _write_progress(job_id, v, (v + p) / variants, score)
 
                 seed = seed0 + v * 7919
-                results.append((seed, generate_timetable(ds, group_ids, seed, seconds, fixed, keep, on_progress, workers, example=example)))
+                results.append((seed, generate_timetable(ds, group_ids, seed, seconds, fixed, keep, on_progress, workers, example=example, semester=params.get("semester"), rules=params.get("rules"))))
             # the variants of earlier runs go; drafts and the published timetable stay
             conn.execute(text("delete from timetable where semester_id = :s and status = 'variant'"), {"s": sem.id})
             ids = []

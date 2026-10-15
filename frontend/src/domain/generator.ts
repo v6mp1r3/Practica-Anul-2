@@ -5,9 +5,9 @@
 import { DatasetIndex, shareTeacher, teacherIdsOf } from './indexes';
 import { createRng, type Rng } from './rng';
 import { placeSessions } from './sessions';
-import { scoreTimetable } from './score';
+import { scoreTimetable, weightsFor } from './score';
 import { paritiesOverlap, range, slotKey } from './slots';
-import type { Assignment, Dataset, Lesson, Parity, Room, Score } from './types';
+import type { Assignment, Dataset, GenerationRules, Lesson, Parity, Room, Score } from './types';
 import { halvesOf, take, tasksOf, weekExcess, weekNeed, type WeekNeed } from './weeks';
 
 export interface GenerateOptions {
@@ -28,6 +28,10 @@ export interface GenerateOptions {
    * that makes the timetable better.
    */
   example?: Lesson[];
+  /** Semester of the year (1 or 2) to generate for; only its subjects are scheduled and only its kept pairs stay booked. */
+  semester?: 1 | 2;
+  /** Comfort rules switched off for this run: strict instead of a mild preference. */
+  rules?: GenerationRules;
 }
 
 export interface GenerateResult {
@@ -95,9 +99,15 @@ class Occupancy {
 }
 
 /** Assignments that belong to the selected groups. */
-export function scopeAssignments(ds: Dataset, groupIds: string[], idx = new DatasetIndex(ds)): Assignment[] {
+export function scopeAssignments(ds: Dataset, groupIds: string[], idx = new DatasetIndex(ds), semester?: 1 | 2): Assignment[] {
   const set = new Set(groupIds);
-  return ds.assignments.filter((a) => idx.cohorts(a.audience).some((c) => set.has(c.groupId)));
+  return ds.assignments.filter((a) => idx.cohorts(a.audience).some((c) => set.has(c.groupId)) && inSemester(idx, a, semester));
+}
+
+/** Is the load's subject taught in that semester of the year? A subject without one is in the 1st; any when none is asked for. */
+export function inSemester(idx: DatasetIndex, a: Assignment | undefined, semester?: 1 | 2): boolean {
+  if (!semester || !a) return true;
+  return (idx.subjects.get(a.subjectId)?.semester ?? 1) === semester;
 }
 
 let lessonCounter = 0;
@@ -289,7 +299,16 @@ const better = (x: Score, y: Score) => x.hard < y.hard || (x.hard === y.hard && 
  * One LNS step: free k lessons chosen by a domain strategy, re-insert them
  * greedily, keep the result if it is not worse.
  */
-function lnsStep(ds: Dataset, idx: DatasetIndex, current: Lesson[], currentScore: Score, k: number, rng: Rng, keep: Set<string>) {
+function lnsStep(
+  ds: Dataset,
+  idx: DatasetIndex,
+  current: Lesson[],
+  currentScore: Score,
+  k: number,
+  rng: Rng,
+  keep: Set<string>,
+  weights: ReturnType<typeof weightsFor>,
+) {
   const movable = current.filter((l) => !l.locked && !keep.has(l.id) && !l.date);
   if (!movable.length) return null;
   const strategy = rng.pick(['random', 'byDay', 'byTeacher', 'byGroup'] as const);
@@ -319,7 +338,7 @@ function lnsStep(ds: Dataset, idx: DatasetIndex, current: Lesson[], currentScore
     if (!b.place(a, weeks)) b.forcePlace(a, l.parity);
   }
 
-  const score = scoreTimetable(ds, b.lessons, idx);
+  const score = scoreTimetable(ds, b.lessons, idx, weights);
   return better(score, currentScore) ? { lessons: b.lessons, score } : null;
 }
 
@@ -331,10 +350,11 @@ export async function generateTimetable(
 ): Promise<GenerateResult> {
   const idx = new DatasetIndex(ds);
   const rng = createRng(opts.seed);
-  const scoped = scopeAssignments(ds, opts.groupIds, idx);
+  const scoped = scopeAssignments(ds, opts.groupIds, idx, opts.semester);
   const scopedIds = new Set(scoped.map((a) => a.id));
   const fixed = (opts.fixed ?? []).filter((l) => scopedIds.has(l.assignmentId));
-  const keep = (opts.keep ?? []).filter((l) => !scopedIds.has(l.assignmentId));
+  // other groups' pairs stay booked, but only those of the semester being generated
+  const keep = (opts.keep ?? []).filter((l) => !scopedIds.has(l.assignmentId) && inSemester(idx, idx.assignmentOf(l), opts.semester));
   const keepIds = new Set(keep.map((l) => l.id));
   // Reduced attendance is placed on session dates afterwards; the weekly engine
   // handles full-time and dual groups
@@ -344,7 +364,8 @@ export async function generateTimetable(
   const scopedDs: Dataset = { ...ds, assignments: weekly };
 
   let lessons = construct(ds, idx, weekly, [...keep, ...weeklyFixed], rng, opts.example).lessons;
-  let score = scoreTimetable(scopedDs, lessons, idx);
+  const weights = weightsFor(opts.rules); // what the search minimises; the saved score uses the usual weights
+  let score = scoreTimetable(scopedDs, lessons, idx, weights);
   let k = 4;
   let stale = 0;
 
@@ -367,7 +388,7 @@ export async function generateTimetable(
   let awayNow = away(lessons);
 
   for (let i = 0; i < opts.iterations; i++) {
-    const next = lnsStep(scopedDs, idx, lessons, score, k, rng, keepIds);
+    const next = lnsStep(scopedDs, idx, lessons, score, k, rng, keepIds, weights);
     const awayNext = next ? away(next.lessons) : 0;
     if (
       next &&

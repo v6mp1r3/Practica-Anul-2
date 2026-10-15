@@ -710,7 +710,7 @@ export function createMockApi(): Api {
       for (let v = 0; v < req.variants; v++) {
         const result = await generateTimetable(
           store.dataset,
-          { groupIds: req.groupIds, seed: seed0 + v * 7919, iterations: req.iterations, fixed, keep, example },
+          { groupIds: req.groupIds, seed: seed0 + v * 7919, iterations: req.iterations, fixed, keep, example, semester: req.semester, rules: req.rules },
           (p, best) => onProgress?.({ variant: v, progress: (v + p) / req.variants, best }),
         );
         out.push({
