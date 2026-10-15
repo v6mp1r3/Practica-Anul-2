@@ -50,6 +50,16 @@ describe('days off, every year', () => {
     expect(list.some((h) => h.id === '2026:women')).toBe(false);
     expect(list.some((h) => h.name === 'Hramul orașului' && !h.auto)).toBe(true);
   });
+
+  it('brings every automatic day off back the next year, and keeps added ones to their own year', () => {
+    const ev = {
+      vacations: [{ name: 'Hramul orașului', start: '2026-10-14', end: '2026-10-14' }],
+      holidayOverrides: { '2026:women': null, '2026:winter': null },
+    };
+    const next = holidaysOf({ ...ev, semesterStart: '2027-08-30' });
+    expect(next.map((h) => h.id)).toEqual(expect.arrayContaining(['2027:women', '2027:winter']));
+    expect(next.some((h) => !h.auto)).toBe(false);
+  });
 });
 
 describe('a new academic year takes over by itself', () => {

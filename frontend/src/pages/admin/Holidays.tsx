@@ -80,10 +80,12 @@ export default function Holidays() {
       setDraft({ name: '', start: '', end: '' });
   }
 
-  /** An added one is deleted; an automatic one is hidden for this year (and can be brought back). */
+  /** An added one is deleted for good; an automatic one only for this year (it can be brought back). */
   function remove(h: Holiday) {
-    if (h.auto)
-      return save({ holidayOverrides: { ...stored.holidayOverrides, [h.id]: null } }, t('holidays.hiddenToast', { name: name(h) }));
+    if (h.auto) {
+      if (!confirm(t('holidays.confirmRemoveAuto', { name: name(h) }))) return;
+      return save({ holidayOverrides: { ...stored.holidayOverrides, [h.id]: null } }, t('holidays.removedToast', { name: name(h) }));
+    }
     if (!confirm(t('common.confirmDelete', { name: name(h) }))) return;
     const i = Number(h.id.slice('custom:'.length));
     return save({ vacations: stored.vacations.filter((_, j) => j !== i) }, t('holidays.removedToast', { name: name(h) }));
@@ -164,13 +166,13 @@ export default function Holidays() {
                 </button>
                 <button
                   type="button"
-                  className={`btn ghost sm icon ${h.auto ? '' : 'danger'}`}
+                  className="btn ghost sm icon danger"
                   disabled={saving}
-                  title={h.auto ? t('holidays.hide') : t('common.delete')}
-                  aria-label={`${h.auto ? t('holidays.hide') : t('common.delete')}: ${name(h)}`}
+                  title={t('common.delete')}
+                  aria-label={`${t('common.delete')}: ${name(h)}`}
                   onClick={() => void remove(h)}
                 >
-                  <Icon name={h.auto ? 'eye-off' : 'trash'} size={15} />
+                  <Icon name="trash" size={15} />
                 </button>
               </div>
             ))}
