@@ -187,6 +187,9 @@ export interface Teacher {
   maxPairsPerWeek: number;
   activityTypes: ActivityType[];
   unavailable: SlotKey[];
+  /** Besides `unavailable` (every week): pairs the teacher can't take in odd weeks only, or in even weeks only. */
+  unavailableOdd?: SlotKey[];
+  unavailableEven?: SlotKey[];
   preferred: SlotKey[];
   /** Weekly consultation hour, if already fixed. */
   consultation?: SlotKey;
@@ -322,6 +325,8 @@ export interface Assignment {
   subjectId: string;
   type: ActivityType;
   teacherId: string;
+  /** A class can be held by several teachers at once: the others besides teacherId. */
+  coTeacherIds?: string[];
   audience: Audience;
   pairsPerWeek: number;
   /**
@@ -351,11 +356,30 @@ export interface Lesson {
 
 export type TimetableStatus = 'draft' | 'published' | 'variant';
 
+/**
+ * The comfort rules of a generation run. All are soft preferences by default; `false` makes one strict: the
+ * generator avoids it at almost any cost (but never by leaving a pair out). Hard rules (no clashes) always hold.
+ */
+export interface GenerationRules {
+  /** Students may have empty pairs between their classes. */
+  allowGroupGaps?: boolean;
+  /** Teachers may have empty pairs between their classes. */
+  allowTeacherGaps?: boolean;
+  /** A group may have fewer pairs on a day than the minimum. Not allowed unless set to true: the default is absolute. */
+  allowThinDays?: boolean;
+  /** A group may have more pairs on a day than the maximum. */
+  allowOverload?: boolean;
+  /** "First or last pair only" subjects (e.g. physical education) may sit mid-day. */
+  allowEdgeMisses?: boolean;
+}
+
 export interface ScoreBreakdown {
   teacherGaps: number;
   groupGaps: number;
   earlyStarts: number;
   dayOverload: number;
+  /** Days with fewer pairs than the minimum per day (in missing pairs, week by week). */
+  thinDays: number;
   unevenDays: number;
   preferenceMisses: number;
   /** Pairs not placed in one of their preferred ("de dorit") rooms. */
@@ -394,9 +418,11 @@ export type ConflictKind =
   | 'room-equipment'
   | 'hours-missing'
   | 'hours-extra'
+  | 'hours-uneven'
   | 'outside-hours'
   | 'wrong-day'
   | 'teacher-overtime'
+  | 'teacher-wrong-type'
   | 'teacher-day-overload'
   | 'group-day-overload'
   | 'group-day-underload'

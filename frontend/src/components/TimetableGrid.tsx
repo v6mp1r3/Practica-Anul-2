@@ -34,7 +34,6 @@ export function LessonCard({
   const a = index.assignmentOf(lesson);
   if (!a) return null;
   const subject = index.subjects.get(a.subjectId);
-  const teacher = index.teachers.get(a.teacherId);
   const room = index.rooms.get(lesson.roomId);
   const classes = ['lesson', a.type, lesson.parity !== 'weekly' && 'parity', conflict && 'conflict', highlight && 'highlight', dim && 'dim']
     .filter(Boolean)
@@ -56,7 +55,7 @@ export function LessonCard({
         {subjectLabel(subject)} · {t(`activity.${a.type}`)}
       </div>
       {!hide.includes('audience') && <div className="meta">{index.audienceLabel(a.audience)}</div>}
-      {!hide.includes('teacher') && <div className="meta">{teacher?.name}</div>}
+      {!hide.includes('teacher') && <div className="meta">{index.teacherNames(a)}</div>}
       {!hide.includes('room') && <div className="meta">{room?.name}</div>}
     </div>
   );

@@ -144,7 +144,7 @@ export default function FreeRooms() {
                     return (
                       <span key={l.id} className="small muted">
                         {subjectLabel(index.subjects.get(a.subjectId))} · {t(`activity.${a.type}`)} · {index.audienceLabel(a.audience)} ·{' '}
-                        {index.teachers.get(a.teacherId)?.name}
+                        {index.teacherNames(a)}
                       </span>
                     );
                   })}

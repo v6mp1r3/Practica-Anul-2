@@ -12,7 +12,7 @@ from ..domain.calendar import (
     add_days, days_between, evaluation_of, group_period_weeks, internship_on, midterm_weeks_of, parse, periods_of, range_dates,
     session_dates, start_times_in, teaching_week, to_hhmm, to_min, vacation_on, weekday,
 )
-from ..domain.indexes import DatasetIndex
+from ..domain.indexes import DatasetIndex, teacher_ids
 from ..domain.slots import parities_overlap
 from .rng import Rng
 
@@ -370,7 +370,7 @@ def generate_midterms(ds: dict, idx: DatasetIndex, group_ids: list[str], n: int,
                 for start in ctx["times"]:
                     end = to_hhmm(to_min(start) + ev["midtermMinutes"])
                     taken = classes_at(d, start, end, ctx["parityOn"])
-                    if any(idx.audience_touches_group(idx.assignment_of(l)["audience"], group_id) or idx.assignment_of(l)["teacherId"] == teacher_id for l in taken):
+                    if any(idx.audience_touches_group(idx.assignment_of(l)["audience"], group_id) or teacher_id in teacher_ids(idx.assignment_of(l)) for l in taken):
                         continue
                     room = next((r for r in rooms(size) if not any(l["roomId"] == r["id"] for l in taken)
                                  and not any(_clash(o, {"id": "", "kind": "exam", "round": round_, "subjectId": subject_id, "groupId": group_id, "teacherId": teacher_id, "roomId": r["id"], "date": d, "start": start, "end": end}) for o in busy + placed)), None)

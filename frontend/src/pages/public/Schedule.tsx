@@ -1,6 +1,7 @@
 // Public timetables — no sign-in. Two pages: students (any group) and
 // teachers (any teacher); the last choice is remembered on this device.
 import { useState } from 'react';
+import { teaches } from '../../domain/indexes';
 import { ExamCalendar, type CalendarEntry } from '../../components/ExamCalendar';
 import { examEntries } from '../../components/examEntries';
 import { parseDate, toDateString } from '../../domain/changes';
@@ -84,15 +85,14 @@ function Schedule({ kind }: { kind: Kind }) {
   // teachers of this cycle's groups
   const cycleLoads = dataset.assignments.filter((a) => index.cohorts(a.audience).some((c) => inCycle(c.groupId)));
   const teachers = [...dataset.teachers]
-    .filter((x) => cycleLoads.some((a) => a.teacherId === x.id))
+    .filter((x) => cycleLoads.some((a) => teaches(a, x.id)))
     .sort((a, b) => a.name.localeCompare(b.name, lang));
   const setCycle = (c: StudyCycle) => {
     // keep the choice if it still belongs to the cycle
     const keep =
       choice.kind === 'teacher'
         ? dataset.assignments.some(
-            (a) =>
-              a.teacherId === choice.id && index.cohorts(a.audience).some((x) => (index.groups.get(x.groupId)?.cycle ?? 'licenta') === c),
+            (a) => teaches(a, choice.id) && index.cohorts(a.audience).some((x) => (index.groups.get(x.groupId)?.cycle ?? 'licenta') === c),
           )
         : streamGroups(index, choice.id).some((g) => (index.groups.get(g)?.cycle ?? 'licenta') === c);
     setChoice({ ...choice, cycle: c, id: keep ? choice.id : '', subgroup: keep ? choice.subgroup : null });

@@ -1,4 +1,5 @@
 import { OtherFaculty, facultyView, useAdminScope } from '../../components/FacultyFilter';
+import { teaches } from '../../domain/indexes';
 import { AvailabilityPicker } from '../../components/AvailabilityPicker';
 import { ExamAvailabilityPicker } from '../../components/ExamAvailabilityPicker';
 import { TeacherAccount } from '../../components/TeacherAccount';
@@ -18,6 +19,9 @@ import { useDataset } from '../../state/data';
 import { toDateString } from '../../domain/changes';
 
 const TYPES: ActivityType[] = ['lecture', 'seminar', 'lab', 'project'];
+
+/** Pairs off per week: one off in odd or even weeks only counts half. */
+const offCount = (x: Teacher) => x.unavailable.length + ((x.unavailableOdd?.length ?? 0) + (x.unavailableEven?.length ?? 0)) / 2;
 
 export default function Teachers() {
   const { t } = useI18n();
@@ -45,7 +49,7 @@ export default function Teachers() {
   const filtering = !!(title || department || activity);
 
   const today = toDateString(new Date());
-  const plannedLoad = (id: string) => dataset.assignments.filter((a) => a.teacherId === id).reduce((n, a) => n + a.pairsPerWeek, 0);
+  const plannedLoad = (id: string) => dataset.assignments.filter((a) => teaches(a, id)).reduce((n, a) => n + a.pairsPerWeek, 0);
 
   return (
     <CrudPage
@@ -151,13 +155,13 @@ export default function Teachers() {
         },
         {
           label: t('teachers.unavailable'),
-          sort: (x) => x.unavailable.length,
+          sort: (x) => offCount(x),
           render: (x) => {
             // upcoming one-off "can't that day" pairs, next to the weekly ones
             const soon = (x.unavailableOn ?? []).filter((k) => k.slice(0, 10) >= today).length;
             return (
               <span className="row" style={{ gap: 6 }}>
-                {x.unavailable.length || '—'}
+                {offCount(x) || '—'}
                 {soon > 0 && (
                   <span className="badge danger" title={t('teachers.datedHint')}>
                     +{soon} {t('teachers.dated')}
@@ -236,7 +240,13 @@ export default function Teachers() {
             <AvailabilityPicker
               settings={dataset.settings}
               index={index}
-              value={{ unavailable: d.unavailable, preferred: d.preferred, consultation: d.consultation }}
+              value={{
+                unavailable: d.unavailable,
+                unavailableOdd: d.unavailableOdd,
+                unavailableEven: d.unavailableEven,
+                preferred: d.preferred,
+                consultation: d.consultation,
+              }}
               onChange={(v) => set(v)}
             />
           </div>

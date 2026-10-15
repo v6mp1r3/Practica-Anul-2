@@ -197,6 +197,10 @@ or subject without a `faculty` is shared and any administrator may change it.
 { "id": "a1", "subjectId": "sub1", "type": "lecture", "teacherId": "t3",
   "audience": { "kind": "stream", "id": "s3" },
   "pairsPerWeek": 2, "roomType": "lecture", "equipment": [] }
+
+// Any class can have more teachers, who hold its pairs together with teacherId
+{ "id": "a2", "subjectId": "sub4", "type": "project", "teacherId": "t3", "coTeacherIds": ["t5", "t8"],
+  "audience": { "kind": "group", "id": "g1" }, "pairsPerWeek": 1, "roomType": "seminar", "equipment": [] }
 ```
 
 **Clusters.** A cluster is a year of study ("Year 1") or a speciality within a year ("FAF, year 1"). They are
@@ -299,6 +303,7 @@ notification.
       "groupGaps": 0.5,
       "earlyStarts": 0,
       "dayOverload": 0,
+      "thinDays": 0,
       "unevenDays": 34.4,
       "preferenceMisses": 4.5
     }
@@ -336,7 +341,7 @@ Generation can take minutes, so it is a job the client polls.
 
 ```
 POST /generate            (admin)
-{ "groupIds": ["g1","g2"], "variants": 3, "iterations": 250, "seed": 42, "baseTimetableId": "tt1", "exampleTimetableId": "tt2" }
+{ "groupIds": ["g1","g2"], "semester": 1, "rules": { "allowGroupGaps": false }, "variants": 3, "iterations": 250, "seed": 42, "baseTimetableId": "tt1", "exampleTimetableId": "tt2" }
 → { "jobId": "job_123" }
 
 GET /generate/{jobId}
@@ -347,6 +352,16 @@ GET /generate/{jobId}
 ```
 
 - Only assignments whose audience touches one of `groupIds` are scheduled.
+- `rules` (optional, else 422): comfort rules for this run, `{ allowGroupGaps, allowTeacherGaps, allowThinDays,
+  allowOverload, allowEdgeMisses }`, each `true` or `false`. All default to `true` except `allowThinDays`, which defaults to `false`. `false` makes the rule strict: the search
+  weighs it at 100 instead of its usual weight (see `score.breakdown`), so it gives way only when nothing else is
+  possible, and never by leaving a pair out. The hard rules (no clashes, availability, room fit, all pairs placed,
+  locked pairs kept) always hold. `allowThinDays: false` (the default) is absolute: a group never has a day with
+  fewer pairs than `minPairsPerDayGroup` (the search weighs it at 10 000, far above leaving a pair out), so a pair that
+  can only go alone on a day is moved next to another one or reported missing instead. The score saved with each timetable uses the usual weights, so variants stay comparable.
+- `semester` (optional, `1` or `2`, else 422): the semester of the year to generate for (1 = autumn, 2 = spring).
+  Only assignments whose subject has that `semester` are scheduled (a subject without one is in the 1st), and
+  other groups' published pairs stay booked only for that semester. Every semester when omitted.
 - Lessons with `locked: true` in `baseTimetableId` must be kept exactly as they are.
 - `exampleTimetableId` (optional): a timetable to follow, e.g. an imported one. Its pairs start on the same day,
   pair and room (another room that fits when theirs no longer does) whenever that clashes with nothing; the search

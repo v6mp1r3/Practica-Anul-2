@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { semesterOf } from '../../domain/holidays';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../api';
-import { ConflictList } from '../../components/ConflictList';
+import { ConflictList, conflictSubject } from '../../components/ConflictList';
 import { Icon } from '../../components/Icon';
 import { LessonPanel } from '../../components/LessonPanel';
 import { SessionsSection } from '../../components/SessionTimetable';
@@ -13,7 +13,7 @@ import { Legend, TimetableGrid, type LessonField } from '../../components/Timeta
 import { ViewPicker } from '../../components/ViewPicker';
 import { Loading, PageHeader } from '../../components/ui';
 import { ExportDialog, downloadTimetable } from '../../components/ExportDialog';
-import { scopeAssignments } from '../../domain/generator';
+import { dropExtra, loadDrift, placeMissing, scopeAssignments } from '../../domain/generator';
 import { findWarnings, scoreTimetable } from '../../domain/score';
 import type { Conflict, Dataset, Lesson, Parity, Timetable } from '../../domain/types';
 import { findHardConflicts } from '../../domain/validator';
@@ -67,6 +67,11 @@ export default function Editor() {
   const hard = useMemo(() => findHardConflicts(scoped, lessons, index), [scoped, lessons, index]);
   const warnings = useMemo(() => findWarnings(scoped, lessons, index), [scoped, lessons, index]);
   const score = useMemo(() => scoreTimetable(scoped, lessons, index), [scoped, lessons, index]);
+  // what the teaching loads ask for that the timetable does not have (yet), after the data changed
+  const drift = useMemo(
+    () => (tt ? loadDrift(dataset, lessons, tt.groupIds, index) : { missing: [], extra: [] }),
+    [dataset, lessons, tt, index],
+  );
   // only this faculty's groups, and the teachers/rooms it uses, in the view picker
   const limit = useMemo(() => (scope ? facultyView(dataset, index, scope, lessons) : undefined), [dataset, index, scope, lessons]);
   const conflictIds = useMemo(() => new Set(hard.flatMap((c) => c.lessonIds)), [hard]);
@@ -197,6 +202,24 @@ export default function Editor() {
     else setTt(draft);
   }
 
+  /** Place the pairs of new (or grown) loads around the existing ones, which stay where they are. */
+  function fillMissing() {
+    if (!tt) return;
+    const res = placeMissing(dataset, lessons, tt.groupIds);
+    if (res.placed) commit(res.lessons);
+    toast(
+      res.unplaced ? t('editor.placedSome', { placed: res.placed, unplaced: res.unplaced }) : t('editor.placedAll', { count: res.placed }),
+      res.unplaced ? 'error' : undefined,
+    );
+  }
+
+  function removeExtra() {
+    if (!tt) return;
+    const res = dropExtra(dataset, lessons, tt.groupIds);
+    if (res.removed) commit(res.lessons);
+    toast(t('editor.removedExtra', { count: res.removed }));
+  }
+
   function rename() {
     const name = prompt(t('editor.renamePrompt'), tt?.name);
     if (name?.trim() && tt) {
@@ -204,6 +227,11 @@ export default function Editor() {
       setDirty(true);
     }
   }
+
+  const loadLabel = (assignmentId: string) =>
+    conflictSubject({ kind: 'hours-missing', severity: 'hard', lessonIds: [], subjectId: assignmentId }, index, (x) =>
+      t(`activity.${x}` as 'activity.lab'),
+    );
 
   function viewName() {
     if (view.kind === 'teacher') return index.teachers.get(view.id)?.name ?? 'profesor';
@@ -316,6 +344,46 @@ export default function Editor() {
               onChange={(patch) => patchLesson(selected.id, patch)}
               onClose={() => setSelectedId(null)}
             />
+          )}
+          {(drift.missing.length > 0 || drift.extra.length > 0) && (
+            <div className="card">
+              <div className="card-header">
+                <h3>{t('editor.outdated')}</h3>
+              </div>
+              <div className="card-body stack" style={{ gap: 8 }}>
+                <p className="small muted" style={{ margin: 0 }}>
+                  {t('editor.outdatedHint')}
+                </p>
+                {drift.missing.length > 0 && (
+                  <div className="stack" style={{ gap: 4 }}>
+                    <strong className="small">{t('editor.toPlace', { count: drift.missing.reduce((n, m) => n + m.count, 0) })}</strong>
+                    {drift.missing.slice(0, 6).map(({ assignment, count }) => (
+                      <span key={assignment.id} className="small">
+                        {loadLabel(assignment.id)} <span className="muted">×{count}</span>
+                      </span>
+                    ))}
+                    {drift.missing.length > 6 && <span className="small muted">+{drift.missing.length - 6}</span>}
+                    <button className="btn primary" onClick={fillMissing}>
+                      <Icon name="zap" size={15} />
+                      {t('editor.placeMissing')}
+                    </button>
+                  </div>
+                )}
+                {drift.extra.length > 0 && (
+                  <div className="stack" style={{ gap: 4 }}>
+                    <strong className="small">{t('editor.tooMany', { count: drift.extra.reduce((n, m) => n + m.count, 0) })}</strong>
+                    {drift.extra.slice(0, 6).map(({ assignment, count }) => (
+                      <span key={assignment.id} className="small">
+                        {loadLabel(assignment.id)} <span className="muted">×{count}</span>
+                      </span>
+                    ))}
+                    <button className="btn" onClick={removeExtra}>
+                      {t('editor.removeExtra')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
           <div className="card">
             <div className="card-body">

@@ -229,7 +229,9 @@ create table teacher_slot_pref (
   day        smallint not null check (day between 0 and 6),
   slot_index smallint not null references time_slot (slot_index),
   kind       slot_pref_kind not null,
-  primary key (teacher_id, day, slot_index, kind)
+  parity     parity not null default 'weekly',                        -- unavailable in odd / even weeks only
+  primary key (teacher_id, day, slot_index, kind, parity),
+  constraint teacher_slot_pref_weekly_unless_unavailable check (parity = 'weekly' or kind = 'unavailable')
 );
 create unique index teacher_one_consultation on teacher_slot_pref (teacher_id) where kind = 'consultation';
 
@@ -488,7 +490,7 @@ create table assignment (
   stream_id         bigint references stream (id) on delete cascade,
   group_id          bigint references student_group (id) on delete cascade,
   subgroup_no       smallint check (subgroup_no between 1 and 4),
-  pairs_per_week    numeric(3, 1) not null check (pairs_per_week >= 1),
+  pairs_per_week    numeric(3, 1) not null check (pairs_per_week >= 0.5 and pairs_per_week * 2 = floor(pairs_per_week * 2)),  -- 0.5 = every other week
   pairs_per_session numeric(3, 1) check (pairs_per_session > 0),      -- reduced-attendance groups
   room_type         room_type not null,
   check (
@@ -521,6 +523,14 @@ create table assignment_equipment (
   primary key (assignment_id, equipment_id)
 );
 
+-- the other teachers of a class, who hold its pairs together with the main teacher
+create table assignment_co_teacher (
+  assignment_id bigint not null references assignment (id) on delete cascade,
+  teacher_id    bigint not null references teacher (id) on delete cascade,
+  primary key (assignment_id, teacher_id)
+);
+create index assignment_co_teacher_teacher_idx on assignment_co_teacher (teacher_id);
+
 -- ---------------------------------------------------------------- timetables
 create table timetable (
   id              bigint generated always as identity primary key,
@@ -537,7 +547,10 @@ create table timetable (
 );
 create unique index timetable_one_published on timetable (semester_id) where status = 'published';
 create index timetable_semester_idx on timetable (semester_id, status);
-create trigger timetable_updated before update on timetable for each row execute function set_updated_at();
+-- a new score after the data changed is not an edit of the timetable: only its own fields move updated_at
+create trigger timetable_updated before update on timetable for each row
+  when ((old.name, old.status, old.algorithm, old.semester_id) is distinct from (new.name, new.status, new.algorithm, new.semester_id))
+  execute function set_updated_at();
 
 create table timetable_group (
   timetable_id bigint not null references timetable (id) on delete cascade,

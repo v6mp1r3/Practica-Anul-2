@@ -27,7 +27,6 @@ export function LessonPanel({
   const a = index.assignmentOf(lesson);
   if (!a) return null;
   const subject = index.subjects.get(a.subjectId);
-  const teacher = index.teachers.get(a.teacherId);
   const size = index.audienceSize(a.audience);
 
   const busy = (roomId: string) =>
@@ -59,7 +58,7 @@ export function LessonPanel({
           <div>
             <strong>{subject?.name}</strong>
           </div>
-          <div className="muted">{teacher?.name}</div>
+          <div className="muted">{index.teacherNames(a)}</div>
           <div className="muted">
             {index.audienceLabel(a.audience)} · {size} {t('groups.size').toLowerCase()}
           </div>

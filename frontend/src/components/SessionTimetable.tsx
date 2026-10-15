@@ -54,7 +54,7 @@ function BlockLine({ block, index, dataset, hide }: { block: SessionBlock; index
       </strong>
       <span className="small muted">
         {[
-          !hide.includes('teacher') && index.teachers.get(a.teacherId)?.name,
+          !hide.includes('teacher') && index.teacherNames(a),
           !hide.includes('room') && index.rooms.get(block.lesson.roomId)?.name,
           !hide.includes('audience') && index.audienceLabel(a.audience),
           a.audience.kind === 'subgroup' && t('session.half', { n: a.audience.subgroup }),

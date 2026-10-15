@@ -1,0 +1,145 @@
+- generic [ref=e2]:
+  - generic [ref=e53]:
+    - complementary [ref=e54]:
+      - img "EduSchedule" [ref=e56]
+      - navigation [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e75]: Meniu principal
+          - link "Panou" [ref=e76] [cursor=pointer]:
+            - /url: /admin
+        - generic [ref=e79]:
+          - generic [ref=e80]: Configurare
+          - link "Configurare" [ref=e81] [cursor=pointer]:
+            - /url: /admin/setup
+          - link "Profesori" [ref=e84] [cursor=pointer]:
+            - /url: /admin/teachers
+          - link "Săli" [ref=e87] [cursor=pointer]:
+            - /url: /admin/rooms
+          - link "Grupe și torente" [ref=e90] [cursor=pointer]:
+            - /url: /admin/groups
+          - link "Discipline" [ref=e93] [cursor=pointer]:
+            - /url: /admin/subjects
+          - link "Sarcina didactică" [ref=e96] [cursor=pointer]:
+            - /url: /admin/assignments
+        - generic [ref=e99]:
+          - generic [ref=e100]: Orare
+          - link "Generare" [ref=e101] [cursor=pointer]:
+            - /url: /admin/generate
+          - link "Orare" [ref=e104] [cursor=pointer]:
+            - /url: /admin/timetables
+          - link "Modificări în orar" [ref=e107] [cursor=pointer]:
+            - /url: /admin/changes
+          - link "Evaluări" [ref=e110] [cursor=pointer]:
+            - /url: /admin/evaluations
+          - link "Zile libere și vacanțe" [ref=e113] [cursor=pointer]:
+            - /url: /admin/holidays
+          - link "Orarul instituției" [ref=e116] [cursor=pointer]:
+            - /url: /browse
+        - link "Notificări 1" [ref=e120] [cursor=pointer]:
+          - /url: /notifications
+          - text: Notificări
+          - generic [ref=e123]: "1"
+      - generic [ref=e124]:
+        - generic [ref=e125]: Cont
+        - link "EP Elena Popescu Administrator" [ref=e126] [cursor=pointer]:
+          - /url: /account
+          - generic [ref=e127]: EP
+          - generic [ref=e128]:
+            - generic [ref=e129]: Elena Popescu
+            - generic [ref=e130]: Administrator
+        - generic [ref=e133]:
+          - group "Limba" [ref=e134]:
+            - button "RO" [pressed] [ref=e135] [cursor=pointer]
+            - button "RU" [ref=e136] [cursor=pointer]
+            - button "EN" [ref=e137] [cursor=pointer]
+          - button "Ieșire" [ref=e138] [cursor=pointer]
+    - generic [ref=e143]:
+      - heading "Panou" [level=1] [ref=e146]
+      - generic [ref=e147]:
+        - generic [ref=e148]:
+          - generic [ref=e150]:
+            - heading "Ultimul orar" [level=2] [ref=e151]
+            - paragraph [ref=e152]: Niciun orar publicat
+          - img "0/202 perechi" [ref=e153]:
+            - generic [ref=e181]: 0/202
+            - generic [ref=e182]: PERECHI
+          - generic [ref=e183]:
+            - link "Generează orar" [ref=e184] [cursor=pointer]:
+              - /url: /admin/generate
+            - generic [ref=e188]:
+              - strong [ref=e189]: "0"
+              - generic [ref=e190]: conflicte
+            - link "0 Orare" [ref=e191] [cursor=pointer]:
+              - /url: /admin/timetables
+              - strong [ref=e192]: "0"
+              - generic [ref=e193]: Orare
+            - link "0 Modificări în orar" [ref=e194] [cursor=pointer]:
+              - /url: /admin/changes
+              - strong [ref=e195]: "0"
+              - generic [ref=e196]: Modificări în orar
+        - generic [ref=e197]:
+          - generic [ref=e198]:
+            - heading "Încărcarea săptămânii" [level=2] [ref=e199]
+            - button "Grupă" [ref=e203] [cursor=pointer]:
+              - generic [ref=e204]: CR-241
+          - paragraph [ref=e206]: Generează un orar ca să vezi încărcarea săptămânii.
+        - generic [ref=e207]:
+          - generic [ref=e208]:
+            - generic [ref=e209]:
+              - generic [ref=e210]: octombrie
+              - strong [ref=e211]: "15"
+            - generic [ref=e212]:
+              - generic [ref=e213]: Săptămâna impară
+              - strong [ref=e214]: Toamna 2026/2027
+              - generic [ref=e215]: Universitatea Tehnică a Moldovei
+          - generic [ref=e216]:
+            - generic [ref=e217]:
+              - generic [ref=e218]: Perechi de planificat
+              - strong [ref=e219]: "113"
+            - generic [ref=e220]:
+              - generic [ref=e221]:
+                - generic [ref=e222]: 24%
+                - generic [ref=e224]: Curs
+              - generic [ref=e225]:
+                - generic [ref=e226]: 34%
+                - generic [ref=e228]: Seminar
+              - generic [ref=e229]:
+                - generic [ref=e230]: 42%
+                - generic [ref=e232]: Laborator
+              - generic [ref=e233]:
+                - generic [ref=e234]: 0%
+                - generic [ref=e236]: Proiect
+        - generic [ref=e237]:
+          - generic [ref=e238]:
+            - heading "Orare recente" [level=2] [ref=e239]
+            - generic [ref=e240]: "0"
+            - link "Generează orar" [ref=e241] [cursor=pointer]:
+              - /url: /admin/generate
+          - list [ref=e245]:
+            - listitem [ref=e246]: "Configurează instituția: zile, perechi, paritate"
+            - listitem [ref=e247]: Introdu profesori, săli, grupe și discipline
+            - listitem [ref=e248]: Stabilește sarcina didactică
+            - listitem [ref=e249]: Generează variante și alege una
+            - listitem [ref=e250]: Ajustează manual și publică
+        - generic [ref=e251]:
+          - generic [ref=e252]:
+            - heading "Verificarea datelor" [level=2] [ref=e253]
+            - generic [ref=e254]:
+              - generic [ref=e255]:
+                - strong [ref=e256]: "17"
+                - text: profesori
+              - generic [ref=e257]:
+                - strong [ref=e258]: "12"
+                - text: săli
+              - generic [ref=e259]:
+                - strong [ref=e260]: "14"
+                - text: grupe
+          - generic [ref=e262]:
+            - generic [ref=e263]: "CR-241 · POO (Laborator): planul cere 0.5, atribuite 1"
+            - generic [ref=e266]: "FAF-241 · POO (Laborator): planul cere 0.5, atribuite 1"
+            - generic [ref=e269]: "FAF-241D · POO (Laborator): planul cere 0.5, atribuite 1"
+            - generic [ref=e272]: "FAF-242 · POO (Laborator): planul cere 0.5, atribuite 1"
+            - generic [ref=e275]: "FAF-251 · AC (Curs): planul cere 0.5, atribuite 1"
+            - generic [ref=e278]: "FAF-251/1 · AC (Laborator): planul cere 0.5, atribuite 1"
+            - generic [ref=e281]: "+11"
+  - status

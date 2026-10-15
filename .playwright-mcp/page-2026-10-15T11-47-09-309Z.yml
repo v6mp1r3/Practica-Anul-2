@@ -1,0 +1,238 @@
+- generic [ref=f1e2]:
+  - generic [ref=f1e4]:
+    - complementary [ref=f1e5]:
+      - img "EduSchedule" [ref=f1e7]
+      - navigation [ref=f1e24]:
+        - generic [ref=f1e25]:
+          - generic [ref=f1e26]: Meniu principal
+          - link "Panou" [ref=f1e27] [cursor=pointer]:
+            - /url: /admin
+        - generic [ref=f1e30]:
+          - generic [ref=f1e31]: Configurare
+          - link "Configurare" [ref=f1e32] [cursor=pointer]:
+            - /url: /admin/setup
+          - link "Profesori" [ref=f1e35] [cursor=pointer]:
+            - /url: /admin/teachers
+          - link "Săli" [ref=f1e38] [cursor=pointer]:
+            - /url: /admin/rooms
+          - link "Grupe și torente" [ref=f1e41] [cursor=pointer]:
+            - /url: /admin/groups
+          - link "Discipline" [ref=f1e44] [cursor=pointer]:
+            - /url: /admin/subjects
+          - link "Sarcina didactică" [ref=f1e47] [cursor=pointer]:
+            - /url: /admin/assignments
+        - generic [ref=f1e50]:
+          - generic [ref=f1e51]: Orare
+          - link "Generare" [ref=f1e52] [cursor=pointer]:
+            - /url: /admin/generate
+          - link "Orare" [ref=f1e55] [cursor=pointer]:
+            - /url: /admin/timetables
+          - link "Modificări în orar" [ref=f1e58] [cursor=pointer]:
+            - /url: /admin/changes
+          - link "Evaluări" [ref=f1e61] [cursor=pointer]:
+            - /url: /admin/evaluations
+          - link "Zile libere și vacanțe" [ref=f1e64] [cursor=pointer]:
+            - /url: /admin/holidays
+          - link "Orarul instituției" [ref=f1e67] [cursor=pointer]:
+            - /url: /browse
+        - link "Notificări 1" [ref=f1e71] [cursor=pointer]:
+          - /url: /notifications
+          - text: Notificări
+          - generic [ref=f1e74]: "1"
+      - generic [ref=f1e75]:
+        - generic [ref=f1e76]: Cont
+        - link "EP Elena Popescu Administrator" [ref=f1e77] [cursor=pointer]:
+          - /url: /account
+          - generic [ref=f1e78]: EP
+          - generic [ref=f1e79]:
+            - generic [ref=f1e80]: Elena Popescu
+            - generic [ref=f1e81]: Administrator
+        - generic [ref=f1e84]:
+          - group "Limba" [ref=f1e85]:
+            - button "RO" [pressed] [ref=f1e86] [cursor=pointer]
+            - button "RU" [ref=f1e87] [cursor=pointer]
+            - button "EN" [ref=f1e88] [cursor=pointer]
+          - button "Ieșire" [ref=f1e89] [cursor=pointer]
+    - generic [ref=f1e94]:
+      - generic [ref=f1e96]:
+        - heading "Generare" [level=1] [ref=f1e97]
+        - paragraph [ref=f1e98]: Generează mai multe variante care respectă toate constrângerile obligatorii, apoi alege una.
+      - generic [ref=f1e99]:
+        - generic [ref=f1e100]:
+          - group [ref=f1e101]:
+            - button "Licență" [pressed] [ref=f1e102] [cursor=pointer]
+            - button "Master" [ref=f1e103] [cursor=pointer]
+          - group [ref=f1e105]:
+            - button "Orar" [pressed] [ref=f1e106] [cursor=pointer]
+            - button "Atestarea 1" [ref=f1e107] [cursor=pointer]
+            - button "Atestarea 2" [ref=f1e108] [cursor=pointer]
+            - button "Examene finale" [ref=f1e109] [cursor=pointer]
+            - button "Reexaminări" [ref=f1e110] [cursor=pointer]
+        - generic [ref=f1e111]:
+          - generic [ref=f1e112]:
+            - heading "Parametri" [level=2] [ref=f1e114]
+            - generic [ref=f1e115]:
+              - generic [ref=f1e116]:
+                - generic [ref=f1e117]: Forma de învățământ
+                - group [ref=f1e118]:
+                  - button "Forma de învățământ Frecvență Frecvență redusă Dual" [pressed] [ref=f1e119] [cursor=pointer]: Toate
+                  - button "Frecvență" [ref=f1e120] [cursor=pointer]
+                  - button "Frecvență redusă" [ref=f1e121] [cursor=pointer]
+                  - button "Dual" [ref=f1e122] [cursor=pointer]
+              - generic [ref=f1e123]:
+                - generic [ref=f1e124]: Semestrul
+                - group [ref=f1e125]:
+                  - button "Semestrul Semestrul 2 (primăvară) Se programează doar disciplinele predate în acest semestru." [pressed] [ref=f1e126] [cursor=pointer]: Semestrul 1 (toamnă)
+                  - button "Semestrul 2 (primăvară)" [ref=f1e127] [cursor=pointer]
+                - generic [ref=f1e128]: Se programează doar disciplinele predate în acest semestru.
+              - generic [ref=f1e129]:
+                - generic [ref=f1e130]: Pentru ce grupe
+                - generic [ref=f1e131]:
+                  - generic [ref=f1e132]:
+                    - textbox "Caută grupă sau specialitate…" [ref=f1e133]
+                    - generic [ref=f1e134]: 0 grupe · 0 studenți
+                    - button "Deschide tot" [ref=f1e135] [cursor=pointer]
+                    - button "Închide tot" [ref=f1e136] [cursor=pointer]
+                  - generic [ref=f1e137]:
+                    - generic [ref=f1e138]:
+                      - button "Anul 1 7" [expanded] [ref=f1e139] [cursor=pointer]:
+                        - generic [aria-hidden] [ref=f1e140]: ›
+                        - strong [ref=f1e141]: Anul 1
+                        - generic [ref=f1e142]: "7"
+                      - button "Tot anul" [ref=f1e143] [cursor=pointer]
+                    - generic [ref=f1e146]:
+                      - generic [ref=f1e147]:
+                        - button "CR-251FR" [ref=f1e148] [cursor=pointer]
+                        - button "CR-251FR" [ref=f1e150] [cursor=pointer]
+                        - button "Toate" [ref=f1e151] [cursor=pointer]
+                      - generic [ref=f1e152]:
+                        - button "FAF" [ref=f1e153] [cursor=pointer]
+                        - generic [ref=f1e154]:
+                          - button "251" [ref=f1e155] [cursor=pointer]
+                          - button "252" [ref=f1e156] [cursor=pointer]
+                        - button "Toate" [ref=f1e157] [cursor=pointer]
+                      - generic [ref=f1e158]:
+                        - button "TI" [ref=f1e159] [cursor=pointer]
+                        - generic [ref=f1e160]:
+                          - button "251" [ref=f1e161] [cursor=pointer]
+                          - button "252" [ref=f1e162] [cursor=pointer]
+                        - button "Toate" [ref=f1e163] [cursor=pointer]
+                      - generic [ref=f1e164]:
+                        - button "TI-251FR" [ref=f1e165] [cursor=pointer]
+                        - button "TI-251FR" [ref=f1e167] [cursor=pointer]
+                        - button "Toate" [ref=f1e168] [cursor=pointer]
+                      - generic [ref=f1e169]:
+                        - button "TI-252FR" [ref=f1e170] [cursor=pointer]
+                        - button "TI-252FR" [ref=f1e172] [cursor=pointer]
+                        - button "Toate" [ref=f1e173] [cursor=pointer]
+                  - generic [ref=f1e174]:
+                    - generic [ref=f1e175]:
+                      - button "Anul 2 4" [expanded] [ref=f1e176] [cursor=pointer]:
+                        - generic [aria-hidden] [ref=f1e177]: ›
+                        - strong [ref=f1e178]: Anul 2
+                        - generic [ref=f1e179]: "4"
+                      - button "Tot anul" [ref=f1e180] [cursor=pointer]
+                    - generic [ref=f1e183]:
+                      - generic [ref=f1e184]:
+                        - button "CR" [ref=f1e185] [cursor=pointer]
+                        - button "241" [ref=f1e187] [cursor=pointer]
+                        - button "Toate" [ref=f1e188] [cursor=pointer]
+                      - generic [ref=f1e189]:
+                        - button "FAF" [ref=f1e190] [cursor=pointer]
+                        - generic [ref=f1e191]:
+                          - button "241" [ref=f1e192] [cursor=pointer]
+                          - button "242" [ref=f1e193] [cursor=pointer]
+                        - button "Toate" [ref=f1e194] [cursor=pointer]
+                      - generic [ref=f1e195]:
+                        - button "FAF-241D" [ref=f1e196] [cursor=pointer]
+                        - button "FAF-241D" [ref=f1e198] [cursor=pointer]
+                        - button "Toate" [ref=f1e199] [cursor=pointer]
+                  - generic [ref=f1e200]:
+                    - generic [ref=f1e201]:
+                      - button "Anul 3 1" [expanded] [ref=f1e202] [cursor=pointer]:
+                        - generic [aria-hidden] [ref=f1e203]: ›
+                        - strong [ref=f1e204]: Anul 3
+                        - generic [ref=f1e205]: "1"
+                      - button "Tot anul" [ref=f1e206] [cursor=pointer]
+                    - generic [ref=f1e210]:
+                      - button "FAF" [ref=f1e211] [cursor=pointer]
+                      - button "231" [ref=f1e213] [cursor=pointer]
+                      - button "Toate" [ref=f1e214] [cursor=pointer]
+                  - generic [ref=f1e215]:
+                    - generic [ref=f1e216]:
+                      - button "Anul 4 1" [expanded] [ref=f1e217] [cursor=pointer]:
+                        - generic [aria-hidden] [ref=f1e218]: ›
+                        - strong [ref=f1e219]: Anul 4
+                        - generic [ref=f1e220]: "1"
+                      - button "Tot anul" [ref=f1e221] [cursor=pointer]
+                    - generic [ref=f1e225]:
+                      - button "FAF" [ref=f1e226] [cursor=pointer]
+                      - button "221" [ref=f1e228] [cursor=pointer]
+                      - button "Toate" [ref=f1e229] [cursor=pointer]
+                - generic [ref=f1e230]: Poți regenera un singur an fără să atingi celelalte.
+              - generic [ref=f1e232]:
+                - generic [ref=f1e233]: Număr de variante
+                - button "Număr de variante" [ref=f1e234] [cursor=pointer]:
+                  - generic [ref=f1e235]: "3"
+              - generic [ref=f1e236]:
+                - generic [ref=f1e237]: Efort de optimizare
+                - group [ref=f1e238]:
+                  - button "Efort de optimizare Normal Amănunțit" [ref=f1e239] [cursor=pointer]: Rapid
+                  - button "Normal" [pressed] [ref=f1e240] [cursor=pointer]
+                  - button "Amănunțit" [ref=f1e241] [cursor=pointer]
+              - button "Generează" [disabled] [ref=f1e243]
+          - generic [ref=f1e246]:
+            - generic [ref=f1e247]:
+              - heading "Reguli" [level=2] [ref=f1e249]
+              - generic [ref=f1e250]:
+                - paragraph [ref=f1e251]: Regulile obligatorii se respectă mereu. Cele de confort sunt preferințe pe care generatorul le echilibrează; dezactivează una ca să devină strictă.
+                - generic [ref=f1e252]:
+                  - strong [ref=f1e253]: Mereu respectate
+                  - generic [ref=f1e254]: Un profesor, o sală și o grupă nu pot fi în două locuri deodată.
+                  - generic [ref=f1e258]: Sala are capacitatea, tipul și echipamentul potrivite.
+                  - generic [ref=f1e262]: Profesorul este disponibil la ora aleasă.
+                  - generic [ref=f1e266]: Fiecare pereche necesară este plasată (una care nu încape apare ca lipsă).
+                  - generic [ref=f1e270]: Perechile blocate rămân la locul lor.
+                - generic [ref=f1e274]:
+                  - strong [ref=f1e275]: Reguli de confort
+                  - generic [ref=f1e276]:
+                    - generic [ref=f1e277]:
+                      - generic [ref=f1e278]: Permite ferestre între perechile studenților
+                      - generic [ref=f1e279]: Permis, dar evitat (pondere 12)
+                    - switch "Permite ferestre între perechile studenților" [checked] [ref=f1e280] [cursor=pointer]
+                  - generic [ref=f1e281]:
+                    - generic [ref=f1e282]:
+                      - generic [ref=f1e283]: Permite ferestre între perechile profesorilor
+                      - generic [ref=f1e284]: Permis, dar evitat (pondere 3)
+                    - switch "Permite ferestre între perechile profesorilor" [checked] [ref=f1e285] [cursor=pointer]
+                  - generic [ref=f1e286]:
+                    - generic [ref=f1e287]:
+                      - generic [ref=f1e288]: Permite zile cu mai puține perechi decât minimul
+                      - generic [ref=f1e289]: Permis, dar evitat (pondere 10)
+                    - switch "Permite zile cu mai puține perechi decât minimul" [checked] [ref=f1e290] [cursor=pointer]
+                  - generic [ref=f1e291]:
+                    - generic [ref=f1e292]:
+                      - generic [ref=f1e293]: Permite zile cu mai multe perechi decât maximul
+                      - generic [ref=f1e294]: Permis, dar evitat (pondere 5)
+                    - switch "Permite zile cu mai multe perechi decât maximul" [checked] [ref=f1e295] [cursor=pointer]
+                  - generic [ref=f1e296]:
+                    - generic [ref=f1e297]:
+                      - generic [ref=f1e298]: Permite disciplinele „prima/ultima pereche” la mijlocul zilei
+                      - generic [ref=f1e299]: Permis, dar evitat (pondere 8)
+                    - switch "Permite disciplinele „prima/ultima pereche” la mijlocul zilei" [checked] [ref=f1e300] [cursor=pointer]
+                  - paragraph [ref=f1e301]: "Se optimizează mereu și: perechile de la 08:00, săptămâna echilibrată, sălile și intervalele preferate, partea zilei a anului."
+            - generic [ref=f1e302]:
+              - heading "Verificarea datelor" [level=2] [ref=f1e304]
+              - generic [ref=f1e306]:
+                - generic [ref=f1e307]: "CR-241 · POO (Laborator): planul cere 0.5, atribuite 1"
+                - generic [ref=f1e310]: "FAF-241 · POO (Laborator): planul cere 0.5, atribuite 1"
+                - generic [ref=f1e313]: "FAF-241D · POO (Laborator): planul cere 0.5, atribuite 1"
+                - generic [ref=f1e316]: "FAF-242 · POO (Laborator): planul cere 0.5, atribuite 1"
+                - generic [ref=f1e319]: "FAF-251 · AC (Curs): planul cere 0.5, atribuite 1"
+                - generic [ref=f1e322]: "FAF-251/1 · AC (Laborator): planul cere 0.5, atribuite 1"
+                - generic [ref=f1e325]: "FAF-251/2 · AC (Laborator): planul cere 0.5, atribuite 1"
+                - generic [ref=f1e328]: "FAF-251 · MD (Seminar): planul cere 0.5, atribuite 1"
+                - generic [ref=f1e331]: "FAF-252 · AC (Curs): planul cere 0.5, atribuite 1"
+                - generic [ref=f1e334]: "FAF-252 · AC (Laborator): planul cere 0.5, atribuite 1"
+                - generic [ref=f1e337]: "+7"
+  - status

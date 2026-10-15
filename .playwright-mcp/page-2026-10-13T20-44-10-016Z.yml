@@ -1,0 +1,125 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - link "EduSchedule" [ref=e6] [cursor=pointer]:
+          - /url: "#top"
+          - img "EduSchedule" [ref=e7]
+        - navigation [ref=e24]:
+          - link "Cum funcționează" [ref=e25] [cursor=pointer]:
+            - /url: "#how"
+          - link "Funcții" [ref=e26] [cursor=pointer]:
+            - /url: "#features"
+        - generic [ref=e27]:
+          - group "Limba" [ref=e28]:
+            - button "RO" [pressed] [ref=e29] [cursor=pointer]
+            - button "RU" [ref=e30] [cursor=pointer]
+            - button "EN" [ref=e31] [cursor=pointer]
+          - link "Administrare" [ref=e32] [cursor=pointer]:
+            - /url: /login
+          - link "Vezi orarul" [ref=e33] [cursor=pointer]:
+            - /url: /studenti
+    - main [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - heading "Orarul universității, construit automat." [level=1] [ref=e37]
+          - paragraph [ref=e38]: EduSchedule construiește orarul pentru grupe, torente și subgrupe, ține cont de săptămânile pare și impare și îți propune mai multe variante. Tu alegi una, o ajustezi și o publici.
+        - generic [ref=e39]:
+          - generic [ref=e40]: FAF-251 · Orarul meu
+          - paragraph [ref=e48]: Orarul grupei FAF-251, generat chiar acum în browser
+      - heading "EduSchedule te ajută să le gestionezi pe toate" [level=2] [ref=e51]:
+        - generic [aria-hidden] [ref=e52]:
+          - text: EduSchedule te ajută să le
+          - generic [ref=e53]:
+            - generic [ref=e54]: g
+            - generic [ref=e55]: e
+            - generic [ref=e56]: s
+            - generic [ref=e57]: t
+            - generic [ref=e58]: i
+            - generic [ref=e59]: o
+            - generic [ref=e60]: "n"
+            - generic [ref=e61]: e
+            - generic [ref=e62]: z
+            - generic [ref=e63]: i
+          - text: pe toate
+      - generic [ref=e64]:
+        - heading "Trei pași, de la date la orar publicat." [level=2] [ref=e66]
+        - generic [ref=e67]:
+          - article [ref=e69]:
+            - generic [ref=e70]:
+              - generic [ref=e71]: "01"
+              - generic [ref=e72]:
+                - heading "Configurezi" [level=3] [ref=e73]
+                - paragraph [ref=e74]: Profesori, săli, grupe, torente și planul de studii. Fiecare câmp are o valoare implicită, așa că completezi doar ce diferă.
+          - article [ref=e78]:
+            - generic [ref=e79]:
+              - generic [ref=e80]: "02"
+              - generic [ref=e81]:
+                - heading "Generezi" [level=3] [ref=e82]
+                - paragraph [ref=e83]: EduSchedule creează mai multe variante care respectă toate regulile obligatorii și le compară după cât de comode sunt.
+          - article [ref=e87]:
+            - generic [ref=e88]:
+              - generic [ref=e89]: "03"
+              - generic [ref=e90]:
+                - heading "Publici" [level=3] [ref=e91]
+                - paragraph [ref=e92]: Ajustezi manual ce vrei, apoi publici. Profesorii și studenții văd orarul imediat și primesc notificări la fiecare schimbare.
+      - paragraph [ref=e97]:
+        - generic [ref=e98]: Un
+        - generic [ref=e99]: orar
+        - generic [ref=e100]: nu
+        - generic [ref=e101]: e
+        - generic [ref=e102]: greu
+        - generic [ref=e103]: din
+        - generic [ref=e104]: cauza
+        - generic [ref=e105]: orelor,
+        - generic [ref=e106]: ci
+        - generic [ref=e107]: din
+        - generic [ref=e108]: cauza
+        - generic [ref=e109]: "conflictelor:"
+        - generic [ref=e110]: o
+        - generic [ref=e111]: mutare
+        - generic [ref=e112]: mică
+        - generic [ref=e113]: strică
+        - generic [ref=e114]: trei
+        - generic [ref=e115]: grupe.
+        - generic [ref=e116]: EduSchedule
+        - generic [ref=e117]: le
+        - generic [ref=e118]: vede
+        - generic [ref=e119]: pe
+        - generic [ref=e120]: toate
+        - generic [ref=e121]: înaintea
+        - generic [ref=e122]: ta.
+      - generic [ref=e124]:
+        - heading "Făcut pentru cum lucrează o facultate." [level=2] [ref=e125]
+        - paragraph [ref=e126]: "Un orar gândit pentru universitate: grupe academice, torente și laboratoare."
+        - generic [ref=e127]:
+          - article [ref=e128]:
+            - generic [ref=e132]:
+              - heading "Grupe, torente, subgrupe" [level=3] [ref=e133]
+              - paragraph [ref=e134]: Cursuri comune pentru mai multe grupe, seminare pe grupe și laboratoare pe subgrupe, în același orar.
+          - article [ref=e135]:
+            - generic [ref=e139]:
+              - heading "Săptămâni pare și impare" [level=3] [ref=e140]
+              - paragraph [ref=e141]: O singură întrebare în configurare. Perechile la două săptămâni nu mai trebuie introduse de două ori.
+          - article [ref=e142]:
+            - generic [ref=e146]:
+              - heading "Mai multe variante" [level=3] [ref=e147]
+              - paragraph [ref=e148]: "Compari variantele una lângă alta: ferestre, perechi la 08:00, zile încărcate. Decizia rămâne a ta."
+          - article [ref=e149]:
+            - generic [ref=e153]:
+              - heading "Conflicte detectate pe loc" [level=3] [ref=e154]
+              - paragraph [ref=e155]: "Profesor, sală sau grupă ocupate de două ori, sală prea mică sau fără echipament: le vezi înainte de publicare."
+          - article [ref=e156]:
+            - generic [ref=e160]:
+              - heading "Editare prin tragere" [level=3] [ref=e161]
+              - paragraph [ref=e162]: Muți o pereche cu mouse-ul și vezi imediat dacă locul e liber. Perechile fixate nu se mută la regenerare.
+          - article [ref=e163]:
+            - generic [ref=e167]:
+              - heading "Import și export" [level=3] [ref=e168]
+              - paragraph [ref=e169]: Încarci planul de studii din CSV, exporți orarul în CSV, îl printezi sau îl adaugi în calendarul telefonului.
+    - contentinfo [ref=e170]:
+      - generic [ref=e171]:
+        - img "EduSchedule" [ref=e172]
+        - generic [ref=e189]: Proiect de practică, Universitatea Tehnică a Moldovei
+        - generic [ref=e190]: Echipa 1 · FAF-251 · 2026
+  - status
