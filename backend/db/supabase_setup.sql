@@ -480,6 +480,19 @@ create table room_preferred_group (
   primary key (room_id, group_id)
 );
 
+-- subjects and groups whose classes must be held in the room ("obligatoriu"): a hard rule for the generator
+create table room_required_subject (
+  room_id    bigint not null references room (id) on delete cascade,
+  subject_id bigint not null references subject (id) on delete cascade,
+  primary key (room_id, subject_id)
+);
+
+create table room_required_group (
+  room_id  bigint not null references room (id) on delete cascade,
+  group_id bigint not null references student_group (id) on delete cascade,
+  primary key (room_id, group_id)
+);
+
 -- teaching load: who teaches which activity of a subject to which audience
 create table assignment (
   id                bigint generated always as identity primary key,
@@ -802,7 +815,7 @@ insert into cluster (kind, study_form) select 'form', f from unnest(enum_range(n
 
 commit;
 
--- Result: should show 48 tables, 78 foreign keys, 48 with row level security, 14 faculties, 7 time slots.
+-- Result: should show 50 tables, 82 foreign keys, 50 with row level security, 14 faculties, 7 time slots.
 select
   (select count(*) from pg_tables where schemaname = 'public')                                   as tables,
   (select count(*) from pg_constraint c join pg_namespace n on n.oid = c.connamespace

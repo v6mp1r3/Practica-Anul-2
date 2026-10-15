@@ -374,3 +374,26 @@ def test_no_group_has_a_day_with_a_single_pair():
         r = generate_timetable(ds, ["g1", "g2", "g3"], seed=seed, seconds=4, workers=2)
         assert r.score["breakdown"]["thinDays"] == 0, seed
         assert r.missing == 0 and find_hard_conflicts(ds, r.lessons) == []
+
+
+def test_mandatory_rooms_are_kept_by_the_model_the_heuristic_and_the_validator():
+    """A subject or a group with a mandatory room has its classes there and nowhere else, whatever the room's type."""
+    ds = tiny()
+    ds["rooms"][3]["requiredSubjectIds"] = ["am"]  # every class of AM in r4 (30 seats) ...
+    ds["rooms"][0]["requiredSubjectIds"] = ["am"]  # ... or r1 (60 seats), the only one the stream lecture of 48 fits in
+    ds["rooms"][1]["requiredGroupIds"] = ["g3"]  # all of g3's classes in r2
+    idx = DatasetIndex(ds)
+    res = solve_weekly(ds, idx, need_of(ds), [], 3, seed=1, workers=4)
+    assert not res.missing
+    lessons = lessons_of(res.placements)
+    assert find_hard_conflicts(ds, lessons) == []
+    room_of = lambda ids: {l["roomId"] for l in lessons if l["assignmentId"] in ids}
+    assert room_of({"a1", "a2", "a3"}) <= {"r1", "r4"} and room_of({"a6", "a7"}) == {"r2"}
+    assert room_of({"a8"}) != {"r2"}  # g2's sport is not g3's
+    # the heuristic too
+    built = construct(ds, idx, need_of(ds), [], random.Random(3))
+    required = lambda p: idx.required_room_ids(idx.assignments[p.assignmentId])
+    assert built and all(p.roomId in required(p) for p in built if required(p))
+    # a pair moved out of its mandatory room is a hard conflict
+    moved = [{**l, "roomId": "r4"} if l["assignmentId"] == "a6" else l for l in lessons]
+    assert "room-required" in {c["kind"] for c in find_hard_conflicts(ds, moved)}

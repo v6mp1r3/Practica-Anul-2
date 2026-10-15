@@ -62,6 +62,7 @@ in `db/migrations/` you have not run yet, in this order (by number):
 | `017_timetable_rescore.sql` | Re-scoring the timetables after a data change no longer changes their "Updated" date. **Needed.** |
 | `018_half_pairs.sql` | Teaching loads can have half pairs (0.5 = one pair every other week). **Needed.** |
 | `019_week_parity_availability.sql` | A teacher can be unavailable in odd or even weeks only. **Needed.** |
+| `020_room_required.sql` | Subjects and groups that must have their classes in a room. **Needed.** |
 
 The backend connects with the database password and bypasses row-level security; every table has RLS on with no
 policies, so Supabase's own public API can read nothing.

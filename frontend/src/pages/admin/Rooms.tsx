@@ -19,20 +19,54 @@ export default function Rooms() {
   const view = facultyView(dataset, index, scope, published?.lessons);
   const equipment = useEquipment();
 
-  // filters: block, floor, seats, equipment, "de dorit"
+  // filters: block, floor, seats, equipment, "de dorit" / "obligatoriu" (the subjects and groups linked to the room)
   const rooms = dataset.rooms.filter((x) => view.roomIds.has(x.id));
   const roomFilters = useRoomFilters(rooms);
   const [pref, setPref] = useState('');
-  const prefOf = (r: Room) => [
-    ...(r.preferredSubjectIds ?? []).map((id) => `s:${id}`),
-    ...(r.preferredGroupIds ?? []).map((id) => `g:${id}`),
-  ];
+  const subjectsOf = (r: Room) => [...(r.preferredSubjectIds ?? []), ...(r.requiredSubjectIds ?? [])];
+  const groupsOf = (r: Room) => [...(r.preferredGroupIds ?? []), ...(r.requiredGroupIds ?? [])];
+  const prefOf = (r: Room) => [...subjectsOf(r).map((id) => `s:${id}`), ...groupsOf(r).map((id) => `g:${id}`)];
   const shown = roomFilters.filtered.filter(
     (r) => !pref || (pref === 'any' ? prefOf(r).length > 0 : pref === 'none' ? prefOf(r).length === 0 : prefOf(r).includes(pref)),
   );
   const filtering = roomFilters.filtering || !!pref;
-  const usedSubjects = dataset.subjects.filter((s) => rooms.some((r) => r.preferredSubjectIds?.includes(s.id)));
-  const usedGroups = dataset.groups.filter((g) => rooms.some((r) => r.preferredGroupIds?.includes(g.id)));
+  const usedSubjects = dataset.subjects.filter((s) => rooms.some((r) => subjectsOf(r).includes(s.id)));
+  const usedGroups = dataset.groups.filter((g) => rooms.some((r) => groupsOf(r).includes(g.id)));
+  const namesOf = (subjectIds: string[] = [], groupIds: string[] = []) =>
+    [
+      ...subjectIds.map((id) => dataset.subjects.find((s) => s.id === id)?.code),
+      ...groupIds.map((id) => dataset.groups.find((g) => g.id === id)?.name),
+    ]
+      .filter(Boolean)
+      .join(', ') || '—';
+  // the subjects and groups a room is linked to, preferred or mandatory: the same pickers for both
+  const linked = (d: Omit<Room, 'id'>, set: (patch: Partial<Room>) => void, kind: 'preferred' | 'required') => (
+    <div>
+      <h3>{t(`rooms.${kind}`)}</h3>
+      <p className="small muted" style={{ margin: '2px 0 10px' }}>
+        {t(`rooms.${kind}Hint`)}
+      </p>
+      <Field label={t('rooms.preferredSubjects')} hint={t('rooms.preferredSubjectsHint')}>
+        <MultiSelect
+          value={d[`${kind}SubjectIds`] ?? []}
+          onChange={(ids) => set({ [`${kind}SubjectIds`]: ids })}
+          options={dataset.subjects
+            .filter((sub) => !d.faculty || !sub.faculty || sub.faculty === d.faculty)
+            .map((sub) => ({ value: sub.id, label: `${sub.code} — ${sub.name}`, short: sub.code }))}
+          placeholder={t('rooms.pickSubjects')}
+          aria-label={`${t(`rooms.${kind}`)}: ${t('rooms.preferredSubjects')}`}
+        />
+      </Field>
+      <div style={{ height: 12 }} />
+      <Field label={t('rooms.preferredGroups')}>
+        <GroupPicker
+          groups={dataset.groups.filter((g) => !d.faculty || !g.faculty || g.faculty === d.faculty)}
+          value={d[`${kind}GroupIds`] ?? []}
+          onChange={(ids) => set({ [`${kind}GroupIds`]: ids })}
+        />
+      </Field>
+    </div>
+  );
 
   return (
     <CrudPage
@@ -100,13 +134,11 @@ export default function Rooms() {
         { label: t('rooms.equipment'), render: (x) => <span className="small muted">{equipment.list(x.equipment) || '—'}</span> },
         {
           label: t('rooms.preferredCount'),
-          render: (x) => {
-            const names = [
-              ...(x.preferredSubjectIds ?? []).map((id) => dataset.subjects.find((s) => s.id === id)?.code),
-              ...(x.preferredGroupIds ?? []).map((id) => dataset.groups.find((g) => g.id === id)?.name),
-            ].filter(Boolean);
-            return <span className="small muted">{names.join(', ') || '—'}</span>;
-          },
+          render: (x) => <span className="small muted">{namesOf(x.preferredSubjectIds, x.preferredGroupIds)}</span>,
+        },
+        {
+          label: t('rooms.requiredCount'),
+          render: (x) => <span className="small">{namesOf(x.requiredSubjectIds, x.requiredGroupIds)}</span>,
         },
       ]}
       newItem={(): Omit<Room, 'id'> => ({
@@ -150,31 +182,8 @@ export default function Rooms() {
               aria-label={t('rooms.equipment')}
             />
           </Field>
-          <div>
-            <h3>{t('rooms.preferred')}</h3>
-            <p className="small muted" style={{ margin: '2px 0 10px' }}>
-              {t('rooms.preferredHint')}
-            </p>
-            <Field label={t('rooms.preferredSubjects')} hint={t('rooms.preferredSubjectsHint')}>
-              <MultiSelect
-                value={d.preferredSubjectIds ?? []}
-                onChange={(ids) => set({ preferredSubjectIds: ids })}
-                options={dataset.subjects
-                  .filter((sub) => !d.faculty || !sub.faculty || sub.faculty === d.faculty)
-                  .map((sub) => ({ value: sub.id, label: `${sub.code} — ${sub.name}`, short: sub.code }))}
-                placeholder={t('rooms.pickSubjects')}
-                aria-label={t('rooms.preferredSubjects')}
-              />
-            </Field>
-            <div style={{ height: 12 }} />
-            <Field label={t('rooms.preferredGroups')}>
-              <GroupPicker
-                groups={dataset.groups.filter((g) => !d.faculty || !g.faculty || g.faculty === d.faculty)}
-                value={d.preferredGroupIds ?? []}
-                onChange={(ids) => set({ preferredGroupIds: ids })}
-              />
-            </Field>
-          </div>
+          {linked(d, set, 'preferred')}
+          {linked(d, set, 'required')}
         </div>
       )}
     />
