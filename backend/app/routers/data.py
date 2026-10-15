@@ -9,7 +9,8 @@ from .. import repo
 from ..dataset import read_dataset
 from ..deps import CurrentUser, current_user, get_conn, require_admin
 from ..errors import ApiError
-from ..settings_io import save_settings
+from ..settings_io import current_semester, save_settings
+from ..scope import keeps_others, require_mine
 from ..services.notify import notify
 from ..util import pid
 
@@ -25,6 +26,9 @@ def get_dataset():
 
 @router.put("/settings")
 def put_settings(data: dict = Body(...), _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    # a new semester starts for every faculty at once: on the server (python -m app.cli new-semester), not here
+    if data.get("semester") and data["semester"] != current_semester(conn).label:
+        raise ApiError(403, "The semester is changed on the server: python -m app.cli new-semester")
     result = save_settings(conn, data)
     conn.commit()
     return result
@@ -101,9 +105,17 @@ def _save_group(conn, user, data, rid):
     return repo.save_group(conn, data, user.faculty_id, rid)
 
 
+def _stream_groups(conn: Connection, stream_id: int) -> list[int]:
+    return list(conn.execute(text("select group_id from stream_group where stream_id = :s"), {"s": stream_id}).scalars())
+
+
 def _save_stream(conn, user, data, rid):
-    if rid is not None:
+    if rid is None:
+        require_mine(conn, user, data.get("groupIds") or [])
+    else:
         _check_stream(conn, user, rid)
+        # a stream shared with another faculty keeps that faculty's groups
+        keeps_others(conn, user, _stream_groups(conn, rid), data.get("groupIds") or [])
     return repo.save_stream(conn, data, user.faculty_id, rid)
 
 
@@ -180,22 +192,34 @@ def _cluster(conn: Connection, cid: int) -> dict:
     return next(c for c in repo.load_clusters(conn) if c["id"] == str(cid))
 
 
+def _own_cluster(conn: Connection, user: CurrentUser, cid: int) -> None:
+    """A custom cluster belongs to the faculty of its groups: only that faculty's administrator changes it."""
+    if conn.execute(text("select kind::text from cluster where id = :c"), {"c": cid}).scalar() != "custom":
+        return  # the others follow the groups; the update itself says so
+    groups = conn.execute(text("select group_id from cluster_group where cluster_id = :c"), {"c": cid}).scalars().all()
+    require_mine(conn, user, groups, "This cluster has another faculty's groups")
+
+
 @router.post("/clusters", status_code=201)
-def create_cluster(data: dict = Body(...), _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+def create_cluster(data: dict = Body(...), user: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    require_mine(conn, user, data.get("groupIds") or [])
     cid = repo.save_custom_cluster(conn, data)
     conn.commit()
     return _cluster(conn, cid)
 
 
 @router.put("/clusters/{cluster_id}")
-def update_cluster(cluster_id: str, data: dict = Body(...), _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+def update_cluster(cluster_id: str, data: dict = Body(...), user: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    _own_cluster(conn, user, pid(cluster_id))
+    require_mine(conn, user, data.get("groupIds") or [])
     cid = repo.save_custom_cluster(conn, data, pid(cluster_id))
     conn.commit()
     return _cluster(conn, cid)
 
 
 @router.delete("/clusters/{cluster_id}", status_code=204)
-def delete_cluster(cluster_id: str, _: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+def delete_cluster(cluster_id: str, user: CurrentUser = Depends(require_admin), conn: Connection = Depends(get_conn)):
+    _own_cluster(conn, user, pid(cluster_id))
     repo.delete_custom_cluster(conn, pid(cluster_id))
     conn.commit()
     return Response(status_code=204)

@@ -139,11 +139,14 @@ export default function Generate() {
   const ev = evaluationOf(dataset);
 
   useEffect(() => {
-    api.listTimetables().then((list) => {
-      setDrafts(list.filter((x) => x.status !== 'variant' && x.lessons.some((l) => l.locked)));
-      setExamples(list.filter((x) => x.status !== 'variant' && x.lessons.length > 0));
-      setResult(list.filter((x) => x.status === 'variant'));
-    });
+    api
+      .listTimetables()
+      .then((list) => {
+        setDrafts(list.filter((x) => x.status !== 'variant' && x.lessons.some((l) => l.locked)));
+        setExamples(list.filter((x) => x.status !== 'variant' && x.lessons.length > 0));
+        setResult(list.filter((x) => x.status === 'variant'));
+      })
+      .catch(() => toast(t('common.error'), 'error'));
   }, []);
 
   const issues = useMemo(() => precheck(dataset, index), [dataset, index]);
@@ -191,9 +194,13 @@ export default function Generate() {
   }
 
   async function keep(v: Timetable) {
-    const saved = await api.saveTimetable({ ...v, status: 'draft' });
-    toast(t('generate.kept', { name: saved.name }));
-    navigate(`/admin/timetables/${saved.id}`);
+    try {
+      const saved = await api.saveTimetable({ ...v, status: 'draft' });
+      toast(t('generate.kept', { name: saved.name }));
+      navigate(`/admin/timetables/${saved.id}`);
+    } catch {
+      toast(t('common.error'), 'error');
+    }
   }
 
   return (

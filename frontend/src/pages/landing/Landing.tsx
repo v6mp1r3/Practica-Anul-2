@@ -16,9 +16,6 @@ import { useI18n } from '../../i18n';
 import { useAuth } from '../../state/auth';
 import { homeFor } from '../Login';
 import { copy } from './copy';
-import { ScrollText } from './ScrollText';
-import { StackingCards } from './StackingCards';
-import { Statement } from './Statement';
 import './landing.css';
 
 const FEATURE_ICONS: IconName[] = ['layers', 'calendar', 'copy', 'alert', 'edit', 'upload'];
@@ -84,17 +81,14 @@ export default function Landing() {
           <a href="#top" aria-label="EduSchedule">
             <Logo height={24} />
           </a>
-          <nav className="lp-links">
-            <a href="#how">{c.nav.how}</a>
-            <a href="#features">{c.nav.features}</a>
-          </nav>
           <div className="lp-nav-actions">
             <LanguageSwitch />
             <Link to={adminLink} className="btn ghost lp-admin">
               {user ? c.nav.open : c.nav.login}
             </Link>
             <Link to="/studenti" className="btn primary">
-              {c.nav.schedule}
+              <span className="lp-full">{c.nav.schedule}</span>
+              <span className="lp-short">{c.nav.scheduleShort}</span>
             </Link>
           </div>
         </div>
@@ -111,12 +105,6 @@ export default function Landing() {
             <p className="lp-caption">{c.hero.preview}</p>
           </div>
         </section>
-
-        <Statement key={`statement-${lang}`} {...c.statement} />
-
-        <StackingCards title={c.how.title} cards={c.how.steps} />
-
-        <ScrollText key={`reveal-${lang}`} text={c.reveal} />
 
         <section id="features" className="lp-section lp-ash">
           <div className="lp-container">

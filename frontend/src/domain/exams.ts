@@ -3,7 +3,7 @@
 // between two exams of a group, a consultation the day before (or just before),
 // retakes in afternoon pairs after the session. Atestări 1 and 2 are held in
 // the subject's own classes in teaching weeks 7 and 14.
-import { parseDate, sessionDates, toDateString } from './changes';
+import { lessonsOnDate, parseDate, sessionDates, toDateString } from './changes';
 import { holidaysOf, semesterStartOf } from './holidays';
 import { teaches, type DatasetIndex } from './indexes';
 import type { Rng } from './rng';
@@ -329,12 +329,67 @@ function consultationFor(
 
 export type ExamProblem =
   | { kind: 'clash'; ids: [string, string]; what: 'teacher' | 'room' | 'group' }
+  /** An event at the same time as a class of that date (the teacher teaches, the room is taken, or the group has class). */
+  | { kind: 'class'; ids: [string]; lessonId: string; what: 'teacher' | 'room' | 'group' }
   | { kind: 'gap'; groupId: string; ids: [string, string]; days: number };
 
-/** Clashes between events, and exams of a group closer than the minimum gap. */
-export function findExamProblems(ds: Dataset, events: ExamEvent[]): ExamProblem[] {
+/** The other events one event clashes with: same teacher, room or students at an overlapping time. */
+export function eventClashes(e: ExamEvent, events: ExamEvent[]): { other: ExamEvent; what: 'teacher' | 'room' | 'group' }[] {
+  const out: { other: ExamEvent; what: 'teacher' | 'room' | 'group' }[] = [];
+  for (const x of events) {
+    if (x.id === e.id || !overlaps(e, x) || (e.lessonId && e.lessonId === x.lessonId)) continue;
+    const what = e.teacherId === x.teacherId ? 'teacher' : e.roomId === x.roomId ? 'room' : sameStudents(e, x) ? 'group' : null;
+    if (what) out.push({ other: x, what });
+  }
+  return out;
+}
+
+/**
+ * The classes an event would clash with on its date: the teacher teaching, the room taken, or the
+ * group having class then. Its own class (an atestare held in it) doesn't count.
+ */
+export function classClashes(
+  ds: Dataset,
+  idx: DatasetIndex,
+  e: ExamEvent,
+  lessons: Lesson[],
+  /** The classes of e.date, when already worked out (many events on one day). */
+  onDate = lessonsOnDate(ds, lessons, e.date, idx),
+): { lesson: Lesson; what: 'teacher' | 'room' | 'group' }[] {
+  const out: { lesson: Lesson; what: 'teacher' | 'room' | 'group' }[] = [];
+  for (const l of onDate) {
+    const slot = ds.settings.slots[l.slot];
+    if (!slot || l.id === e.lessonId || !overlaps(e, { date: e.date, start: slot.start, end: slot.end })) continue;
+    const a = idx.assignmentOf(l);
+    if (!a) continue;
+    const what =
+      a.teacherId === e.teacherId
+        ? 'teacher'
+        : l.roomId === e.roomId
+          ? 'room'
+          : idx.cohorts(a.audience).some((c) => c.groupId === e.groupId && !(c.subgroup && e.subgroup && c.subgroup !== e.subgroup))
+            ? 'group'
+            : null;
+    if (what) out.push({ lesson: l, what });
+  }
+  return out;
+}
+
+/**
+ * Clashes between events, exams of a group closer than the minimum gap, and — when the classes are
+ * given (atestări, held during the semester) — events at the same time as a class.
+ */
+export function findExamProblems(ds: Dataset, events: ExamEvent[], lessons: Lesson[] = [], idx?: DatasetIndex): ExamProblem[] {
   const ev = evaluationOf(ds);
   const out: ExamProblem[] = [];
+  if (lessons.length && idx) {
+    const days = new Map<string, Lesson[]>();
+    for (const e of events) {
+      if (!days.has(e.date)) days.set(e.date, lessonsOnDate(ds, lessons, e.date, idx));
+      for (const c of classClashes(ds, idx, e, lessons, days.get(e.date)))
+        out.push({ kind: 'class', ids: [e.id], lessonId: c.lesson.id, what: c.what });
+    }
+  }
   for (let i = 0; i < events.length; i++) {
     for (let j = i + 1; j < events.length; j++) {
       const a = events[i];

@@ -104,3 +104,23 @@ def test_read_state_is_per_user(client, admin, other_admin):
     first = client.get("/api/notifications", headers=admin).json()[0]["id"]
     client.post("/api/notifications/read", json={"ids": [first]}, headers=admin)
     assert client.get("/api/notifications", headers=other_admin).json()[0]["read"] is False
+
+
+def test_students_see_every_change_and_teachers_only_theirs(client, admin):
+    w = published_world(client, admin)
+    assert client.post("/api/changes", json=change(w), headers=admin).status_code == 201  # g1's pair (t1)
+    # a teacher account for t2 (who teaches g2, not g1) and one for t1
+    for name, tid in (("t2", w.t2["id"]), ("t1", w.t1["id"])):
+        client.post("/api/users", json={"username": name, "role": "teacher", "teacherId": tid, "password": "teacher-pass-1"}, headers=admin)
+    token = lambda u: {"Authorization": "Bearer " + client.post("/api/auth/login", json={"username": u, "password": "teacher-pass-1"}).json()["token"]}
+    # t1 sets their availability: the administration is told, nobody else
+    client.put(f"/api/teachers/{w.t1['id']}/availability", json={"unavailable": [], "preferred": []}, headers=token("t1"))
+    # without an account: every group's change, nothing of the administration's own
+    public = client.get("/api/notifications/public").json()
+    kinds = [n["kind"] for n in public]
+    assert "room-change" in kinds and "published" in kinds and "availability" not in kinds
+    assert all(n["read"] is False and "teacherIds" not in n for n in public)
+    # a teacher: only the change of their own pair
+    assert "room-change" in [n["kind"] for n in client.get("/api/notifications", headers=token("t1")).json()]
+    assert "room-change" not in [n["kind"] for n in client.get("/api/notifications", headers=token("t2")).json()]
+    assert "availability" not in [n["kind"] for n in client.get("/api/notifications", headers=token("t2")).json()]

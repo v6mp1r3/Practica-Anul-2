@@ -1,5 +1,7 @@
 import copy
 
+import pytest
+
 from .helpers import World, create, group
 
 
@@ -75,14 +77,22 @@ def test_master_calendar_follows_licenta(client, admin):
 
 
 def test_new_semester_becomes_current(client, db, admin):
+    # a faculty administrator can't start a new semester for everyone from Configurare
     s = copy.deepcopy(get_settings(client))
     s["semester"] = "Primăvara 2026/2027"
-    out = client.put("/api/settings", json=s, headers=admin).json()
-    assert out["semester"] == "Primăvara 2026/2027"
+    assert client.put("/api/settings", json=s, headers=admin).status_code == 403
+    # it is done on the server, keeping the settings
+    from app import cli
+
+    cli.new_semester("Primăvara 2026/2027")
     rows = db.execute("select label, season, is_current from semester order by id").fetchall()
     assert rows == [("Toamna 2026/2027", "autumn", False), ("Primăvara 2026/2027", "spring", True)]
-    s["semester"] = "nonsense"
-    assert client.put("/api/settings", json=s, headers=admin).status_code == 422
+    out = get_settings(client)
+    assert out["semester"] == "Primăvara 2026/2027" and out["workingDays"] == s["workingDays"]
+    with pytest.raises(SystemExit):
+        cli.new_semester("nonsense")
+    with pytest.raises(SystemExit):
+        cli.new_semester("Primăvara 2026/2027")  # already the current one
 
 
 def test_bad_settings_are_rejected(client, admin):

@@ -7,13 +7,14 @@ from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy import Connection, text
 
 from ..config import get_config
-from ..dataset import build_dataset
+from ..dataset import build_dataset, read_dataset
 from ..db import get_engine
 from ..deps import CurrentUser
 from ..domain.indexes import DatasetIndex, teacher_ids
 from ..domain.score import SOFT_WEIGHTS, score_timetable
 from ..domain.validator import find_hard_conflicts
 from ..errors import ApiError
+from ..scope import NOT_YOURS, keeps_others, my_group_ids, require_mine
 from ..settings_io import current_semester
 from ..solver.generate import scope_assignments
 from ..util import iso_date, iso_ts, maybe_pid, pid, sid
@@ -217,6 +218,10 @@ def save_timetable(conn: Connection, path_id: str, data: dict, user: CurrentUser
     status = data.get("status", "draft")
     group_ids = [pid(g) for g in data.get("groupIds") or []]
     if exists:
+        _only_own_changes(conn, user, tid, group_ids, data.get("lessons") or [])
+    else:
+        require_mine(conn, user, group_ids)
+    if exists:
         current = conn.execute(text("select status::text from timetable where id = :id"), {"id": tid}).scalar_one()
         new_status = current if current == "published" else ("draft" if status in ("variant", "published") else status)
         conn.execute(
@@ -235,10 +240,28 @@ def save_timetable(conn: Connection, path_id: str, data: dict, user: CurrentUser
     return load_timetable(conn, tid)
 
 
-def delete_timetable(conn: Connection, path_id: str) -> None:
+def _only_own_changes(conn: Connection, user: CurrentUser, tid: int, group_ids: list[int], lessons: list[dict]) -> None:
+    """An administrator changes only their faculty's part of a timetable: the other faculties' groups stay,
+    and so do the pairs that teach none of the administrator's groups (the published timetable has everyone's)."""
+    old = load_timetable(conn, tid)
+    keeps_others(conn, user, old["groupIds"], group_ids)
+    mine = {sid(g) for g in my_group_ids(conn, user)}
+    idx = DatasetIndex(read_dataset())
+    others = lambda ls: sorted(f"{_lesson_key(l)}|{l.get('date') or ''}" for l in ls if not (_groups_of(idx, str(l["assignmentId"])) & mine))
+    if others(old["lessons"]) != others(lessons):
+        raise ApiError(403, "Only your own faculty's pairs can be changed")
+
+
+def delete_timetable(conn: Connection, path_id: str, user: CurrentUser) -> None:
     tid = maybe_pid(path_id)
-    if tid is None or not conn.execute(text("delete from timetable where id = :id"), {"id": tid}).rowcount:
+    row = conn.execute(text("select status::text from timetable where id = :id"), {"id": tid}).first() if tid is not None else None
+    if not row:
         raise ApiError(404, "Not found")
+    # the published one has every faculty's pairs: each withdraws theirs with unpublish
+    if row[0] == "published":
+        raise ApiError(409, "The published timetable can't be deleted; unpublish it first")
+    require_mine(conn, user, load_timetable(conn, tid, with_lessons=False)["groupIds"])
+    conn.execute(text("delete from timetable where id = :id"), {"id": tid})
     conn.commit()
 
 
@@ -262,11 +285,14 @@ def _copy_lessons(conn: Connection, tid: int, lessons: list[dict]) -> None:
     _insert_lessons(conn, tid, [(pid(l["assignmentId"]), l["day"], l["slot"], pid(l["roomId"]), l["parity"], bool(l.get("locked")), l.get("date")) for l in lessons])
 
 
-def publish(conn: Connection, path_id: str) -> dict:
+def publish(conn: Connection, path_id: str, user: CurrentUser) -> dict:
     tid = maybe_pid(path_id)
     if tid is None:
         raise ApiError(404, "Not found")
     t = load_timetable(conn, tid)
+    # publishing replaces the published pairs of its groups: those must be the administrator's faculty's
+    if t["status"] != "published":
+        require_mine(conn, user, t["groupIds"], NOT_YOURS)
     prev_id = published_row(conn)
     prev = load_timetable(conn, prev_id) if prev_id else None
     ds = build_dataset(conn)

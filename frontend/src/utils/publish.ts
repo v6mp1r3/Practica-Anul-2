@@ -21,7 +21,8 @@ export async function publishSafely(id: string, onClash: (count: number) => void
     return await api.publishTimetable(id);
   } catch (e) {
     if (e instanceof ApiError && e.status === 409) {
-      onClash(Number(e.message) || 1);
+      // the server says "3 clash(es) with …", the demo just "3"
+      onClash(parseInt(e.message, 10) || 1);
       return null;
     }
     throw e;
