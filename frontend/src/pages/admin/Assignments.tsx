@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { api } from '../../api';
 import { CrudPage } from '../../components/CrudPage';
 import { needsSplit } from '../../domain/rooms';
+import { plannedPairs } from '../../domain/weeks';
 import { teacherIdsOf } from '../../domain/indexes';
 import { GroupPicker } from '../../components/GroupPicker';
 import { useClusterLabel } from '../../components/ClusterPicker';
@@ -144,7 +145,7 @@ export default function Assignments() {
         type: 'lecture',
         teacherId: dataset.teachers[0]?.id ?? '',
         audience: { kind: 'group', id: '' },
-        pairsPerWeek: 1,
+        pairsPerWeek: plannedPairs(cycleSubjects[0], 'lecture') ?? 1,
         roomType: 'lecture',
         equipment: [],
       })}
@@ -198,6 +199,11 @@ export default function Assignments() {
           .filter((c): c is NonNullable<typeof c> => !!c);
         // reduced attendance is counted per session, not per week (no odd/even weeks either)
         const reduced = index.isReduced(d);
+        // pairs a week come from the subject's plan for this kind of class (lecture, seminar or lab), and stay
+        // editable: two teachers sharing a class split them. A project has none in the plan: entered here.
+        const planned = plannedPairs(index.subjects.get(d.subjectId), d.type);
+        const fromPlan = (subjectId: string, type: ActivityType) =>
+          reduced ? {} : { pairsPerWeek: plannedPairs(index.subjects.get(subjectId), type) ?? d.pairsPerWeek };
         return (
           <div className="stack">
             <div className="form-grid">
@@ -209,7 +215,11 @@ export default function Assignments() {
                     // the groups chosen so far that the new subject is not for are dropped
                     const offered = groupsFor(e.target.value);
                     const kept = chosen.filter((id) => offered.some((g) => g.id === id));
-                    set({ subjectId: e.target.value, ...(d.audience.kind === 'subgroup' ? {} : { audience: audienceOf(kept) }) });
+                    set({
+                      subjectId: e.target.value,
+                      ...(d.audience.kind === 'subgroup' ? {} : { audience: audienceOf(kept) }),
+                      ...fromPlan(e.target.value, d.type),
+                    });
                   }}
                 >
                   {cycleSubjects.map((s) => (
@@ -231,6 +241,7 @@ export default function Assignments() {
                       // rooms have no fixed type: only a lab needs a laboratory, any other class an ordinary room
                       roomType: (type === 'project' ? 'seminar' : type) as RoomType,
                       equipment: type === 'lab' && !d.equipment.length ? ['calculatoare'] : d.equipment,
+                      ...fromPlan(d.subjectId, type),
                     });
                   }}
                 >
@@ -347,6 +358,18 @@ export default function Assignments() {
                     value={d.pairsPerWeek}
                     onChange={(e) => set({ pairsPerWeek: Number(e.target.value) || 0 })}
                   />
+                  {planned === undefined ? (
+                    <small className="hint">{t('assignments.pairsNoPlan', { type: t(`activity.${d.type}`).toLowerCase() })}</small>
+                  ) : (
+                    planned !== d.pairsPerWeek && (
+                      <div className="row wrap" style={{ marginTop: 4 }}>
+                        <small className="hint">{t('assignments.pairsPlan', { n: planned })}</small>
+                        <button type="button" className="btn ghost sm" onClick={() => set({ pairsPerWeek: planned })}>
+                          {t('assignments.pairsUsePlan')}
+                        </button>
+                      </div>
+                    )
+                  )}
                 </Field>
               )}
             </div>

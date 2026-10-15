@@ -470,6 +470,9 @@ export const ro = {
   'assignments.required': 'Alege disciplina, profesorul și studenții.',
   'assignments.pairsMin': 'Cel puțin o pereche pe săptămână.',
   'assignments.pairsHalf': 'Perechile pe săptămână merg din jumătate în jumătate: 0,5, 1, 1,5, 2…',
+  'assignments.pairsPlan': 'Planul disciplinei dă {n} pe săptămână.',
+  'assignments.pairsUsePlan': 'Folosește',
+  'assignments.pairsNoPlan': 'Disciplina nu are perechi de tip {type} în plan: introdu-le aici.',
   'assignments.pairsHint':
     '0,5 = o pereche la două săptămâni (pară sau impară). O pereche poate și alterna: în săptămânile impare la o oră, în cele pare la alta (alege săptămâna pe fiecare pereche din orar).',
 

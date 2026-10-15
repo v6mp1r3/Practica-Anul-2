@@ -469,6 +469,9 @@ export const en: Record<MessageKey, string> = {
   'assignments.required': 'Pick a subject, a teacher and the students.',
   'assignments.pairsMin': 'At least one pair per week.',
   'assignments.pairsHalf': 'Pairs per week go in halves: 0.5, 1, 1.5, 2…',
+  'assignments.pairsPlan': "The subject's plan gives {n} a week.",
+  'assignments.pairsUsePlan': 'Use it',
+  'assignments.pairsNoPlan': 'The subject has no {type} pairs in its plan: enter them here.',
   'assignments.pairsHint':
     '0.5 = one pair every other week (odd or even). A pair can also alternate: odd weeks at one time, even weeks at another (set the week on each pair in the timetable).',
 
