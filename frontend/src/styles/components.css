@@ -367,6 +367,9 @@ table.table {
   font-weight: 550;
   color: var(--text-2);
 }
+.segmented.wrap {
+  flex-wrap: wrap;
+}
 .segmented button[aria-pressed='true'] {
   background: var(--ink);
   color: #fff;
@@ -626,6 +629,9 @@ table.table {
   }
   .segmented::-webkit-scrollbar {
     display: none;
+  }
+  .segmented.wrap {
+    overflow: visible;
   }
   .card-header {
     flex-wrap: wrap;

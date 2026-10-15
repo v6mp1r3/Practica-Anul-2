@@ -16,7 +16,7 @@ import { fmtTime, parseSlotKey } from '../../domain/slots';
 import { filterLessons, streamChoices, streamGroups } from '../../domain/views';
 import { dateLocale, useI18n } from '../../i18n';
 import { useDataset } from '../../state/data';
-import { ExportDialog, downloadTimetable } from '../../components/ExportDialog';
+import { ExportDialog, downloadTimetable, groupsByYear } from '../../components/ExportDialog';
 import { Icon } from '../../components/Icon';
 
 type Kind = 'group' | 'teacher';
@@ -164,7 +164,7 @@ function Schedule({ kind }: { kind: Kind }) {
                 ]}
               />
             )}
-            {/* the one shown (to a calendar, or Excel), or every group of this cycle */}
+            {/* the one shown (to a calendar, or Excel), one year's groups or every group of this cycle */}
             {published && (
               <button className="btn" onClick={() => setExporting(true)}>
                 <Icon name="download" size={15} />
@@ -180,11 +180,17 @@ function Schedule({ kind }: { kind: Kind }) {
           viewName={lessons.length ? chosen?.name : undefined}
           defaultWhat="view"
           groupCount={groups.length}
+          years={groupsByYear(
+            index,
+            groups.map((g) => g.id),
+          )}
+          defaultYear={group?.year ?? (stream ? index.groups.get(stream.groupIds[0])?.year : undefined)}
           onClose={() => setExporting(false)}
-          onExport={(what, format) => {
+          onExport={(what, format, year) => {
             downloadTimetable({
               what,
               format,
+              year,
               index,
               settings: dataset.settings,
               viewName: chosen?.name,
