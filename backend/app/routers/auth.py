@@ -11,6 +11,9 @@ from ..security import check_new_password, create_token, hash_password, verify_p
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# a profile picture is a small data URL (the app shrinks it before sending)
+MAX_AVATAR = 512 * 1024
+
 
 class Login(BaseModel):
     username: str
@@ -64,12 +67,25 @@ def update_profile(data: dict = Body(...), user: CurrentUser = Depends(current_u
     name = (data.get("name") or "").strip()
     if not name:
         raise ApiError(422, "Name is required")
-    sets = {"name": name, "email": (data.get("email") or "").strip() or None, "phone": (data.get("phone") or "").strip() or None, "notif": bool(data.get("emailNotifications"))}
-    sql = "update app_user set name = :name, email = :email, phone = :phone, email_notifications = :notif"
+    # only what the body mentions changes (leaving out emailNotifications doesn't switch them off)
+    sets: dict = {"name": name}
+    sql = "update app_user set name = :name"
+    for key, col in (("email", "email"), ("phone", "phone")):
+        if key in data:
+            sets[col] = (data[key] or "").strip() or None
+            sql += f", {col} = :{col}"
+    if "emailNotifications" in data:
+        sets["notif"] = bool(data["emailNotifications"])
+        sql += ", email_notifications = :notif"
+    if len(data.get("avatar") or "") > MAX_AVATAR:
+        raise ApiError(413, "The picture is too large")
     if "avatar" in data:
         sets["avatar"] = data["avatar"] or None
         sql += ", avatar_url = :avatar"
-    if data.get("faculty") is not None and user.role == "admin":
+    # the faculty comes with the account (python -m app.cli create-admin --faculty); it can't be switched here
+    if data.get("faculty") and user.role == "admin" and data["faculty"] != user.faculty:
+        if user.faculty_id is not None:
+            raise ApiError(403, "Your faculty is set with your account and can't be changed")
         sets["fid"] = repo.faculty_id_by_name(conn, data["faculty"])
         sql += ", faculty_id = :fid"
     conn.execute(text(sql + " where id = :id"), {**sets, "id": user.id})

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { semesterOf } from '../../domain/holidays';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api } from '../../api';
+import { api, ApiError } from '../../api';
 import { ConflictList, conflictSubject } from '../../components/ConflictList';
 import { Icon } from '../../components/Icon';
 import { LessonPanel } from '../../components/LessonPanel';
@@ -161,18 +161,30 @@ export default function Editor() {
 
   async function save() {
     if (!tt) return;
-    const saved = await api.saveTimetable({ ...tt, lessons });
-    setTt(saved);
-    setDirty(false);
-    toast(t('common.saved'));
-    return saved;
+    try {
+      const saved = await api.saveTimetable({ ...tt, lessons });
+      setTt(saved);
+      setDirty(false);
+      toast(t('common.saved'));
+      return saved;
+    } catch (e) {
+      // e.g. a pair of another faculty's group was moved: nothing is saved, the edits stay on screen
+      toast(e instanceof ApiError && e.status === 403 ? t('timetables.notYours') : t('common.error'), 'error');
+      return undefined;
+    }
   }
 
   async function publish() {
     if (hard.length && !confirm(t('timetables.publishWithConflicts', { count: hard.length }))) return;
     const saved = dirty || tt?.status === 'variant' ? await save() : tt;
     if (!saved) return;
-    const done = await publishSafely(saved.id, (count) => toast(t('timetables.clashOnPublish', { count }), 'error'));
+    let done: Timetable | null;
+    try {
+      done = await publishSafely(saved.id, (count) => toast(t('timetables.clashOnPublish', { count }), 'error'));
+    } catch (e) {
+      toast(e instanceof ApiError && e.status === 403 ? t('timetables.notYours') : t('common.error'), 'error');
+      return;
+    }
     if (!done) return;
     setTt(done);
     await refresh();

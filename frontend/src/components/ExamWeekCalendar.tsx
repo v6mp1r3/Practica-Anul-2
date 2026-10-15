@@ -66,6 +66,7 @@ export function ExamWeekCalendar({
   vacations = [],
   onEdit,
   onMove,
+  checkDrop,
   empty,
 }: {
   entries: CalendarEntry[];
@@ -77,6 +78,8 @@ export function ExamWeekCalendar({
   onEdit?: (id: string) => void;
   /** Drag & drop: the card's new date and start time (same length). */
   onMove?: (id: string, date: string, start: string) => void;
+  /** While dragging: what the card would clash with there (shown on the drop outline), or null. */
+  checkDrop?: (id: string, date: string, start: string) => string | null;
   empty?: ReactNode;
 }) {
   const { t, lang } = useI18n();
@@ -202,17 +205,23 @@ export function ExamWeekCalendar({
                   <div key={h} className="xw-line" style={{ top: (h - from) * PX_PER_MIN }} />
                 ))}
                 {/* where the dragged card would land */}
-                {over?.date === date && dragged && (
-                  <div
-                    className="xw-ghost"
-                    style={{
-                      top: (toMin(over.start) - from) * PX_PER_MIN,
-                      height: (toMin(dragged.end) - toMin(dragged.start)) * PX_PER_MIN,
-                    }}
-                  >
-                    {fmtTime(over.start, settings.timeFormat)}
-                  </div>
-                )}
+                {over?.date === date &&
+                  dragged &&
+                  (() => {
+                    const clash = checkDrop?.(dragged.id, date, over.start) ?? null;
+                    return (
+                      <div
+                        className={`xw-ghost ${clash ? 'bad' : ''}`}
+                        style={{
+                          top: (toMin(over.start) - from) * PX_PER_MIN,
+                          height: (toMin(dragged.end) - toMin(dragged.start)) * PX_PER_MIN,
+                        }}
+                      >
+                        {fmtTime(over.start, settings.timeFormat)}
+                        {clash && <span className="xw-ghost-clash">{clash}</span>}
+                      </div>
+                    );
+                  })()}
                 {dayEntries.map((e) => {
                   const p = pos.get(e.id)!;
                   const subject = index.subjects.get(e.subjectId);

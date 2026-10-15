@@ -431,6 +431,8 @@ img.avatar {
 .user-chip.admin-login {
   gap: 11px;
   padding: 9px 12px;
+  /* centered, like the language switch under it */
+  justify-content: center;
 }
 .user-chip.admin-login > svg {
   margin-left: 0;

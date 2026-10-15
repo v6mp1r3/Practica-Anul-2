@@ -130,8 +130,11 @@ export function TimetableGrid({
     <div className="tt-scroll">
       <div className={`tt ${className}`} style={{ ['--days' as string]: days.length }}>
         <div className="tt-head" />
-        {days.map((d) => (
-          <div key={d} className={`tt-head ${d === today ? 'today' : ''} ${dayOff?.[d] ? 'holiday-col' : ''}`}>
+        {days.map((d, i) => (
+          <div
+            key={d}
+            className={`tt-head ${d === today ? 'today' : ''} ${dayOff?.[d] ? 'holiday-col' : ''} ${i === days.length - 1 ? 'last' : ''}`}
+          >
             {t(`day.${d}` as 'day.0')}
             {dayNote && <div className="small tt-head-note">{dayNote(d)}</div>}
             {dayOff?.[d] && <div className="small">{dayOff[d]}</div>}
@@ -150,7 +153,7 @@ export function TimetableGrid({
               return (
                 <div
                   key={key}
-                  className={`tt-cell ${dropState} ${cellClass?.(day, slot) ?? ''} ${onCellClick || selectable ? 'selectable' : ''} ${dayOff?.[day] ? 'day-off' : ''}`}
+                  className={`tt-cell ${dropState} ${cellClass?.(day, slot) ?? ''} ${onCellClick || selectable ? 'selectable' : ''} ${dayOff?.[day] ? 'day-off' : ''} ${day === days[days.length - 1] ? 'last' : ''}`}
                   onClick={onCellClick ? () => onCellClick(day, slot) : undefined}
                   onMouseDown={
                     onCellPress

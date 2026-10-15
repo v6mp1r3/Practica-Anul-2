@@ -27,21 +27,43 @@ The administration has accounts (`role: "admin"`), and so can teachers
 (`role: "teacher"`, tied to one teacher by `teacherId`): a teacher signs in only to
 set their own availability (`PUT /teachers/{id}/availability`, see Users). Students
 don't sign in: the reads they need are **public** (no token) —
-`GET /dataset`, `GET /timetables/published` and `GET /changes`. Everything else
-needs an admin token.
+`GET /dataset`, `GET /timetables/published`, `GET /changes`, `GET /exams` and
+`GET /notifications/public`.
 
-Every `admin` account belongs to one faculty (`User.faculty`); there is no
-administrator above the faculties and no accounts page in the app — accounts are
-created on the server. An admin sees and changes only their own faculty's groups,
-subjects, teachers and rooms; another faculty's teacher or room shows up
-(read-only) only when it teaches or hosts this faculty's classes. Generation,
-publishing and unpublishing are per faculty. Settings (`PUT /settings`) are shared.
-Every group has a `faculty`.
+A signed-in **teacher** can, besides the public reads: use `/auth/*` (their profile and
+password), read and mark their notifications (`/notifications`), set their own
+availability (`PUT /teachers/{their teacherId}/availability`, not the consultation hour),
+read the collections and clusters (`GET /{collection}`, `GET /clusters`), and open the
+published timetable by id. Everything else needs an admin token (`403` for a teacher).
+
+Every `admin` account belongs to one faculty (`User.faculty`), set when the account
+is created on the server; there is no administrator above the faculties. An admin
+sees and changes only their own faculty's groups, subjects, teachers and rooms;
+another faculty's teacher or room shows up (read-only) only when it teaches or
+hosts this faculty's classes. Generation, publishing and unpublishing are per
+faculty. Every group has a `faculty`.
+
+Writes that touch groups are limited to the admin's faculty (`403` otherwise):
+
+- a timetable is created with, published with, or deleted with only the admin's groups;
+  on an existing one (the published one has every faculty's) the admin changes only
+  their groups and the pairs teaching them — the other faculties' groups and pairs must
+  come back unchanged. The published timetable can't be deleted (`409`; unpublish it);
+- a stream is created with the admin's groups, and keeps another faculty's groups it
+  already has; a custom cluster holds only the admin's groups;
+- a schedule change is made or removed only on a pair teaching one of the admin's groups;
+- an exam plan holds only events of the admin's groups.
+
+A signed-in teacher reads only the published timetable (`GET /timetables/{id}` of a
+draft or variant is `404` for them).
 
 EduSchedule is for UTM only: `Settings.institutionName` is fixed and
-`Settings.faculties` is UTM's 14 faculties. An admin picks their own faculty in
-Configurare, which sends `faculty` in `PUT /auth/me` (it must be one of
-`Settings.faculties`).
+`Settings.faculties` is UTM's 14 faculties. The admin's faculty can't be changed
+with `PUT /auth/me` (`403` for another one). Settings (`PUT /settings`) are shared,
+but the semester can't be changed there (`403`): a new semester starts for every
+faculty at once, by itself — spring on the first day of the winter break, the next
+autumn on the first day of the summer break — or on the server
+(`python -m app.cli new-semester`).
 
 ## Auth
 
@@ -52,6 +74,9 @@ Configurare, which sends `faculty` in `PUT /auth/me` (it must be one of
 | POST   | `/auth/logout`   | —                        | `204`                                                                              |
 | PUT    | `/auth/me`       | `ProfileUpdate`          | `User`                                                                             |
 | POST   | `/auth/password` | `{ current, next }`      | `204` (`400` wrong current password, `422` shorter than 8 or longer than 72 bytes) |
+
+`PUT /auth/me` changes only the fields it is sent (e.g. leaving out `emailNotifications`
+keeps it as it was); `avatar` is a small data URL, at most 512 kB (`413` otherwise).
 
 Administrator accounts are created on the server with `python -m app.cli create-admin`
 (see `backend/README.md`); teacher accounts by an administrator (Users, below).
@@ -376,10 +401,17 @@ already busy at that slot on that date (`422`).
 
 ## Notifications
 
-| Method | Path                  | Role | Body / response                                    |
-| ------ | --------------------- | ---- | -------------------------------------------------- |
-| GET    | `/notifications`      | any  | notifications that concern the caller, with `read` |
-| POST   | `/notifications/read` | any  | `{ ids: string[] }` → `204`                        |
+| Method | Path                    | Role   | Body / response                                    |
+| ------ | ----------------------- | ------ | -------------------------------------------------- |
+| GET    | `/notifications`        | any    | notifications that concern the caller, with `read` |
+| POST   | `/notifications/read`   | any    | `{ ids: string[] }` → `204`                        |
+| GET    | `/notifications/public` | public | the newest 200 meant for everyone (`read: false`)  |
+
+Who gets what: **students** (no account) read `/notifications/public` — every change, for
+every group (a room or teacher change of any group, a timetable published, updated or
+withdrawn), but not the administration's own (e.g. `availability`); the browser keeps
+which ones were read. A **teacher** gets the general ones and only the targeted ones about
+their own pairs. An **administrator** gets all of them.
 
 ```json
 {

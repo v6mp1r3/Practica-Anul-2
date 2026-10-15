@@ -12,66 +12,6 @@ end $$;
 -- EduSchedule database schema
 -- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: see docs/DATABASE.md. 41 tables, every table linked to the others by foreign keys.
--- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
-
--- EduSchedule database schema
--- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: see docs/DATABASE.md. 43 tables, every table linked to the others by foreign keys.
--- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
-
--- EduSchedule database schema
--- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: see docs/DATABASE.md. 43 tables, every table linked to the others by foreign keys.
--- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
-
--- EduSchedule database schema
--- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: Database_Design.pdf (next to the internship report). 43 tables, every table linked to the others by foreign keys.
--- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
-
--- EduSchedule database schema
--- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: Database_Design.pdf (next to the internship report). 45 tables, every table linked to the others by foreign keys.
--- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
-
--- EduSchedule database schema
--- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: Database_Design.pdf (next to the internship report). 45 tables, every table linked to the others by foreign keys.
--- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
-
--- EduSchedule database schema
--- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: Database_Design.pdf (next to the internship report). 46 tables, every table linked to the others by foreign keys.
--- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
-
--- EduSchedule database schema
--- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: Database_Design.pdf (next to the internship report). 46 tables, every table linked to the others by foreign keys.
--- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
-
--- EduSchedule database schema
--- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: Database_Design.pdf (next to the internship report). 46 tables, every table linked to the others by foreign keys.
--- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
-
--- EduSchedule database schema
--- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
--- Design: Database_Design.pdf (next to the internship report). 46 tables, every table linked to the others by foreign keys.
--- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
-
--- EduSchedule database schema
--- PostgreSQL 14+ (works on Supabase). Run once on an empty database:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql
 -- Design: Database_Design.pdf (next to the internship report). 46 tables, every table linked to the others by foreign keys.
 -- Days are 0 (Monday) .. 6 (Sunday). slot_index points into time_slot.
 
@@ -301,6 +241,19 @@ create table teacher_exam_unavailability (
   part       text not null check (part in ('day', 'am', 'pm')),  -- am = before 13:00, pm = from 13:00
   primary key (teacher_id, date, part)
 );
+
+-- pairs a teacher can't hold on one particular date (set by the teacher or an administrator); the timetable stays as it is
+create table teacher_date_unavailability (
+  teacher_id bigint not null references teacher (id) on delete cascade,
+  date       date not null,
+  slot_index smallint not null references time_slot (slot_index),
+  primary key (teacher_id, date, slot_index)
+);
+
+-- a 'teacher' account belongs to one teacher (declared here: app_user comes before teacher)
+alter table app_user add column teacher_id bigint references teacher (id) on delete cascade;
+create unique index app_user_one_per_teacher on app_user (teacher_id) where teacher_id is not null;
+alter table app_user add constraint app_user_teacher_check check (role <> 'teacher' or teacher_id is not null);
 
 create table room (
   id         bigint generated always as identity primary key,
@@ -849,7 +802,7 @@ insert into cluster (kind, study_form) select 'form', f from unnest(enum_range(n
 
 commit;
 
--- Result: should show 47 tables, 75 foreign keys, 47 with row level security, 14 faculties, 7 time slots.
+-- Result: should show 48 tables, 78 foreign keys, 48 with row level security, 14 faculties, 7 time slots.
 select
   (select count(*) from pg_tables where schemaname = 'public')                                   as tables,
   (select count(*) from pg_constraint c join pg_namespace n on n.oid = c.connamespace

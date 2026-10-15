@@ -11,6 +11,8 @@ from starlette.concurrency import run_in_threadpool
 from . import errors
 from . import dataset  # noqa: F401  (registers the dataset with memo)
 from .memo import forget_all
+from .semester_clock import check_daily
+from starlette.concurrency import run_in_threadpool
 from .config import DEV_SECRET, get_config
 from .routers import auth, changes, data, exams, generation, notifications, timetables, users
 from .services.generation import mark_orphans
@@ -25,6 +27,7 @@ DATA_PATHS = {"settings", "teachers", "rooms", "groups", "streams", "subjects", 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     mark_orphans()
+    check_daily()  # e.g. the winter break began while the server was off
     try:
         forget_all()  # read the public data in the background, so the first visitor does not wait for it
     except Exception:
@@ -41,6 +44,12 @@ def create_app() -> FastAPI:
     # the dataset is ~400 KB of JSON, ~10x smaller compressed
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     errors.install(app)
+
+    @app.middleware("http")
+    async def follow_the_calendar(request: Request, call_next):
+        """The first request of a day checks whether the next semester is due (semester_clock.py)."""
+        await run_in_threadpool(check_daily)
+        return await call_next(request)
 
     @app.middleware("http")
     async def forget_cached_reads(request: Request, call_next):

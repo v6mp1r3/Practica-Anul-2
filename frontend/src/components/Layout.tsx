@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import type { Role } from '../domain/types';
 import { useI18n, type MessageKey } from '../i18n';
@@ -7,7 +7,7 @@ import { useData } from '../state/data';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './Logo';
 import { Avatar } from '../pages/shared/Account';
-import { LanguageSwitch } from './ui';
+import { LanguageSwitch, Loading } from './ui';
 
 interface NavItem {
   to: string;
@@ -90,7 +90,8 @@ export function Layout() {
       document.body.classList.remove('menu-open');
     };
   }, [open]);
-  const unread = user ? notifications.filter((n) => !n.read).length : 0;
+  // everyone gets notifications: the signed-in their own, students (no account) every group's changes
+  const unread = notifications.filter((n) => !n.read).length;
   const nav = (user && NAV[user.role]) || PUBLIC_NAV;
 
   return (
@@ -115,16 +116,12 @@ export function Layout() {
               ))}
             </div>
           ))}
-          {user && (
-            <>
-              <div className="nav-section" />
-              <NavLink to="/notifications">
-                <Icon name="bell" />
-                {t('nav.notifications')}
-                {unread > 0 && <span className="count">{unread}</span>}
-              </NavLink>
-            </>
-          )}
+          <div className="nav-section" />
+          <NavLink to="/notifications">
+            <Icon name="bell" />
+            {t('nav.notifications')}
+            {unread > 0 && <span className="count">{unread}</span>}
+          </NavLink>
         </nav>
         <div className="sidebar-footer">
           {user ? (
@@ -182,11 +179,20 @@ export function Layout() {
               </NavLink>
             </>
           ) : (
-            <LanguageSwitch />
+            <>
+              <NavLink to="/notifications" className="btn ghost icon topbar-bell" aria-label={t('nav.notifications')}>
+                <Icon name="bell" />
+                {unread > 0 && <span className="count">{unread}</span>}
+              </NavLink>
+              <LanguageSwitch />
+            </>
           )}
         </header>
         <div className="panel">
-          <Outlet />
+          {/* a page loading for the first time: the menu stays, only the page area waits */}
+          <Suspense fallback={<Loading />}>
+            <Outlet />
+          </Suspense>
         </div>
       </div>
     </div>

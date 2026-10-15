@@ -3,7 +3,7 @@ import { facultyGroupIds, useAdminScope } from '../../components/FacultyFilter';
 // "Modificări în orar": one-off changes for a given date — a pair moves to
 // another room, or a substitute teacher takes it. Saving notifies everyone.
 import { useMemo, useState } from 'react';
-import { api } from '../../api';
+import { api, ApiError } from '../../api';
 import { Icon } from '../../components/Icon';
 import { DateInput, Empty, Field, Modal, PageHeader, Segmented } from '../../components/ui';
 import { freeRoomsFor, freeTeachersFor, lessonsOnDate, parseDate, toDateString } from '../../domain/changes';
@@ -63,8 +63,12 @@ export default function Changes() {
 
   async function remove(c: ScheduleChange) {
     if (!confirm(t('common.confirmDelete', { name: `${fmtDate(c.date)} · ${what(c.assignmentId)}` }))) return;
-    await api.deleteChange(c.id);
-    await refresh();
+    try {
+      await api.deleteChange(c.id);
+      await refresh();
+    } catch (e) {
+      toast(e instanceof ApiError && e.status === 403 ? t('changes.notYours') : t('common.error'), 'error');
+    }
   }
 
   return (
@@ -171,6 +175,8 @@ function ChangeForm({
   const [target, setTarget] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  // why the server refused (the room or teacher got busy meanwhile, another faculty's pair, …)
+  const [error, setError] = useState('');
 
   const dayLessons = useMemo(() => {
     const scoped = facultyGroupIds(dataset, scope);
@@ -205,6 +211,19 @@ function ChangeForm({
         ...(note.trim() ? { note: note.trim() } : {}),
       });
       onSaved();
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : '';
+      setError(
+        e instanceof ApiError && e.status === 403
+          ? t('changes.notYours')
+          : /room is busy/i.test(msg)
+            ? t('changes.roomBusy')
+            : /teacher is busy/i.test(msg)
+              ? t('changes.teacherBusy')
+              : /does not take place|no published/i.test(msg)
+                ? t('changes.noPair')
+                : t('common.error'),
+      );
     } finally {
       setSaving(false);
     }
@@ -227,6 +246,11 @@ function ChangeForm({
       }
     >
       <div className="stack">
+        {error && (
+          <div className="badge danger" role="alert" style={{ whiteSpace: 'normal' }}>
+            {error}
+          </div>
+        )}
         <div className="form-grid">
           <Field label={t('changes.date')}>
             <DateInput

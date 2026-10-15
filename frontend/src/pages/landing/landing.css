@@ -31,20 +31,8 @@
 .lp-nav-inner > a:first-child {
   color: var(--text);
 }
-.lp-links {
-  display: flex;
-  gap: 28px;
-  margin: 0 auto;
-  font-size: 14px;
-}
-.lp-links a {
-  color: var(--text-2);
-  transition: color 0.15s;
-}
-.lp-links a:hover {
-  color: var(--text);
-}
 .lp-nav-actions {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -150,86 +138,6 @@
   }
 }
 
-/* Stacking cards — each card pins and the next slides over it */
-.lp-stack {
-  padding-top: clamp(72px, 9vw, 112px);
-}
-.lp-stack-intro {
-  text-align: center;
-}
-.lp-stack-intro .lp-h2 {
-  max-width: 22ch;
-  margin: 0 auto;
-}
-.lp-stack-slot {
-  position: sticky;
-  top: 60px; /* below the sticky nav */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: calc(100vh - 60px);
-  padding: 0 24px;
-}
-.lp-stack-card {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 100%;
-  max-width: 1040px;
-  min-height: 420px;
-  overflow: hidden;
-  border-radius: 32px;
-  color: #fff;
-  box-shadow: var(--shadow-lg);
-  transform-origin: top center;
-  will-change: transform;
-}
-.lp-stack-text {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 32px;
-  padding: clamp(32px, 4vw, 48px);
-}
-.lp-stack-num {
-  font-family: var(--font-display);
-  font-size: 48px;
-  font-weight: 600;
-  line-height: 1;
-  color: rgba(255, 255, 255, 0.35);
-}
-.lp-stack-text h3 {
-  font-size: clamp(28px, 3vw, 38px);
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-}
-.lp-stack-text p {
-  max-width: 420px;
-  margin-top: 16px;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 17px;
-  line-height: 1.6;
-}
-.lp-stack-media {
-  position: relative;
-  min-height: 260px;
-  overflow: hidden;
-}
-.lp-stack-media img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  mix-blend-mode: luminosity;
-  opacity: 0.9;
-}
-.lp-stack-media > div {
-  position: absolute;
-  inset: 0;
-  opacity: 0.28;
-}
-
 /* Feature list — coloured icon, title and text, two columns, no boxes */
 .lp-features {
   display: grid;
@@ -262,7 +170,6 @@
 }
 .lp-ash {
   background: var(--surface);
-  border-top: 1px solid var(--border);
 }
 
 /* Footer */
@@ -285,12 +192,6 @@
 }
 
 @media (max-width: 900px) {
-  .lp-links {
-    display: none;
-  }
-  .lp-nav-actions {
-    margin-left: auto;
-  }
   .lp-features {
     grid-template-columns: 1fr;
   }
@@ -327,81 +228,40 @@
   }
 }
 
-/* Statement band — the middle word's letters land as the line scrolls in */
-.statement {
-  overflow: hidden; /* scattered letters must not widen the page */
-  padding: clamp(48px, 8vw, 112px) 0;
-  background: var(--brand-blue);
-  color: #fff;
-  text-align: center;
-}
-.st-line {
-  margin: 0 auto;
-  padding: 0.5em 0;
-  font-size: clamp(28px, 5.15vw, 68px);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.18;
-  text-wrap: balance;
-}
-.st-word {
-  white-space: nowrap;
-}
-.st-l {
-  display: inline-block;
-  white-space: pre;
-}
-.is-armed .st-l {
-  transform: translate(var(--dx, 0), var(--dy, 0)) rotate(var(--r, 0deg));
-  transition: transform 0.95s cubic-bezier(0.22, 0.9, 0.25, 1);
-  transition-delay: var(--d, 0s);
-  will-change: transform;
-}
-.is-armed.is-together .st-l,
-.st-instant .st-l {
-  transform: none;
-}
-@media (max-width: 760px) {
-  .st-line {
-    line-height: 1.3;
-    padding: 0.3em 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .st-l {
-    transition: none;
-    transform: none;
-  }
-}
-
-/* Scroll-filled statement — each word goes from grey to ink in turn */
-.lp-scrolltext {
-  padding: clamp(96px, 12vw, 150px) 0;
-  border-top: 1px solid var(--border);
-}
-.st-reveal {
-  --p: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  max-width: 900px;
-  margin: 0 auto;
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: clamp(30px, 4.4vw, 50px);
-  font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.025em;
-}
-.st-reveal span {
-  --t: clamp(0, calc((var(--p) * var(--n) - var(--i))), 1);
-  margin-right: 0.27em;
-  color: color-mix(in srgb, #1d1d1f calc(var(--t) * 100%), #cdcdd2);
-}
-
 /* phones: the administration link lives in the app menu; keep the header to one button */
 @media (max-width: 560px) {
   .lp-admin {
     display: none;
+  }
+}
+/* the header button's short label, for narrow phones */
+.lp-short {
+  display: none;
+}
+/* narrow phones: logo, language switch and the one button fit side by side */
+@media (max-width: 420px) {
+  .lp-full {
+    display: none;
+  }
+  .lp-short {
+    display: inline;
+  }
+  .lp-nav-inner {
+    gap: 8px;
+  }
+  .lp-nav-inner > a:first-child svg {
+    height: 20px;
+    width: auto;
+  }
+  .lp-nav-actions .btn {
+    padding: 0 12px;
+  }
+}
+@media (max-width: 380px) {
+  .lp-nav-inner > a:first-child svg {
+    height: 17px;
+  }
+  .lp-nav-actions {
+    gap: 6px;
   }
 }

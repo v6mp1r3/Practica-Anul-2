@@ -47,10 +47,12 @@ def test_update_profile(client, admin):
     me = r.json()
     assert me["name"] == "Elena P." and me["email"] == "elena@utm.example" and me["emailNotifications"] is True
     assert client.put("/api/auth/me", json={"name": " "}, headers=admin).status_code == 422
-    # faculty must be one of the 14
-    assert client.put("/api/auth/me", json={"name": "E", "faculty": "Facultatea Inexistenta"}, headers=admin).status_code == 422
+    # the faculty comes with the account: it can't be switched (that would reach another faculty's data)
+    fcim = "Facultatea Calculatoare, Informatică și Microelectronică"
     fet = "Facultatea Electronică și Telecomunicații"
-    assert client.put("/api/auth/me", json={"name": "E", "faculty": fet}, headers=admin).json()["faculty"] == fet
+    assert client.put("/api/auth/me", json={"name": "E", "faculty": fet}, headers=admin).status_code == 403
+    assert client.put("/api/auth/me", json={"name": "E", "faculty": "Facultatea Inexistenta"}, headers=admin).status_code == 403
+    assert client.put("/api/auth/me", json={"name": "E", "faculty": fcim}, headers=admin).json()["faculty"] == fcim  # the same one is fine
     # avatar can be set and cleared
     assert client.put("/api/auth/me", json={"name": "E", "avatar": "data:image/png;base64,AA"}, headers=admin).json()["avatar"].startswith("data:")
     assert "avatar" not in client.put("/api/auth/me", json={"name": "E", "avatar": None}, headers=admin).json()
@@ -82,3 +84,18 @@ def test_a_good_sign_in_clears_the_count(client, admin):
     for _ in range(7):
         assert login("wrong").status_code == 401
     assert login("secret-pass-1").status_code == 200
+
+
+def test_profile_changes_only_what_is_sent(client, admin):
+    client.put("/api/auth/me", json={"name": "Elena", "phone": "060000000", "emailNotifications": True}, headers=admin)
+    me = client.put("/api/auth/me", json={"name": "Elena P."}, headers=admin).json()
+    assert me["name"] == "Elena P." and me["emailNotifications"] is True and me["phone"] == "060000000"
+    big = "data:image/jpeg;base64," + "A" * 600_000
+    assert client.put("/api/auth/me", json={"name": "E", "avatar": big}, headers=admin).status_code == 413
+
+
+def test_import_refuses_a_file_over_the_limit(client, admin):
+    from app.importers import MAX_BYTES
+
+    r = client.post("/api/timetables/import-sheet?filename=big.pdf", content=b"%PDF" + b"0" * MAX_BYTES, headers=admin)
+    assert r.status_code == 413

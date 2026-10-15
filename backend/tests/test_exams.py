@@ -1,4 +1,4 @@
-from .helpers import World
+from .helpers import World, create, group
 from .test_timetables import lesson, save
 
 
@@ -48,8 +48,9 @@ def test_save_publish_unpublish_delete(client, admin, other_admin):
 
 def test_published_plans_of_every_faculty_are_public(client, admin, other_admin):
     w = World(client, admin)
+    h1 = create(client, other_admin, "groups", group("ET-251"))
     client.put("/api/exams/plans/session", json=plan(w, event(w)), headers=admin)
-    client.put("/api/exams/plans/session", json=plan(w, event(w, id="F1", date="2026-12-18")), headers=other_admin)
+    client.put("/api/exams/plans/session", json=plan(w, event(w, id="F1", date="2026-12-18", groupId=h1["id"])), headers=other_admin)
     client.post("/api/exams/plans/session/publish", headers=admin)
     client.post("/api/exams/plans/session/publish", headers=other_admin)
     assert sorted(e["date"] for e in client.get("/api/exams").json()) == ["2026-12-15", "2026-12-18"]
@@ -163,14 +164,15 @@ def test_generation_is_repeatable_and_replaces_the_plan(client, admin):
 
 def test_published_exams_of_other_faculties_stay_booked(client, admin, other_admin):
     w = exam_world(client, admin)
-    # FET publishes an exam that books teacher t1 and room r1 on every day and hour the session could use
+    h1 = create(client, other_admin, "groups", group("ET-251"))
+    # FET publishes an exam (of its own group) that books teacher t1 and room r1 on every day and hour the session could use
     blocking = []
     for day in range(14, 27):
         for start, end in (("08:00", "10:15"), ("10:00", "12:15"), ("12:00", "14:15"), ("14:00", "16:15"), ("16:00", "18:15")):
-            blocking.append(event(w, id=f"X{day}{start}", date=f"2026-12-{day:02d}", start=start, end=end))
+            blocking.append(event(w, id=f"X{day}{start}", date=f"2026-12-{day:02d}", start=start, end=end, groupId=h1["id"]))
     for day in range(11, 24):
         for start, end in (("08:00", "10:15"), ("10:00", "12:15"), ("12:00", "14:15"), ("14:00", "16:15"), ("16:00", "18:15")):
-            blocking.append(event(w, id=f"Y{day}{start}", date=f"2027-01-{day:02d}", start=start, end=end))
+            blocking.append(event(w, id=f"Y{day}{start}", date=f"2027-01-{day:02d}", start=start, end=end, groupId=h1["id"]))
     client.put("/api/exams/plans/session", json=plan(w, *blocking), headers=other_admin)
     client.post("/api/exams/plans/session/publish", headers=other_admin)
     r = client.post("/api/exams/plans/session/generate", json={"seed": 1}, headers=admin).json()

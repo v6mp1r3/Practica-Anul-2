@@ -3,11 +3,9 @@
 import type { Lang } from '../../i18n';
 
 export interface LandingCopy {
-  nav: { features: string; how: string; login: string; open: string; schedule: string };
+  /** scheduleShort: the same button on a narrow phone */
+  nav: { login: string; open: string; schedule: string; scheduleShort: string };
   hero: { title: string; text: string; preview: string };
-  statement: { before: string; word: string; after: string };
-  reveal: string;
-  how: { title: string; steps: { title: string; text: string }[] };
   features: { title: string; text: string; items: { title: string; text: string }[] };
   footer: { project: string; team: string };
 }
@@ -15,36 +13,15 @@ export interface LandingCopy {
 export const copy: Record<Lang, LandingCopy> = {
   ro: {
     nav: {
-      features: 'Funcții',
-      how: 'Cum funcționează',
       login: 'Administrare',
       open: 'Administrare',
       schedule: 'Vezi orarul',
+      scheduleShort: 'Orarul',
     },
     hero: {
       title: 'Orarul universității, construit automat.',
       text: 'EduSchedule construiește orarul pentru grupe, torente și subgrupe, ține cont de săptămânile pare și impare și îți propune mai multe variante. Tu alegi una, o ajustezi și o publici.',
       preview: 'Orarul grupei FAF-251, generat chiar acum în browser',
-    },
-    statement: { before: 'EduSchedule te ajută să le ', word: 'gestionezi', after: ' pe toate' },
-    reveal:
-      'Un orar nu e greu din cauza orelor, ci din cauza conflictelor: o mutare mică strică trei grupe. EduSchedule le vede pe toate înaintea ta.',
-    how: {
-      title: 'Trei pași, de la date la orar publicat.',
-      steps: [
-        {
-          title: 'Configurezi',
-          text: 'Profesori, săli, grupe, torente și planul de studii. Fiecare câmp are o valoare implicită, așa că completezi doar ce diferă.',
-        },
-        {
-          title: 'Generezi',
-          text: 'EduSchedule creează mai multe variante care respectă toate regulile obligatorii și le compară după cât de comode sunt.',
-        },
-        {
-          title: 'Publici',
-          text: 'Ajustezi manual ce vrei, apoi publici. Profesorii și studenții văd orarul imediat și primesc notificări la fiecare schimbare.',
-        },
-      ],
     },
     features: {
       title: 'Făcut pentru cum lucrează o facultate.',
@@ -81,36 +58,15 @@ export const copy: Record<Lang, LandingCopy> = {
 
   en: {
     nav: {
-      features: 'Features',
-      how: 'How it works',
       login: 'Administration',
       open: 'Administration',
       schedule: 'See the timetable',
+      scheduleShort: 'Timetable',
     },
     hero: {
       title: 'Your university timetable, built automatically.',
       text: 'EduSchedule builds the timetable for groups, streams and subgroups, handles odd and even weeks, and offers you several variants. You pick one, adjust it and publish it.',
       preview: 'Group FAF-251’s timetable, generated right now in your browser',
-    },
-    statement: { before: 'EduSchedule helps you ', word: 'manage', after: ' them all' },
-    reveal:
-      'A timetable isn’t hard because of the hours — it’s hard because of the conflicts: one small move breaks three groups. EduSchedule sees them all before you do.',
-    how: {
-      title: 'Three steps, from data to a published timetable.',
-      steps: [
-        {
-          title: 'Set up',
-          text: 'Teachers, rooms, groups, streams and the study plan. Every field has a default, so you only fill in what differs.',
-        },
-        {
-          title: 'Generate',
-          text: 'EduSchedule creates several variants that respect every hard rule and compares them by how comfortable they are.',
-        },
-        {
-          title: 'Publish',
-          text: 'Adjust anything by hand, then publish. Teachers and students see it instantly and are notified of every change.',
-        },
-      ],
     },
     features: {
       title: 'Built for how a faculty works.',
@@ -141,36 +97,15 @@ export const copy: Record<Lang, LandingCopy> = {
 
   ru: {
     nav: {
-      features: 'Возможности',
-      how: 'Как это работает',
       login: 'Администрирование',
       open: 'Администрирование',
       schedule: 'Смотреть расписание',
+      scheduleShort: 'Расписание',
     },
     hero: {
       title: 'Расписание университета, составленное автоматически.',
       text: 'EduSchedule составляет расписание для групп, потоков и подгрупп, учитывает чётные и нечётные недели и предлагает несколько вариантов. Вы выбираете один, дорабатываете и публикуете.',
       preview: 'Расписание группы FAF-251, созданное прямо сейчас в браузере',
-    },
-    statement: { before: 'EduSchedule помогает вам ', word: 'управлять', after: ' всем этим' },
-    reveal:
-      'Расписание сложно не из-за часов, а из-за конфликтов: одна небольшая перестановка ломает три группы. EduSchedule видит их все раньше вас.',
-    how: {
-      title: 'Три шага от данных до опубликованного расписания.',
-      steps: [
-        {
-          title: 'Настройка',
-          text: 'Преподаватели, аудитории, группы, потоки и учебный план. У каждого поля есть значение по умолчанию, поэтому заполняется только то, что отличается.',
-        },
-        {
-          title: 'Генерация',
-          text: 'EduSchedule создаёт несколько вариантов, соблюдающих все обязательные правила, и сравнивает их по удобству.',
-        },
-        {
-          title: 'Публикация',
-          text: 'Дорабатываете вручную и публикуете. Преподаватели и студенты сразу видят расписание и получают уведомления об изменениях.',
-        },
-      ],
     },
     features: {
       title: 'Сделано под то, как работает факультет.',
