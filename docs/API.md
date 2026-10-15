@@ -356,9 +356,14 @@ GET /generate/{jobId}
   allowOverload, allowEdgeMisses }`, each `true` or `false`. All default to `true` except `allowThinDays`, which defaults to `false`. `false` makes the rule strict: the search
   weighs it at 100 instead of its usual weight (see `score.breakdown`), so it gives way only when nothing else is
   possible, and never by leaving a pair out. The hard rules (no clashes, availability, room fit, all pairs placed,
-  locked pairs kept) always hold. `allowThinDays: false` (the default) is absolute: a group never has a day with
-  fewer pairs than `minPairsPerDayGroup` (the search weighs it at 10 000, far above leaving a pair out), so a pair that
-  can only go alone on a day is moved next to another one or reported missing instead. The score saved with each timetable uses the usual weights, so variants stay comparable.
+  locked pairs kept) always hold. `allowThinDays: false` (the default) and `allowGroupGaps: false` are absolute: no group has a day with fewer pairs than
+  `minPairsPerDayGroup` or an empty pair between its classes. They are constraints of the CP-SAT model (so a solution
+  never breaks them) and a final pass takes out any pair that still would, so the result has none. A pair that cannot be
+  placed without breaking one is left out and reported as missing (`hours-missing`), like any pair that does not fit;
+  locked pairs and other groups' booked pairs are never moved, so they can still break a rule. The CP-SAT model leaves
+  the choice of rooms out (it decides the day and the pair, with a capacity rule per kind of room) and the rooms are
+  matched afterwards, so a whole faculty fits in a short run: 111 groups in 70 s leave about 2 pairs per week out, the
+  ones whose teachers have no slot that suits the rules. The score saved with each timetable uses the usual weights, so variants stay comparable.
 - `semester` (optional, `1` or `2`, else 422): the semester of the year to generate for (1 = autumn, 2 = spring).
   Only assignments whose subject has that `semester` are scheduled (a subject without one is in the 1st), and
   other groups' published pairs stay booked only for that semester. Every semester when omitted.

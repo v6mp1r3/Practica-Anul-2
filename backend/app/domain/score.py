@@ -22,8 +22,9 @@ SOFT_WEIGHTS = {
 # strict, a penalty so heavy that it only gives way when nothing else is possible. It stays below the cost of
 # leaving a pair out, so a strict rule never drops pairs. A rule is a soft weight, never a hard constraint.
 STRICT_WEIGHT = 100
-# A day with fewer pairs than the minimum is not allowed unless the administrator says so (allowThinDays: True). This
-# weight is far above the cost of leaving a pair out, so the generator drops or moves pairs before it leaves one alone.
+# A day with fewer pairs than the minimum is not allowed unless the administrator says so (allowThinDays: True), and a
+# gap between a group's pairs is not when allowGroupGaps is off. This weight is far above the cost of leaving a pair out,
+# so the generator drops or moves pairs before it leaves a day that breaks one (see solver/absolute.py).
 ABSOLUTE_WEIGHT = 10_000
 RULE_WEIGHT = {
     "allowGroupGaps": "groupGaps",
@@ -42,6 +43,8 @@ def weights_for(rules: dict | None) -> dict:
             w[key] = max(w[key], STRICT_WEIGHT)
     if (rules or {}).get("allowThinDays") is not True:
         w["thinDays"] = ABSOLUTE_WEIGHT
+    if (rules or {}).get("allowGroupGaps") is False:
+        w["groupGaps"] = ABSOLUTE_WEIGHT
     return w
 
 

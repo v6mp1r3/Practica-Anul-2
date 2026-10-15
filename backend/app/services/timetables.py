@@ -16,7 +16,7 @@ from ..domain.validator import find_hard_conflicts
 from ..errors import ApiError
 from ..scope import NOT_YOURS, keeps_others, my_group_ids, require_mine
 from ..settings_io import current_semester
-from ..solver.generate import scope_assignments
+from ..solver.generate import scope_assignments, timetable_semester
 from ..util import iso_date, iso_ts, maybe_pid, pid, sid
 from .notify import notify
 
@@ -158,7 +158,7 @@ def _store_score(conn: Connection, tid: int, ds: dict | None = None) -> None:
     group_ids = [sid(g[0]) for g in conn.execute(text("select group_id from timetable_group where timetable_id = :t"), {"t": tid})]
     if group_ids:
         idx = DatasetIndex(ds)
-        ds = {**ds, "assignments": scope_assignments(ds, idx, group_ids)}
+        ds = {**ds, "assignments": scope_assignments(ds, idx, group_ids, timetable_semester(ds, idx, lessons))}
     score = score_timetable(ds, lessons)
     conn.execute(
         text("update timetable set score_hard = :h, score_soft = :s, score_breakdown = cast(:b as jsonb) where id = :t"),

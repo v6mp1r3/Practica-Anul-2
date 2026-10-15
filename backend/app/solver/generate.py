@@ -14,14 +14,21 @@ from dataclasses import dataclass
 from typing import Callable
 
 from ..domain.indexes import DatasetIndex
-from ..domain.score import _hits_view, _student_views, score_timetable, weights_for
-from ..domain.slots import in_week
+from ..domain.score import score_timetable, weights_for
 from ..domain.weeks import WeekNeed, week_need
+from .absolute import Rules, enforce, violation_group_days
 from .greedy import adopt_example, construct
-from .model import Placement, solve_weekly
+from .model import Placement
+from .model import solve_weekly as _solve_weekly
 from .sessions import place_sessions
 
 Progress = Callable[[float, dict], None]
+
+
+def solve_weekly(*args, **kwargs):
+    """The weekly model without rooms in it (they are matched afterwards): a few dozen times fewer variables, so a whole
+    faculty gets solved in a short run. Tests of the model itself use the exact one (rooms in it)."""
+    return _solve_weekly(*args, match_rooms=True, **kwargs)
 
 
 @dataclass
@@ -36,6 +43,7 @@ class Generated:
 
 
 EXAMPLE_WEIGHT = 2  # search cost of moving one pair away from the example timetable (= a missed preferred room)
+DROP_COST = 3000  # search cost of leaving a pair out when a rule is absolute (a day that breaks one costs 10 000)
 
 
 def _better(x: dict, y: dict) -> bool:
@@ -51,26 +59,49 @@ def in_semester(idx: DatasetIndex, a: dict | None, semester: int | None) -> bool
     return (idx.subjects.get(a["subjectId"], {}).get("semester") or 1) == semester
 
 
+def term_semester(ds: dict) -> int:
+    """The semester of the year (1 = autumn, 2 = spring) the current term is in."""
+    return 2 if str(ds["settings"].get("semester", "")).startswith("Primăvara") else 1
+
+
+def timetable_semester(ds: dict, idx: DatasetIndex, lessons: list[dict]) -> int:
+    """The semester a timetable is for: the one most of its pairs belong to (the term's when it has none yet or they tie)."""
+    counts = {1: 0, 2: 0}
+    for l in lessons:
+        a = idx.assignment_of(l)
+        if a:
+            counts[2 if (idx.subjects.get(a["subjectId"], {}).get("semester") or 1) == 2 else 1] += 1
+    return term_semester(ds) if counts[1] == counts[2] else (2 if counts[2] > counts[1] else 1)
+
+
 def scope_assignments(ds: dict, idx: DatasetIndex, group_ids: list[str], semester: int | None = None) -> list[dict]:
     chosen = set(group_ids)
     return [a for a in ds["assignments"] if any(g in chosen for g, _ in idx.cohorts(a["audience"])) and in_semester(idx, a, semester)]
 
 
-def thin_group_days(ds: dict, idx: DatasetIndex, lessons: list[dict]) -> list[tuple[str, int]]:
-    """(group id, day) pairs where some student view has fewer pairs than the minimum in odd or even weeks (a day
-    with nothing is fine)."""
-    s = ds["settings"]
-    weeks = ["odd", "even"] if s["weekParity"] else ["weekly"]
-    weekly = [l for l in lessons if not l.get("date")]
-    out = set()
-    for view in _student_views(ds):
-        vl = [l for l in weekly if _hits_view(idx, l, view)]
-        for d in idx.group_days(view[0]):
-            for w in weeks:
-                n = len({l["slot"] for l in vl if l["day"] == d and in_week(l, w)})
-                if 0 < n < s["minPairsPerDayGroup"]:
-                    out.add((view[0], d))
-    return sorted(out)
+def clusters_of(idx: DatasetIndex, loads: list[dict]) -> list[list[dict]]:
+    """The loads split into clusters that share no student group (a stream joins its groups): each cluster is a problem
+    of its own, linked to the others only through teachers and rooms."""
+    parent: dict[str, str] = {}
+
+    def find(x: str) -> str:
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for a in loads:
+        gs = [g for g, _ in idx.cohorts(a["audience"])]
+        for g in gs[1:]:
+            parent[find(g)] = find(gs[0])
+        if gs:
+            find(gs[0])
+    out: dict[str, list[dict]] = {}
+    for a in loads:
+        gs = [g for g, _ in idx.cohorts(a["audience"])]
+        out.setdefault(find(gs[0]) if gs else a["id"], []).append(a)
+    return sorted(out.values(), key=len, reverse=True)
 
 
 class _Ids:
@@ -158,16 +189,25 @@ def generate_timetable(
                 n += 1
         return n
 
+    def judged(sc: dict, ls: list[dict]) -> tuple[float, float]:
+        """(hard problems, soft cost). With absolute rules a pair left out costs DROP_COST instead of being a hard problem:
+        leaving it out is allowed when that cures a day that breaks a rule, which is worth far more."""
+        if not absolute:
+            return sc["hard"], sc["soft"]
+        d = deficits(ls)
+        return sc["hard"] - len(d), sc["soft"] + DROP_COST * sum(n.halves for n in d.values()) / 2
+
     def accept(cand: dict, cand_ls: list[dict], cur: dict, cur_ls: list[dict]) -> bool:
         """Not worse; with an example, leaving it costs EXAMPLE_WEIGHT per pair."""
-        if not example_at:
-            return _better(cand, cur)
-        return cand["hard"] < cur["hard"] or (cand["hard"] == cur["hard"] and cand["soft"] + EXAMPLE_WEIGHT * away(cand_ls) <= cur["soft"] + EXAMPLE_WEIGHT * away(cur_ls))
+        (ch, cs), (uh, us) = judged(cand, cand_ls), judged(cur, cur_ls)
+        if example_at:
+            cs, us = cs + EXAMPLE_WEIGHT * away(cand_ls), us + EXAMPLE_WEIGHT * away(cur_ls)
+        return ch < uh or (ch == uh and cs <= us)
 
     keep_ids = {l["id"] for l in keep}
-    chase_thin = (rules or {}).get("allowThinDays") is not True  # the minimum pairs per day is absolute: repair it first
-    # ---- starting point: a quick heuristic timetable, so there is always a complete answer to improve
+    absolute = Rules(rules)  # no gaps / the minimum pairs per day, when they are absolute: repaired first, then enforced
     base = base + adopted
+    # ---- starting point: a quick heuristic timetable, so there is always a complete answer to improve
     todo = deficits(locked + adopted)
     start = as_lessons(construct(ds, idx, todo, base, rng))
     lessons = base + start
@@ -175,7 +215,7 @@ def generate_timetable(
     tick(0.02, score)
 
     # ---- Algorithm 1: one CP-SAT model for the whole weekly timetable, started from that solution
-    first = solve_weekly(ds, idx, todo, base, max(2.0, seconds * initial_share), seed, workers,
+    first = solve_weekly(ds, idx, todo, base, max(1.0 if absolute else 2.0, seconds * (0.1 if absolute else initial_share)), seed, workers,
                          hint=[Placement(l["assignmentId"], l["day"], l["slot"], l["roomId"], l["parity"]) for l in start], weights=weights)
     if first.status in ("OPTIMAL", "FEASIBLE"):
         candidate = base + as_lessons(first.placements)
@@ -184,35 +224,61 @@ def generate_timetable(
             lessons, score = candidate, cand_score
     tick(initial_share, score)
 
-    # ---- the minimum pairs per day is absolute: plan again every pair of each group that still has a day below it,
-    # one group at a time (a whole group is a small problem CP-SAT solves in seconds; many groups together are not)
-    if chase_thin:
-        repair_until = started + seconds * 0.85  # this comes before the general optimisation
-        for _ in range(3):
-            thin = thin_group_days(weekly_ds, idx, lessons)
-            if not thin:
-                break
-            order = sorted({g for g, _ in thin})
-            rng.shuffle(order)
-            for gid in order:
-                left = repair_until - time.monotonic()
-                if left < 1.5:
+    # what still breaks an absolute rule loses its pairs now, so the search below spends its time putting them back
+    # without breaking one (accept() prefers a placed pair over a missing one only when no rule is broken)
+    protected = keep_ids | {l["id"] for l in lessons if l.get("locked")}
+    if absolute:
+        lessons = enforce(weekly_ds, idx, lessons, absolute, protected)
+        score = score_timetable(weekly_ds, lessons, idx, weights)
+        # ---- refill: the pairs taken out are placed again, cluster by cluster, around everything else, with the rules as
+        # constraints of the model. Everything else is fixed, so each of these is a small problem.
+        refill_until = started + seconds * 0.6
+        for _ in range(8):
+            by_cluster = [(c, {aid: n for aid, n in deficits(lessons).items() if aid in {a["id"] for a in c}}) for c in clusters_of(idx, weekly)]
+            todo_clusters = sorted((x for x in by_cluster if x[1]), key=lambda x: -sum(n.halves for n in x[1].values()))
+            for i, (cluster, need) in enumerate(todo_clusters):
+                left = refill_until - time.monotonic()
+                if left < 1.0:
                     break
-                destroyed = [l for l in lessons if not l.get("locked") and l["id"] not in keep_ids and not l.get("date") and l["assignmentId"] in weekly_ids
-                             and gid in {g for g, _ in idx.cohorts(idx.assignment_of(l)["audience"])}]
-                if not destroyed:
+                res = solve_weekly(ds, idx, need, lessons, min(8.0, max(1.5, left / (len(todo_clusters) - i))), rng.randrange(1 << 30), workers,
+                                   weights=weights, jitter=False, hard_gaps=absolute.gaps, hard_thin=absolute.thin)
+                if res.status not in ("OPTIMAL", "FEASIBLE"):
                     continue
+                candidate = lessons + as_lessons(res.placements)
+                cand_score = score_timetable(weekly_ds, candidate, idx, weights)
+                if accept(cand_score, candidate, score, lessons):
+                    lessons, score = candidate, cand_score
+            if not any(need for _, need in by_cluster) or refill_until - time.monotonic() < 1.0:
+                break
+
+    # ---- a pair that still has no place: all the pairs of its student groups are planned again together (a pair
+    # that fits nowhere around the others often fits once they move too), with the rules as constraints
+    if absolute:
+        widen_until = started + seconds * 0.95
+        for _ in range(3):
+            still = list(deficits(lessons))
+            if not still or widen_until - time.monotonic() < 1.0:
+                break
+            for aid in still:
+                left = widen_until - time.monotonic()
+                if left < 1.0:
+                    break
+                if aid not in deficits(lessons):
+                    continue
+                gs = {g for g, _ in idx.cohorts(idx.assignments[aid]["audience"])}
+                destroyed = [l for l in lessons if not l.get("locked") and l["id"] not in keep_ids and not l.get("date") and l["assignmentId"] in weekly_ids
+                             and gs & {g for g, _ in idx.cohorts(idx.assignment_of(l)["audience"])}]
                 gone = {l["id"] for l in destroyed}
                 rest = [l for l in lessons if l["id"] not in gone]
-                res = solve_weekly(ds, idx, deficits(rest), rest, min(6.0, left), rng.randrange(1 << 30), workers, weights=weights, jitter=False,
-                                   hint=[Placement(l["assignmentId"], l["day"], l["slot"], l["roomId"], l["parity"]) for l in destroyed])
+                res = solve_weekly(ds, idx, deficits(rest), rest, max(1.0, min(10.0, left)), rng.randrange(1 << 30), workers, weights=weights, jitter=False,
+                                   hint=[Placement(l["assignmentId"], l["day"], l["slot"], l["roomId"], l["parity"]) for l in destroyed],
+                                   hard_gaps=absolute.gaps, hard_thin=absolute.thin)
                 if res.status not in ("OPTIMAL", "FEASIBLE"):
                     continue
                 candidate = rest + as_lessons(res.placements)
                 cand_score = score_timetable(weekly_ds, candidate, idx, weights)
                 if accept(cand_score, candidate, score, lessons):
                     lessons, score = candidate, cand_score
-            tick(initial_share, score)
 
     # ---- Algorithm 2: Large Neighborhood Search with CP-SAT as the repair step
     k = 6
@@ -226,7 +292,7 @@ def generate_timetable(
         destroyed: list[dict] = []
         if movable:
             strategy = rng.choice(["random", "byDay", "byTeacher", "byGroup"])
-            thin = thin_group_days(weekly_ds, idx, lessons) if chase_thin else []
+            thin = violation_group_days(weekly_ds, idx, lessons, absolute) if absolute else []
             if thin and rng.random() < 0.6:
                 strategy = "byThin"  # a group with a day below the minimum: plan all its pairs again together
             pivot = rng.choice(movable)
@@ -246,10 +312,14 @@ def generate_timetable(
         gone = {l["id"] for l in destroyed}
         rest = [l for l in lessons if l["id"] not in gone]
         need = deficits(rest)
+        if absolute:
+            freed = {l["assignmentId"] for l in destroyed}
+            need = {aid: n for aid, n in need.items() if aid in freed}
         steps += 1
         budget = min(repair_seconds, deadline - time.monotonic())
         res = solve_weekly(ds, idx, need, rest, budget, rng.randrange(1 << 30), workers,
-                           hint=[Placement(l["assignmentId"], l["day"], l["slot"], l["roomId"], l["parity"]) for l in destroyed], jitter=False, weights=weights)
+                           hint=[Placement(l["assignmentId"], l["day"], l["slot"], l["roomId"], l["parity"]) for l in destroyed], jitter=False, weights=weights,
+                           hard_gaps=absolute.gaps, hard_thin=absolute.thin)
         if res.status not in ("OPTIMAL", "FEASIBLE"):
             stale += 1
         else:
@@ -268,6 +338,9 @@ def generate_timetable(
             k = min(40, k + 4)
             stale = 0
         tick(initial_share + (1 - initial_share) * (time.monotonic() - started - seconds * initial_share) / max(0.001, seconds * (1 - initial_share)), score)
+
+    # ---- the guarantee: whatever still breaks an absolute rule loses its pairs (they are reported as missing)
+    lessons = enforce(weekly_ds, idx, lessons, absolute, protected)
 
     # ---- reduced attendance: dated session pairs around everything else
     if reduced:

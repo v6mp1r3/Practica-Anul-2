@@ -371,7 +371,9 @@ export default function Generate() {
                                   ? 'generate.ruleFlexible'
                                   : rule === 'allowThinDays'
                                     ? 'generate.ruleAbsolute'
-                                    : 'generate.ruleStrict',
+                                    : rule === 'allowGroupGaps'
+                                      ? 'generate.ruleAbsoluteGaps'
+                                      : 'generate.ruleStrict',
                                 { weight: SOFT_WEIGHTS[key] },
                               )}
                             </div>

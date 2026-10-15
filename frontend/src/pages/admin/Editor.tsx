@@ -13,7 +13,7 @@ import { Legend, TimetableGrid, type LessonField } from '../../components/Timeta
 import { ViewPicker } from '../../components/ViewPicker';
 import { Loading, PageHeader } from '../../components/ui';
 import { ExportDialog, downloadTimetable } from '../../components/ExportDialog';
-import { dropExtra, loadDrift, placeMissing, scopeAssignments } from '../../domain/generator';
+import { dropExtra, loadDrift, placeMissing, loadsOfTimetable } from '../../domain/generator';
 import { findWarnings, scoreTimetable } from '../../domain/score';
 import type { Conflict, Dataset, Lesson, Parity, Timetable } from '../../domain/types';
 import { findHardConflicts } from '../../domain/validator';
@@ -61,8 +61,8 @@ export default function Editor() {
 
   // Validate against the assignments this timetable is responsible for
   const scoped: Dataset = useMemo(
-    () => ({ ...dataset, assignments: tt ? scopeAssignments(dataset, tt.groupIds, index) : dataset.assignments }),
-    [dataset, index, tt],
+    () => ({ ...dataset, assignments: tt ? loadsOfTimetable(dataset, lessons, tt.groupIds, index) : dataset.assignments }),
+    [dataset, index, tt, lessons],
   );
   const hard = useMemo(() => findHardConflicts(scoped, lessons, index), [scoped, lessons, index]);
   const warnings = useMemo(() => findWarnings(scoped, lessons, index), [scoped, lessons, index]);

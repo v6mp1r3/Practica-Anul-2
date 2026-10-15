@@ -493,6 +493,8 @@ export const en: Record<MessageKey, string> = {
   'generate.allowEdgeMisses': 'Allow “first/last pair” subjects mid-day',
   'generate.ruleFlexible': 'Allowed, but avoided (weight {weight})',
   'generate.ruleAbsolute': 'Absolute: no day with fewer pairs than the minimum (a pair that cannot fit is reported as missing instead)',
+  'generate.ruleAbsoluteGaps':
+    'Absolute: no gaps between students’ pairs (a pair that cannot be placed without one is reported as missing instead)',
   'generate.ruleStrict': 'Strict: avoided at almost any cost, never by leaving a pair out',
   'generate.rulesOther': 'Always optimised too: 08:00 pairs, an even week, preferred rooms and periods, the year’s part of the day.',
   'generate.settings': 'Parameters',

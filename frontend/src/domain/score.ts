@@ -39,6 +39,7 @@ export function weightsFor(rules?: GenerationRules): Record<keyof ScoreBreakdown
     if (rules?.[rule] === false) w[key] = Math.max(w[key], STRICT_WEIGHT);
   }
   if (rules?.allowThinDays !== true) w.thinDays = ABSOLUTE_WEIGHT;
+  if (rules?.allowGroupGaps === false) w.groupGaps = ABSOLUTE_WEIGHT;
   return w;
 }
 

@@ -495,6 +495,8 @@ export const ro = {
   'generate.allowEdgeMisses': 'Permite disciplinele „prima/ultima pereche” la mijlocul zilei',
   'generate.ruleFlexible': 'Permis, dar evitat (pondere {weight})',
   'generate.ruleAbsolute': 'Absolut: nicio zi cu mai puține perechi decât minimul (o pereche care nu încape apare ca lipsă)',
+  'generate.ruleAbsoluteGaps':
+    'Absolut: nicio fereastră între perechile studenților (o pereche care nu poate fi pusă fără una apare ca lipsă)',
   'generate.ruleStrict': 'Strict: evitat aproape cu orice preț, dar nu prin omiterea unei perechi',
   'generate.rulesOther':
     'Se optimizează mereu și: perechile de la 08:00, săptămâna echilibrată, sălile și intervalele preferate, partea zilei a anului.',
