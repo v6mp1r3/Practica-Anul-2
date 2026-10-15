@@ -74,6 +74,29 @@ export function semesterStartOf(stored: string | undefined, today = new Date()):
   return stored && academicYearOf(stored) >= currentAcademicYear(today) ? stored : defaultSemesterStart(today);
 }
 
+/**
+ * The semester that should be current on `today`: spring from the first day of the winter break,
+ * the next autumn from the first day of the summer break, so the faculties build the next timetable
+ * during the break (as the server does, backend/app/semester_clock.py).
+ */
+export function dueSemester(today: Date, overrides: EvaluationSettings['holidayOverrides'] = {}): string {
+  const startOf = (key: string, fallback: string) => overrides?.[key]?.start ?? fallback;
+  const winter = (y: number) => startOf(`${y}:winter`, autoHolidays(y).find((h) => h.id === `${y}:winter`)!.start);
+  const summer = (y: number) => startOf(`${y}:summer`, `${y + 1}-07-01`);
+  const d = toDateString(today);
+  const y = today.getFullYear();
+  if (d >= winter(y)) return `Primăvara ${y}/${y + 1}`;
+  if (d >= summer(y - 1)) return `Toamna ${y}/${y + 1}`;
+  if (d >= winter(y - 1)) return `Primăvara ${y - 1}/${y}`;
+  return `Toamna ${y - 1}/${y}`;
+}
+
+/** "Primăvara 2026/2027" comes after "Toamna 2026/2027". */
+export const semesterOrder = (label: string) => {
+  const m = /^(Toamna|Primăvara) (\d{4})\//.exec(label);
+  return m ? Number(m[2]) * 2 + (m[1] === 'Primăvara' ? 1 : 0) : 0;
+};
+
 /** The days off the rules give for academic year `y` (September y – August y+1). */
 export function autoHolidays(y: number): Holiday[] {
   const n = y + 1;

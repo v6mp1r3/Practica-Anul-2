@@ -20,7 +20,9 @@
   border-right: 1px solid rgba(15, 26, 31, 0.06);
   border-bottom: 1px solid rgba(15, 26, 31, 0.06);
 }
-.tt > :nth-child(calc(var(--days) + 1)n) {
+/* the last day's column: the sheet's own border is its right edge */
+.tt-head.last,
+.tt-cell.last {
   border-right: none;
 }
 

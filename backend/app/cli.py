@@ -1,7 +1,9 @@
-"""Accounts are created on the server, there is no accounts page (docs/API.md, Roles).
+"""Done on the server, not in the app: administrator accounts, and starting a new semester (it starts for
+every faculty at once). Teacher accounts are made in the app (docs/API.md, Roles).
 
   python -m app.cli create-admin --username elena.popescu --name "Elena Popescu" --faculty FCIM
   python -m app.cli set-password --username elena.popescu
+  python -m app.cli new-semester --label "Primăvara 2026/2027"
 """
 import argparse
 import getpass
@@ -58,6 +60,23 @@ def set_password(username: str, password: str | None) -> None:
     print("Password changed.")
 
 
+def new_semester(label: str) -> None:
+    """Make another semester the current one, starting from the current one's settings."""
+    from .memo import forget_all
+    from .settings_io import current_semester, read_settings, save_settings
+
+    with get_engine().begin() as conn:
+        before = current_semester(conn).label
+        if label.strip() == before:
+            sys.exit(f"{before!r} is already the current semester.")
+        try:
+            save_settings(conn, {**read_settings(conn), "semester": label.strip()})
+        except ApiError as exc:
+            sys.exit(str(exc.detail))
+    forget_all()
+    print(f"The current semester is now {label.strip()!r} (was {before!r}). Restart the backend so it reads it.")
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="python -m app.cli")
     sub = p.add_subparsers(dest="command", required=True)
@@ -70,9 +89,13 @@ def main(argv: list[str] | None = None) -> None:
     s = sub.add_parser("set-password", help="set a new password for an account")
     s.add_argument("--username", required=True)
     s.add_argument("--password", help="only for scripts; leave out to be asked")
+    n = sub.add_parser("new-semester", help="start another semester for every faculty (e.g. \"Primăvara 2026/2027\")")
+    n.add_argument("--label", required=True)
     args = p.parse_args(argv)
     if args.command == "create-admin":
         create_admin(args.username, args.name, args.faculty, args.email, args.password)
+    elif args.command == "new-semester":
+        new_semester(args.label)
     else:
         set_password(args.username, args.password)
 

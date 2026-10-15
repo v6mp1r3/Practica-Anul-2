@@ -1,35 +1,37 @@
-import type { ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Loading } from './components/ui';
 import type { Role } from './domain/types';
 import { I18nProvider } from './i18n';
-import Assignments from './pages/admin/Assignments';
-import Changes from './pages/admin/Changes';
-import Dashboard from './pages/admin/Dashboard';
-import Editor from './pages/admin/Editor';
-import Evaluations from './pages/admin/Evaluations';
-import Holidays from './pages/admin/Holidays';
-import Generate from './pages/admin/Generate';
-import Groups from './pages/admin/Groups';
-import Rooms from './pages/admin/Rooms';
-import Setup from './pages/admin/Setup';
-import Subjects from './pages/admin/Subjects';
-import Teachers from './pages/admin/Teachers';
-import Timetables from './pages/admin/Timetables';
-import Landing from './pages/landing/Landing';
 import Login, { homeFor } from './pages/Login';
-import Browse from './pages/shared/Browse';
 import FreeRooms from './pages/shared/FreeRooms';
-import Account from './pages/shared/Account';
-import Notifications from './pages/shared/Notifications';
 import TeacherAvailability from './pages/shared/TeacherAvailability';
-import MyAvailability from './pages/teacher/MyAvailability';
 import { StudentSchedule, TeacherSchedule } from './pages/public/Schedule';
 import { AuthProvider, useAuth } from './state/auth';
 import { DataProvider, useData } from './state/data';
 import { ToastProvider } from './state/toast';
 import './styles/index.css';
+
+// Only what a page needs is downloaded: the public timetable first, the rest when it is opened
+const Assignments = lazy(() => import('./pages/admin/Assignments'));
+const Changes = lazy(() => import('./pages/admin/Changes'));
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
+const Editor = lazy(() => import('./pages/admin/Editor'));
+const Evaluations = lazy(() => import('./pages/admin/Evaluations'));
+const Holidays = lazy(() => import('./pages/admin/Holidays'));
+const Generate = lazy(() => import('./pages/admin/Generate'));
+const Groups = lazy(() => import('./pages/admin/Groups'));
+const Rooms = lazy(() => import('./pages/admin/Rooms'));
+const Setup = lazy(() => import('./pages/admin/Setup'));
+const Subjects = lazy(() => import('./pages/admin/Subjects'));
+const Teachers = lazy(() => import('./pages/admin/Teachers'));
+const Timetables = lazy(() => import('./pages/admin/Timetables'));
+const Landing = lazy(() => import('./pages/landing/Landing'));
+const Browse = lazy(() => import('./pages/shared/Browse'));
+const Account = lazy(() => import('./pages/shared/Account'));
+const Notifications = lazy(() => import('./pages/shared/Notifications'));
+const MyAvailability = lazy(() => import('./pages/teacher/MyAvailability'));
 
 /** Only render children for signed-in users with one of the given roles. */
 function RequireRole({ roles, children }: { roles?: Role[]; children: ReactNode }) {
@@ -51,70 +53,72 @@ function RequireData({ children }: { children: ReactNode }) {
 
 function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route
-        element={
-          <RequireRole>
-            <Layout />
-          </RequireRole>
-        }
-      >
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/browse" element={<Browse />} />
-      </Route>
-      <Route
-        element={
-          <RequireRole roles={['teacher']}>
-            <Layout />
-          </RequireRole>
-        }
-      >
-        <Route path="/my-availability" element={<MyAvailability />} />
-      </Route>
-      {/* Public, no sign-in: students pick their group, teachers pick themselves */}
-      <Route
-        element={
-          <RequireData>
-            <Layout />
-          </RequireData>
-        }
-      >
-        <Route path="/studenti" element={<StudentSchedule />} />
-        <Route path="/profesori" element={<TeacherSchedule />} />
-        <Route path="/rooms" element={<FreeRooms />} />
-        <Route path="/teachers" element={<TeacherAvailability />} />
-      </Route>
-      <Route
-        path="/admin"
-        element={
-          <RequireRole roles={['admin']}>
-            <Layout />
-          </RequireRole>
-        }
-      >
-        <Route index element={<Dashboard />} />
-        <Route path="setup" element={<Setup />} />
-        <Route path="teachers" element={<Teachers />} />
-        <Route path="rooms" element={<Rooms />} />
-        <Route path="groups" element={<Groups />} />
-        <Route path="subjects" element={<Subjects />} />
-        <Route path="assignments" element={<Assignments />} />
-        <Route path="generate" element={<Generate />} />
-        <Route path="timetables" element={<Timetables />} />
-        <Route path="timetables/:id" element={<Editor />} />
-        <Route path="changes" element={<Changes />} />
-        <Route path="evaluations" element={<Evaluations />} />
-        <Route path="holidays" element={<Holidays />} />
-      </Route>
-      {/* old student/teacher pages and anything unknown */}
-      <Route path="/orar" element={<Navigate to="/studenti" replace />} />
-      <Route path="/student" element={<Navigate to="/studenti" replace />} />
-      <Route path="/teacher/*" element={<Navigate to="/profesori" replace />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<Loading />}>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          element={
+            <RequireRole>
+              <Layout />
+            </RequireRole>
+          }
+        >
+          <Route path="/account" element={<Account />} />
+          <Route path="/browse" element={<Browse />} />
+        </Route>
+        <Route
+          element={
+            <RequireRole roles={['teacher']}>
+              <Layout />
+            </RequireRole>
+          }
+        >
+          <Route path="/my-availability" element={<MyAvailability />} />
+        </Route>
+        {/* Public, no sign-in: students pick their group, teachers pick themselves */}
+        <Route
+          element={
+            <RequireData>
+              <Layout />
+            </RequireData>
+          }
+        >
+          <Route path="/studenti" element={<StudentSchedule />} />
+          <Route path="/profesori" element={<TeacherSchedule />} />
+          <Route path="/rooms" element={<FreeRooms />} />
+          <Route path="/teachers" element={<TeacherAvailability />} />
+          <Route path="/notifications" element={<Notifications />} />
+        </Route>
+        <Route
+          path="/admin"
+          element={
+            <RequireRole roles={['admin']}>
+              <Layout />
+            </RequireRole>
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="setup" element={<Setup />} />
+          <Route path="teachers" element={<Teachers />} />
+          <Route path="rooms" element={<Rooms />} />
+          <Route path="groups" element={<Groups />} />
+          <Route path="subjects" element={<Subjects />} />
+          <Route path="assignments" element={<Assignments />} />
+          <Route path="generate" element={<Generate />} />
+          <Route path="timetables" element={<Timetables />} />
+          <Route path="timetables/:id" element={<Editor />} />
+          <Route path="changes" element={<Changes />} />
+          <Route path="evaluations" element={<Evaluations />} />
+          <Route path="holidays" element={<Holidays />} />
+        </Route>
+        {/* old student/teacher pages and anything unknown */}
+        <Route path="/orar" element={<Navigate to="/studenti" replace />} />
+        <Route path="/student" element={<Navigate to="/studenti" replace />} />
+        <Route path="/teacher/*" element={<Navigate to="/profesori" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

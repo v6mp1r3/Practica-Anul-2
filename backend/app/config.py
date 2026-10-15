@@ -22,6 +22,8 @@ class Config(BaseSettings):
     # GET /dataset answers from memory for this long (any change saved through this server clears it at once;
     # changes made elsewhere, e.g. a teammate's server on the same database, show up within this time). 0 = off
     dataset_cache_seconds: float = 30.0
+    # the current semester follows the calendar (semester_clock.py); tests turn it off
+    auto_semester: bool = True
 
     @property
     def sqlalchemy_url(self) -> str:

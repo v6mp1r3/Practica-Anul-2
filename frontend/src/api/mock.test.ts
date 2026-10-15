@@ -52,3 +52,76 @@ describe('teacher accounts (demo API)', () => {
     await expect(api.login('ana.teacher', 'second-pass')).rejects.toMatchObject({ status: 401 });
   });
 });
+
+describe('the demo refuses what the server refuses', () => {
+  it('keeps each faculty administrator to their own faculty', async () => {
+    await api.login('ion.sirbu', 'demo'); // FET
+    const ds = await api.getDataset();
+    const fcimGroup = ds.groups.find((g) => g.faculty?.includes('Calculatoare'))!;
+    await expect(api.update('groups', { ...fcimGroup, size: 1 })).rejects.toMatchObject({ status: 403 });
+    await expect(
+      api.saveTimetable({
+        id: 'x1',
+        name: 'x',
+        status: 'draft',
+        createdAt: '',
+        updatedAt: '',
+        algorithm: '',
+        groupIds: [fcimGroup.id],
+        lessons: [],
+      }),
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(
+      api.saveExamPlan({
+        faculty: '',
+        round: 'session',
+        status: 'draft',
+        updatedAt: '',
+        events: [
+          {
+            id: 'e',
+            kind: 'exam',
+            round: 'session',
+            subjectId: 's1',
+            groupId: fcimGroup.id,
+            teacherId: 't1',
+            roomId: 'r1',
+            date: '2026-12-15',
+            start: '10:00',
+            end: '11:30',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(api.updateProfile({ name: 'Ion', faculty: fcimGroup.faculty })).rejects.toMatchObject({ status: 403 });
+    await expect(api.saveSettings({ ...ds.settings, semester: 'Primăvara 2026/2027' })).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('checks accounts and schedule changes like the server', async () => {
+    await api.login('elena.popescu', 'demo');
+    await expect(api.createUser({ username: 'boss', name: 'Boss', role: 'admin', password: 'long-enough-1' })).rejects.toMatchObject({
+      status: 422,
+    });
+    const ion = (await api.listUsers()).find((u) => u.username === 'ion.sirbu')!;
+    await expect(api.deleteUser(ion.id)).rejects.toMatchObject({ status: 403 });
+    const ds = await api.getDataset();
+    const a = ds.assignments.find((x) => x.teacherId === 't1')!;
+    // no published timetable in a fresh demo store: refused with the server's reason
+    if (!(await api.getPublished()))
+      await expect(
+        api.createChange({ date: '2026-10-19', assignmentId: a.id, slot: 0, kind: 'room', fromRoomId: 'r1', roomId: 'r2' }),
+      ).rejects.toMatchObject({
+        status: 422,
+      });
+  });
+});
+
+describe('notifications without an account', () => {
+  it('shows students every change but not the administration’s own', async () => {
+    await api.logout();
+    const list = await api.listPublicNotifications();
+    expect(list.length).toBeGreaterThan(0);
+    expect(list.every((n) => !n.roles.length || n.roles.includes('student'))).toBe(true);
+    expect(list.some((n) => n.kind === 'availability')).toBe(false); // added for the administration by an earlier test
+  });
+});

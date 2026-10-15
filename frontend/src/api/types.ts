@@ -139,5 +139,7 @@ export interface Api {
   unpublishExamPlan(round: ExamRound): Promise<ExamPlan>;
 
   listNotifications(): Promise<Notification[]>;
+  /** Without an account (students): every group's changes; what was read is kept in the browser. */
+  listPublicNotifications(): Promise<Notification[]>;
   markNotificationsRead(ids: string[]): Promise<void>;
 }

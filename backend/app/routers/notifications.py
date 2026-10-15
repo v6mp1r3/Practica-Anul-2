@@ -8,6 +8,12 @@ from ..services import notify
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
+@router.get("/public")
+def list_public(conn: Connection = Depends(get_conn)):
+    """Public: students read the changes without an account (every group's; read state stays in the browser)."""
+    return notify.list_public(conn)
+
+
 @router.get("")
 def list_notifications(user: CurrentUser = Depends(current_user), conn: Connection = Depends(get_conn)):
     return notify.list_for(conn, user.id, user.role, user.teacher_id)

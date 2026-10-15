@@ -13,6 +13,7 @@ import type {
   NotificationKind,
   Role,
   ScheduleChange,
+  Stream,
   Timetable,
   User,
 } from '../domain/types';
@@ -20,6 +21,8 @@ import { generateExams, generateMidterms } from '../domain/exams';
 import { DatasetIndex } from '../domain/indexes';
 import { createRng } from '../domain/rng';
 import { deriveClusters } from '../domain/clusters';
+import { dueSemester, semesterOrder } from '../domain/holidays';
+import { freeRoomsFor, freeTeachersFor, lessonOfChange } from '../domain/changes';
 import { ApiError } from './http';
 import type { Api, CollectionName, Collections } from './types';
 
@@ -285,6 +288,59 @@ function requireRole(...roles: Role[]): User {
   return u;
 }
 
+// ---- the same faculty rules as the server (backend/app/scope.py, routers/data.py), so the demo refuses what it refuses
+const NOT_YOURS = "Only your own faculty's groups can be changed";
+const OTHER_FACULTY = 'This record belongs to another faculty';
+
+function myGroups(u: User): Set<string> {
+  return new Set(store.dataset.groups.filter((g) => g.faculty === u.faculty).map((g) => g.id));
+}
+/** 403 unless every one of these groups is the administrator's faculty's (422 for an unknown one). */
+function requireMine(u: User, groupIds: Iterable<string>, message = NOT_YOURS) {
+  const known = new Set(store.dataset.groups.map((g) => g.id));
+  const mine = myGroups(u);
+  for (const g of groupIds) {
+    if (!known.has(g)) throw new ApiError(422, 'Unknown group');
+    if (!mine.has(g)) throw new ApiError(403, message);
+  }
+}
+/** 403 when the other-faculty part of a list of groups changes. */
+function keepsOthers(u: User, before: string[], after: string[]) {
+  const mine = myGroups(u);
+  const others = (l: string[]) => [...new Set(l.filter((g) => !mine.has(g)))].sort().join(',');
+  if (others(before) !== others(after)) throw new ApiError(403, NOT_YOURS);
+}
+const audienceGroups = (a: Pick<Assignment, 'audience'>): string[] =>
+  a.audience.kind === 'stream'
+    ? (a.audience.groupIds ?? store.dataset.streams.find((s) => s.id === a.audience.id)?.groupIds ?? [])
+    : [a.audience.id];
+/** Like the server's per-collection checks: a record of another faculty can't be changed or removed. */
+function checkRecord(u: User, name: CollectionName, existing: unknown, data?: Record<string, unknown>) {
+  const mine = myGroups(u);
+  if (name === 'groups' || name === 'teachers' || name === 'rooms' || name === 'subjects') {
+    const owner = (existing as { faculty?: string } | undefined)?.faculty;
+    if (owner && owner !== u.faculty) throw new ApiError(403, OTHER_FACULTY);
+    if (data?.faculty && data.faculty !== u.faculty) throw new ApiError(403, 'You can only manage your own faculty');
+  } else if (name === 'streams') {
+    const before = (existing as Stream | undefined)?.groupIds;
+    if (before && !before.some((g) => mine.has(g))) throw new ApiError(403, OTHER_FACULTY);
+    if (data) {
+      if (before) keepsOthers(u, before, (data.groupIds as string[]) ?? []);
+      else requireMine(u, (data.groupIds as string[]) ?? []);
+    }
+  } else if (name === 'assignments') {
+    if (existing && !audienceGroups(existing as Assignment).some((g) => mine.has(g))) throw new ApiError(403, OTHER_FACULTY);
+    if (data && !audienceGroups(data as unknown as Assignment).some((g) => mine.has(g)))
+      throw new ApiError(403, 'An assignment must teach at least one group of your faculty');
+  }
+}
+/** A pair's room or teacher is changed only by the faculty of one of its groups. */
+function requireOwnPair(u: User, assignmentId: string) {
+  if (!store.dataset.assignments.some((a) => a.id === assignmentId)) throw new ApiError(404, 'Not found');
+  const mine = myGroups(u);
+  if (!groupsOf(assignmentId).some((g) => mine.has(g))) throw new ApiError(403, 'This pair belongs to another faculty');
+}
+
 /** Store a notification by kind; the text is rendered in each viewer's language. */
 function notify(
   kind: NotificationKind,
@@ -357,14 +413,14 @@ export function createMockApi(): Api {
       const u = currentUser();
       const name = update.name.trim();
       if (!name) throw new ApiError(422, 'Name is required');
-      Object.assign(u, {
-        name,
-        email: update.email?.trim() || undefined,
-        phone: update.phone?.trim() || undefined,
-        emailNotifications: !!update.emailNotifications,
-      });
+      // only what is sent changes, like the server
+      u.name = name;
+      if ('email' in update) u.email = update.email?.trim() || undefined;
+      if ('phone' in update) u.phone = update.phone?.trim() || undefined;
+      if ('emailNotifications' in update) u.emailNotifications = !!update.emailNotifications;
       if (update.avatar !== undefined) u.avatar = update.avatar ?? undefined;
-      if (update.faculty !== undefined && u.role === 'admin') {
+      if (update.faculty && u.role === 'admin' && update.faculty !== u.faculty) {
+        if (u.faculty) throw new ApiError(403, "Your faculty is set with your account and can't be changed");
         if (!store.dataset.settings.faculties.includes(update.faculty)) throw new ApiError(422, 'Unknown faculty');
         u.faculty = update.faculty;
       }
@@ -384,7 +440,11 @@ export function createMockApi(): Api {
       return delay(store.users);
     },
     async createUser(nu) {
-      requireRole('admin');
+      const me = requireRole('admin');
+      if (nu.role !== 'teacher' || !nu.teacherId) throw new ApiError(422, 'Only teacher accounts can be created (with teacherId)');
+      const teacher = store.dataset.teachers.find((x) => x.id === nu.teacherId);
+      if (!teacher) throw new ApiError(404, 'Not found');
+      if (teacher.faculty && teacher.faculty !== me.faculty) throw new ApiError(403, OTHER_FACULTY);
       const username = nu.username.trim().toLowerCase();
       if (!username || store.users.some((u) => u.username === username)) throw new ApiError(422, 'Username taken');
       // one account per teacher
@@ -418,6 +478,9 @@ export function createMockApi(): Api {
     async deleteUser(id) {
       const me = requireRole('admin');
       if (id === me.id) throw new ApiError(422, 'You cannot delete your own account');
+      const target = store.users.find((u) => u.id === id);
+      if (!target) throw new ApiError(404, 'Not found');
+      if (target.role !== 'teacher') throw new ApiError(403, 'Only teacher accounts are managed here');
       store.users = store.users.filter((u) => u.id !== id);
       persist();
       return delay(undefined);
@@ -432,11 +495,20 @@ export function createMockApi(): Api {
 
     // public: anyone can see the timetable, rooms and teachers without signing in
     async getDataset() {
+      // the next semester starts with the winter (or summer) break, like on the server
+      const st = store.dataset.settings;
+      const due = dueSemester(new Date(), st.evaluation?.holidayOverrides);
+      if (semesterOrder(due) > semesterOrder(st.semester)) {
+        st.semester = due;
+        persist();
+      }
       const custom = (store.dataset.clusters ?? []).filter((c) => c.kind === 'custom');
       return delay({ ...store.dataset, clusters: [...deriveClusters(store.dataset.groups), ...custom] });
     },
     async saveSettings(settings) {
       requireRole('admin');
+      if (settings.semester && settings.semester !== store.dataset.settings.semester)
+        throw new ApiError(403, 'The semester is changed on the server: python -m app.cli new-semester');
       store.dataset.settings = settings;
       persist();
       return delay(settings);
@@ -447,7 +519,11 @@ export function createMockApi(): Api {
       return delay(collection(name));
     },
     async create(name, item) {
-      requireRole('admin');
+      const u = requireRole('admin');
+      if ((name === 'teachers' || name === 'rooms' || name === 'subjects') && !(item as { faculty?: string }).faculty)
+        item = { ...item, faculty: u.faculty };
+      if (name === 'groups') item = { ...item, faculty: u.faculty } as typeof item;
+      checkRecord(u, name, undefined, item as unknown as Record<string, unknown>);
       if (name === 'assignments') item = withSubjectStream(item as unknown as Assignment) as unknown as typeof item;
       const created = { ...item, id: uid(name[0]) } as Collections[typeof name];
       collection(name).push(created);
@@ -455,19 +531,21 @@ export function createMockApi(): Api {
       return delay(created);
     },
     async update(name, item) {
-      requireRole('admin');
+      const u = requireRole('admin');
       const list = collection(name);
       const i = list.findIndex((x) => x.id === item.id);
       if (i < 0) throw new ApiError(404, 'Not found');
+      checkRecord(u, name, list[i], item as unknown as Record<string, unknown>);
       if (name === 'assignments') item = withSubjectStream(item as unknown as Assignment) as unknown as typeof item;
       list[i] = item;
       persist();
       return delay(item);
     },
     async remove(name, id) {
-      requireRole('admin');
+      const u = requireRole('admin');
       const list = collection(name);
       const i = list.findIndex((x) => x.id === id);
+      if (i >= 0) checkRecord(u, name, list[i]);
       if (i >= 0) list.splice(i, 1);
       if (name !== 'assignments') {
         // Drop teaching loads that pointed at the deleted record
@@ -497,15 +575,19 @@ export function createMockApi(): Api {
       return delay(undefined);
     },
     async importSubjects(subjects) {
-      requireRole('admin');
-      const created = subjects.map((s) => ({ ...s, id: uid('s') }));
+      const u = requireRole('admin');
+      for (const s of subjects) if (s.faculty && s.faculty !== u.faculty) throw new ApiError(403, 'You can only manage your own faculty');
+      const created = subjects.map((s) => ({ ...s, faculty: s.faculty ?? u.faculty, id: uid('s') }));
       store.dataset.subjects.push(...created);
       persist();
       return delay(created);
     },
 
     async saveCluster(c) {
-      requireRole('admin');
+      const u = requireRole('admin');
+      const before = c.id ? (store.dataset.clusters ?? []).find((x) => x.id === c.id && x.kind === 'custom') : undefined;
+      if (before) requireMine(u, before.groupIds, "This cluster has another faculty's groups");
+      requireMine(u, c.groupIds);
       const name = c.name.trim();
       if (!name) throw new ApiError(422, 'A cluster needs a name');
       const all = store.dataset.clusters ?? [];
@@ -520,7 +602,15 @@ export function createMockApi(): Api {
       return delay(saved);
     },
     async deleteCluster(id) {
-      requireRole('admin');
+      const u = requireRole('admin');
+      const found = (store.dataset.clusters ?? []).find((x) => x.id === id);
+      if (!found) {
+        if (deriveClusters(store.dataset.groups).some((x) => x.id === id))
+          throw new ApiError(400, 'Only custom clusters can be changed; the others follow the groups');
+        throw new ApiError(404, 'Not found');
+      }
+      if (found.kind !== 'custom') throw new ApiError(400, 'Only custom clusters can be changed; the others follow the groups');
+      requireMine(u, found.groupIds, "This cluster has another faculty's groups");
       store.dataset.clusters = (store.dataset.clusters ?? []).filter((x) => x.id !== id);
       for (const s of store.dataset.subjects) if (s.clusterIds) s.clusterIds = s.clusterIds.filter((x) => x !== id);
       persist();
@@ -547,13 +637,28 @@ export function createMockApi(): Api {
       return delay(store.timetables.filter((t) => t.status !== 'variant' || Date.now() - Date.parse(t.createdAt) < 864e5));
     },
     async getTimetable(id) {
-      currentUser();
+      const u = currentUser();
       const t = store.timetables.find((x) => x.id === id);
-      if (!t) throw new ApiError(404, 'Not found');
+      // drafts and variants are the administration's work in progress
+      if (!t || (u.role !== 'admin' && t.status !== 'published')) throw new ApiError(404, 'Not found');
       return delay(t);
     },
     async saveTimetable(t) {
-      requireRole('admin');
+      const u = requireRole('admin');
+      const old = store.timetables.find((x) => x.id === t.id);
+      if (!old) requireMine(u, t.groupIds);
+      else {
+        // only one's own part changes: the other faculties' groups, and the pairs teaching none of mine, stay
+        keepsOthers(u, old.groupIds, t.groupIds);
+        const mine = myGroups(u);
+        const others = (ls: Timetable['lessons']) =>
+          ls
+            .filter((l) => !groupsOf(l.assignmentId).some((g) => mine.has(g)))
+            .map((l) => `${l.assignmentId}|${l.day}|${l.slot}|${l.roomId}|${l.parity}|${l.date ?? ''}`)
+            .sort()
+            .join(';');
+        if (others(old.lessons) !== others(t.lessons)) throw new ApiError(403, "Only your own faculty's pairs can be changed");
+      }
       const saved: Timetable = {
         ...t,
         status: t.status === 'variant' ? 'draft' : t.status,
@@ -571,15 +676,20 @@ export function createMockApi(): Api {
       return delay(saved);
     },
     async deleteTimetable(id) {
-      requireRole('admin');
+      const u = requireRole('admin');
+      const t = store.timetables.find((x) => x.id === id);
+      if (!t) throw new ApiError(404, 'Not found');
+      if (t.status === 'published') throw new ApiError(409, "The published timetable can't be deleted; unpublish it first");
+      requireMine(u, t.groupIds);
       store.timetables = store.timetables.filter((t) => t.id !== id);
       persist();
       return delay(undefined);
     },
     async publishTimetable(id) {
-      requireRole('admin');
+      const u = requireRole('admin');
       const t = store.timetables.find((x) => x.id === id);
       if (!t) throw new ApiError(404, 'Not found');
+      if (t.status !== 'published') requireMine(u, t.groupIds);
       const prev = store.timetables.find((x) => x.status === 'published');
       if (prev && prev.id !== t.id) {
         // Only this timetable's groups are replaced; other faculties' published pairs stay
@@ -744,6 +854,11 @@ export function createMockApi(): Api {
     },
     async saveExamPlan(plan) {
       const u = requireRole('admin');
+      requireMine(
+        u,
+        plan.events.map((e) => e.groupId),
+        "An exam plan holds only your own faculty's groups",
+      );
       const saved: ExamPlan = { ...plan, faculty: u.faculty ?? '', updatedAt: new Date().toISOString() };
       store.examPlans = [...(store.examPlans ?? []).filter((p) => !(p.faculty === saved.faculty && p.round === saved.round)), saved];
       persist();
@@ -760,7 +875,26 @@ export function createMockApi(): Api {
       return delay(store.changes, 0);
     },
     async createChange(change) {
-      requireRole('admin');
+      const u = requireRole('admin');
+      requireOwnPair(u, change.assignmentId);
+      const published = store.timetables.find((t) => t.status === 'published');
+      if (!published) throw new ApiError(422, 'There is no published timetable');
+      const ds = store.dataset;
+      const idx = new DatasetIndex(ds);
+      const lesson = lessonOfChange(ds, published.lessons, { ...change, id: '', createdAt: '' });
+      if (!lesson) throw new ApiError(422, 'That pair does not take place on that date in the published timetable');
+      if (change.fromRoomId !== lesson.roomId) throw new ApiError(422, 'fromRoomId is not the room the pair is planned in');
+      if (change.kind === 'room') {
+        if (
+          !change.roomId ||
+          !freeRoomsFor(ds, idx, published.lessons, store.changes, change.date, lesson).some((r) => r.id === change.roomId)
+        )
+          throw new ApiError(422, 'That room is busy then or does not fit the pair');
+      } else if (
+        !change.teacherId ||
+        !freeTeachersFor(ds, idx, published.lessons, store.changes, change.date, lesson).some((t) => t.id === change.teacherId)
+      )
+        throw new ApiError(422, 'That teacher is busy then or unavailable');
       const created: ScheduleChange = { ...change, id: uid('c'), createdAt: new Date().toISOString() };
       store.changes.push(created);
       notify(
@@ -791,7 +925,10 @@ export function createMockApi(): Api {
       return delay(created);
     },
     async deleteChange(id) {
-      requireRole('admin');
+      const u = requireRole('admin');
+      const c = store.changes.find((x) => x.id === id);
+      if (!c) throw new ApiError(404, 'Not found');
+      requireOwnPair(u, c.assignmentId);
       store.changes = store.changes.filter((c) => c.id !== id);
       persist();
       return delay(undefined);
@@ -802,6 +939,16 @@ export function createMockApi(): Api {
       const read = new Set(store.readIds[u.id] ?? []);
       return delay(
         store.notifications.filter((n) => concerns(n, u)).map((n) => ({ ...n, read: read.has(n.id) })),
+        0,
+      );
+    },
+    async listPublicNotifications() {
+      // students, without an account: every change for every group (not the administration's own)
+      return delay(
+        store.notifications
+          .filter((n) => !n.roles.length || n.roles.includes('student'))
+          .slice(0, 200)
+          .map((n) => ({ ...n, teacherIds: undefined, read: false })),
         0,
       );
     },

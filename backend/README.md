@@ -38,7 +38,7 @@ transaction pooler (6543) work.
 
 To create the tables, paste `db/supabase_setup.sql` into the Supabase SQL Editor (or run
 `psql "$DATABASE_URL" -f db/schema.sql -f db/seed.sql`). If you created them earlier, also run the files
-in `db/migrations/` you have not run yet, in order:
+in `db/migrations/` you have not run yet, in this order (by number):
 
 | File | What it does |
 | --- | --- |
@@ -48,27 +48,40 @@ in `db/migrations/` you have not run yet, in order:
 | `004_project_activity_and_half_pairs.sql` | Adds the kind of pair "project" and half-pair loads. **Needed**, run it on its own. |
 | `005_clusters.sql` | Adds the clusters (made from the groups) and the subject tags. **Needed.** |
 | `005_subject_language.sql` | Adds French and gives every subject a language of instruction (AM in Russian is separate from AM in Romanian). **Needed.** |
+| `006_subject_semester_assessment.sql` | Adds the semester and the assessment (Midterm 1, Midterm 2, Exam) to subjects. **Needed.** |
+| `007_cluster_language_form_custom.sql` | Adds the language and form-of-study clusters and the custom clusters. **Needed**, after 005. |
 | `008_remove_subject_language.sql` | Removes the language of subjects and merges the per-language copies of a subject into one (the Romanian one is kept). **Run it in one transaction.** |
+| `009_remove_assignment_parity.sql` | Removes the odd/even choice from teaching loads (the placed pairs keep theirs). **Needed.** |
 | `010_subject_abbreviation.sql` | Adds the abbreviation of a subject, shown in the timetable instead of its code. **Needed.** |
+| `011_teacher_accounts.sql` | Teacher logins: links an account to a teacher (`app_user.teacher_id`) and adds `teacher_date_unavailability` (hours a teacher can't make on one date). **Needed**: without it every sign-in fails. |
 | `012_dual_group_parts.sql` | Adds `group_dual`: the two parts (name, program, size) of a dual group. **Needed.** |
 | `013_group_delete_cascade.sql` | A deleted group also leaves the exam timetable (it already left the timetables). **Needed.** |
 | `014_dual_one_size.sql` | A dual group has one number of students; its two parts keep only a name and a program. **Needed.** |
 | `015_dual_group_specialities.sql` | A dual group belongs to the speciality of each of its two groups. **Needed.** |
-| `009_remove_assignment_parity.sql` | Removes the odd/even choice from teaching loads (the placed pairs keep theirs). **Needed.** |
-| `007_cluster_language_form_custom.sql` | Adds the language and form-of-study clusters and the custom clusters. **Needed**, after 005. |
-| `006_subject_semester_assessment.sql` | Adds the semester and the assessment (Midterm 1, Midterm 2, Exam) to subjects. **Needed.** |
 
 The backend connects with the database password and bypasses row-level security; every table has RLS on with no
 policies, so Supabase's own public API can read nothing.
 
 ### Accounts
 
-There is no accounts page: administrators are created on the server. Each belongs to one faculty
-(`FCIM`, `FET`, … see the `faculty` table) and changes only that faculty's groups, subjects, teachers and rooms.
+Administrators are created on the server; teacher accounts are made in the app (Profesori → a teacher →
+Cont). Each administrator belongs to one faculty (`FCIM`, `FET`, … see the `faculty` table), set here and not
+changeable in the app, and changes only that faculty's groups, subjects, teachers and rooms, and only its own
+part of the timetables, streams, clusters, schedule changes and exam plans (docs/API.md, Roles).
 
 ```bash
 .venv/bin/python -m app.cli create-admin --username ion.sirbu --name "Ion Sirbu" --faculty FET   # asks for a password
 .venv/bin/python -m app.cli set-password --username ion.sirbu
+```
+
+A new semester starts for every faculty at once, and by itself: spring becomes the current semester on
+the first day of the winter break (the Monday of the week of 28 December, or where Zile libere și vacanțe
+moved it), and the next autumn on the first day of the summer break (1 July), so the faculties build the
+timetable during the break (`app/semester_clock.py`). It keeps the current settings. To start one at
+another time, do it here, then restart the backend:
+
+```bash
+.venv/bin/python -m app.cli new-semester --label "Primăvara 2026/2027"
 ```
 
 Passwords are 8–72 bytes and stored as bcrypt hashes. Login returns a JWT (valid `JWT_EXPIRE_HOURS`, default 12)
@@ -143,8 +156,9 @@ old plan; the response also says how many exams did not fit (`warnings`). `{"see
 - **Sign-in is limited:** 8 failed attempts for one account in 10 minutes lock it for a while (`429`), counted in
   the memory of one server process. Tokens are not revoked: logging out only makes the client forget its token,
   and a token stays valid until it expires (12 h) even after a password change.
-- **Settings belong to a semester.** `PUT /settings` with a new `semester` label (`Toamna 2027/2028`) starts a new
-  semester and makes it current; timetables, exam plans and the calendar are per semester.
+- **Settings belong to a semester.** A new one becomes current by itself with the winter or summer break, or with
+  `python -m app.cli new-semester --label "Toamna 2027/2028"` (`PUT /settings` refuses another label);
+  timetables, exam plans and the calendar are per semester.
 - **Pair times are shared** by all semesters. Removing a pair time that a timetable or an availability still uses
   is refused (`409`).
 - **Queries are plain SQL** (SQLAlchemy Core `text()`), so the `.sql` files are the only description of the schema.
