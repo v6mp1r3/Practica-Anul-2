@@ -48,13 +48,16 @@ export function Segmented<T extends string>({
   value,
   options,
   onChange,
+  wrap,
 }: {
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
+  /** Long labels go onto more lines instead of scrolling. */
+  wrap?: boolean;
 }) {
   return (
-    <div className="segmented" role="group">
+    <div className={wrap ? 'segmented wrap' : 'segmented'} role="group">
       {options.map((o) => (
         <button key={o.value} type="button" aria-pressed={o.value === value} onClick={() => onChange(o.value)}>
           {o.label}

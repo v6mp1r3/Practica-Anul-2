@@ -12,7 +12,7 @@ import { HolidaysCard } from '../../components/Holidays';
 import { Legend, TimetableGrid, type LessonField } from '../../components/TimetableGrid';
 import { ViewPicker } from '../../components/ViewPicker';
 import { Loading, PageHeader } from '../../components/ui';
-import { ExportDialog, downloadTimetable } from '../../components/ExportDialog';
+import { ExportDialog, downloadTimetable, groupsByYear } from '../../components/ExportDialog';
 import { dropExtra, loadDrift, placeMissing, loadsOfTimetable } from '../../domain/generator';
 import { findWarnings, scoreTimetable } from '../../domain/score';
 import type { Conflict, Dataset, Lesson, Parity, Timetable } from '../../domain/types';
@@ -286,12 +286,16 @@ export default function Editor() {
       {exporting && (
         <ExportDialog
           viewName={viewName()}
+          defaultWhat="view"
           groupCount={allGroupIds.length}
+          years={groupsByYear(index, allGroupIds)}
+          defaultYear={view.kind === 'group' ? index.groups.get(view.id)?.year : undefined}
           onClose={() => setExporting(false)}
-          onExport={(what, format) => {
+          onExport={(what, format, year) => {
             downloadTimetable({
               what,
               format,
+              year,
               index,
               settings: dataset.settings,
               viewName: viewName(),

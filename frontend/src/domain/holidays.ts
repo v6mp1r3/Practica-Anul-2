@@ -173,12 +173,11 @@ export function holidaysOf(ev: Pick<EvaluationSettings, 'semesterStart' | 'vacat
     if (o === null) return []; // hidden for this year
     return [o ? { ...h, ...o } : h];
   });
-  const custom: Holiday[] = (ev.vacations ?? []).map((v, i) => ({
-    ...v,
-    id: `custom:${i}`,
-    auto: false,
-    kind: v.start === v.end ? 'day' : 'break',
-  }));
+  // the ones added by hand belong to their own academic year (1 September – 31 August)
+  const inYear = (v: Vacation) => v.end >= iso(y, 9, 1) && v.start <= iso(y + 1, 8, 31);
+  const custom: Holiday[] = (ev.vacations ?? []).flatMap((v, i) =>
+    inYear(v) ? [{ ...v, id: `custom:${i}`, auto: false, kind: v.start === v.end ? ('day' as const) : ('break' as const) }] : [],
+  );
   // saved stores still hold the old hand-written list: drop what the rules already give
   const fresh = custom.filter((c) => !auto.some((a) => a.start === c.start && a.end === c.end));
   return [...auto, ...fresh].sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));

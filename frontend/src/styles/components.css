@@ -367,6 +367,9 @@ table.table {
   font-weight: 550;
   color: var(--text-2);
 }
+.segmented.wrap {
+  flex-wrap: wrap;
+}
 .segmented button[aria-pressed='true'] {
   background: var(--ink);
   color: #fff;
@@ -626,6 +629,9 @@ table.table {
   }
   .segmented::-webkit-scrollbar {
     display: none;
+  }
+  .segmented.wrap {
+    overflow: visible;
   }
   .card-header {
     flex-wrap: wrap;
@@ -1170,6 +1176,37 @@ button.holiday-row {
 }
 button.holiday-row:last-of-type {
   border-bottom: none;
+}
+/* a day off and its delete / hide button */
+.holiday-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.holiday-item:last-of-type {
+  border-bottom: none;
+}
+.holiday-item > button.holiday-row {
+  flex: 1;
+  min-width: 0;
+  border-bottom: none;
+}
+/* name, from, to and the button on one line; one under the other on phones */
+.holiday-add {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) auto auto auto;
+  align-items: end;
+  gap: 12px;
+}
+.holiday-add-error {
+  grid-column: 1 / -1;
+  color: var(--danger);
+}
+@media (max-width: 760px) {
+  .holiday-add {
+    grid-template-columns: 1fr;
+  }
 }
 button.holiday-row:hover {
   background: var(--surface-2);
