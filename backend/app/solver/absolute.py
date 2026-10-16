@@ -57,7 +57,7 @@ class _Views:
 
 def find_violations(ds: dict, idx: DatasetIndex, lessons: list[dict], rules: Rules, views: _Views | None = None) -> list[tuple]:
     """(view, day, week, kind, [lessons of that view, day and week]) for every group day that breaks a rule that is on;
-    kind is "gap" or "thin". A view that needs fewer pairs a week than the minimum cannot reach it: it has no thin days."""
+    kind is "gap", "thin" or "empty" (a study day with no pair at all). A view that needs fewer pairs a week than the minimum cannot reach it: it has no thin days."""
     s = ds["settings"]
     views = views or _Views(ds, idx)
     weeks = ["odd", "even"] if s["weekParity"] else ["weekly"]
@@ -73,6 +73,8 @@ def find_violations(ds: dict, idx: DatasetIndex, lessons: list[dict], rules: Rul
             for w in weeks:
                 dl = [l for l in vl if l["day"] == d and in_week(l, w)]
                 if not dl:
+                    if rules.thin and views.required.get(view, 0) >= minimum * len(idx.group_days(view[0])):
+                        out.append((view, d, w, "empty", dl))  # a day without pairs, when the view has enough for every day
                     continue
                 slots = sorted({l["slot"] for l in dl})
                 if rules.gaps and gaps_in_day(slots) > 0:
@@ -109,6 +111,8 @@ def enforce(ds: dict, idx: DatasetIndex, lessons: list[dict], rules: Rules, prot
         for view, d, w, kind, dl in find_violations(ds, idx, lessons, rules, views):
             if any(l["id"] in dropped for l in dl):
                 continue  # an earlier fix in this round already changed this day
+            if kind == "empty":
+                continue  # nothing to take out: the search puts pairs on that day
             if kind == "thin":
                 out = dl
             else:

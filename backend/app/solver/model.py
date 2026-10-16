@@ -21,12 +21,12 @@ from dataclasses import dataclass, field
 from ortools.sat.python import cp_model
 
 from ..domain.indexes import DatasetIndex, teacher_ids
-from ..domain.score import SOFT_WEIGHTS, gaps_in_day
+from ..domain.score import ABSOLUTE_WEIGHT, SOFT_WEIGHTS, gaps_in_day
 from ..domain.slots import in_week, lessons_overlap, slot_key
 from ..domain.weeks import WeekNeed
 
 SCALE = 840  # 2 weeks x lcm(1..7): keeps every coefficient an integer
-MISSING_PENALTY = 500_000  # a pair left out costs far more than anything one pair can save (about 600 soft points)
+MISSING_PENALTY = 1_000_000_000  # a pair left out costs more than anything it can save, rules that are absolute included
 WEEKS = ("odd", "even")  # two lessons clash only if they share a week
 WEEKS_OF = {"weekly": WEEKS, "odd": ("odd",), "even": ("even",)}
 
@@ -356,6 +356,8 @@ def solve_weekly(
             # (at most: a half pair counts in the week it goes to; a load that fits nowhere adds nothing. So a view is only skipped when it surely cannot reach it)
             demand = len(cf) + sum(max(need[a["id"]].odd, need[a["id"]].even) + need[a["id"]].either for a in vl if X[a["id"]])
             per_week_loads: dict[str, list] = defaultdict(list)
+            # a view with enough pairs for every study day has pairs on every one of them (no empty day, at least the minimum)
+            every_day = W["thinDays"] >= ABSOLUTE_WEIGHT and min_pairs > 1 and demand >= min_pairs * len(gdays)
             for (d, w), occ in occs.items():
                 if not occ.used():
                     per_week_loads[w].append(0)
@@ -378,6 +380,10 @@ def solve_weekly(
                     for g in occ.gap_terms():
                         if not isinstance(g, int):
                             add_obj(g, round(W["groupGaps"] * share * SCALE))
+                if every_day and not isinstance(load, int):
+                    short = model.NewIntVar(0, min_pairs, "")
+                    model.Add(short >= min_pairs - load)  # a study day without the minimum pairs, an empty one included
+                    add_obj(short, round(W["thinDays"] * share * SCALE))
                 if hard_min and not isinstance(occ.pre[-1], int):
                     model.Add(load >= min_pairs * occ.pre[-1])  # a day that is used has the minimum pairs in this week
                 if len(occ.o) > max_pairs:
