@@ -608,8 +608,9 @@ export const en: Record<MessageKey, string> = {
   'editor.exportView': 'Only {name}',
   'editor.exportFormat': 'Format',
   'editor.exportDownload': 'Download',
-  'editor.csvHint': 'A spreadsheet for Excel, one row per class.',
-  'editor.csvAllHint': 'One spreadsheet for Excel: the group in the first column, group after group.',
+  'editor.xlsxHint': 'An Excel sheet like the printed timetable: days and pairs down the rows, odd week on top, even week below.',
+  'editor.xlsxAllHint':
+    'An Excel file like the printed timetable: a sheet per year of study, the groups side by side, shared lectures spanning their groups.',
 
   'my.now': 'Now',
   'my.next': 'Next today',

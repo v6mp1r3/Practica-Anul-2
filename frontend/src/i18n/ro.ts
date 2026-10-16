@@ -612,8 +612,9 @@ export const ro = {
   'editor.exportView': 'Doar {name}',
   'editor.exportFormat': 'Format',
   'editor.exportDownload': 'Descarcă',
-  'editor.csvHint': 'Tabel pentru Excel, câte un rând pentru fiecare pereche.',
-  'editor.csvAllHint': 'Un singur tabel pentru Excel: grupa în prima coloană, grupă după grupă.',
+  'editor.xlsxHint': 'Tabel Excel ca orarul tipărit: zilele și perechile pe rânduri, săptămâna impară sus, cea pară jos.',
+  'editor.xlsxAllHint':
+    'Un tabel Excel ca orarul tipărit: o foaie pe an de studiu, grupele una lângă alta, cursurile comune unite peste grupe.',
 
   'my.now': 'Acum',
   'my.next': 'Urmează azi',

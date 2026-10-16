@@ -610,8 +610,8 @@ export const ru: Record<MessageKey, string> = {
   'editor.exportView': 'Только {name}',
   'editor.exportFormat': 'Формат',
   'editor.exportDownload': 'Скачать',
-  'editor.csvHint': 'Таблица для Excel, по строке на каждую пару.',
-  'editor.csvAllHint': 'Одна таблица для Excel: группа в первом столбце, группа за группой.',
+  'editor.xlsxHint': 'Таблица Excel как печатное расписание: дни и пары по строкам, нечётная неделя сверху, чётная снизу.',
+  'editor.xlsxAllHint': 'Файл Excel как печатное расписание: лист на каждый курс, группы рядом, общие лекции объединены над группами.',
 
   'my.now': 'Сейчас',
   'my.next': 'Далее сегодня',
