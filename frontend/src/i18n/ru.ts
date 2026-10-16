@@ -707,6 +707,7 @@ export const ru: Record<MessageKey, string> = {
   'score.dayOverload': 'Перегруженные дни',
   'score.thinDays': 'Дни со слишком малым числом пар',
   'score.unevenDays': 'Неравномерная неделя',
+  'score.startSpread': 'Разброс начала занятий',
   'score.preferenceMisses': 'Невыполненные пожелания',
   'exams.consultation': 'Консультация',
   'exams.exam': 'Итоговый экзамен',

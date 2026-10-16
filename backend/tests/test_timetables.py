@@ -18,7 +18,7 @@ def test_save_computes_the_score_on_the_server(client, admin):
     # valid: lecture Monday 2nd pair, seminar Monday 3rd pair, no gaps
     ok = save(client, admin, "A", [w.g1["id"], w.g2["id"]], [lesson(lec["id"], 0, 1, w.r1["id"], "a"), lesson(sem["id"], 0, 2, w.r2["id"], "b")])
     assert ok["status"] == "draft" and ok["score"]["hard"] == 0
-    assert set(ok["score"]["breakdown"]) == {"teacherGaps", "groupGaps", "earlyStarts", "dayOverload", "unevenDays", "preferenceMisses", "roomMisses", "edgeMisses", "shiftMisses"}
+    assert set(ok["score"]["breakdown"]) == {"teacherGaps", "groupGaps", "earlyStarts", "dayOverload", "thinDays", "unevenDays", "startSpread", "preferenceMisses", "roomMisses", "edgeMisses", "shiftMisses"}
     assert ok["score"]["breakdown"]["groupGaps"] == 0 and ok["score"]["breakdown"]["shiftMisses"] == 0
     assert ok["createdAt"].endswith("Z") and ok["updatedAt"].endswith("Z") and len(ok["lessons"]) == 2
     # a gap for group 1 between the pairs costs 12 per empty pair

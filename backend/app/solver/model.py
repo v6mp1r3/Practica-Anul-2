@@ -411,6 +411,37 @@ def solve_weekly(
                         m = model.NewBoolVar("")
                         model.Add(m >= e)
                         add_obj(m, round(W["edgeMisses"] * share * SCALE))
+            # a steady start: the first pair of the group's days should be at about the same time (8:00 on Monday and 17:00
+            # on Tuesday is the worst). st is exactly the first used slot of a day (it is bounded from both sides), the penalty
+            # is the distance between the latest and the earliest first pair of the week
+            for w in score_weeks:
+                firsts = []
+                for d in gdays:
+                    occ = occs.get((d, w))
+                    if occ is None or not occ.used():
+                        continue
+                    n = n_slots
+                    st = model.NewIntVar(0, n - 1, "")
+                    used = model.NewBoolVar("")
+                    for s in range(n):
+                        if isinstance(occ.o[s], int) and occ.o[s] == 0:
+                            continue
+                        model.Add(used >= occ.o[s])
+                        model.Add(st <= s + n * (1 - occ.o[s]))  # not after an occupied slot
+                    model.Add(used <= sum(occ.o))
+                    for s in range(1, n):
+                        before = sum(occ.o[:s])
+                        model.Add(st >= s - s * before)  # nothing before slot s: not earlier than s
+                    firsts.append((st, used))
+                if len(firsts) > 1:
+                    hi = model.NewIntVar(0, n_slots - 1, "")
+                    lo = model.NewIntVar(0, n_slots - 1, "")
+                    spread = model.NewIntVar(0, n_slots - 1, "")
+                    for st, used in firsts:
+                        model.Add(hi >= st - n_slots * (1 - used))
+                        model.Add(lo <= st + n_slots * (1 - used))
+                    model.Add(spread >= hi - lo)
+                    add_obj(spread, round(W["startSpread"] * share * SCALE))
             # a balanced week: deviation of each day's load from the week's average load
             n_days = len(gdays)
             for w, loads_w in per_week_loads.items():

@@ -381,6 +381,7 @@ export interface ScoreBreakdown {
   /** Days with fewer pairs than the minimum per day (in missing pairs, week by week). */
   thinDays: number;
   unevenDays: number;
+  startSpread: number;
   preferenceMisses: number;
   /** Pairs not placed in one of their preferred ("de dorit") rooms. */
   roomMisses: number;

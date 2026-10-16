@@ -12,6 +12,7 @@ SOFT_WEIGHTS = {
     "dayOverload": 5,
     "thinDays": 10,  # a day with fewer pairs than the minimum, week by week
     "unevenDays": 1,
+    "startSpread": 3,  # how far apart a group's first pairs of the days are (8:00 on Monday, 17:00 on Tuesday)
     "preferenceMisses": 1,
     "roomMisses": 2,
     "edgeMisses": 8,
@@ -127,6 +128,9 @@ def score_timetable(ds: dict, all_lessons: list[dict], idx: DatasetIndex | None 
                 n = len(set(slots))
                 if 0 < n < s["minPairsPerDayGroup"]:
                     b["thinDays"] += week_share * (s["minPairsPerDayGroup"] - n)
+            firsts = [min(sl) for sl in per_day if sl]
+            if len(firsts) > 1:
+                b["startSpread"] += week_share * (max(firsts) - min(firsts))
             loads = [len(set(sl)) for sl in per_day]
             avg = sum(loads) / len(loads) if loads else 0
             b["unevenDays"] += week_share * sum(abs(x - avg) for x in loads)

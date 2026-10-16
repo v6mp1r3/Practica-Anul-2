@@ -14,6 +14,7 @@ export const SOFT_WEIGHTS: Record<keyof ScoreBreakdown, number> = {
   // a day with fewer pairs than the minimum (minPairsPerDayGroup), looked at week by week: not worth the trip
   thinDays: 10,
   unevenDays: 1,
+  startSpread: 3,
   preferenceMisses: 1,
   roomMisses: 2,
   edgeMisses: 8,
@@ -77,6 +78,7 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
     dayOverload: 0,
     thinDays: 0,
     unevenDays: 0,
+    startSpread: 0,
     preferenceMisses: 0,
     roomMisses: 0,
     edgeMisses: 0,
@@ -127,6 +129,8 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
         const n = new Set(slots).size;
         if (n > 0 && n < ds.settings.minPairsPerDayGroup) b.thinDays += weekShare * (ds.settings.minPairsPerDayGroup - n);
       }
+      const firsts = perDay.filter((s) => s.length).map((s) => Math.min(...s));
+      if (firsts.length > 1) b.startSpread += weekShare * (Math.max(...firsts) - Math.min(...firsts));
       const loads = perDay.map((s) => new Set(s).size);
       const avg = loads.reduce((x, y) => x + y, 0) / loads.length;
       b.unevenDays += weekShare * loads.reduce((x, y) => x + Math.abs(y - avg), 0);

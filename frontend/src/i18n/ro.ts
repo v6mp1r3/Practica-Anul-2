@@ -708,6 +708,7 @@ export const ro = {
   'score.dayOverload': 'Zile supraîncărcate',
   'score.thinDays': 'Zile cu prea puține perechi',
   'score.unevenDays': 'Distribuție inegală',
+  'score.startSpread': 'Variația orei de început',
   'score.preferenceMisses': 'Preferințe nerespectate',
   'exams.consultation': 'Consultație',
   'exams.exam': 'Examen final',

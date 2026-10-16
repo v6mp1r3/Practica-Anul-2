@@ -705,6 +705,7 @@ export const en: Record<MessageKey, string> = {
   'score.dayOverload': 'Overloaded days',
   'score.thinDays': 'Days with too few pairs',
   'score.unevenDays': 'Uneven week',
+  'score.startSpread': 'Start-time spread',
   'score.preferenceMisses': 'Missed preferences',
   'exams.consultation': 'Consultation',
   'exams.exam': 'Final exam',
