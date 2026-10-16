@@ -41,7 +41,9 @@ describe('export by year of study', () => {
     const { default: ExcelJS } = await import('exceljs');
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(files[0].body as ArrayBuffer);
-    const names = wb.worksheets.flatMap((ws) => (ws.getRow(5).values as unknown[]).map((v) => String(v ?? '')).filter((n) => n && n !== 'Grupele'));
+    const names = wb.worksheets.flatMap((ws) =>
+      (ws.getRow(5).values as unknown[]).map((v) => String(v ?? '')).filter((n) => n && n !== 'Grupele'),
+    );
     expect(names.length).toBeGreaterThan(0);
     for (const n of names) expect(seedDataset.groups.find((g) => g.name === n)?.year).toBe(year);
   });
