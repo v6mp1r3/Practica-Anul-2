@@ -51,6 +51,11 @@ def in_semester(idx: DatasetIndex, a: dict | None, semester: int | None) -> bool
     return (idx.subjects.get(a["subjectId"], {}).get("semester") or 1) == semester
 
 
+def term_of(settings: dict) -> int:
+    """The semester of the year the settings are in: 2 in the spring ("Primăvara 2026/2027"), otherwise 1."""
+    return 2 if str(settings.get("semester") or "").startswith("Primăvara") else 1
+
+
 def scope_assignments(ds: dict, idx: DatasetIndex, group_ids: list[str], semester: int | None = None) -> list[dict]:
     chosen = set(group_ids)
     return [a for a in ds["assignments"] if any(g in chosen for g, _ in idx.cohorts(a["audience"])) and in_semester(idx, a, semester)]

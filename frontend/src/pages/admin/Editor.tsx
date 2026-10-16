@@ -13,7 +13,7 @@ import { Legend, TimetableGrid, type LessonField } from '../../components/Timeta
 import { ViewPicker } from '../../components/ViewPicker';
 import { Loading, PageHeader } from '../../components/ui';
 import { ExportDialog, downloadTimetable } from '../../components/ExportDialog';
-import { dropExtra, loadDrift, placeMissing, scopeAssignments } from '../../domain/generator';
+import { dropExtra, loadDrift, placeMissing, scopeAssignments, termOf } from '../../domain/generator';
 import { findWarnings, scoreTimetable } from '../../domain/score';
 import type { Conflict, Dataset, Lesson, Parity, Timetable } from '../../domain/types';
 import { findHardConflicts } from '../../domain/validator';
@@ -59,9 +59,9 @@ export default function Editor() {
       .catch(() => navigate('/admin/timetables', { replace: true }));
   }, [id, navigate, scope, index]);
 
-  // Validate against the assignments this timetable is responsible for
+  // Validate against the assignments this timetable is responsible for (this semester's: the generator places only those)
   const scoped: Dataset = useMemo(
-    () => ({ ...dataset, assignments: tt ? scopeAssignments(dataset, tt.groupIds, index) : dataset.assignments }),
+    () => ({ ...dataset, assignments: tt ? scopeAssignments(dataset, tt.groupIds, index, termOf(dataset.settings)) : dataset.assignments }),
     [dataset, index, tt],
   );
   const hard = useMemo(() => findHardConflicts(scoped, lessons, index), [scoped, lessons, index]);

@@ -7,7 +7,7 @@ import { createRng, type Rng } from './rng';
 import { placeSessions } from './sessions';
 import { scoreTimetable, weightsFor } from './score';
 import { paritiesOverlap, range, slotKey } from './slots';
-import type { Assignment, Dataset, GenerationRules, Lesson, Parity, Room, Score } from './types';
+import type { Assignment, Dataset, GenerationRules, Lesson, Parity, Room, Score, Settings } from './types';
 import { halvesOf, take, tasksOf, weekExcess, weekNeed, type WeekNeed } from './weeks';
 
 export interface GenerateOptions {
@@ -103,6 +103,9 @@ export function scopeAssignments(ds: Dataset, groupIds: string[], idx = new Data
   const set = new Set(groupIds);
   return ds.assignments.filter((a) => idx.cohorts(a.audience).some((c) => set.has(c.groupId)) && inSemester(idx, a, semester));
 }
+
+/** The semester of the year the settings are in: 2 in the spring ("Primăvara 2026/2027"), otherwise 1. */
+export const termOf = (settings: Pick<Settings, 'semester'>): 1 | 2 => (settings.semester.startsWith('Primăvara') ? 2 : 1);
 
 /** Is the load's subject taught in that semester of the year? A subject without one is in the 1st; any when none is asked for. */
 export function inSemester(idx: DatasetIndex, a: Assignment | undefined, semester?: 1 | 2): boolean {
@@ -432,7 +435,8 @@ export function loadDrift(ds: Dataset, lessons: Lesson[], groupIds: string[], id
   const own = new Map<string, Lesson[]>();
   for (const l of lessons) own.set(l.assignmentId, [...(own.get(l.assignmentId) ?? []), l]);
   const out: LoadDrift = { missing: [], extra: [] };
-  for (const a of scopeAssignments(ds, groupIds, idx)) {
+  // only this semester's loads, as the generator places (another semester's subjects are not missing)
+  for (const a of scopeAssignments(ds, groupIds, idx, termOf(ds.settings))) {
     if (!idx.isReduced(a)) {
       // odd and even weeks each need their pairs
       const weekly = (own.get(a.id) ?? []).filter((l) => !l.date);

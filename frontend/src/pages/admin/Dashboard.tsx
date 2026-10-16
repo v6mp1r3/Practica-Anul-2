@@ -10,7 +10,7 @@ import { Icon } from '../../components/Icon';
 import { PrecheckList } from '../../components/PrecheckList';
 import { PageHeader } from '../../components/ui';
 import { toDateString } from '../../domain/changes';
-import { loadDrift, scopeAssignments } from '../../domain/generator';
+import { loadDrift, scopeAssignments, termOf } from '../../domain/generator';
 import { findHardConflicts } from '../../domain/validator';
 import { precheck } from '../../domain/precheck';
 import { fmtTime, parityWeight, range, weekDays } from '../../domain/slots';
@@ -116,14 +116,14 @@ export default function Dashboard() {
   const issues = useMemo(() => precheck(dataset, index), [dataset, index]);
   const shown = published ?? list.find((x) => x.status === 'draft') ?? list[0] ?? null;
   const required = shown
-    ? scopeAssignments(dataset, shown.groupIds, index).reduce((n, a) => n + index.requiredPairs(a), 0)
+    ? scopeAssignments(dataset, shown.groupIds, index, termOf(dataset.settings)).reduce((n, a) => n + index.requiredPairs(a), 0)
     : dataset.assignments.reduce((n, a) => n + index.requiredPairs(a), 0);
   // pairs per week: an odd- or even-week pair is half of one (session pairs count one each)
   const placed = (shown?.lessons ?? []).reduce((n, l) => n + (l.date ? 1 : parityWeight(l.parity)), 0);
   // checked against the data as it is now: a load added or changed since the timetable was made shows up here
   const live = useMemo(() => {
     if (!shown) return null;
-    const scoped = { ...dataset, assignments: scopeAssignments(dataset, shown.groupIds, index) };
+    const scoped = { ...dataset, assignments: scopeAssignments(dataset, shown.groupIds, index, termOf(dataset.settings)) };
     const drift = loadDrift(dataset, shown.lessons, shown.groupIds, index);
     return {
       hard: findHardConflicts(scoped, shown.lessons, index).length,

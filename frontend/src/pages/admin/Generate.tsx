@@ -8,6 +8,7 @@ import { Icon } from '../../components/Icon';
 import { PrecheckList } from '../../components/PrecheckList';
 import { GroupPicker } from '../../components/GroupPicker';
 import { Field, PageHeader, Segmented, Switch } from '../../components/ui';
+import { termOf } from '../../domain/generator';
 import { precheck } from '../../domain/precheck';
 import { SOFT_WEIGHTS } from '../../domain/score';
 import { RoundPicker } from '../../components/RoundPicker';
@@ -119,7 +120,7 @@ export default function Generate() {
   }, [cycle, scope]);
   const [form, setForm] = useState<'all' | StudyForm>('all');
   // semester of the year to generate for: the one the settings are on (autumn → 1, spring → 2)
-  const [semester, setSemester] = useState<1 | 2>(dataset.settings.semester.startsWith('Primăvara') ? 2 : 1);
+  const [semester, setSemester] = useState<1 | 2>(termOf(dataset.settings));
   // comfort rules: what the administrator chose last time (all allowed except days below the minimum, until changed)
   const [rules, setRules] = useState(loadRules);
   useEffect(() => saveRules(rules), [rules]);

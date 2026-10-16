@@ -216,3 +216,21 @@ describe('odd and even weeks', () => {
     expect(findHardConflicts(seedDataset, res.lessons)).toEqual([]);
   });
 });
+
+describe('another semester', () => {
+  it("does not count a spring subject's loads as missing from an autumn timetable", async () => {
+    const allGroups = seedDataset.groups.map((g) => g.id);
+    const subjectId = seedDataset.assignments[0].subjectId;
+    const ds: Dataset = {
+      ...seedDataset,
+      settings: { ...seedDataset.settings, semester: 'Toamna 2026/2027' },
+      subjects: seedDataset.subjects.map((s) => (s.id === subjectId ? { ...s, semester: 2 } : s)),
+    };
+    const { lessons } = await generateTimetable(ds, { groupIds: allGroups, seed: 2, iterations: 10, semester: 1 });
+    expect(lessons.some((l) => ds.assignments.find((a) => a.id === l.assignmentId)?.subjectId === subjectId)).toBe(false);
+    expect(loadDrift(ds, lessons, allGroups).missing.filter((m) => m.assignment.subjectId === subjectId)).toEqual([]);
+    // in the spring it is the autumn subjects that are not asked for
+    const spring = { ...ds, settings: { ...ds.settings, semester: 'Primăvara 2026/2027' } };
+    expect(loadDrift(spring, [], allGroups).missing.every((m) => m.assignment.subjectId === subjectId)).toBe(true);
+  });
+});
