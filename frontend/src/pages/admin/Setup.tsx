@@ -267,9 +267,9 @@ export default function Setup() {
           ...(evalTab === 'midterms' ? { startOffsetWeeks: masterOffset(s) } : {}),
         };
       }
-      await api.saveSettings({ ...saved, ...own });
-      // the form now shows exactly what was stored (e.g. empty rows dropped)
-      setS((x) => ({ ...x, ...own }));
+      const back = await api.saveSettings({ ...saved, ...own });
+      // the form now shows exactly what was stored (e.g. empty rows dropped; new internships get the server's ids)
+      setS((x) => ({ ...x, ...own, ...(section === 7 ? { groupPeriods: back.groupPeriods ?? [] } : {}) }));
       await refresh();
       setJustSaved(section === 6 ? `6-${evCycle}-${evalTab}` : section);
     } catch {
