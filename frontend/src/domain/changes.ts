@@ -31,6 +31,37 @@ export function parseDateInput(text: string): string | null {
   return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d ? toDateString(date) : null;
 }
 
+/**
+ * A date as it is typed: the "/" comes by itself after the day and the month ("09092026" → "09/09/2026"),
+ * at most 2 + 2 + 4 digits; a "/" (or "." "-" space) typed after one digit still ends that part ("9/10/2026").
+ * When deleting (`deleting`), no "/" is added at the end, so it can be erased.
+ */
+export function maskDateTyping(raw: string, deleting = false): string {
+  if (/^\d{4}-/.test(raw.trim())) return raw.trim().slice(0, 10); // a pasted 2026-10-09 stays as it is
+  const limits = [2, 2, 4];
+  let out = '';
+  let part = 0;
+  let len = 0;
+  for (const ch of raw) {
+    if (/\d/.test(ch)) {
+      if (len === limits[part]) {
+        if (part === 2) break;
+        out += '/';
+        part++;
+        len = 0;
+      }
+      out += ch;
+      len++;
+    } else if (/[/.\-\s]/.test(ch) && len > 0 && part < 2) {
+      out += '/';
+      part++;
+      len = 0;
+    }
+  }
+  if (!deleting && part < 2 && len === limits[part]) out += '/';
+  return out;
+}
+
 export function toDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

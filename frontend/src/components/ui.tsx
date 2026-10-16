@@ -1,7 +1,7 @@
 // Small presentational building blocks shared by every page.
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { LANGS, useI18n } from '../i18n';
-import { fmtDate, parseDateInput } from '../domain/changes';
+import { fmtDate, maskDateTyping, parseDateInput } from '../domain/changes';
 import { fmtTime, parseTime } from '../domain/slots';
 import { Icon } from './Icon';
 
@@ -196,7 +196,8 @@ export function DateInput({
         aria-label={label}
         placeholder={t('date.placeholder')}
         onFocus={() => setEditing(true)}
-        onChange={(e) => setText(e.target.value)}
+        maxLength={10}
+        onChange={(e) => setText(maskDateTyping(e.target.value, e.target.value.length < text.length))}
         onBlur={commit}
         onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
       />

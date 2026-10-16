@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
-import { fmtDate, freeRoomsFor, freeTeachersFor, lessonsOnDate, parseDate, parseDateInput, toDateString, upcomingChanges } from './changes';
+import {
+  fmtDate,
+  freeRoomsFor,
+  freeTeachersFor,
+  lessonsOnDate,
+  parseDate,
+  parseDateInput,
+  maskDateTyping,
+  toDateString,
+  upcomingChanges,
+} from './changes';
 import { DatasetIndex } from './indexes';
 import type { Lesson, ScheduleChange } from './types';
 
@@ -139,5 +149,26 @@ describe('dates day/month/year', () => {
     expect(parseDateInput('2026-10-09')).toBe('2026-10-09');
     expect(parseDateInput('31/02/2026')).toBeNull();
     expect(parseDateInput('10/2026')).toBeNull();
+  });
+});
+
+describe('maskDateTyping', () => {
+  it('puts in the slashes while typing', () => {
+    expect(maskDateTyping('09')).toBe('09/');
+    expect(maskDateTyping('09/09')).toBe('09/09/');
+    expect(maskDateTyping('09092026')).toBe('09/09/2026');
+    expect(maskDateTyping('0909090909')).toBe('09/09/0909');
+    expect(maskDateTyping('09/')).toBe('09/');
+    expect(maskDateTyping('09//')).toBe('09/');
+  });
+  it('keeps short parts and other separators', () => {
+    expect(maskDateTyping('9/10/2026')).toBe('9/10/2026');
+    expect(maskDateTyping('9.10.26')).toBe('9/10/26');
+    expect(maskDateTyping('2026-10-09')).toBe('2026-10-09');
+    expect(maskDateTyping('ab12')).toBe('12/');
+  });
+  it('lets the slash be erased', () => {
+    expect(maskDateTyping('09', true)).toBe('09');
+    expect(maskDateTyping('09/09', true)).toBe('09/09');
   });
 });
