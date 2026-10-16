@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { seedDataset } from '../data/seed';
-import { dropExtra, generateTimetable, loadDrift, placeMissing, scopeAssignments } from './generator';
+import { dropExtra, generateTimetable, loadDrift, placeMissing, scopeAssignments, termSemester, timetableSemester } from './generator';
 import { DatasetIndex } from './indexes';
 import { ABSOLUTE_WEIGHT, SOFT_WEIGHTS, STRICT_WEIGHT, weightsFor } from './score';
 import type { Dataset, Lesson } from './types';
@@ -77,8 +77,9 @@ describe('generateTimetable', () => {
     expect(weightsFor({ allowThinDays: true })).toEqual(SOFT_WEIGHTS);
     // a day below the minimum is ruled out unless it is explicitly allowed
     expect(weightsFor().thinDays).toBe(ABSOLUTE_WEIGHT);
-    const w = weightsFor({ allowGroupGaps: false, allowThinDays: true });
-    expect([w.groupGaps, w.thinDays, w.teacherGaps]).toEqual([STRICT_WEIGHT, SOFT_WEIGHTS.thinDays, SOFT_WEIGHTS.teacherGaps]);
+    // no gaps between students' pairs is absolute like the minimum; the other rules switched off are strict
+    const w = weightsFor({ allowGroupGaps: false, allowTeacherGaps: false, allowThinDays: true });
+    expect([w.groupGaps, w.teacherGaps, w.thinDays]).toEqual([ABSOLUTE_WEIGHT, STRICT_WEIGHT, SOFT_WEIGHTS.thinDays]);
     // the score saved with the timetable keeps the usual weights, so variants stay comparable
     const r = await generateTimetable(seedDataset, { groupIds: ['g5'], seed: 2, iterations: 20, rules: { allowGroupGaps: false } });
     expect(r.score.soft).toBe(scoreTimetable({ ...seedDataset, assignments: scopeAssignments(seedDataset, ['g5']) }, r.lessons).soft);
@@ -214,5 +215,31 @@ describe('odd and even weeks', () => {
         .sort(),
     ).toEqual(['even', 'odd']);
     expect(findHardConflicts(seedDataset, res.lessons)).toEqual([]);
+  });
+});
+
+describe('a timetable answers for one semester', () => {
+  // the first load of g5 moves to semester 2: an autumn timetable no longer asks for it
+  const groupIds = ['g5'];
+  const subject = seedDataset.subjects.find((s) => scopeAssignments(seedDataset, groupIds).some((a) => a.subjectId === s.id))!;
+  const ds: Dataset = { ...seedDataset, subjects: seedDataset.subjects.map((s) => (s.id === subject.id ? { ...s, semester: 2 } : s)) };
+
+  it('is the semester most of its pairs belong to, the term’s when it has none', async () => {
+    const idx = new DatasetIndex(ds);
+    expect(termSemester(ds)).toBe(1);
+    expect(termSemester({ ...ds, settings: { ...ds.settings, semester: 'Primăvara 2026/2027' } })).toBe(2);
+    expect(timetableSemester(ds, [], idx)).toBe(1);
+    const { lessons } = await generateTimetable(ds, { groupIds, seed: 1, iterations: 20, semester: 1 });
+    expect(timetableSemester(ds, lessons, idx)).toBe(1);
+    const spring = await generateTimetable(ds, { groupIds, seed: 1, iterations: 20, semester: 2 });
+    expect(timetableSemester(ds, spring.lessons, idx)).toBe(2);
+  });
+
+  it('does not miss the loads of the other semester', async () => {
+    const { lessons } = await generateTimetable(ds, { groupIds, seed: 1, iterations: 20, semester: 1 });
+    const idx = new DatasetIndex(ds);
+    expect(loadDrift(ds, lessons, groupIds, idx).missing).toEqual([]);
+    // the spring subject is missing from an autumn timetable only when asked for explicitly
+    expect(scopeAssignments(ds, groupIds, idx).some((a) => a.subjectId === subject.id)).toBe(true);
   });
 });

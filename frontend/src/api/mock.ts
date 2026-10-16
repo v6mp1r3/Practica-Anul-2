@@ -1,7 +1,7 @@
 // In-browser implementation of the API contract. Data lives in localStorage so
 // the whole app can be used (and demoed) without the backend.
 import { seedDataset, seedNotifications, seedUsers } from '../data/seed';
-import { generateTimetable, scopeAssignments } from '../domain/generator';
+import { generateTimetable, loadsOfTimetable } from '../domain/generator';
 import { scoreTimetable } from '../domain/score';
 import { findHardConflicts } from '../domain/validator';
 import type {
@@ -403,7 +403,7 @@ function rescoreTimetables() {
       : {
           ...t,
           score: scoreTimetable(
-            t.groupIds.length ? { ...store.dataset, assignments: scopeAssignments(store.dataset, t.groupIds) } : store.dataset,
+            t.groupIds.length ? { ...store.dataset, assignments: loadsOfTimetable(store.dataset, t.lessons, t.groupIds) } : store.dataset,
             t.lessons,
           ),
         },
@@ -694,7 +694,7 @@ export function createMockApi(): Api {
         updatedAt: new Date().toISOString(),
         // against the loads of its own groups, like the editor
         score: scoreTimetable(
-          t.groupIds.length ? { ...store.dataset, assignments: scopeAssignments(store.dataset, t.groupIds) } : store.dataset,
+          t.groupIds.length ? { ...store.dataset, assignments: loadsOfTimetable(store.dataset, t.lessons, t.groupIds) } : store.dataset,
           t.lessons,
         ),
       };

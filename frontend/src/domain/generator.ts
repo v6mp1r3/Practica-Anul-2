@@ -104,6 +104,26 @@ export function scopeAssignments(ds: Dataset, groupIds: string[], idx = new Data
   return ds.assignments.filter((a) => idx.cohorts(a.audience).some((c) => set.has(c.groupId)) && inSemester(idx, a, semester));
 }
 
+/** The semester of the year (1 = autumn, 2 = spring) the current term is in. */
+export const termSemester = (ds: Dataset): 1 | 2 => (ds.settings.semester.startsWith('Primăvara') ? 2 : 1);
+
+/** The semester a timetable is for: the one most of its pairs belong to (the term's when it has none yet or they tie). */
+export function timetableSemester(ds: Dataset, lessons: Lesson[], idx = new DatasetIndex(ds)): 1 | 2 {
+  let first = 0;
+  let second = 0;
+  for (const l of lessons) {
+    const a = idx.assignmentOf(l);
+    if (!a) continue;
+    if ((idx.subjects.get(a.subjectId)?.semester ?? 1) === 2) second++;
+    else first++;
+  }
+  return first === second ? termSemester(ds) : second > first ? 2 : 1;
+}
+
+/** The teaching loads a timetable answers for: those of its groups taught in its semester. */
+export const loadsOfTimetable = (ds: Dataset, lessons: Lesson[], groupIds: string[], idx = new DatasetIndex(ds)): Assignment[] =>
+  scopeAssignments(ds, groupIds, idx, timetableSemester(ds, lessons, idx));
+
 /** Is the load's subject taught in that semester of the year? A subject without one is in the 1st; any when none is asked for. */
 export function inSemester(idx: DatasetIndex, a: Assignment | undefined, semester?: 1 | 2): boolean {
   if (!semester || !a) return true;
@@ -432,7 +452,7 @@ export function loadDrift(ds: Dataset, lessons: Lesson[], groupIds: string[], id
   const own = new Map<string, Lesson[]>();
   for (const l of lessons) own.set(l.assignmentId, [...(own.get(l.assignmentId) ?? []), l]);
   const out: LoadDrift = { missing: [], extra: [] };
-  for (const a of scopeAssignments(ds, groupIds, idx)) {
+  for (const a of loadsOfTimetable(ds, lessons, groupIds, idx)) {
     if (!idx.isReduced(a)) {
       // odd and even weeks each need their pairs
       const weekly = (own.get(a.id) ?? []).filter((l) => !l.date);

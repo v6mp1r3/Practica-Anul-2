@@ -12,6 +12,7 @@ SOFT_WEIGHTS = {
     "dayOverload": 5,
     "thinDays": 10,  # a day with fewer pairs than the minimum, week by week
     "unevenDays": 1,
+    "startSpread": 3,  # how far apart a group's first pairs of the days are (8:00 on Monday, 17:00 on Tuesday)
     "preferenceMisses": 1,
     "roomMisses": 2,
     "edgeMisses": 8,
@@ -22,8 +23,9 @@ SOFT_WEIGHTS = {
 # strict, a penalty so heavy that it only gives way when nothing else is possible. It stays below the cost of
 # leaving a pair out, so a strict rule never drops pairs. A rule is a soft weight, never a hard constraint.
 STRICT_WEIGHT = 100
-# A day with fewer pairs than the minimum is not allowed unless the administrator says so (allowThinDays: True). This
-# weight is far above the cost of leaving a pair out, so the generator drops or moves pairs before it leaves one alone.
+# A day with fewer pairs than the minimum is not allowed unless the administrator says so (allowThinDays: True), and a
+# gap between a group's pairs is not when allowGroupGaps is off. This weight is far above the cost of leaving a pair out,
+# so the generator drops or moves pairs before it leaves a day that breaks one (see solver/absolute.py).
 ABSOLUTE_WEIGHT = 10_000
 RULE_WEIGHT = {
     "allowGroupGaps": "groupGaps",
@@ -42,6 +44,8 @@ def weights_for(rules: dict | None) -> dict:
             w[key] = max(w[key], STRICT_WEIGHT)
     if (rules or {}).get("allowThinDays") is not True:
         w["thinDays"] = ABSOLUTE_WEIGHT
+    if (rules or {}).get("allowGroupGaps") is False:
+        w["groupGaps"] = ABSOLUTE_WEIGHT
     return w
 
 
@@ -124,6 +128,9 @@ def score_timetable(ds: dict, all_lessons: list[dict], idx: DatasetIndex | None 
                 n = len(set(slots))
                 if 0 < n < s["minPairsPerDayGroup"]:
                     b["thinDays"] += week_share * (s["minPairsPerDayGroup"] - n)
+            firsts = [min(sl) for sl in per_day if sl]
+            if len(firsts) > 1:
+                b["startSpread"] += week_share * (max(firsts) - min(firsts))
             loads = [len(set(sl)) for sl in per_day]
             avg = sum(loads) / len(loads) if loads else 0
             b["unevenDays"] += week_share * sum(abs(x - avg) for x in loads)

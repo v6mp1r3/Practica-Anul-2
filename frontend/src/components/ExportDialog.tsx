@@ -1,4 +1,4 @@
-// Export a timetable: the group / teacher / room shown, or every group, as a
+// Export a timetable: the group / teacher / room shown, one year's groups or every group, as a
 // spreadsheet (Excel, laid out like the printed timetable) or a calendar (iCal). Used by the editor and the
 // public timetable pages.
 import { useState } from 'react';
@@ -11,7 +11,7 @@ import { XLSX_TYPE, timetableToXlsx, timetableToXlsxAllGroups } from '../utils/x
 import { Icon } from './Icon';
 import { Field, Modal, Segmented } from './ui';
 
-export type ExportWhat = 'view' | 'all';
+export type ExportWhat = 'view' | 'year' | 'all';
 export type ExportFormat = 'xlsx' | 'ics';
 
 const slug = (name: string) =>
@@ -29,44 +29,65 @@ export async function downloadTimetable(o: {
   settings: Settings;
   viewName?: string;
   viewLessons: Lesson[];
-  /** Every lesson; "all groups" keeps those of groupIds. */
+  /** Every lesson; "all groups" keeps those of groupIds, "a year" those of its groups. */
   allLessons: Lesson[];
   groupIds: string[];
-  /** File name for "all groups" (default orar-toate-grupele). */
+  /** The year of study, for "a year". */
+  year?: number;
+  /** File name for "all groups" (default orar-toate-grupele); "a year" swaps in anul-<year>. */
   allName?: string;
 }) {
-  const all = o.what === 'all';
+  const all = o.what !== 'view';
+  const groupIds = o.what === 'year' ? o.groupIds.filter((g) => o.index.groups.get(g)?.year === o.year) : o.groupIds;
   const lessons = all
     ? o.allLessons.filter((l) => {
         const a = o.index.assignmentOf(l);
-        return !!a && o.groupIds.some((g) => o.index.audienceTouchesGroup(a.audience, g));
+        return !!a && groupIds.some((g) => o.index.audienceTouchesGroup(a.audience, g));
       })
     : o.viewLessons;
-  const base = all ? (o.allName ?? 'orar-toate-grupele') : slug(`orar-${o.viewName ?? ''}`);
+  const allName = o.allName ?? 'orar-toate-grupele';
+  const base = !all ? slug(`orar-${o.viewName ?? ''}`) : o.what === 'year' ? allName.replace('toate-grupele', `anul-${o.year}`) : allName;
   if (o.format === 'ics') return downloadFile(`${base}.ics`, timetableToIcs(lessons, o.index, o.settings), 'text/calendar');
   const wb = all
-    ? await timetableToXlsxAllGroups(lessons, o.index, o.settings, o.groupIds)
+    ? await timetableToXlsxAllGroups(lessons, o.index, o.settings, groupIds)
     : await timetableToXlsx(lessons, o.index, o.settings, o.viewName ?? '');
   downloadFile(`${base}.xlsx`, (await wb.xlsx.writeBuffer()) as ArrayBuffer, XLSX_TYPE);
 }
 
-/** Export the timetable: the view shown or every group, as a spreadsheet or a calendar. */
+/** How many of these groups each year of study has, by year. */
+export function groupsByYear(index: DatasetIndex, groupIds: string[]): [number, number][] {
+  const n = new Map<number, number>();
+  for (const g of groupIds) {
+    const year = index.groups.get(g)?.year;
+    if (year) n.set(year, (n.get(year) ?? 0) + 1);
+  }
+  return [...n].sort((a, b) => a[0] - b[0]);
+}
+
+/** Export the timetable: the view shown, one year's groups or every group, as a spreadsheet or a calendar. */
 export function ExportDialog({
   viewName,
   groupCount,
+  years,
+  defaultYear,
   defaultWhat = 'all',
   onClose,
   onExport,
 }: {
-  /** The group / teacher / room shown; without one, only "all groups" can be exported. */
+  /** The group / teacher / room shown; without one, only a year or all groups can be exported. */
   viewName?: string;
   groupCount: number;
+  /** [year, number of groups] of the groups that can be exported. */
+  years: [number, number][];
+  /** The shown group's year. */
+  defaultYear?: number;
   defaultWhat?: ExportWhat;
   onClose: () => void;
-  onExport: (what: ExportWhat, format: ExportFormat) => void;
+  onExport: (what: ExportWhat, format: ExportFormat, year: number) => void;
 }) {
   const { t } = useI18n();
   const [what, setWhat] = useState<ExportWhat>(viewName ? defaultWhat : 'all');
+  const [year, setYear] = useState(String(years.find(([y]) => y === defaultYear)?.[0] ?? years[0]?.[0] ?? 1));
   const [format, setFormat] = useState<ExportFormat>('xlsx');
   return (
     <Modal
@@ -77,7 +98,7 @@ export function ExportDialog({
           <button className="btn" onClick={onClose}>
             {t('common.cancel')}
           </button>
-          <button className="btn primary" onClick={() => onExport(what, format)}>
+          <button className="btn primary" onClick={() => onExport(what, format, Number(year))}>
             <Icon name="download" size={15} />
             {t('editor.exportDownload')}
           </button>
@@ -87,17 +108,32 @@ export function ExportDialog({
       <div className="stack">
         <Field label={t('editor.exportWhat')}>
           <Segmented
+            wrap
             value={what}
             onChange={setWhat}
             options={[
-              { value: 'all', label: t('editor.exportAll', { count: groupCount }) },
               ...(viewName ? [{ value: 'view' as const, label: t('editor.exportView', { name: viewName }) }] : []),
+              ...(years.length > 1 ? [{ value: 'year' as const, label: t('editor.exportYear') }] : []),
+              { value: 'all', label: t('editor.exportAll', { count: groupCount }) },
             ]}
           />
         </Field>
+        {what === 'year' && (
+          <Field label={t('groups.year')}>
+            <Segmented
+              wrap
+              value={year}
+              onChange={setYear}
+              options={years.map(([y, n]) => ({
+                value: String(y),
+                label: t(n === 1 ? 'editor.exportYearOne' : 'editor.exportYearN', { year: y, count: n }),
+              }))}
+            />
+          </Field>
+        )}
         <Field
           label={t('editor.exportFormat')}
-          hint={format === 'xlsx' ? t(what === 'all' ? 'editor.xlsxAllHint' : 'editor.xlsxHint') : t('editor.icsHint')}
+          hint={format === 'xlsx' ? t(what === 'view' ? 'editor.xlsxHint' : 'editor.xlsxAllHint') : t('editor.icsHint')}
         >
           <Segmented
             value={format}

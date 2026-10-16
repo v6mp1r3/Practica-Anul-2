@@ -21,12 +21,12 @@ from dataclasses import dataclass, field
 from ortools.sat.python import cp_model
 
 from ..domain.indexes import DatasetIndex, teacher_ids
-from ..domain.score import SOFT_WEIGHTS
+from ..domain.score import ABSOLUTE_WEIGHT, SOFT_WEIGHTS, gaps_in_day
 from ..domain.slots import in_week, lessons_overlap, slot_key
 from ..domain.weeks import WeekNeed
 
 SCALE = 840  # 2 weeks x lcm(1..7): keeps every coefficient an integer
-MISSING_PENALTY = 500_000  # a pair left out costs far more than anything one pair can save (about 600 soft points)
+MISSING_PENALTY = 1_000_000_000  # a pair left out costs more than anything it can save, rules that are absolute included
 WEEKS = ("odd", "even")  # two lessons clash only if they share a week
 WEEKS_OF = {"weekly": WEEKS, "odd": ("odd",), "even": ("even",)}
 
@@ -127,10 +127,18 @@ def solve_weekly(
     jitter: bool = True,
     fix: list[Placement] | None = None,
     weights: dict | None = None,
+    hard_gaps: bool = False,
+    hard_thin: bool = False,
+    match_rooms: bool = False,
 ) -> SolveResult:
     """Place what each listed teaching load still needs (`need[assignment id]`: a number of weekly pairs, or a WeekNeed
     with pairs for odd weeks, for even weeks and a half pair for either) around the `fixed` lessons. A load gets
-    every-week pairs where both weeks need one, odd- or even-week pairs for the rest."""
+    every-week pairs where both weeks need one, odd- or even-week pairs for the rest.
+
+    `match_rooms`: the model decides only the day and the pair, with a capacity rule per kind of room (the rooms a load can
+    use), and the rooms are given afterwards by matching (rooms.py). That is some 80 times fewer variables with 88 rooms,
+    which is what makes a whole faculty solvable in a short run. The soft preference for a room is then left to the
+    matching, so the objective no longer equals the score exactly (it does without this switch)."""
     W = weights or SOFT_WEIGHTS  # the usual soft weights, strict where the administrator switched a rule off
     settings = ds["settings"]
     n_slots = len(settings["slots"])
@@ -146,19 +154,26 @@ def solve_weekly(
     for f in fixed:
         fixed_at[(f["day"], f["slot"])].append(f)
 
-    def clashes_fixed(a: dict, d: int, s: int, room_id: str, parity: str) -> bool:
+    def clashes_fixed(a: dict, d: int, s: int, room_id: "str | None", parity: str, eligible: "frozenset | None" = None) -> bool:
+        """With a room: that room is taken, or the teacher or a group. Without one (`match_rooms`): the teacher or a group,
+        or every room the load could use."""
         probe = {"day": d, "slot": s, "parity": parity}
+        taken: set = set()
         for f in fixed_at.get((d, s), ()):
             if not lessons_overlap(probe, f):
                 continue
             fa = idx.assignment_of(f)
-            if idx.share_teacher(fa, a) or f["roomId"] == room_id or idx.audiences_overlap(fa["audience"], a["audience"]):
+            if idx.share_teacher(fa, a) or idx.audiences_overlap(fa["audience"], a["audience"]):
                 return True
-        return False
+            if room_id is not None and f["roomId"] == room_id:
+                return True
+            taken.add(f["roomId"])
+        return eligible is not None and bool(eligible) and eligible <= taken
 
     # ---- variables
     # X[a][(day, slot)] = [(room, parity, var)]: every-week pairs, and odd/even-week ones where the weeks differ
     X: dict[str, dict[tuple[int, int], list[tuple[str, str, cp_model.IntVar]]]] = {}
+    eligible_rooms: dict[str, frozenset] = {}  # the rooms each load can use
     n_vars = 0
     for a in loads:
         n = need[a["id"]]
@@ -167,15 +182,16 @@ def solve_weekly(
         size = idx.audience_size(a["audience"])
         rooms = [r for r in ds["rooms"] if r["capacity"] >= size and idx.room_fits(a, r) and idx.has_equipment(a, r)]
         X[a["id"]] = {}
+        eligible_rooms[a["id"]] = frozenset(r["id"] for r in rooms)
         for d in idx.allowed_days(a):
             for s in range(n_slots):
                 options = []
-                for r in rooms:
+                for r in ([None] if match_rooms and rooms else rooms):
                     for parity in parities:
-                        if slot_key(d, s) in unavailable[parity] or clashes_fixed(a, d, s, r["id"], parity):
+                        if slot_key(d, s) in unavailable[parity] or clashes_fixed(a, d, s, r["id"] if r else None, parity, eligible_rooms[a["id"]] if match_rooms else None):
                             continue
                         v = model.NewBoolVar("")
-                        options.append((r["id"], parity, v))
+                        options.append((r["id"] if r else None, parity, v))
                         n_vars += 1
                 if options:
                     X[a["id"]][(d, s)] = options
@@ -201,6 +217,7 @@ def solve_weekly(
 
     # ---- nobody and nothing in two places at once, week by week
     groups: dict[tuple, list] = defaultdict(list)  # (kind, key, day, slot, week) -> vars
+    room_items: dict[tuple, list] = defaultdict(list)  # (day, slot, week) -> [(rooms the load can use, var)]
     group_points: dict[str, set[int]] = defaultdict(lambda: {0})
     for a in loads:
         for g, sub in idx.cohorts(a["audience"]):
@@ -215,7 +232,10 @@ def solve_weekly(
                 for w in WEEKS_OF[parity]:
                     for t in teacher_ids(a):
                         groups[("teacher", t, d, s, w)].append(v)
-                    groups[("room", room_id, d, s, w)].append(v)
+                    if match_rooms:
+                        room_items[(d, s, w)].append((eligible_rooms[a["id"]], v))
+                    else:
+                        groups[("room", room_id, d, s, w)].append(v)
                     for pt in points:
                         groups[("group", pt, d, s, w)].append(v)
     seen = set()
@@ -227,6 +247,23 @@ def solve_weekly(
             continue
         seen.add(key)
         model.AddAtMostOne(vs)
+
+    if match_rooms:
+        # rooms: at a time, the pairs that can only use the rooms of a set E number at most the free rooms of E. That is the
+        # whole condition when the sets are nested (bigger rooms for bigger groups), and close to it otherwise; the matching
+        # afterwards (rooms.py) gives the actual rooms and leaves a pair out in the rare case it cannot.
+        kinds = {e for e in eligible_rooms.values() if e}
+        every = frozenset().union(*kinds) if kinds else frozenset()
+        busy: dict[tuple, set] = defaultdict(set)
+        for f in fixed:
+            for w in WEEKS_OF[f.get("parity", "weekly")]:
+                busy[(f["day"], f["slot"], w)].add(f["roomId"])
+        for (d, s, w), items in room_items.items():
+            for e in kinds | {every}:
+                vs = [v for er, v in items if er <= e]
+                cap = len(e - busy.get((d, s, w), set()))
+                if len(vs) > cap:
+                    model.Add(sum(vs) <= cap)
 
     # ---- soft constraints (the weighted penalties of score.ts)
     obj: dict[int, int] = defaultdict(int)  # variable index -> coefficient
@@ -254,7 +291,7 @@ def solve_weekly(
                 c = 0.0
                 if pref and slot_key(d, s) not in pref:
                     c += 0.5 * W["preferenceMisses"]
-                if pref_rooms and room_id not in pref_rooms:
+                if pref_rooms and room_id is not None and room_id not in pref_rooms:
                     c += W["roomMisses"] * pw
                 c += W["shiftMisses"] * idx.shift_distance(a, s) * pw
                 if no_shifts and s == 0:
@@ -316,17 +353,39 @@ def solve_weekly(
             cf = [f for f in fixed if hits(idx.cohorts(idx.assignment_of(f)["audience"]), view)]
             occs = collect(vl, cf, gdays)
             # pairs this view has in a week: a view with fewer than the minimum cannot reach it on any day
-            demand = len(cf) + sum(max(need[a["id"]].odd, need[a["id"]].even) for a in vl)
+            # (at most: a half pair counts in the week it goes to; a load that fits nowhere adds nothing. So a view is only skipped when it surely cannot reach it)
+            demand = len(cf) + sum(max(need[a["id"]].odd, need[a["id"]].even) + need[a["id"]].either for a in vl if X[a["id"]])
             per_week_loads: dict[str, list] = defaultdict(list)
+            # a view with enough pairs for every study day has pairs on every one of them (no empty day, at least the minimum)
+            every_day = W["thinDays"] >= ABSOLUTE_WEIGHT and min_pairs > 1 and demand >= min_pairs * len(gdays)
             for (d, w), occ in occs.items():
                 if not occ.used():
                     per_week_loads[w].append(0)
                     continue
-                for g in occ.gap_terms():
-                    if not isinstance(g, int):
-                        add_obj(g, round(W["groupGaps"] * share * SCALE))
                 load = sum(occ.o)
                 per_week_loads[w].append(load)
+                # Absolute rules are constraints, not penalties: a solution never has the gap or the thin day (a pair
+                # that cannot be placed without one is left out, like any pair that does not fit). Not where the fixed
+                # pairs alone already break the rule: nothing here can mend that, so it stays a (heavy) penalty.
+                fixed_slots = [s for s, x in enumerate(occ.o) if isinstance(x, int) and x == 1]
+                hard_gap = hard_gaps and gaps_in_day(fixed_slots) == 0
+                hard_min = hard_thin and min_pairs > 1 and demand >= min_pairs and (not fixed_slots or len(fixed_slots) >= min_pairs)
+                if hard_gap:
+                    # nothing before and after an empty pair: pre/suf only have lower bounds, so the solver cannot cheat
+                    for s in range(1, n_slots - 1):
+                        e = occ.pre[s - 1] + occ.suf[s + 1] - occ.o[s] - 1
+                        if not isinstance(e, int):
+                            model.Add(e <= 0)
+                else:
+                    for g in occ.gap_terms():
+                        if not isinstance(g, int):
+                            add_obj(g, round(W["groupGaps"] * share * SCALE))
+                if every_day and not isinstance(load, int):
+                    short = model.NewIntVar(0, min_pairs, "")
+                    model.Add(short >= min_pairs - load)  # a study day without the minimum pairs, an empty one included
+                    add_obj(short, round(W["thinDays"] * share * SCALE))
+                if hard_min and not isinstance(occ.pre[-1], int):
+                    model.Add(load >= min_pairs * occ.pre[-1])  # a day that is used has the minimum pairs in this week
                 if len(occ.o) > max_pairs:
                     ex = model.NewIntVar(0, n_slots, "")
                     model.Add(ex >= load - max_pairs)
@@ -334,7 +393,7 @@ def solve_weekly(
                 # a day that is used needs the minimum number of pairs in this week (an odd-week pair does not
                 # count in even weeks): thin >= min x [day used] - load. "Used" only has lower bounds, so the
                 # solver cannot gain by claiming a day is used
-                if min_pairs > 1 and demand >= min_pairs:
+                if min_pairs > 1 and demand >= min_pairs and not hard_min:
                     thin = model.NewIntVar(0, min_pairs, "")
                     model.Add(thin >= min_pairs * occ.pre[-1] - load)
                     add_obj(thin, round(W["thinDays"] * share * SCALE))
@@ -352,6 +411,37 @@ def solve_weekly(
                         m = model.NewBoolVar("")
                         model.Add(m >= e)
                         add_obj(m, round(W["edgeMisses"] * share * SCALE))
+            # a steady start: the first pair of the group's days should be at about the same time (8:00 on Monday and 17:00
+            # on Tuesday is the worst). st is exactly the first used slot of a day (it is bounded from both sides), the penalty
+            # is the distance between the latest and the earliest first pair of the week
+            for w in score_weeks:
+                firsts = []
+                for d in gdays:
+                    occ = occs.get((d, w))
+                    if occ is None or not occ.used():
+                        continue
+                    n = n_slots
+                    st = model.NewIntVar(0, n - 1, "")
+                    used = model.NewBoolVar("")
+                    for s in range(n):
+                        if isinstance(occ.o[s], int) and occ.o[s] == 0:
+                            continue
+                        model.Add(used >= occ.o[s])
+                        model.Add(st <= s + n * (1 - occ.o[s]))  # not after an occupied slot
+                    model.Add(used <= sum(occ.o))
+                    for s in range(1, n):
+                        before = sum(occ.o[:s])
+                        model.Add(st >= s - s * before)  # nothing before slot s: not earlier than s
+                    firsts.append((st, used))
+                if len(firsts) > 1:
+                    hi = model.NewIntVar(0, n_slots - 1, "")
+                    lo = model.NewIntVar(0, n_slots - 1, "")
+                    spread = model.NewIntVar(0, n_slots - 1, "")
+                    for st, used in firsts:
+                        model.Add(hi >= st - n_slots * (1 - used))
+                        model.Add(lo <= st + n_slots * (1 - used))
+                    model.Add(spread >= hi - lo)
+                    add_obj(spread, round(W["startSpread"] * share * SCALE))
             # a balanced week: deviation of each day's load from the week's average load
             n_days = len(gdays)
             for w, loads_w in per_week_loads.items():
@@ -371,7 +461,7 @@ def solve_weekly(
 
     if fix is not None:
         # pin the pairs to this timetable: only the helper variables remain, so the objective is its penalty
-        wanted = {(p.assignmentId, p.day, p.slot, p.roomId, p.parity) for p in fix}
+        wanted = {(p.assignmentId, p.day, p.slot, None if match_rooms else p.roomId, p.parity) for p in fix}
         found = set()
         for a in loads:
             for (d, s), opts in X[a["id"]].items():
@@ -382,7 +472,7 @@ def solve_weekly(
         if wanted - found:
             raise ValueError(f"cannot pin pairs that are not allowed placements: {sorted(wanted - found)[:3]}")
     if hint:
-        by_key = {(p.assignmentId, p.day, p.slot, p.roomId, p.parity) for p in hint}
+        by_key = {(p.assignmentId, p.day, p.slot, None if match_rooms else p.roomId, p.parity) for p in hint}
         for a in loads:
             for (d, s), opts in X[a["id"]].items():
                 for room_id, parity, v in opts:
@@ -402,6 +492,10 @@ def solve_weekly(
             for room_id, parity, v in opts:
                 if solver.Value(v):
                     placements.append(Placement(a["id"], d, s, room_id, parity))
+    if match_rooms:
+        from .rooms import assign_rooms
+
+        placements = assign_rooms(ds, idx, placements, fixed, eligible_rooms)
     # pairs left out, in pairs per week (one kind of week only is half a pair)
     miss = {}
     for aid, (mo, me) in missing.items():
