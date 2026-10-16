@@ -1,4 +1,4 @@
-import type { Assignment, Audience, Dataset, Day, Group, Lesson, Room, Stream, Subject, Teacher, YearShift } from './types';
+import type { Assignment, Audience, Dataset, Day, Group, Lesson, Parity, Room, Stream, Subject, Teacher, YearShift } from './types';
 
 /** A slice of students: a whole group (subgroup = null) or one subgroup. */
 export interface Cohort {
@@ -8,6 +8,35 @@ export interface Cohort {
 
 const byId = <T extends { id: string }>(items: T[]) => new Map(items.map((i) => [i.id, i]));
 
+/** The teacher of a load and the other teachers who hold its pairs with them (any class can have several). */
+export const teacherIdsOf = (a: Pick<Assignment, 'teacherId' | 'coTeacherIds'>): string[] => [
+  a.teacherId,
+  ...(a.coTeacherIds ?? []).filter((t) => t !== a.teacherId),
+];
+
+/**
+ * Pairs ("day:slot") a teacher can't take in that kind of week. A pair held every week needs them
+ * free in both weeks, so their odd-only and even-only unavailability both count.
+ */
+export function unavailableIn(
+  t: Pick<Teacher, 'unavailable' | 'unavailableOdd' | 'unavailableEven'>,
+  parity: Parity = 'weekly',
+): Set<string> {
+  return new Set([
+    ...t.unavailable,
+    ...(parity !== 'even' ? (t.unavailableOdd ?? []) : []),
+    ...(parity !== 'odd' ? (t.unavailableEven ?? []) : []),
+  ]);
+}
+
+/** Is the teacher one of the load's teachers? */
+export const teaches = (a: Assignment | undefined, teacherId: string): boolean => !!a && teacherIdsOf(a).includes(teacherId);
+
+/** Do two loads have a teacher in common? */
+export const shareTeacher = (a: Assignment, b: Assignment): boolean => teacherIdsOf(a).some((t) => teacherIdsOf(b).includes(t));
+
+const EMPTY: ReadonlySet<string> = new Set();
+
 /** Lookup tables over a dataset, built once per validation/generation run. */
 export class DatasetIndex {
   readonly teachers: Map<string, Teacher>;
@@ -16,6 +45,10 @@ export class DatasetIndex {
   readonly streams: Map<string, Stream>;
   readonly subjects: Map<string, Subject>;
   readonly assignments: Map<string, Assignment>;
+  /** Rooms a subject or a group must have its classes in ("obligatoriu în această sală"). */
+  private requiredBySubject = new Map<string, string[]>();
+  private requiredByGroup = new Map<string, string[]>();
+  private requiredCache = new WeakMap<Assignment, ReadonlySet<string>>();
 
   constructor(readonly ds: Dataset) {
     this.teachers = byId(ds.teachers);
@@ -24,6 +57,10 @@ export class DatasetIndex {
     this.streams = byId(ds.streams);
     this.subjects = byId(ds.subjects);
     this.assignments = byId(ds.assignments);
+    for (const r of ds.rooms) {
+      for (const s of r.requiredSubjectIds ?? []) this.requiredBySubject.set(s, [...(this.requiredBySubject.get(s) ?? []), r.id]);
+      for (const g of r.requiredGroupIds ?? []) this.requiredByGroup.set(g, [...(this.requiredByGroup.get(g) ?? []), r.id]);
+    }
   }
 
   cohorts(aud: Audience): Cohort[] {
@@ -136,16 +173,53 @@ export class DatasetIndex {
     );
   }
 
+  /**
+   * Rooms this class must be held in: those that list its subject or one of its groups as mandatory. Empty = any
+   * room that fits. Several rooms (the subject in one, a group in another) = any of them.
+   */
+  requiredRoomIds(a: Assignment): ReadonlySet<string> {
+    if (!this.requiredBySubject.size && !this.requiredByGroup.size) return EMPTY;
+    let ids: ReadonlySet<string> | undefined = this.requiredCache.get(a);
+    if (!ids) {
+      ids = new Set([
+        ...(this.requiredBySubject.get(a.subjectId) ?? []),
+        ...this.cohorts(a.audience).flatMap((c) => this.requiredByGroup.get(c.groupId) ?? []),
+      ]);
+      this.requiredCache.set(a, ids);
+    }
+    return ids;
+  }
+
   assignmentOf(lesson: Lesson): Assignment | undefined {
     return this.assignments.get(lesson.assignmentId);
+  }
+
+  /** The slots when any of the load's teachers is unavailable, for a pair of that parity. */
+  teacherUnavailable(a: Assignment, parity: Parity = 'weekly'): Set<string> {
+    return new Set(
+      teacherIdsOf(a).flatMap((id) => {
+        const t = this.teachers.get(id);
+        return t ? [...unavailableIn(t, parity)] : [];
+      }),
+    );
+  }
+
+  /** "Popescu Ion, Ionescu Ana": every teacher of the load. */
+  teacherNames(a: Assignment): string {
+    return teacherIdsOf(a)
+      .map((t) => this.teachers.get(t)?.name)
+      .filter(Boolean)
+      .join(', ');
   }
 
   /**
    * Lectures and seminars can use any ordinary room that is big enough; a lab
    * needs a laboratory. A laboratory is kept for labs, unless the class needs
-   * equipment (hasEquipment checks it is there).
+   * equipment (hasEquipment checks it is there). A class with mandatory rooms fits only those, whatever their type.
    */
   roomFits(assignment: Assignment, room: Room): boolean {
+    const required = this.requiredRoomIds(assignment);
+    if (required.size) return required.has(room.id);
     if (assignment.roomType === 'lab') return room.type === 'lab';
     return room.type !== 'lab' || assignment.equipment.length > 0;
   }

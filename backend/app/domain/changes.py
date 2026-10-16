@@ -1,7 +1,7 @@
 """Port of frontend/src/domain/changes.ts: which pairs happen on a date, which rooms and teachers are free."""
 from datetime import date
 
-from .indexes import DatasetIndex
+from .indexes import DatasetIndex, teacher_ids, unavailable_in
 from .slots import day_index_of, in_week, parities_overlap, slot_key, week_parity_of
 
 
@@ -43,14 +43,16 @@ def lesson_of_change(ds: dict, lessons: list[dict], change: dict) -> dict | None
     return None
 
 
-def _effective(idx: DatasetIndex, lesson: dict, changes: list[dict]) -> tuple[str, str | None]:
+def _effective(idx: DatasetIndex, lesson: dict, changes: list[dict]) -> tuple[str, list[str]]:
+    """The pair's room and teachers on that date: a substitute takes the place of the main teacher, the co-teachers stay."""
     mine = [c for c in changes if c["assignmentId"] == lesson["assignmentId"] and c["slot"] == lesson["slot"]]
     room = next((c.get("roomId") for c in mine if c["kind"] == "room" and c.get("roomId")), lesson["roomId"])
-    teacher = next((c.get("teacherId") for c in mine if c["kind"] == "teacher" and c.get("teacherId")), None)
-    if teacher is None:
-        a = idx.assignment_of(lesson)
-        teacher = a["teacherId"] if a else None
-    return room, teacher
+    a = idx.assignment_of(lesson)
+    teachers = teacher_ids(a) if a else []
+    sub = next((c.get("teacherId") for c in mine if c["kind"] == "teacher" and c.get("teacherId")), None)
+    if sub is not None:
+        teachers = [sub, *teachers[1:]]
+    return room, teachers
 
 
 def free_rooms_for(ds: dict, idx: DatasetIndex, lessons: list[dict], changes: list[dict], d: str, lesson: dict) -> list[dict]:
@@ -81,12 +83,13 @@ def free_teachers_for(ds: dict, idx: DatasetIndex, lessons: list[dict], changes:
         return []
     same_day = [c for c in changes if c["date"] == d]
     others = [l for l in lessons_on_date(ds, lessons, d, idx) if l["id"] != lesson["id"] and l["slot"] == lesson["slot"]]
-    busy = {_effective(idx, l, same_day)[1] for l in others}
+    busy = {t for l in others for t in _effective(idx, l, same_day)[1]}
     key = slot_key(lesson["day"], lesson["slot"])
     dated = f"{d}:{lesson['slot']}"
+    week = idx.week_of({"date": d})  # the substitute's availability in that date's week
     ts = [
         t
         for t in ds["teachers"]
-        if t["id"] != a["teacherId"] and t["id"] not in busy and key not in t["unavailable"] and dated not in t.get("unavailableOn", [])
+        if t["id"] not in teacher_ids(a) and t["id"] not in busy and key not in unavailable_in(t, week) and dated not in t.get("unavailableOn", [])
     ]
     return sorted(ts, key=lambda t: (not (a["type"] in t["activityTypes"]), t["name"]))

@@ -5,6 +5,7 @@
 import { useState, type ReactNode } from 'react';
 import { dateSlotKey } from '../domain/availability';
 import { fmtDate, parseDate, toDateString } from '../domain/changes';
+import { teaches, unavailableIn } from '../domain/indexes';
 import { paritiesOverlap, slotKey } from '../domain/slots';
 import { subjectLabel } from '../domain/subjects';
 import type { Day, Lesson } from '../domain/types';
@@ -18,11 +19,11 @@ import { TimetableGrid } from './TimetableGrid';
 const WEEKS_AHEAD = 26;
 
 /** The teacher's pairs in the week starting on `monday`, each on its weekday (session pairs on their date). */
-export function teacherWeekLessons(all: Lesson[], teacherOf: (l: Lesson) => string | undefined, teacherId: string, monday: Date): Lesson[] {
+export function teacherWeekLessons(all: Lesson[], isTeachers: (l: Lesson) => boolean, monday: Date): Lesson[] {
   const dates = datesOfWeek(monday);
   const parity = weekParityOf(monday);
   return all
-    .filter((l) => teacherOf(l) === teacherId && (l.date ? dates.includes(l.date) : paritiesOverlap(l.parity, parity)))
+    .filter((l) => isTeachers(l) && (l.date ? dates.includes(l.date) : paritiesOverlap(l.parity, parity)))
     .map((l) => (l.date ? { ...l, date: undefined, parity: 'weekly' as const } : l));
 }
 
@@ -47,7 +48,7 @@ export function WeekAvailability({
   monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + offset * 7);
   const dates = datesOfWeek(monday);
   const today = toDateString(now);
-  const lessons = teacherWeekLessons(published?.lessons ?? [], (l) => index.assignmentOf(l)?.teacherId, teacherId, monday);
+  const lessons = teacherWeekLessons(published?.lessons ?? [], (l) => teaches(index.assignmentOf(l), teacherId), monday);
   const days = gridDays(
     dataset.settings,
     (published?.lessons ?? []).filter((l) => l.date && dates.includes(l.date)),
@@ -61,7 +62,7 @@ export function WeekAvailability({
   const stateOf = (d: Day, s: number): State => {
     if (lessons.some((l) => l.day === d && l.slot === s)) return 'lesson';
     if (teacher?.consultation === slotKey(d, s)) return 'consultation';
-    if (teacher?.unavailable.includes(slotKey(d, s))) return 'usual';
+    if (teacher && unavailableIn(teacher, weekParityOf(monday)).has(slotKey(d, s))) return 'usual';
     if (value.includes(dateSlotKey(dates[d], s))) return 'off';
     return dates[d] < today ? 'past' : 'free';
   };

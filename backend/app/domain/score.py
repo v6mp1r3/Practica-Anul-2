@@ -1,7 +1,7 @@
 """Port of frontend/src/domain/score.ts: soft constraints turned into a weighted penalty."""
 from collections import defaultdict
 
-from .indexes import DatasetIndex
+from .indexes import DatasetIndex, teacher_ids
 from .slots import in_week, parity_weight
 from .validator import find_hard_conflicts
 
@@ -10,12 +10,43 @@ SOFT_WEIGHTS = {
     "groupGaps": 12,  # students should have no gaps: the heaviest comfort rule
     "earlyStarts": 1,
     "dayOverload": 5,
+    "thinDays": 10,  # a day with fewer pairs than the minimum, week by week
     "unevenDays": 1,
+    "startSpread": 3,  # how far apart a group's first pairs of the days are (8:00 on Monday, 17:00 on Tuesday)
     "preferenceMisses": 1,
     "roomMisses": 2,
     "edgeMisses": 8,
     "shiftMisses": 4,
 }
+
+# Generation rules (the "allow ..." switches of the generate page): switching one off makes the comfort rule
+# strict, a penalty so heavy that it only gives way when nothing else is possible. It stays below the cost of
+# leaving a pair out, so a strict rule never drops pairs. A rule is a soft weight, never a hard constraint.
+STRICT_WEIGHT = 100
+# A day with fewer pairs than the minimum is not allowed unless the administrator says so (allowThinDays: True), and a
+# gap between a group's pairs is not when allowGroupGaps is off. This weight is far above the cost of leaving a pair out,
+# so the generator drops or moves pairs before it leaves a day that breaks one (see solver/absolute.py).
+ABSOLUTE_WEIGHT = 10_000
+RULE_WEIGHT = {
+    "allowGroupGaps": "groupGaps",
+    "allowTeacherGaps": "teacherGaps",
+    "allowThinDays": "thinDays",
+    "allowOverload": "dayOverload",
+    "allowEdgeMisses": "edgeMisses",
+}
+
+
+def weights_for(rules: dict | None) -> dict:
+    """The soft weights to search with: the usual ones, strict where a rule is switched off (False)."""
+    w = dict(SOFT_WEIGHTS)
+    for rule, key in RULE_WEIGHT.items():
+        if (rules or {}).get(rule) is False:
+            w[key] = max(w[key], STRICT_WEIGHT)
+    if (rules or {}).get("allowThinDays") is not True:
+        w["thinDays"] = ABSOLUTE_WEIGHT
+    if (rules or {}).get("allowGroupGaps") is False:
+        w["groupGaps"] = ABSOLUTE_WEIGHT
+    return w
 
 
 def gaps_in_day(slots: list[int]) -> int:
@@ -51,7 +82,7 @@ def _hits_view(idx: DatasetIndex, lesson: dict, view: tuple[str, int | None]) ->
     return any(g == gid and (s is None or sub is None or s == sub) for g, s in idx.cohorts(a["audience"]))
 
 
-def score_timetable(ds: dict, all_lessons: list[dict], idx: DatasetIndex | None = None) -> dict:
+def score_timetable(ds: dict, all_lessons: list[dict], idx: DatasetIndex | None = None, weights: dict | None = None) -> dict:
     idx = idx or DatasetIndex(ds)
     b = {k: 0.0 for k in SOFT_WEIGHTS}
     s = ds["settings"]
@@ -64,8 +95,8 @@ def score_timetable(ds: dict, all_lessons: list[dict], idx: DatasetIndex | None 
     by_teacher: dict[str, list[dict]] = defaultdict(list)
     for l in lessons:
         a = idx.assignment_of(l)
-        if a:
-            by_teacher[a["teacherId"]].append(l)
+        for tid in teacher_ids(a) if a else []:
+            by_teacher[tid].append(l)
     for tid, tl in by_teacher.items():
         for week in weeks:
             for d in days:
@@ -94,6 +125,12 @@ def score_timetable(ds: dict, all_lessons: list[dict], idx: DatasetIndex | None 
             for slots in per_day:
                 b["groupGaps"] += week_share * gaps_in_day(slots)
                 b["dayOverload"] += week_share * max(0, len(set(slots)) - idx.group_max_pairs(view[0]))
+                n = len(set(slots))
+                if 0 < n < s["minPairsPerDayGroup"]:
+                    b["thinDays"] += week_share * (s["minPairsPerDayGroup"] - n)
+            firsts = [min(sl) for sl in per_day if sl]
+            if len(firsts) > 1:
+                b["startSpread"] += week_share * (max(firsts) - min(firsts))
             loads = [len(set(sl)) for sl in per_day]
             avg = sum(loads) / len(loads) if loads else 0
             b["unevenDays"] += week_share * sum(abs(x - avg) for x in loads)
@@ -130,5 +167,5 @@ def score_timetable(ds: dict, all_lessons: list[dict], idx: DatasetIndex | None 
         b["earlyStarts"] = sum(parity_weight(l["parity"]) for l in lessons if l["slot"] == 0)
 
     breakdown = {k: _js_round(v) for k, v in b.items()}
-    soft = _js_round(sum(breakdown[k] * SOFT_WEIGHTS[k] for k in breakdown))
+    soft = _js_round(sum(breakdown[k] * (weights or SOFT_WEIGHTS)[k] for k in breakdown))
     return {"hard": len(find_hard_conflicts(ds, all_lessons, idx)), "soft": soft, "breakdown": breakdown}

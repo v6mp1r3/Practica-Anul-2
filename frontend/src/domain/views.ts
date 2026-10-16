@@ -1,5 +1,5 @@
 // Helpers to slice a timetable by group, teacher, room or day.
-import type { DatasetIndex } from './indexes';
+import { teaches, type DatasetIndex } from './indexes';
 import { paritiesOverlap, weekDays } from './slots';
 import type { Day, Lesson, Parity, Settings, SlotIndex, Stream } from './types';
 
@@ -18,7 +18,7 @@ export function filterLessons(idx: DatasetIndex, lessons: Lesson[], f: ViewFilte
   return lessons.filter((l) => {
     const a = idx.assignmentOf(l);
     if (!a) return false;
-    if (f.kind === 'teacher') return a.teacherId === f.id;
+    if (f.kind === 'teacher') return teaches(a, f.id);
     if (f.kind === 'room') return l.roomId === f.id;
     return idx
       .cohorts(a.audience)
@@ -39,6 +39,14 @@ export function lessonsAt(lessons: Lesson[], day: Day, slot: SlotIndex): Lesson[
 }
 
 /** Odd/even week of a date, counted from the semester start (1 Sept by default). */
+/** The kind of week a pair runs in: its parity, or for a pair on a date that date's week (when weeks alternate). */
+export function weekOf(settings: Pick<Settings, 'weekParity'>, lesson: Pick<Lesson, 'parity' | 'date'>): Parity {
+  if (!lesson.date) return lesson.parity;
+  if (!settings.weekParity) return 'weekly';
+  const [y, m, d] = lesson.date.split('-').map(Number);
+  return weekParityOf(new Date(y, m - 1, d));
+}
+
 export function weekParityOf(
   date: Date,
   semesterStart = new Date(date.getFullYear() - (date.getMonth() < 8 ? 1 : 0), 8, 1),
@@ -58,7 +66,7 @@ export const dayIndexOf = (date: Date) => (date.getDay() + 6) % 7;
 
 /** Teacher load in pairs per week (biweekly pairs count as half). */
 export function teacherLoad(idx: DatasetIndex, lessons: Lesson[], teacherId: string): number {
-  return lessons.filter((l) => idx.assignmentOf(l)?.teacherId === teacherId).reduce((n, l) => n + (l.parity === 'weekly' ? 1 : 0.5), 0);
+  return lessons.filter((l) => teaches(idx.assignmentOf(l), teacherId)).reduce((n, l) => n + (l.parity === 'weekly' ? 1 : 0.5), 0);
 }
 
 /**

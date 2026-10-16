@@ -42,8 +42,13 @@ def test_room_roundtrip_with_equipment_and_preferences(client, admin):
     assert r["equipment"] == ["calculatoare", "proiector"] and r["preferredSubjectIds"] == [w.s1["id"]] and r["preferredGroupIds"] == [w.g1["id"]]
     r["equipment"] = ["tablă"]
     r.pop("preferredSubjectIds")
+    # mandatory subjects and groups are kept apart from the preferred ones
+    r["requiredSubjectIds"], r["requiredGroupIds"] = [w.s1["id"]], [w.g1["id"]]
     out = client.put(f"/api/rooms/{r['id']}", json=r, headers=admin).json()
     assert out["equipment"] == ["tablă"] and "preferredSubjectIds" not in out
+    assert out["requiredSubjectIds"] == [w.s1["id"]] and out["requiredGroupIds"] == [w.g1["id"]] and out["preferredGroupIds"] == [w.g1["id"]]
+    out.pop("requiredGroupIds")
+    assert "requiredGroupIds" not in client.put(f"/api/rooms/{r['id']}", json=out, headers=admin).json()
     # same building and name twice is refused
     assert client.post("/api/rooms", json=room(name="A01", building="Blocul 5"), headers=admin).status_code == 201  # other building
     assert client.post("/api/rooms", json=room(name="A01"), headers=admin).status_code == 422  # same building
@@ -194,3 +199,25 @@ def test_project_hours_and_half_pair_loads(client, admin):
     a = create(client, admin, "assignments", assignment(w.s1["id"], t["id"], {"kind": "group", "id": w.g1["id"]}, type="project", roomType="seminar"))
     assert a["type"] == "project" and a["roomType"] == "seminar"
     assert client.post("/api/teachers", json=teacher(email="z@example.md", activityTypes=["dance"]), headers=admin).status_code == 422
+
+
+def test_a_teaching_load_can_have_half_pairs(client, admin):
+    w = World(client, admin)
+    half = assignment(w.s1["id"], w.t1["id"], {"kind": "group", "id": w.g1["id"]}, pairsPerWeek=0.5)
+    assert create(client, admin, "assignments", half)["pairsPerWeek"] == 0.5
+    assert create(client, admin, "assignments", {**half, "pairsPerWeek": 1.5, "type": "seminar"})["pairsPerWeek"] == 1.5
+    # halves only, and at least one
+    for bad in (0.3, 0, 1.2):
+        assert client.post("/api/assignments", json={**half, "type": "lab", "pairsPerWeek": bad}, headers=admin).status_code >= 400
+
+
+def test_a_teacher_can_be_unavailable_in_odd_or_even_weeks_only(client, admin):
+    t = create(client, admin, "teachers", teacher(unavailable=["0:0"], unavailableOdd=["1:2", "0:0"], unavailableEven=["3:4"]))
+    # every week wins over one week; the others are kept per week
+    assert t["unavailable"] == ["0:0"] and t["unavailableOdd"] == ["1:2"] and t["unavailableEven"] == ["3:4"]
+    # a client that does not know about weeks (an older page) keeps them
+    r = client.put(f"/api/teachers/{t['id']}", json={k: v for k, v in t.items() if not k.startswith("unavailableO") and not k.startswith("unavailableE")} | {"unavailable": ["4:0"]}, headers=admin).json()
+    assert r["unavailable"] == ["4:0"] and r["unavailableOdd"] == ["1:2"] and r["unavailableEven"] == ["3:4"]
+    # the availability page can clear them
+    r = client.put(f"/api/teachers/{t['id']}/availability", json={"unavailable": [], "preferred": [], "unavailableOdd": [], "unavailableEven": ["3:4"]}, headers=admin).json()
+    assert r["unavailable"] == [] and "unavailableOdd" not in r and r["unavailableEven"] == ["3:4"]

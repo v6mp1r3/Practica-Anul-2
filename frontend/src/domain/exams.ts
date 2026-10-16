@@ -5,7 +5,7 @@
 // the subject's own classes in teaching weeks 7 and 14.
 import { lessonsOnDate, parseDate, sessionDates, toDateString } from './changes';
 import { holidaysOf, semesterStartOf } from './holidays';
-import type { DatasetIndex } from './indexes';
+import { teaches, type DatasetIndex } from './indexes';
 import type { Rng } from './rng';
 import type {
   ActivityType,
@@ -575,7 +575,7 @@ export function midtermsFor(
   for (const l of lessons) {
     const a = idx.assignmentOf(l);
     if (!a) continue;
-    if ('teacherId' in who && a.teacherId !== who.teacherId) continue;
+    if ('teacherId' in who && !teaches(a, who.teacherId)) continue;
     for (const g of groupsOf(l)) if (!('groupId' in who) || g === who.groupId) pairs.add(`${a.subjectId}|${g}`);
   }
 
@@ -601,7 +601,7 @@ export function midtermsFor(
       }
       for (const c of chosen) {
         if (vacationOn(ev, c.date)) continue; // no class on a holiday
-        if ('teacherId' in who && idx.assignmentOf(c.lesson)?.teacherId !== who.teacherId) continue;
+        if ('teacherId' in who && !teaches(idx.assignmentOf(c.lesson), who.teacherId)) continue;
         out.set(`${n}|${c.lesson.id}|${c.date}`, { n, date: c.date, lesson: c.lesson });
       }
     });
@@ -720,9 +720,7 @@ export function generateMidterms(
           const end = toHHMM(toMin(start) + ev.midtermMinutes);
           const taken = classesAt(date, start, end, parityOn);
           if (
-            taken.some(
-              (l) => idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, groupId) || idx.assignmentOf(l)!.teacherId === teacherId,
-            )
+            taken.some((l) => idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, groupId) || teaches(idx.assignmentOf(l), teacherId))
           )
             continue;
           const room = rooms(size).find(

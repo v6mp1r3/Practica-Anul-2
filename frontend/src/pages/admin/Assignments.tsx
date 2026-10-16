@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { api } from '../../api';
 import { CrudPage } from '../../components/CrudPage';
 import { needsSplit } from '../../domain/rooms';
+import { plannedPairs } from '../../domain/weeks';
+import { teacherIdsOf } from '../../domain/indexes';
 import { GroupPicker } from '../../components/GroupPicker';
 import { useClusterLabel } from '../../components/ClusterPicker';
 import { deriveClusters, groupsForSubject } from '../../domain/clusters';
@@ -55,7 +57,7 @@ export default function Assignments() {
       itemLabel={(x) => `${index.subjects.get(x.subjectId)?.code} ${t(`activity.${x.type}`)} · ${index.audienceLabel(x.audience)}`}
       sortText={(x) => `${index.subjects.get(x.subjectId)?.name} ${t(`activity.${x.type}`)} ${index.audienceLabel(x.audience)}`}
       searchText={(x) =>
-        `${index.subjects.get(x.subjectId)?.code} ${index.subjects.get(x.subjectId)?.name} ${index.teachers.get(x.teacherId)?.name} ${index.audienceLabel(x.audience)}`
+        `${index.subjects.get(x.subjectId)?.code} ${index.subjects.get(x.subjectId)?.name} ${index.teacherNames(x)} ${index.audienceLabel(x.audience)}`
       }
       headerActions={
         <>
@@ -95,17 +97,23 @@ export default function Assignments() {
         },
         {
           label: t('assignments.teacher'),
-          sort: (x) => index.teachers.get(x.teacherId)?.name ?? '',
+          sort: (x) => index.teacherNames(x),
           render: (x) => {
-            const teacher = index.teachers.get(x.teacherId);
+            // a class can have several teachers
+            const teachers = teacherIdsOf(x).flatMap((id) => index.teachers.get(id) ?? []);
             return (
               <span>
-                {teacher?.name}
-                {teacher && !teacher.activityTypes.includes(x.type) && (
-                  <span className="badge warning" style={{ marginLeft: 6 }}>
-                    !
+                {teachers.map((teacher, i) => (
+                  <span key={teacher.id}>
+                    {i > 0 && ', '}
+                    {teacher.name}
+                    {!teacher.activityTypes.includes(x.type) && (
+                      <span className="badge warning" style={{ marginLeft: 6 }}>
+                        !
+                      </span>
+                    )}
                   </span>
-                )}
+                ))}
               </span>
             );
           },
@@ -137,7 +145,7 @@ export default function Assignments() {
         type: 'lecture',
         teacherId: dataset.teachers[0]?.id ?? '',
         audience: { kind: 'group', id: '' },
-        pairsPerWeek: 1,
+        pairsPerWeek: plannedPairs(cycleSubjects[0], 'lecture') ?? 1,
         roomType: 'lecture',
         equipment: [],
       })}
@@ -161,12 +169,22 @@ export default function Assignments() {
           ? d.audience.kind === 'stream'
             ? t('assignments.streamMin')
             : t('assignments.required')
-          : (index.isReduced(d) ? (d.pairsPerSession ?? d.pairsPerWeek) : d.pairsPerWeek) < 1
-            ? t('assignments.pairsMin')
-            : null
+          : index.isReduced(d)
+            ? (d.pairsPerSession ?? d.pairsPerWeek) < 1
+              ? t('assignments.pairsMin')
+              : null
+            : // whole pairs or halves: 0.5 is one pair every other week
+              d.pairsPerWeek < 0.5 || (d.pairsPerWeek * 2) % 1
+              ? t('assignments.pairsHalf')
+              : null
       }
       renderForm={(d, set) => {
         const teacher = index.teachers.get(d.teacherId);
+        const coTeacherIds = d.coTeacherIds ?? [];
+        // those who teach this kind of class first, then by name
+        const teacherOrder = [...dataset.teachers].sort(
+          (a, b) => Number(b.activityTypes.includes(d.type)) - Number(a.activityTypes.includes(d.type)) || a.name.localeCompare(b.name),
+        );
         // the groups this subject can be given to, from its tags
         const formGroups = groupsFor(d.subjectId);
         const split = needsSplit(index, dataset.rooms, d);
@@ -181,6 +199,11 @@ export default function Assignments() {
           .filter((c): c is NonNullable<typeof c> => !!c);
         // reduced attendance is counted per session, not per week (no odd/even weeks either)
         const reduced = index.isReduced(d);
+        // pairs a week come from the subject's plan for this kind of class (lecture, seminar or lab), and stay
+        // editable: two teachers sharing a class split them. A project has none in the plan: entered here.
+        const planned = plannedPairs(index.subjects.get(d.subjectId), d.type);
+        const fromPlan = (subjectId: string, type: ActivityType) =>
+          reduced ? {} : { pairsPerWeek: plannedPairs(index.subjects.get(subjectId), type) ?? d.pairsPerWeek };
         return (
           <div className="stack">
             <div className="form-grid">
@@ -192,7 +215,11 @@ export default function Assignments() {
                     // the groups chosen so far that the new subject is not for are dropped
                     const offered = groupsFor(e.target.value);
                     const kept = chosen.filter((id) => offered.some((g) => g.id === id));
-                    set({ subjectId: e.target.value, ...(d.audience.kind === 'subgroup' ? {} : { audience: audienceOf(kept) }) });
+                    set({
+                      subjectId: e.target.value,
+                      ...(d.audience.kind === 'subgroup' ? {} : { audience: audienceOf(kept) }),
+                      ...fromPlan(e.target.value, d.type),
+                    });
                   }}
                 >
                   {cycleSubjects.map((s) => (
@@ -214,6 +241,7 @@ export default function Assignments() {
                       // rooms have no fixed type: only a lab needs a laboratory, any other class an ordinary room
                       roomType: (type === 'project' ? 'seminar' : type) as RoomType,
                       equipment: type === 'lab' && !d.equipment.length ? ['calculatoare'] : d.equipment,
+                      ...fromPlan(d.subjectId, type),
                     });
                   }}
                 >
@@ -228,21 +256,40 @@ export default function Assignments() {
                 label={t('assignments.teacher')}
                 hint={teacher && !teacher.activityTypes.includes(d.type) ? t('assignments.teacherTypeWarning') : undefined}
               >
-                <Select className="select" value={d.teacherId} onChange={(e) => set({ teacherId: e.target.value })}>
-                  {[...dataset.teachers]
-                    .sort(
-                      (a, b) =>
-                        Number(b.activityTypes.includes(d.type)) - Number(a.activityTypes.includes(d.type)) || a.name.localeCompare(b.name),
-                    )
-                    .map((x) => (
-                      <option key={x.id} value={x.id}>
-                        {x.name}
-                        {x.activityTypes.includes(d.type) ? '' : ' *'}
-                      </option>
-                    ))}
+                <Select
+                  className="select"
+                  value={d.teacherId}
+                  // the main teacher is not also one of the others
+                  onChange={(e) => set({ teacherId: e.target.value, coTeacherIds: d.coTeacherIds?.filter((id) => id !== e.target.value) })}
+                >
+                  {teacherOrder.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
+                      {x.activityTypes.includes(d.type) ? '' : ' *'}
+                    </option>
+                  ))}
                 </Select>
               </Field>
             </div>
+
+            <Field
+              label={t('assignments.coTeachers')}
+              hint={
+                coTeacherIds.some((id) => !index.teachers.get(id)?.activityTypes.includes(d.type))
+                  ? t('assignments.teacherTypeWarning')
+                  : t('assignments.coTeachersHint')
+              }
+            >
+              <MultiSelect
+                value={coTeacherIds}
+                onChange={(ids) => set({ coTeacherIds: ids })}
+                options={teacherOrder
+                  .filter((x) => x.id !== d.teacherId)
+                  .map((x) => ({ value: x.id, label: `${x.name}${x.activityTypes.includes(d.type) ? '' : ' *'}`, short: x.name }))}
+                placeholder={t('assignments.coTeachersPlaceholder')}
+                aria-label={t('assignments.coTeachers')}
+              />
+            </Field>
 
             <Field label={t('assignments.audience')} hint={t('assignments.groupsHint')}>
               {subjectTags.length > 0 && (
@@ -301,15 +348,28 @@ export default function Assignments() {
                   />
                 </Field>
               ) : (
-                <Field label={t('assignments.pairs')}>
+                <Field label={t('assignments.pairs')} hint={t('assignments.pairsHint')}>
                   <input
                     className="input"
                     type="number"
-                    min={1}
+                    min={0.5}
+                    step={0.5}
                     max={10}
                     value={d.pairsPerWeek}
                     onChange={(e) => set({ pairsPerWeek: Number(e.target.value) || 0 })}
                   />
+                  {planned === undefined ? (
+                    <small className="hint">{t('assignments.pairsNoPlan', { type: t(`activity.${d.type}`).toLowerCase() })}</small>
+                  ) : (
+                    planned !== d.pairsPerWeek && (
+                      <div className="row wrap" style={{ marginTop: 4 }}>
+                        <small className="hint">{t('assignments.pairsPlan', { n: planned })}</small>
+                        <button type="button" className="btn ghost sm" onClick={() => set({ pairsPerWeek: planned })}>
+                          {t('assignments.pairsUsePlan')}
+                        </button>
+                      </div>
+                    )
+                  )}
                 </Field>
               )}
             </div>

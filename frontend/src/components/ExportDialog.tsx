@@ -1,17 +1,18 @@
-// Export a timetable: the group / teacher / room shown, one year's groups or every
-// group, as a spreadsheet (CSV for Excel) or a calendar (iCal). Used by the editor and the
+// Export a timetable: the group / teacher / room shown, one year's groups or every group, as a
+// spreadsheet (Excel, laid out like the printed timetable) or a calendar (iCal). Used by the editor and the
 // public timetable pages.
 import { useState } from 'react';
 import type { DatasetIndex } from '../domain/indexes';
 import type { Lesson, Settings } from '../domain/types';
 import { useI18n } from '../i18n';
 import { downloadFile } from '../utils/download';
-import { timetableToCsv, timetableToCsvAllGroups, timetableToIcs } from '../utils/export';
+import { timetableToIcs } from '../utils/export';
+import { XLSX_TYPE, timetableToXlsx, timetableToXlsxAllGroups } from '../utils/xlsxExport';
 import { Icon } from './Icon';
 import { Field, Modal, Segmented } from './ui';
 
 export type ExportWhat = 'view' | 'year' | 'all';
-export type ExportFormat = 'csv' | 'ics';
+export type ExportFormat = 'xlsx' | 'ics';
 
 const slug = (name: string) =>
   name
@@ -21,7 +22,7 @@ const slug = (name: string) =>
     .replace(/[^a-z0-9-]+/g, '-');
 
 /** Download the export chosen in the dialog. */
-export function downloadTimetable(o: {
+export async function downloadTimetable(o: {
   what: ExportWhat;
   format: ExportFormat;
   index: DatasetIndex;
@@ -47,8 +48,10 @@ export function downloadTimetable(o: {
   const allName = o.allName ?? 'orar-toate-grupele';
   const base = !all ? slug(`orar-${o.viewName ?? ''}`) : o.what === 'year' ? allName.replace('toate-grupele', `anul-${o.year}`) : allName;
   if (o.format === 'ics') return downloadFile(`${base}.ics`, timetableToIcs(lessons, o.index, o.settings), 'text/calendar');
-  const csv = all ? timetableToCsvAllGroups(lessons, o.index, o.settings, groupIds) : timetableToCsv(lessons, o.index, o.settings);
-  downloadFile(`${base}.csv`, csv, 'text/csv');
+  const wb = all
+    ? await timetableToXlsxAllGroups(lessons, o.index, o.settings, groupIds)
+    : await timetableToXlsx(lessons, o.index, o.settings, o.viewName ?? '');
+  downloadFile(`${base}.xlsx`, (await wb.xlsx.writeBuffer()) as ArrayBuffer, XLSX_TYPE);
 }
 
 /** How many of these groups each year of study has, by year. */
@@ -85,7 +88,7 @@ export function ExportDialog({
   const { t } = useI18n();
   const [what, setWhat] = useState<ExportWhat>(viewName ? defaultWhat : 'all');
   const [year, setYear] = useState(String(years.find(([y]) => y === defaultYear)?.[0] ?? years[0]?.[0] ?? 1));
-  const [format, setFormat] = useState<ExportFormat>('csv');
+  const [format, setFormat] = useState<ExportFormat>('xlsx');
   return (
     <Modal
       title={t('editor.exportTitle')}
@@ -130,13 +133,13 @@ export function ExportDialog({
         )}
         <Field
           label={t('editor.exportFormat')}
-          hint={format === 'csv' ? t(what === 'view' ? 'editor.csvHint' : 'editor.csvAllHint') : t('editor.icsHint')}
+          hint={format === 'xlsx' ? t(what === 'view' ? 'editor.xlsxHint' : 'editor.xlsxAllHint') : t('editor.icsHint')}
         >
           <Segmented
             value={format}
             onChange={setFormat}
             options={[
-              { value: 'csv', label: 'CSV (Excel)' },
+              { value: 'xlsx', label: 'Excel' },
               { value: 'ics', label: 'iCal' },
             ]}
           />

@@ -18,7 +18,7 @@ def test_save_computes_the_score_on_the_server(client, admin):
     # valid: lecture Monday 2nd pair, seminar Monday 3rd pair, no gaps
     ok = save(client, admin, "A", [w.g1["id"], w.g2["id"]], [lesson(lec["id"], 0, 1, w.r1["id"], "a"), lesson(sem["id"], 0, 2, w.r2["id"], "b")])
     assert ok["status"] == "draft" and ok["score"]["hard"] == 0
-    assert set(ok["score"]["breakdown"]) == {"teacherGaps", "groupGaps", "earlyStarts", "dayOverload", "unevenDays", "preferenceMisses", "roomMisses", "edgeMisses", "shiftMisses"}
+    assert set(ok["score"]["breakdown"]) == {"teacherGaps", "groupGaps", "earlyStarts", "dayOverload", "thinDays", "unevenDays", "startSpread", "preferenceMisses", "roomMisses", "edgeMisses", "shiftMisses"}
     assert ok["score"]["breakdown"]["groupGaps"] == 0 and ok["score"]["breakdown"]["shiftMisses"] == 0
     assert ok["createdAt"].endswith("Z") and ok["updatedAt"].endswith("Z") and len(ok["lessons"]) == 2
     # a gap for group 1 between the pairs costs 12 per empty pair
@@ -168,3 +168,34 @@ def test_a_group_can_be_deleted_after_the_timetable_was_made(client, admin):
     assert client.get("/api/exams/plans/session", headers=admin).json()["events"] == []
     streams = client.get("/api/streams", headers=admin).json()
     assert all(w.g1["id"] not in s["groupIds"] for s in streams)
+
+
+def test_a_data_change_scores_the_timetables_again(client, admin):
+    w = World(client, admin)
+    a = w.seminar(w.s1, w.t1, w.g1)
+    t = save(client, admin, "T", [w.g1["id"]], [lesson(a["id"], 0, 1, w.r1["id"])])
+    assert t["score"]["hard"] == 0
+    # a new teaching load for the timetable's group: its pair is missing, and the list says so at once
+    w.seminar(w.s2, w.t2, w.g1)
+    after = client.get(f"/api/timetables/{t['id']}", headers=admin).json()
+    assert after["score"]["hard"] == 1
+    # a new score is not an edit of the timetable
+    assert after["updatedAt"] == t["updatedAt"]
+    # the teacher can no longer come then: a conflict too
+    client.put(f"/api/teachers/{w.t1['id']}", json={**w.t1, "unavailable": ["0:1"]}, headers=admin)
+    assert client.get(f"/api/timetables/{t['id']}", headers=admin).json()["score"]["hard"] == 2
+
+
+def test_a_class_keeps_all_its_teachers_busy(client, admin):
+    w = World(client, admin)
+    proj = create(client, admin, "assignments", assignment(w.s1["id"], w.t1["id"], {"kind": "group", "id": w.g1["id"]}, type="project", roomType="seminar", coTeacherIds=[w.t2["id"], w.t1["id"]]))
+    # the main teacher is not repeated among the others
+    assert proj["coTeacherIds"] == [w.t2["id"]]
+    other = w.seminar(w.s2, w.t2, w.g2)
+    clash = save(client, admin, "P", [w.g1["id"], w.g2["id"]], [lesson(proj["id"], 0, 1, w.r1["id"], "a"), lesson(other["id"], 0, 1, w.r2["id"], "b")])
+    assert clash["score"]["hard"] == 1  # t2 is in both
+    # a lab (any kind of class) keeps its other teachers too, and they can be taken off again
+    lab = client.put(f"/api/assignments/{proj['id']}", json={**proj, "type": "lab", "roomType": "lab"}, headers=admin).json()
+    assert lab["coTeacherIds"] == [w.t2["id"]]
+    solo = client.put(f"/api/assignments/{proj['id']}", json={**lab, "coTeacherIds": []}, headers=admin).json()
+    assert "coTeacherIds" not in solo

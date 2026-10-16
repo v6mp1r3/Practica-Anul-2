@@ -41,7 +41,7 @@ class _Board:
             if not lessons_overlap(o, l):
                 continue
             b = self.idx.assignment_of(o)
-            if b and (b["teacherId"] == a["teacherId"] or o["roomId"] == l["roomId"] or self.idx.audiences_overlap(a["audience"], b["audience"])):
+            if b and (self.idx.share_teacher(a, b) or o["roomId"] == l["roomId"] or self.idx.audiences_overlap(a["audience"], b["audience"])):
                 return True
         return False
 
@@ -67,7 +67,8 @@ def place_sessions(ds: dict, idx: DatasetIndex, loads: list[dict], existing: lis
             dates = [d for d in session_dates(session["start"], session["end"], idx.allowed_days(a)) if not any(v["start"] <= d <= v["end"] for v in vacations)]
             if not dates:
                 continue
-            teacher = idx.teachers.get(a["teacherId"], {})
+            # a session pair is on a date: the teacher's unavailability in that date's week (odd or even) counts
+            unavailable_on = lambda d, a=a: idx.teacher_unavailable(a, idx.week_of({"date": d}))
             size = idx.audience_size(a["audience"])
             preferred = {r["id"] for r in idx.preferred_rooms(a)}
             rooms = [r for r in ds["rooms"] if r["capacity"] >= size and idx.room_fits(a, r) and idx.has_equipment(a, r)]
@@ -81,7 +82,7 @@ def place_sessions(ds: dict, idx: DatasetIndex, loads: list[dict], existing: lis
                 if ex["assignmentId"] != a["id"] or ex.get("date") not in dates or ex["slot"] >= n_slots:
                     continue
                 day = date.fromisoformat(ex["date"]).weekday()
-                if slot_key(day, ex["slot"]) in teacher.get("unavailable", []):
+                if slot_key(day, ex["slot"]) in unavailable_on(ex["date"]):
                     continue
                 at = lambda rid: {"id": new_id(), "assignmentId": a["id"], "day": day, "slot": ex["slot"], "roomId": rid, "parity": "weekly", "date": ex["date"]}
                 room = next((r for r in sorted(rooms, key=lambda r: r["id"] != ex["roomId"]) if not board.clashes(at(r["id"]), a)), None)
@@ -97,12 +98,13 @@ def place_sessions(ds: dict, idx: DatasetIndex, loads: list[dict], existing: lis
                 while k >= 1 and best is None:
                     for d in dates:
                         day = date.fromisoformat(d).weekday()
+                        unavailable = unavailable_on(d)
                         taken = [s for g in group_ids for s in board.group_slots(d, g)]
                         if len(set(taken)) + k > max_per_day:
                             continue
                         for start in range(0, n_slots - k + 1):
                             slots = list(range(start, start + k))
-                            if any(slot_key(day, s) in teacher.get("unavailable", []) or s in taken for s in slots):
+                            if any(slot_key(day, s) in unavailable or s in taken for s in slots):
                                 continue
                             cost = 0.0
                             if taken:

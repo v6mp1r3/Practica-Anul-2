@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { teaches } from '../../domain/indexes';
 import { TimetableGrid } from '../../components/TimetableGrid';
 import { PageHeader, Segmented } from '../../components/ui';
 import { teacherStateAt, type TeacherSlotState } from '../../domain/availability';
@@ -35,7 +36,7 @@ export default function TeacherAvailability() {
   const stateAt = (id: string, d: Day, s: number) => teacherStateAt(index, lessons, id, d, s, week, dates[d]);
   const days = gridDays(
     dataset.settings,
-    all.filter((l) => index.assignmentOf(l)?.teacherId === teacherId),
+    all.filter((l) => teaches(index.assignmentOf(l), teacherId)),
   );
 
   const label: Record<TeacherSlotState, string> = {
@@ -48,7 +49,7 @@ export default function TeacherAvailability() {
   // The pair(s) the teacher has in a slot of the chosen week
   const lessonsAt = (d: Day, s: number) =>
     lessons.filter(
-      (l) => !l.date && l.day === d && l.slot === s && paritiesOverlap(l.parity, week) && index.assignmentOf(l)?.teacherId === teacherId,
+      (l) => !l.date && l.day === d && l.slot === s && paritiesOverlap(l.parity, week) && teaches(index.assignmentOf(l), teacherId),
     );
   const renderCell = (d: Day, s: number) => {
     const state = stateAt(teacherId, d, s);

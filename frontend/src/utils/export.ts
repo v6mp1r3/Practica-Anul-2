@@ -32,7 +32,7 @@ function csvRows(lessons: Lesson[], idx: DatasetIndex, settings: Settings): (str
           subjectLabel(s),
           s?.name ?? '',
           typeName[a.type],
-          idx.teachers.get(a.teacherId)?.name ?? '',
+          idx.teacherNames(a),
           idx.audienceLabel(a.audience),
           idx.rooms.get(l.roomId)?.name ?? '',
           l.date ? '' : parityName[l.parity],
@@ -107,7 +107,7 @@ export function timetableToIcs(
       ...(rrule ? [rrule] : []),
       `SUMMARY:${icsText(`${subjectLabel(subject)} ${a.type === 'lecture' ? 'Curs' : a.type === 'lab' ? 'Laborator' : a.type === 'project' ? 'Proiect' : 'Seminar'}`)}`,
       `LOCATION:${icsText(idx.rooms.get(l.roomId)?.name ?? '')}`,
-      `DESCRIPTION:${icsText(`${subject?.name ?? ''}\n${idx.teachers.get(a.teacherId)?.name ?? ''}\n${idx.audienceLabel(a.audience)}`)}`,
+      `DESCRIPTION:${icsText(`${subject?.name ?? ''}\n${idx.teacherNames(a)}\n${idx.audienceLabel(a.audience)}`)}`,
       'END:VEVENT',
     ];
     // a reduced-attendance session pair happens once, on its date

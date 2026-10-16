@@ -2,7 +2,7 @@
 // appear only where they meet this faculty: a teacher from another faculty who
 // teaches our groups, or another faculty's room our classes use.
 import type { Dataset, Lesson } from '../domain/types';
-import type { DatasetIndex } from '../domain/indexes';
+import { teacherIdsOf, type DatasetIndex } from '../domain/indexes';
 import { useAuth } from '../state/auth';
 import { useI18n } from '../i18n';
 
@@ -32,7 +32,7 @@ export function facultyView(dataset: Dataset, index: DatasetIndex, scope: string
   const groupIds = new Set(facultyGroupIds(dataset, scope));
   const ours = dataset.assignments.filter((a) => [...groupIds].some((g) => index.audienceTouchesGroup(a.audience, g)));
   const ourIds = new Set(ours.map((a) => a.id));
-  const teacherIds = new Set([...dataset.teachers.filter((x) => own(x.faculty)).map((x) => x.id), ...ours.map((a) => a.teacherId)]);
+  const teacherIds = new Set([...dataset.teachers.filter((x) => own(x.faculty)).map((x) => x.id), ...ours.flatMap(teacherIdsOf)]);
   const roomIds = new Set([
     ...dataset.rooms.filter((r) => own(r.faculty)).map((r) => r.id),
     ...lessons.filter((l) => ourIds.has(l.assignmentId)).map((l) => l.roomId),
