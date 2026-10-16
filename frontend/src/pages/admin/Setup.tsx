@@ -153,7 +153,7 @@ const withoutStart = ({ semesterStart: _s, ...rest }: Partial<EvaluationSettings
 
 export default function Setup() {
   const { t, lang } = useI18n();
-  const { dataset, refresh } = useDataset();
+  const { dataset, refresh, applySettings } = useDataset();
   const toast = useToast();
   const { institutionTimeFormat } = useData();
   const [s, setS] = useState<Settings>({ ...dataset.settings, timeFormat: institutionTimeFormat });
@@ -172,6 +172,21 @@ export default function Setup() {
   const periodCycles = (['licenta', 'master'] as StudyCycle[])
     .map((cy) => ({ cycle: cy, groups: dataset.groups.filter((g) => myGroupIds.includes(g.id) && (g.cycle ?? 'licenta') === cy) }))
     .filter((x) => x.groups.length > 0);
+  // a saved period shows as one line (kind, dates, groups) until opened; a new one shows in full
+  const [openPeriods, setOpenPeriods] = useState<string[]>([]);
+  const savedPeriodIds = new Set((dataset.settings.groupPeriods ?? []).map((p) => p.id));
+  const shortDate = (d: string) =>
+    d ? parseDate(d).toLocaleDateString(dateLocale(lang), { day: '2-digit', month: '2-digit', year: 'numeric' }) : '…';
+  // FAF-251, FAF-252, TI-251 → "FAF-251, 252 · TI-251"
+  const periodGroups = (ids: string[]) => {
+    const bySpec = new Map<string, string[]>();
+    for (const g of dataset.groups.filter((x) => ids.includes(x.id)).sort((a, b) => a.name.localeCompare(b.name))) {
+      const [spec, ...rest] = g.name.split('-');
+      const key = rest.length ? spec : g.name;
+      bySpec.set(key, [...(bySpec.get(key) ?? []), rest.length ? rest.join('-') : '']);
+    }
+    return [...bySpec].map(([spec, nos]) => (nos[0] ? `${spec}-${nos.join(', ')}` : spec)).join(' · ');
+  };
   // Licență | Master: master's tab shows licență's settings with the master overrides on top
   const [evCycle, setEvCycle] = useState<StudyCycle>('licenta');
   const [shiftCycle, setShiftCycle] = useState<StudyCycle>('licenta');
@@ -270,7 +285,8 @@ export default function Setup() {
       const back = await api.saveSettings({ ...saved, ...own });
       // the form now shows exactly what was stored (e.g. empty rows dropped; new internships get the server's ids)
       setS((x) => ({ ...x, ...own, ...(section === 7 ? { groupPeriods: back.groupPeriods ?? [] } : {}) }));
-      await refresh();
+      if (section === 7) setOpenPeriods([]);
+      applySettings(back);
       setJustSaved(section === 6 ? `6-${evCycle}-${evalTab}` : section);
     } catch {
       toast(t('common.error'), 'error');
@@ -924,6 +940,29 @@ export default function Setup() {
                   'groupPeriods',
                   (s.groupPeriods ?? []).map((x, j) => (j === i ? { ...x, ...patch } : x)),
                 );
+              const remove = () =>
+                set(
+                  'groupPeriods',
+                  (s.groupPeriods ?? []).filter((_, j) => j !== i),
+                );
+              if (savedPeriodIds.has(p.id) && !openPeriods.includes(p.id))
+                return (
+                  <div key={p.id} className="period-row period-summary">
+                    <button className="period-summary-main" onClick={() => setOpenPeriods((o) => [...o, p.id])}>
+                      <strong>{t(`periods.kind.${p.kind}`)}</strong>
+                      <span className="muted">
+                        {p.start === p.end ? shortDate(p.start) : `${shortDate(p.start)} – ${shortDate(p.end)}`}
+                      </span>
+                      <span>{periodGroups(p.groupIds)}</span>
+                    </button>
+                    <button className="btn ghost sm icon" onClick={() => setOpenPeriods((o) => [...o, p.id])} aria-label={t('common.edit')}>
+                      <Icon name="edit" size={14} />
+                    </button>
+                    <button className="btn ghost sm icon danger" onClick={remove} aria-label={t('common.delete')}>
+                      <Icon name="trash" size={14} />
+                    </button>
+                  </div>
+                );
               return (
                 <div key={p.id} className="period-row">
                   <div className="row wrap">
@@ -954,16 +993,12 @@ export default function Setup() {
                       />
                     ))}
                     <span className="spacer" />
-                    <button
-                      className="btn ghost sm icon danger"
-                      onClick={() =>
-                        set(
-                          'groupPeriods',
-                          (s.groupPeriods ?? []).filter((_, j) => j !== i),
-                        )
-                      }
-                      aria-label={t('common.delete')}
-                    >
+                    {savedPeriodIds.has(p.id) && (
+                      <button className="btn ghost sm" onClick={() => setOpenPeriods((o) => o.filter((x) => x !== p.id))}>
+                        {t('common.close')}
+                      </button>
+                    )}
+                    <button className="btn ghost sm icon danger" onClick={remove} aria-label={t('common.delete')}>
                       <Icon name="trash" size={14} />
                     </button>
                   </div>

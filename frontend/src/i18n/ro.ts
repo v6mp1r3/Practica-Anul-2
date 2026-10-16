@@ -429,6 +429,7 @@ export const ro = {
   'assignments.groupsLimited': 'Disciplina e pentru: {tags}.',
   'groupPicker.search': 'Caută grupă sau specialitate…',
   'groupPicker.summary': '{n} grupe · {s} studenți',
+  'groupPicker.summaryOne': '1 grupă · {s} studenți',
   'groupPicker.expandAll': 'Deschide tot',
   'groupPicker.collapseAll': 'Închide tot',
   'groupPicker.clear': 'Șterge alegerea',

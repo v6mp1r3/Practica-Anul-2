@@ -18,7 +18,7 @@ import { useToast } from '../../state/toast';
 
 export default function Holidays() {
   const { t, lang } = useI18n();
-  const { dataset, refresh } = useDataset();
+  const { dataset, applySettings } = useDataset();
   const toast = useToast();
   const name = useHolidayName();
   // worked out every academic year (holidays.ts), plus the ones added here
@@ -60,8 +60,7 @@ export default function Holidays() {
     setSaving(true);
     try {
       const saved = dataset.settings;
-      await api.saveSettings({ ...saved, evaluation: { ...DEFAULT_EVALUATION, ...saved.evaluation, ...patch } });
-      await refresh();
+      applySettings(await api.saveSettings({ ...saved, evaluation: { ...DEFAULT_EVALUATION, ...saved.evaluation, ...patch } }));
       setSelected(null);
       toast(done);
       return true;

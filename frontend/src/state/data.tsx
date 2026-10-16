@@ -16,6 +16,8 @@ interface Data {
   exams: ExamEvent[];
   loading: boolean;
   refresh: () => Promise<void>;
+  /** After saving the settings: use what the server stored, without reading everything again. */
+  applySettings: (settings: Dataset['settings']) => void;
   refreshNotifications: () => Promise<void>;
   /** Mark as read: on the server when signed in, in this browser otherwise (students). */
   markNotificationsRead: (ids: string[]) => Promise<void>;
@@ -192,6 +194,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     refreshNotifications().catch(() => undefined);
   }, [refreshNotifications]);
 
+  const applySettings = useCallback(
+    (settings: Dataset['settings']) => {
+      setDataset((d) => {
+        if (!d) return d;
+        const next = { ...d, settings };
+        writeCache({ dataset: next, published, changes, exams });
+        return next;
+      });
+    },
+    [published, changes, exams],
+  );
+
   const index = useMemo(() => (dataset ? new DatasetIndex(dataset) : null), [dataset]);
 
   const value = useMemo(
@@ -204,6 +218,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       exams,
       loading,
       refresh,
+      applySettings,
       refreshNotifications,
       markNotificationsRead,
       institutionTimeFormat,
@@ -219,6 +234,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       exams,
       loading,
       refresh,
+      applySettings,
       refreshNotifications,
       markNotificationsRead,
       institutionTimeFormat,

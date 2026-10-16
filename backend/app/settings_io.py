@@ -232,11 +232,11 @@ def save_settings(conn: Connection, s: dict) -> dict:
                 raise ApiError(422, f"{field}: pairs {sh['first'] + 1}-{sh['last'] + 1} do not exist, there are {len(s['slots'])} pairs")
     # the pair grid is shared by all semesters: update in place, drop extra rows only if nothing uses them
     slots = s["slots"]
-    for i, sl in enumerate(slots):
+    if slots:  # one batch: every round trip to the database adds to the save
         conn.execute(
             text("insert into time_slot (slot_index, start_time, end_time) values (:i, cast(:a as time), cast(:b as time)) "
                  "on conflict (slot_index) do update set start_time = excluded.start_time, end_time = excluded.end_time"),
-            {"i": i, "a": sl["start"], "b": sl["end"]},
+            [{"i": i, "a": sl["start"], "b": sl["end"]} for i, sl in enumerate(slots)],
         )
     conn.execute(text("delete from year_shift where semester_id = :s"), key)
     try:
@@ -246,14 +246,14 @@ def save_settings(conn: Connection, s: dict) -> dict:
         raise ApiError(409, "Some pair times are still used by timetables or teacher availability")
 
     conn.execute(text("delete from form_rule where semester_id = :s"), key)  # cascades to form_day
-    for form in ("full", "reduced", "dual"):
-        conn.execute(
-            text("insert into form_rule (semester_id, study_form, max_pairs_per_day) values (:s, cast(:f as study_form), :m)"),
-            {**key, "f": form, "m": s["formMaxPairs"].get(form, s["maxPairsPerDayGroup"])},
-        )
-        days = sorted(set(s["formDays"].get(form, [])))
-        if days:
-            conn.execute(text("insert into form_day (semester_id, study_form, day) values (:s, cast(:f as study_form), :d)"), [{**key, "f": form, "d": x} for x in days])
+    forms = ("full", "reduced", "dual")
+    conn.execute(
+        text("insert into form_rule (semester_id, study_form, max_pairs_per_day) values (:s, cast(:f as study_form), :m)"),
+        [{**key, "f": form, "m": s["formMaxPairs"].get(form, s["maxPairsPerDayGroup"])} for form in forms],
+    )
+    days = [{**key, "f": form, "d": x} for form in forms for x in sorted(set(s["formDays"].get(form, [])))]
+    if days:
+        conn.execute(text("insert into form_day (semester_id, study_form, day) values (:s, cast(:f as study_form), :d)"), days)
     for cycle, field in (("licenta", "yearShifts"), ("master", "masterYearShifts")):
         rows = [{**key, "c": cycle, "y": i + 1, "a": sh["first"], "b": sh["last"]} for i, sh in enumerate(s.get(field) or [])]
         if rows:

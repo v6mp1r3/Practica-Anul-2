@@ -429,6 +429,7 @@ export const ru: Record<MessageKey, string> = {
   'assignments.groupsLimited': 'Дисциплина для: {tags}.',
   'groupPicker.search': 'Поиск группы или специальности…',
   'groupPicker.summary': '{n} групп · {s} студентов',
+  'groupPicker.summaryOne': '1 группа · {s} студентов',
   'groupPicker.expandAll': 'Развернуть все',
   'groupPicker.collapseAll': 'Свернуть все',
   'groupPicker.clear': 'Очистить',

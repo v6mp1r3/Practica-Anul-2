@@ -1383,6 +1383,27 @@ button.holiday-row.selected {
   border: 1px solid var(--border);
   border-radius: 14px;
 }
+.period-summary {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 6px 14px;
+}
+.period-summary-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
 .period-groups {
   display: flex;
   flex-direction: column;

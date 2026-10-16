@@ -428,6 +428,7 @@ export const en: Record<MessageKey, string> = {
   'assignments.groupsLimited': 'The subject is for: {tags}.',
   'groupPicker.search': 'Search a group or speciality…',
   'groupPicker.summary': '{n} groups · {s} students',
+  'groupPicker.summaryOne': '1 group · {s} students',
   'groupPicker.expandAll': 'Expand all',
   'groupPicker.collapseAll': 'Collapse all',
   'groupPicker.clear': 'Clear',

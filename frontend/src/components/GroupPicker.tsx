@@ -39,7 +39,9 @@ export function GroupPicker({ groups, value, onChange }: { groups: Group[]; valu
           placeholder={t('groupPicker.search')}
           aria-label={t('groupPicker.search')}
         />
-        <span className="small muted">{t('groupPicker.summary', { n: value.length, s: students })}</span>
+        <span className="small muted">
+          {t(value.length === 1 ? 'groupPicker.summaryOne' : 'groupPicker.summary', { n: value.length, s: students })}
+        </span>
         <button type="button" className="btn ghost sm" onClick={() => setAllOpen(true)}>
           {t('groupPicker.expandAll')}
         </button>
