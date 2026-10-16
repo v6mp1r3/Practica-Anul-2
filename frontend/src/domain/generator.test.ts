@@ -16,6 +16,19 @@ describe('generateTimetable', () => {
     expect(score.hard).toBe(0);
   });
 
+  it('puts a subject with a mandatory room only there', async () => {
+    // AM (sub1) must be in 3-205 (r3), though bigger rooms would do
+    const ds: Dataset = {
+      ...seedDataset,
+      rooms: seedDataset.rooms.map((r) => (r.id === 'r3' ? { ...r, requiredSubjectIds: ['sub1'] } : r)),
+    };
+    const { lessons } = await generateTimetable(ds, { groupIds: allGroups, seed: 1, iterations: 30 });
+    const am = lessons.filter((l) => ds.assignments.find((a) => a.id === l.assignmentId)?.subjectId === 'sub1');
+    expect(am.length).toBeGreaterThan(0);
+    expect(am.every((l) => l.roomId === 'r3')).toBe(true);
+    expect(findHardConflicts(ds, lessons).filter((c) => c.kind === 'room-required')).toEqual([]);
+  });
+
   it('is repeatable for the same seed', async () => {
     const a = await generateTimetable(seedDataset, { groupIds: allGroups, seed: 7, iterations: 20 });
     const b = await generateTimetable(seedDataset, { groupIds: allGroups, seed: 7, iterations: 20 });

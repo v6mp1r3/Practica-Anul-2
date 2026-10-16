@@ -104,6 +104,30 @@ describe('findHardConflicts', () => {
     ]);
   });
 
+  it('flags a class outside its mandatory room, whatever that room is', () => {
+    // sub1's lecture must be in r3, not in r2 where it would otherwise fit
+    const withRequired: Dataset = {
+      ...ds,
+      rooms: ds.rooms.map((r) => (r.id === 'r3' ? { ...r, requiredSubjectIds: ['sub1'] } : r)),
+    };
+    const kindsIn = (lessons: Lesson[]) =>
+      findHardConflicts(withRequired, lessons)
+        .map((c) => c.kind)
+        .sort();
+    const labs = [L('2', 'lab1', 0, 2, 'r8', 'odd'), L('3', 'lab2', 0, 2, 'r9')];
+    expect(kindsIn([L('1', 'lec', 0, 1, 'r2'), ...labs])).toEqual(['room-required']);
+    expect(kindsIn([L('1', 'lec', 0, 1, 'r3'), ...labs])).toEqual([]);
+    // a group's mandatory room takes any kind of class, a lab in an ordinary room too
+    const groupRoom: Dataset = { ...ds, rooms: ds.rooms.map((r) => (r.id === 'r5' ? { ...r, requiredGroupIds: ['g1'] } : r)) };
+    const conflicts = findHardConflicts(groupRoom, [
+      L('1', 'lec', 0, 1, 'r5'),
+      L('2', 'lab1', 0, 2, 'r5', 'odd'),
+      L('3', 'lab2', 0, 3, 'r9'),
+    ]);
+    expect(conflicts.filter((c) => c.lessonIds.includes('2')).map((c) => c.kind)).not.toContain('room-type');
+    expect(conflicts.filter((c) => c.lessonIds.includes('3')).map((c) => c.kind)).toContain('room-required');
+  });
+
   it('flags missing equipment', () => {
     expect(kinds([L('1', 'lec', 0, 1, 'r2'), L('2', 'lab1', 0, 2, 'r4', 'odd'), L('3', 'lab2', 0, 2, 'r9')])).toContain('room-equipment');
   });

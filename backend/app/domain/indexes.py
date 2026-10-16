@@ -28,6 +28,15 @@ class DatasetIndex:
         self.streams = by_id(ds["streams"])
         self.subjects = by_id(ds["subjects"])
         self.assignments = by_id(ds["assignments"])
+        # rooms a subject or a group must have its classes in ("obligatoriu în această sală")
+        self._required_by_subject: dict[str, list[str]] = {}
+        self._required_by_group: dict[str, list[str]] = {}
+        for r in ds["rooms"]:
+            for s in r.get("requiredSubjectIds") or []:
+                self._required_by_subject.setdefault(s, []).append(r["id"])
+            for g in r.get("requiredGroupIds") or []:
+                self._required_by_group.setdefault(g, []).append(r["id"])
+        self._required_cache: dict[int, frozenset[str]] = {}
 
     # -- audiences
     def cohorts(self, aud: dict) -> list[tuple[str, int | None]]:
@@ -114,6 +123,20 @@ class DatasetIndex:
             if a["subjectId"] in (r.get("preferredSubjectIds") or []) or any(g in groups for g in (r.get("preferredGroupIds") or []))
         ]
 
+    def required_room_ids(self, a: dict) -> frozenset[str]:
+        """Rooms this class must be held in: those that list its subject or one of its groups as mandatory. Empty = any
+        room that fits. Several rooms (the subject in one, a group in another) = any of them."""
+        if not self._required_by_subject and not self._required_by_group:
+            return frozenset()
+        key = id(a)
+        ids = self._required_cache.get(key)
+        if ids is None:
+            ids = frozenset(
+                [*self._required_by_subject.get(a["subjectId"], []), *(r for g, _ in self.cohorts(a["audience"]) for r in self._required_by_group.get(g, []))]
+            )
+            self._required_cache[key] = ids
+        return ids
+
     def assignment_of(self, lesson: dict) -> dict | None:
         return self.assignments.get(lesson["assignmentId"])
 
@@ -135,10 +158,13 @@ class DatasetIndex:
     def share_teacher(a: dict, b: dict) -> bool:
         return not set(teacher_ids(a)).isdisjoint(teacher_ids(b))
 
-    @staticmethod
-    def room_fits(assignment: dict, room: dict) -> bool:
+    def room_fits(self, assignment: dict, room: dict) -> bool:
         """Lectures and seminars can use any ordinary room that is big enough; a lab needs a laboratory.
-        A laboratory is kept for labs, unless the class needs equipment (has_equipment checks it is there)."""
+        A laboratory is kept for labs, unless the class needs equipment (has_equipment checks it is there).
+        A class with mandatory rooms fits only those, whatever their type."""
+        required = self.required_room_ids(assignment)
+        if required:
+            return room["id"] in required
         if assignment["roomType"] == "lab":
             return room["type"] == "lab"
         return room["type"] != "lab" or bool(assignment["equipment"])

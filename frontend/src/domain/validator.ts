@@ -64,7 +64,10 @@ export function findHardConflicts(ds: Dataset, lessons: Lesson[], idx = new Data
     const room = idx.rooms.get(l.roomId);
     if (room) {
       if (room.capacity < idx.audienceSize(a.audience)) out.push({ ...base, kind: 'room-capacity', subjectId: room.id });
-      if (!idx.roomFits(a, room)) out.push({ ...base, kind: 'room-type', subjectId: room.id });
+      // a class with mandatory rooms is only checked against them (any type of room will do)
+      if (idx.requiredRoomIds(a).size) {
+        if (!idx.requiredRoomIds(a).has(room.id)) out.push({ ...base, kind: 'room-required', subjectId: room.id });
+      } else if (!idx.roomFits(a, room)) out.push({ ...base, kind: 'room-type', subjectId: room.id });
       if (!idx.hasEquipment(a, room)) out.push({ ...base, kind: 'room-equipment', subjectId: room.id });
     }
   }

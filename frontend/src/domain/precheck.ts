@@ -7,6 +7,7 @@ import type { ActivityType, Dataset } from './types';
 
 export type PrecheckKind =
   | 'no-room'
+  | 'no-required-room'
   | 'teacher-planned-overtime'
   | 'teacher-wrong-type'
   | 'teacher-too-unavailable'
@@ -37,7 +38,12 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
   for (const a of ds.assignments) {
     const size = idx.audienceSize(a.audience);
     const fits = ds.rooms.some((r) => r.capacity >= size && idx.roomFits(a, r) && idx.hasEquipment(a, r));
-    if (!fits) out.push({ kind: 'no-room', severity: 'hard', subjectId: a.id, vars: { size } });
+    if (fits) continue;
+    // its mandatory rooms are too small or lack the equipment: named, so the admin knows which room to look at
+    const required = [...idx.requiredRoomIds(a)].map((id) => idx.rooms.get(id)?.name).filter(Boolean);
+    if (required.length)
+      out.push({ kind: 'no-required-room', severity: 'hard', subjectId: a.id, vars: { size, rooms: required.join(', ') } });
+    else out.push({ kind: 'no-room', severity: 'hard', subjectId: a.id, vars: { size } });
   }
 
   for (const t of ds.teachers) {

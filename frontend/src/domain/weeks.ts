@@ -2,7 +2,7 @@
 // A load of N pairs per week has N pairs in odd weeks and N in even weeks. A weekly pair counts in both weeks,
 // an odd- or even-week pair only in its own. So "odd weeks at pair 2, even weeks at pair 3" is one pair per
 // week, and a load of 0.5 is one pair every other week (odd or even, either will do).
-import type { Lesson, Parity } from './types';
+import type { ActivityType, Lesson, Parity, Subject } from './types';
 
 export interface WeekNeed {
   /** Pairs still needed in odd weeks only. */
@@ -59,4 +59,18 @@ export function tasksOf(n: WeekNeed): Parity[][] {
     ...Array.from({ length: n.even - w }, (): Parity[] => ['even']),
     ...Array.from({ length: n.either }, (): Parity[] => ['odd', 'even']),
   ];
+}
+
+/**
+ * Pairs a week the subject's study plan gives a kind of class: its lecture, seminar or lab pairs. Undefined when
+ * the plan has none for it (a project, or 0 pairs), so a teaching load keeps what it has.
+ */
+export function plannedPairs(subject: Subject | undefined, type: ActivityType): number | undefined {
+  const byType: Partial<Record<ActivityType, number>> = {
+    lecture: subject?.lecturePairs,
+    seminar: subject?.seminarPairs,
+    lab: subject?.labPairs,
+  };
+  const n = byType[type];
+  return n && n > 0 ? n : undefined;
 }

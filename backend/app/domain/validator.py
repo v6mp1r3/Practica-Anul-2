@@ -52,7 +52,11 @@ def find_hard_conflicts(ds: dict, lessons: list[dict], idx: DatasetIndex | None 
         if room:
             if room["capacity"] < idx.audience_size(a["audience"]):
                 out.append({**base, "kind": "room-capacity", "subjectId": room["id"]})
-            if not idx.room_fits(a, room):
+            # a class with mandatory rooms is only checked against them (any type of room will do)
+            if idx.required_room_ids(a):
+                if room["id"] not in idx.required_room_ids(a):
+                    out.append({**base, "kind": "room-required", "subjectId": room["id"]})
+            elif not idx.room_fits(a, room):
                 out.append({**base, "kind": "room-type", "subjectId": room["id"]})
             if not idx.has_equipment(a, room):
                 out.append({**base, "kind": "room-equipment", "subjectId": room["id"]})

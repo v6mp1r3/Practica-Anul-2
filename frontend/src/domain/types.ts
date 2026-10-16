@@ -214,6 +214,9 @@ export interface Room {
   /** Subjects and groups that should preferably ("de dorit") use this room. */
   preferredSubjectIds?: string[];
   preferredGroupIds?: string[];
+  /** Subjects and groups whose classes must be held here (obligatoriu): a hard rule, whatever the room's type. */
+  requiredSubjectIds?: string[];
+  requiredGroupIds?: string[];
   /** Faculty that manages the room; empty = shared. */
   faculty?: string;
   capacity: number;
@@ -417,6 +420,7 @@ export type ConflictKind =
   | 'room-capacity'
   | 'room-type'
   | 'room-equipment'
+  | 'room-required'
   | 'hours-missing'
   | 'hours-extra'
   | 'hours-uneven'
