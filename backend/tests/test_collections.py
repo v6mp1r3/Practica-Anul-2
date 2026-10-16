@@ -42,8 +42,13 @@ def test_room_roundtrip_with_equipment_and_preferences(client, admin):
     assert r["equipment"] == ["calculatoare", "proiector"] and r["preferredSubjectIds"] == [w.s1["id"]] and r["preferredGroupIds"] == [w.g1["id"]]
     r["equipment"] = ["tablă"]
     r.pop("preferredSubjectIds")
+    # mandatory subjects and groups are kept apart from the preferred ones
+    r["requiredSubjectIds"], r["requiredGroupIds"] = [w.s1["id"]], [w.g1["id"]]
     out = client.put(f"/api/rooms/{r['id']}", json=r, headers=admin).json()
     assert out["equipment"] == ["tablă"] and "preferredSubjectIds" not in out
+    assert out["requiredSubjectIds"] == [w.s1["id"]] and out["requiredGroupIds"] == [w.g1["id"]] and out["preferredGroupIds"] == [w.g1["id"]]
+    out.pop("requiredGroupIds")
+    assert "requiredGroupIds" not in client.put(f"/api/rooms/{r['id']}", json=out, headers=admin).json()
     # same building and name twice is refused
     assert client.post("/api/rooms", json=room(name="A01", building="Blocul 5"), headers=admin).status_code == 201  # other building
     assert client.post("/api/rooms", json=room(name="A01"), headers=admin).status_code == 422  # same building

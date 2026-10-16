@@ -259,6 +259,12 @@ def load_rooms(conn: Connection, ids: Iterable[int] | None = None) -> list[dict]
     grp: dict[int, list[str]] = defaultdict(list)
     for r in _all(conn, "select room_id, group_id from room_preferred_group where room_id = any(cast(:k as bigint[])) order by group_id", {"k": keys}):
         grp[r["room_id"]].append(sid(r["group_id"]))
+    req_subj: dict[int, list[str]] = defaultdict(list)
+    for r in _all(conn, "select room_id, subject_id from room_required_subject where room_id = any(cast(:k as bigint[])) order by subject_id", {"k": keys}):
+        req_subj[r["room_id"]].append(sid(r["subject_id"]))
+    req_grp: dict[int, list[str]] = defaultdict(list)
+    for r in _all(conn, "select room_id, group_id from room_required_group where room_id = any(cast(:k as bigint[])) order by group_id", {"k": keys}):
+        req_grp[r["room_id"]].append(sid(r["group_id"]))
     out = []
     for r in rows:
         room = {"id": sid(r["id"]), "name": r["name"], "building": r["building"], "capacity": r["capacity"], "type": r["type"], "equipment": equip[r["id"]]}
@@ -268,6 +274,10 @@ def load_rooms(conn: Connection, ids: Iterable[int] | None = None) -> list[dict]
             room["preferredSubjectIds"] = subj[r["id"]]
         if grp[r["id"]]:
             room["preferredGroupIds"] = grp[r["id"]]
+        if req_subj[r["id"]]:
+            room["requiredSubjectIds"] = req_subj[r["id"]]
+        if req_grp[r["id"]]:
+            room["requiredGroupIds"] = req_grp[r["id"]]
         out.append(room)
     return out
 
@@ -291,6 +301,8 @@ def save_room(conn: Connection, data: dict, rid: int | None = None) -> int:
     _replace(conn, "room_equipment", "room_id", rid, ["equipment_id"], [(e,) for e in ensure_equipment(conn, data.get("equipment") or [])])
     _replace(conn, "room_preferred_subject", "room_id", rid, ["subject_id"], [(pid(s),) for s in sorted(set(data.get("preferredSubjectIds") or []))])
     _replace(conn, "room_preferred_group", "room_id", rid, ["group_id"], [(pid(g),) for g in sorted(set(data.get("preferredGroupIds") or []))])
+    _replace(conn, "room_required_subject", "room_id", rid, ["subject_id"], [(pid(s),) for s in sorted(set(data.get("requiredSubjectIds") or []))])
+    _replace(conn, "room_required_group", "room_id", rid, ["group_id"], [(pid(g),) for g in sorted(set(data.get("requiredGroupIds") or []))])
     return rid
 
 

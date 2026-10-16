@@ -469,6 +469,19 @@ create table room_preferred_group (
   primary key (room_id, group_id)
 );
 
+-- subjects and groups whose classes must be held in the room ("obligatoriu"): a hard rule for the generator
+create table room_required_subject (
+  room_id    bigint not null references room (id) on delete cascade,
+  subject_id bigint not null references subject (id) on delete cascade,
+  primary key (room_id, subject_id)
+);
+
+create table room_required_group (
+  room_id  bigint not null references room (id) on delete cascade,
+  group_id bigint not null references student_group (id) on delete cascade,
+  primary key (room_id, group_id)
+);
+
 -- teaching load: who teaches which activity of a subject to which audience
 create table assignment (
   id                bigint generated always as identity primary key,
