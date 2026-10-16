@@ -9,7 +9,7 @@ from ..repo import audience_group_ids, load_assignments
 from ..scope import my_group_ids
 from ..memo import Memo
 from ..domain.changes import free_rooms_for, free_teachers_for, lesson_of_change
-from ..domain.indexes import DatasetIndex
+from ..domain.indexes import DatasetIndex, teacher_ids
 from ..errors import ApiError
 from ..services.notify import notify
 from ..services.timetables import get_published
@@ -105,7 +105,7 @@ def create_change(data: dict = Body(...), user: CurrentUser = Depends(require_ad
     ).scalar_one()
     a = idx.assignments[str(data["assignmentId"])]
     groups = idx.streams.get(a["audience"]["id"], {}).get("groupIds", []) if a["audience"]["kind"] == "stream" else [a["audience"]["id"]]
-    teachers = [a["teacherId"]] + ([str(teacher_id)] if teacher_id is not None else [])
+    teachers = teacher_ids(a) + ([str(teacher_id)] if teacher_id is not None else [])
     params = {"assignmentId": str(data["assignmentId"]), "date": data["date"], "slot": data["slot"], "fromRoomId": str(data["fromRoomId"])}
     if room_id is not None:
         params["roomId"] = str(room_id)

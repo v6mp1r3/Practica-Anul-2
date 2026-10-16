@@ -1,12 +1,13 @@
 // Data checks run before generation (report §1.4.4, point 4): they catch input
 // that would make a good timetable impossible, so the admin fixes the data
 // instead of wondering why the solver struggles.
-import { DatasetIndex } from './indexes';
+import { DatasetIndex, teaches } from './indexes';
 import { range, slotKey } from './slots';
 import type { ActivityType, Dataset } from './types';
 
 export type PrecheckKind =
   | 'no-room'
+  | 'no-required-room'
   | 'teacher-planned-overtime'
   | 'teacher-wrong-type'
   | 'teacher-too-unavailable'
@@ -37,12 +38,17 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
   for (const a of ds.assignments) {
     const size = idx.audienceSize(a.audience);
     const fits = ds.rooms.some((r) => r.capacity >= size && idx.roomFits(a, r) && idx.hasEquipment(a, r));
-    if (!fits) out.push({ kind: 'no-room', severity: 'hard', subjectId: a.id, vars: { size } });
+    if (fits) continue;
+    // its mandatory rooms are too small or lack the equipment: named, so the admin knows which room to look at
+    const required = [...idx.requiredRoomIds(a)].map((id) => idx.rooms.get(id)?.name).filter(Boolean);
+    if (required.length)
+      out.push({ kind: 'no-required-room', severity: 'hard', subjectId: a.id, vars: { size, rooms: required.join(', ') } });
+    else out.push({ kind: 'no-room', severity: 'hard', subjectId: a.id, vars: { size } });
   }
 
   for (const t of ds.teachers) {
     // weekly load: reduced-attendance loads happen in sessions, not every week
-    const mine = ds.assignments.filter((a) => a.teacherId === t.id && !idx.isReduced(a));
+    const mine = ds.assignments.filter((a) => teaches(a, t.id) && !idx.isReduced(a));
     if (!mine.length) continue;
     const load = mine.reduce((n, a) => n + a.pairsPerWeek, 0);
     if (load > t.maxPairsPerWeek) {
@@ -50,12 +56,13 @@ export function precheck(ds: Dataset, idx = new DatasetIndex(ds)): PrecheckIssue
     }
     const wrong = [...new Set(mine.filter((a) => !t.activityTypes.includes(a.type)).map((a) => a.type))];
     if (wrong.length) out.push({ kind: 'teacher-wrong-type', severity: 'warning', subjectId: t.id, vars: { types: wrong.join(', ') } });
-    const available =
-      totalSlots -
-      t.unavailable.filter((k) => {
+    // a pair off in one kind of week only is half a pair off
+    const inWeek = (keys: string[] = []) =>
+      keys.filter((k) => {
         const [d, s] = k.split(':').map(Number);
         return d < ds.settings.workingDays && s < ds.settings.slots.length;
       }).length;
+    const available = totalSlots - inWeek(t.unavailable) - (inWeek(t.unavailableOdd) + inWeek(t.unavailableEven)) / 2;
     const lessons = mine.reduce((n, a) => n + a.pairsPerWeek, 0);
     if (available < lessons) {
       out.push({ kind: 'teacher-too-unavailable', severity: 'hard', subjectId: t.id, vars: { available, needed: lessons } });

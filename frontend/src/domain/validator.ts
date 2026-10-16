@@ -1,6 +1,8 @@
 // Conflict validator — the same hard constraints the solver must respect
 // (report §2.1.3). Runs in the browser so the editor can show clashes live.
-import { DatasetIndex } from './indexes';
+import { DatasetIndex, teacherIdsOf, unavailableIn } from './indexes';
+import { weekOf } from './views';
+import { halvesOf, weekCounts, weekExcess, weekNeed } from './weeks';
 import { lessonsOverlap } from './overlap';
 import { slotKey } from './slots';
 import type { Conflict, Dataset, Lesson } from './types';
@@ -32,7 +34,8 @@ export function findHardConflicts(ds: Dataset, lessons: Lesson[], idx = new Data
         const ay = idx.assignmentOf(y);
         if (!ax || !ay) continue;
         const base = { severity: 'hard' as const, lessonIds: [x.id, y.id], day: x.day, slot: x.slot };
-        if (ax.teacherId === ay.teacherId) out.push({ ...base, kind: 'teacher-clash', subjectId: ax.teacherId });
+        const shared = teacherIdsOf(ax).find((t) => teacherIdsOf(ay).includes(t));
+        if (shared) out.push({ ...base, kind: 'teacher-clash', subjectId: shared });
         if (x.roomId === y.roomId) out.push({ ...base, kind: 'room-clash', subjectId: x.roomId });
         if (idx.audiencesOverlap(ax.audience, ay.audience)) {
           out.push({ ...base, kind: 'group-clash', subjectId: idx.cohorts(ax.audience)[0]?.groupId ?? '' });
@@ -52,26 +55,42 @@ export function findHardConflicts(ds: Dataset, lessons: Lesson[], idx = new Data
     if (l.day < settings.workingDays && !idx.allowedDays(a).includes(l.day)) {
       out.push({ ...base, kind: 'wrong-day', subjectId: a.id });
     }
-    const teacher = idx.teachers.get(a.teacherId);
-    if (teacher?.unavailable.includes(slotKey(l.day, l.slot))) {
-      out.push({ ...base, kind: 'teacher-unavailable', subjectId: teacher.id });
+    for (const tid of teacherIdsOf(a)) {
+      const teacher = idx.teachers.get(tid);
+      if (teacher && unavailableIn(teacher, weekOf(settings, l)).has(slotKey(l.day, l.slot))) {
+        out.push({ ...base, kind: 'teacher-unavailable', subjectId: teacher.id });
+      }
     }
     const room = idx.rooms.get(l.roomId);
     if (room) {
       if (room.capacity < idx.audienceSize(a.audience)) out.push({ ...base, kind: 'room-capacity', subjectId: room.id });
-      if (!idx.roomFits(a, room)) out.push({ ...base, kind: 'room-type', subjectId: room.id });
+      // a class with mandatory rooms is only checked against them (any type of room will do)
+      if (idx.requiredRoomIds(a).size) {
+        if (!idx.requiredRoomIds(a).has(room.id)) out.push({ ...base, kind: 'room-required', subjectId: room.id });
+      } else if (!idx.roomFits(a, room)) out.push({ ...base, kind: 'room-type', subjectId: room.id });
       if (!idx.hasEquipment(a, room)) out.push({ ...base, kind: 'room-equipment', subjectId: room.id });
     }
   }
 
-  // Every assignment gets exactly its required number of pairs
-  const placed = new Map<string, string[]>();
-  for (const l of lessons) placed.set(l.assignmentId, [...(placed.get(l.assignmentId) ?? []), l.id]);
+  // Every assignment gets exactly its required number of pairs; a weekly load in odd and in even weeks alike
+  const placed = new Map<string, Lesson[]>();
+  for (const l of lessons) placed.set(l.assignmentId, [...(placed.get(l.assignmentId) ?? []), l]);
   for (const a of ds.assignments) {
-    const ids = placed.get(a.id) ?? [];
-    const need = idx.requiredPairs(a);
-    if (ids.length < need) out.push({ kind: 'hours-missing', severity: 'hard', lessonIds: ids, subjectId: a.id });
-    if (ids.length > need) out.push({ kind: 'hours-extra', severity: 'hard', lessonIds: ids, subjectId: a.id });
+    const own = placed.get(a.id) ?? [];
+    const base = { severity: 'hard' as const, lessonIds: own.map((l) => l.id), subjectId: a.id };
+    if (idx.isReduced(a)) {
+      const need = idx.requiredPairs(a);
+      if (own.length < need) out.push({ ...base, kind: 'hours-missing' });
+      if (own.length > need) out.push({ ...base, kind: 'hours-extra' });
+      continue;
+    }
+    const weekly = own.filter((l) => !l.date);
+    if (weekExcess(a.pairsPerWeek, weekly)) out.push({ ...base, kind: 'hours-extra' });
+    else if (halvesOf(weekNeed(a.pairsPerWeek, weekly))) {
+      const [odd, even] = weekCounts(weekly);
+      // the right number of pairs, all in one kind of week: odd weeks have more and even weeks fewer
+      out.push({ ...base, kind: odd + even >= Math.round(2 * a.pairsPerWeek) ? 'hours-uneven' : 'hours-missing' });
+    }
   }
 
   return out;

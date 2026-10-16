@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { seedDataset } from '../data/seed';
 import { DatasetIndex } from '../domain/indexes';
-import { readCsvRows } from '../utils/export';
 import { downloadTimetable, groupsByYear } from './ExportDialog';
 
-const files: { name: string; body: string }[] = [];
-vi.mock('../utils/download', () => ({ downloadFile: (name: string, body: string) => files.push({ name, body }) }));
+const files: { name: string; body: string | ArrayBuffer }[] = [];
+vi.mock('../utils/download', () => ({ downloadFile: (name: string, body: string | ArrayBuffer) => files.push({ name, body }) }));
 
 const idx = new DatasetIndex(seedDataset);
 const groupIds = seedDataset.groups.map((g) => g.id);
@@ -25,12 +24,12 @@ describe('export by year of study', () => {
     expect(years.reduce((n, [, c]) => n + c, 0)).toBe(groupIds.length);
   });
 
-  it('keeps only that year’s groups, in one sheet named after the year', () => {
+  it('keeps only that year’s groups, in a sheet per cycle', async () => {
     const year = groupsByYear(idx, groupIds)[0][0];
     files.length = 0;
-    downloadTimetable({
+    await downloadTimetable({
       what: 'year',
-      format: 'csv',
+      format: 'xlsx',
       year,
       index: idx,
       settings: seedDataset.settings,
@@ -38,19 +37,20 @@ describe('export by year of study', () => {
       allLessons: lessons,
       groupIds,
     });
-    expect(files[0].name).toBe(`orar-anul-${year}.csv`);
-    const names = new Set(
-      readCsvRows(files[0].body)
-        .slice(1)
-        .map((r) => r[0]),
+    expect(files[0].name).toBe(`orar-anul-${year}.xlsx`);
+    const { default: ExcelJS } = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(files[0].body as ArrayBuffer);
+    const names = wb.worksheets.flatMap((ws) =>
+      (ws.getRow(5).values as unknown[]).map((v) => String(v ?? '')).filter((n) => n && n !== 'Grupele'),
     );
-    expect(names.size).toBeGreaterThan(0);
+    expect(names.length).toBeGreaterThan(0);
     for (const n of names) expect(seedDataset.groups.find((g) => g.name === n)?.year).toBe(year);
   });
 
-  it('names a master’s year after the cycle', () => {
+  it('names a master’s year after the cycle', async () => {
     files.length = 0;
-    downloadTimetable({
+    await downloadTimetable({
       what: 'year',
       format: 'ics',
       year: 1,

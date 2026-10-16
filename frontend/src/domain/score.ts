@@ -1,8 +1,8 @@
 // Soft constraints (report §2.1.3) turned into a weighted penalty, plus the
 // warnings the dean's office sees before publishing (overtime, consultation…).
-import { DatasetIndex, type Cohort } from './indexes';
+import { DatasetIndex, teacherIdsOf, teaches, type Cohort } from './indexes';
 import { parityWeight, range } from './slots';
-import type { Conflict, Dataset, Lesson, Parity, Score, ScoreBreakdown } from './types';
+import type { Conflict, Dataset, GenerationRules, Lesson, Parity, Score, ScoreBreakdown } from './types';
 import { findHardConflicts } from './validator';
 
 export const SOFT_WEIGHTS: Record<keyof ScoreBreakdown, number> = {
@@ -11,12 +11,38 @@ export const SOFT_WEIGHTS: Record<keyof ScoreBreakdown, number> = {
   groupGaps: 12,
   earlyStarts: 1,
   dayOverload: 5,
+  // a day with fewer pairs than the minimum (minPairsPerDayGroup), looked at week by week: not worth the trip
+  thinDays: 10,
   unevenDays: 1,
+  startSpread: 3,
   preferenceMisses: 1,
   roomMisses: 2,
   edgeMisses: 8,
   shiftMisses: 4,
 };
+
+/** A switched-off rule is searched for with this weight: it gives way only when nothing else is possible. */
+export const STRICT_WEIGHT = 100;
+/** A day below the minimum number of pairs is ruled out unless allowed: worth more than any pair the generator could leave out. */
+export const ABSOLUTE_WEIGHT = 10_000;
+export const RULE_WEIGHT: Record<keyof GenerationRules, keyof ScoreBreakdown> = {
+  allowGroupGaps: 'groupGaps',
+  allowTeacherGaps: 'teacherGaps',
+  allowThinDays: 'thinDays',
+  allowOverload: 'dayOverload',
+  allowEdgeMisses: 'edgeMisses',
+};
+
+/** The weights to search with: the usual ones, strict where a rule is switched off. */
+export function weightsFor(rules?: GenerationRules): Record<keyof ScoreBreakdown, number> {
+  const w = { ...SOFT_WEIGHTS };
+  for (const [rule, key] of Object.entries(RULE_WEIGHT) as [keyof GenerationRules, keyof ScoreBreakdown][]) {
+    if (rules?.[rule] === false) w[key] = Math.max(w[key], STRICT_WEIGHT);
+  }
+  if (rules?.allowThinDays !== true) w.thinDays = ABSOLUTE_WEIGHT;
+  if (rules?.allowGroupGaps === false) w.groupGaps = ABSOLUTE_WEIGHT;
+  return w;
+}
 
 /** The weeks we need to look at: one if parity is off, odd + even otherwise. */
 const weeksFor = (ds: Dataset): Parity[] => (ds.settings.weekParity ? ['odd', 'even'] : ['weekly']);
@@ -44,13 +70,15 @@ function lessonHitsView(idx: DatasetIndex, l: Lesson, view: Cohort): boolean {
     .some((c) => c.groupId === view.groupId && (c.subgroup === null || view.subgroup === null || c.subgroup === view.subgroup));
 }
 
-export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new DatasetIndex(ds)): Score {
+export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new DatasetIndex(ds), weights = SOFT_WEIGHTS): Score {
   const b: ScoreBreakdown = {
     teacherGaps: 0,
     groupGaps: 0,
     earlyStarts: 0,
     dayOverload: 0,
+    thinDays: 0,
     unevenDays: 0,
+    startSpread: 0,
     preferenceMisses: 0,
     roomMisses: 0,
     edgeMisses: 0,
@@ -66,8 +94,8 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
   // Teachers: gaps and preferred periods
   const byTeacher = new Map<string, Lesson[]>();
   for (const l of lessons) {
-    const t = idx.assignmentOf(l)?.teacherId;
-    if (t) byTeacher.set(t, [...(byTeacher.get(t) ?? []), l]);
+    const a = idx.assignmentOf(l);
+    for (const t of a ? teacherIdsOf(a) : []) byTeacher.set(t, [...(byTeacher.get(t) ?? []), l]);
   }
   for (const [tid, tl] of byTeacher) {
     for (const week of weeks) {
@@ -98,7 +126,11 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
       for (const slots of perDay) {
         b.groupGaps += weekShare * gapsInDay(slots);
         b.dayOverload += weekShare * Math.max(0, new Set(slots).size - idx.groupMaxPairs(view.groupId));
+        const n = new Set(slots).size;
+        if (n > 0 && n < ds.settings.minPairsPerDayGroup) b.thinDays += weekShare * (ds.settings.minPairsPerDayGroup - n);
       }
+      const firsts = perDay.filter((s) => s.length).map((s) => Math.min(...s));
+      if (firsts.length > 1) b.startSpread += weekShare * (Math.max(...firsts) - Math.min(...firsts));
       const loads = perDay.map((s) => new Set(s).size);
       const avg = loads.reduce((x, y) => x + y, 0) / loads.length;
       b.unevenDays += weekShare * loads.reduce((x, y) => x + Math.abs(y - avg), 0);
@@ -136,7 +168,7 @@ export function scoreTimetable(ds: Dataset, lessons: Lesson[], idx = new Dataset
   if (!ds.settings.yearShifts?.length) b.earlyStarts = lessons.filter((l) => l.slot === 0).reduce((n, l) => n + parityWeight(l.parity), 0);
 
   for (const k of Object.keys(b) as (keyof ScoreBreakdown)[]) b[k] = Math.round(b[k] * 10) / 10;
-  const soft = Math.round((Object.keys(b) as (keyof ScoreBreakdown)[]).reduce((s, k) => s + b[k] * SOFT_WEIGHTS[k], 0) * 10) / 10;
+  const soft = Math.round((Object.keys(b) as (keyof ScoreBreakdown)[]).reduce((s, k) => s + b[k] * weights[k], 0) * 10) / 10;
   return { hard: findHardConflicts(ds, all, idx).length, soft, breakdown: b };
 }
 
@@ -147,11 +179,15 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
   const weeks = weeksFor(ds);
 
   for (const t of ds.teachers) {
-    const tl = lessons.filter((l) => !l.date && idx.assignmentOf(l)?.teacherId === t.id);
+    const tl = lessons.filter((l) => !l.date && teaches(idx.assignmentOf(l), t.id));
     if (!tl.length) continue;
     const load = tl.reduce((n, l) => n + parityWeight(l.parity), 0);
     if (load > t.maxPairsPerWeek)
       out.push({ kind: 'teacher-overtime', severity: 'warning', lessonIds: tl.map((l) => l.id), subjectId: t.id });
+    // a kind of pair taken off the teacher (or a load given to them) after the timetable was made
+    const wrongType = tl.filter((l) => !t.activityTypes.includes(idx.assignmentOf(l)!.type));
+    if (wrongType.length)
+      out.push({ kind: 'teacher-wrong-type', severity: 'warning', lessonIds: wrongType.map((l) => l.id), subjectId: t.id });
     for (const d of days) {
       for (const week of weeks) {
         const dl = tl.filter((l) => l.day === d && inWeek(l, week));
@@ -182,6 +218,7 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
       const views = g.subgroups > 1 ? range(g.subgroups).map((i) => i + 1) : [null];
       const gapLessons = new Set<string>();
       const edgeLessons = new Set<string>();
+      const thinLessons = new Set<string>();
       for (const sub of views) {
         for (const week of weeks) {
           const dl = all.filter((l) => {
@@ -192,6 +229,8 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
             return hits && l.day === d && inWeek(l, week);
           });
           if (gapsInDay(dl.map((l) => l.slot)) > 0) dl.forEach((l) => gapLessons.add(l.id));
+          // fewer pairs than the minimum in that week (an odd-week pair does not count in even weeks)
+          if (dl.length && new Set(dl.map((l) => l.slot)).size < ds.settings.minPairsPerDayGroup) dl.forEach((l) => thinLessons.add(l.id));
           if (dl.length) {
             const lo = Math.min(...dl.map((l) => l.slot));
             const hi = Math.max(...dl.map((l) => l.slot));
@@ -204,7 +243,6 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
       }
       if (gapLessons.size) out.push({ kind: 'group-gap', severity: 'warning', lessonIds: [...gapLessons], subjectId: g.id, day: d });
       if (edgeLessons.size) out.push({ kind: 'edge-of-day', severity: 'warning', lessonIds: [...edgeLessons], subjectId: g.id, day: d });
-      const count = new Set(all.filter((l) => l.day === d).map((l) => l.slot)).size;
       const whole = new Set(gl.filter((l) => l.day === d).map((l) => l.slot)).size;
       if (whole > idx.groupMaxPairs(g.id)) {
         out.push({
@@ -215,15 +253,8 @@ export function findWarnings(ds: Dataset, lessons: Lesson[], idx = new DatasetIn
           day: d,
         });
       }
-      if (count > 0 && count < ds.settings.minPairsPerDayGroup) {
-        out.push({
-          kind: 'group-day-underload',
-          severity: 'warning',
-          lessonIds: all.filter((l) => l.day === d).map((l) => l.id),
-          subjectId: g.id,
-          day: d,
-        });
-      }
+      if (thinLessons.size)
+        out.push({ kind: 'group-day-underload', severity: 'warning', lessonIds: [...thinLessons], subjectId: g.id, day: d });
     }
   }
   return out;

@@ -1,19 +1,26 @@
 """Timetables: load, save (with the server-side score), publish and unpublish."""
 import json
+import logging
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from sqlalchemy import Connection, text
 
+from ..config import get_config
 from ..dataset import build_dataset, read_dataset
+from ..db import get_engine
 from ..deps import CurrentUser
-from ..domain.indexes import DatasetIndex
+from ..domain.indexes import DatasetIndex, teacher_ids
 from ..domain.score import SOFT_WEIGHTS, score_timetable
 from ..domain.validator import find_hard_conflicts
 from ..errors import ApiError
 from ..scope import NOT_YOURS, keeps_others, my_group_ids, require_mine
 from ..settings_io import current_semester
-from ..solver.generate import scope_assignments
+from ..solver.generate import scope_assignments, timetable_semester
 from ..util import iso_date, iso_ts, maybe_pid, pid, sid
 from .notify import notify
+
+log = logging.getLogger("eduschedule")
 
 LESSON_COLUMNS = "l.id, l.assignment_id, l.day, l.slot_index, l.room_id, l.parity::text as parity, l.locked, l.lesson_date"
 
@@ -151,12 +158,53 @@ def _store_score(conn: Connection, tid: int, ds: dict | None = None) -> None:
     group_ids = [sid(g[0]) for g in conn.execute(text("select group_id from timetable_group where timetable_id = :t"), {"t": tid})]
     if group_ids:
         idx = DatasetIndex(ds)
-        ds = {**ds, "assignments": scope_assignments(ds, idx, group_ids)}
+        ds = {**ds, "assignments": scope_assignments(ds, idx, group_ids, timetable_semester(ds, idx, lessons))}
     score = score_timetable(ds, lessons)
     conn.execute(
         text("update timetable set score_hard = :h, score_soft = :s, score_breakdown = cast(:b as jsonb) where id = :t"),
         {"t": tid, "h": score["hard"], "s": score["soft"], "b": json.dumps(score["breakdown"])},
     )
+
+
+# ---------------------------------------------------------------- after a data change
+
+_rescorer = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rescore")
+_rescore_lock = threading.Lock()
+_rescore_queued = False
+
+
+def rescore_all_soon() -> None:
+    """The data changed (a new teaching load, a teacher's availability, a room, ...): the stored conflicts and score of
+    every timetable are worked out again in the background, so the list and the publish check do not show old numbers.
+    Several changes in a row make one run."""
+    global _rescore_queued
+    if get_config().dataset_cache_seconds <= 0:
+        # no caching (tests, which rebuild the database between them): done at once, nothing left running
+        _rescore_all()
+        return
+    with _rescore_lock:
+        if _rescore_queued:
+            return
+        _rescore_queued = True
+    _rescorer.submit(_rescore_all)
+
+
+def _rescore_all() -> None:
+    global _rescore_queued
+    with _rescore_lock:
+        _rescore_queued = False
+    try:
+        with get_engine().connect() as conn:
+            ds = build_dataset(conn)
+            for (tid,) in conn.execute(text("select id from timetable where status <> 'variant'")).all():
+                _store_score(conn, tid, ds)
+            conn.commit()
+    except Exception:
+        log.warning("Could not score the timetables again after a data change", exc_info=True)
+        return
+    from ..memo import forget_all  # the published timetable carries its score
+
+    forget_all()
 
 
 # ---------------------------------------------------------------- save
@@ -177,7 +225,7 @@ def save_timetable(conn: Connection, path_id: str, data: dict, user: CurrentUser
         current = conn.execute(text("select status::text from timetable where id = :id"), {"id": tid}).scalar_one()
         new_status = current if current == "published" else ("draft" if status in ("variant", "published") else status)
         conn.execute(
-            text("update timetable set name = :n, algorithm = :a, status = cast(:s as timetable_status) where id = :id"),
+            text("update timetable set name = :n, algorithm = :a, status = cast(:s as timetable_status), updated_at = now() where id = :id"),
             {"id": tid, "n": data["name"], "a": data.get("algorithm") or None, "s": new_status},
         )
     else:
@@ -317,7 +365,7 @@ def unpublish(conn: Connection, path_id: str, user: CurrentUser) -> dict:
         conn.execute(text("delete from lesson where timetable_id = :t and id = any(cast(:k as bigint[]))"), {"t": tid, "k": [int(l["id"]) for l in withdrawn]})
         conn.execute(text("delete from timetable_group where timetable_id = :t and group_id = any(cast(:g as bigint[]))"), {"t": tid, "g": [int(g) for g in mine]})
         _store_score(conn, tid, ds)
-    teachers = {idx.assignments[l["assignmentId"]]["teacherId"] for l in withdrawn if l["assignmentId"] in idx.assignments}
+    teachers = {t for l in withdrawn if l["assignmentId"] in idx.assignments for t in teacher_ids(idx.assignments[l["assignmentId"]])}
     notify(conn, "unpublished", {"name": t["name"]}, group_ids=sorted(mine), teacher_ids=sorted(teachers))
     conn.commit()
     return load_timetable(conn, result_id)

@@ -44,6 +44,9 @@ def read_xlsx(data: bytes) -> dict:
                 best, header_row = found, r
         if not best:
             continue
+        # a list with a group on each row (our export's "Sesiuni" sheet) is not a grid
+        if len(best) == 1 and sum(bool(group_name(str(ws.cell(r, best[0][0]).value or ""))) for r in range(1, ws.max_row + 1)) > 2:
+            continue
         first_col = min(c for c, _ in best)
         # the group columns: a group's header may be merged over several columns
         col_group: dict[int, str] = {}

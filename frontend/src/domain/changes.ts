@@ -1,9 +1,10 @@
 // One-off schedule changes ("Modificări în orar"): which pairs happen on a
 // given date, which rooms are free for a move, which teachers can substitute.
-import { DatasetIndex } from './indexes';
+import { DatasetIndex, teacherIdsOf, teaches, unavailableIn } from './indexes';
 import { paritiesOverlap, slotKey } from './slots';
 import type { Dataset, Lesson, Room, ScheduleChange, Teacher } from './types';
 import { dayIndexOf, inWeek, weekParityOf } from './views';
+import { weekOf } from './views';
 
 /** "YYYY-MM-DD" → local Date at midnight (avoids UTC shifts of `new Date(str)`). */
 export function parseDate(s: string): Date {
@@ -77,12 +78,17 @@ export function lessonOfChange(ds: Dataset, lessons: Lesson[], c: ScheduleChange
   return lessonsOnDate(ds, lessons, c.date).find((l) => l.assignmentId === c.assignmentId && l.slot === c.slot);
 }
 
-/** Effective room and teacher of a lesson on a date, after the changes for that date. */
+/**
+ * Effective room and teachers of a lesson on a date, after the changes for that date:
+ * a substitute takes the place of the main teacher, the other teachers stay.
+ */
 function effective(idx: DatasetIndex, lesson: Lesson, changes: ScheduleChange[]) {
   const mine = changes.filter((c) => c.assignmentId === lesson.assignmentId && c.slot === lesson.slot);
   const room = mine.find((c) => c.kind === 'room')?.roomId ?? lesson.roomId;
-  const teacher = mine.find((c) => c.kind === 'teacher')?.teacherId ?? idx.assignmentOf(lesson)?.teacherId;
-  return { room, teacher };
+  const a = idx.assignmentOf(lesson);
+  const [main, ...others] = a ? teacherIdsOf(a) : [];
+  const sub = mine.find((c) => c.kind === 'teacher')?.teacherId;
+  return { room, teachers: [sub ?? main, ...others].filter((t): t is string => !!t) };
 }
 
 /** Rooms that fit the pair and are free at its slot on that date, smallest first. */
@@ -123,14 +129,15 @@ export function freeTeachersFor(
   if (!a) return [];
   const sameDay = changes.filter((c) => c.date === date);
   const others = lessonsOnDate(ds, lessons, date).filter((l) => l.id !== lesson.id && l.slot === lesson.slot);
-  const busy = new Set(others.map((l) => effective(idx, l, sameDay).teacher));
+  const busy = new Set(others.flatMap((l) => effective(idx, l, sameDay).teachers));
   const key = slotKey(lesson.day, lesson.slot);
   return ds.teachers
     .filter(
       (t) =>
-        t.id !== a.teacherId &&
+        !teaches(a, t.id) &&
         !busy.has(t.id) &&
-        !t.unavailable.includes(key) &&
+        // in that date's week (odd or even)
+        !unavailableIn(t, weekOf(ds.settings, { parity: 'weekly', date })).has(key) &&
         // not someone who said they can't come that day
         !t.unavailableOn?.includes(`${date}:${lesson.slot}`),
     )
@@ -152,7 +159,7 @@ export function upcomingChanges(
       const a = idx.assignments.get(c.assignmentId);
       if (!a) return false;
       if (filter.groupId) return idx.audienceTouchesGroup(a.audience, filter.groupId);
-      if (filter.teacherId) return a.teacherId === filter.teacherId || c.teacherId === filter.teacherId;
+      if (filter.teacherId) return teaches(a, filter.teacherId) || c.teacherId === filter.teacherId;
       return true;
     })
     .sort((x, y) => x.date.localeCompare(y.date) || x.slot - y.slot);

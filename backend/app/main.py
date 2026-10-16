@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from starlette.concurrency import run_in_threadpool
 
 from . import errors
 from . import dataset  # noqa: F401  (registers the dataset with memo)
@@ -15,8 +16,12 @@ from starlette.concurrency import run_in_threadpool
 from .config import DEV_SECRET, get_config
 from .routers import auth, changes, data, exams, generation, notifications, timetables, users
 from .services.generation import mark_orphans
+from .services.timetables import rescore_all_soon
 
 log = logging.getLogger("eduschedule")
+
+# the collections whose changes can make a timetable out of date
+DATA_PATHS = {"settings", "teachers", "rooms", "groups", "streams", "subjects", "assignments", "clusters"}
 
 
 @asynccontextmanager
@@ -52,6 +57,9 @@ def create_app() -> FastAPI:
         response = await call_next(request)
         if request.method not in ("GET", "HEAD", "OPTIONS"):
             forget_all()
+            # the teaching loads, teachers, rooms, groups or settings changed: the timetables are checked again
+            if response.status_code < 400 and request.url.path.removeprefix("/api/").split("/")[0] in DATA_PATHS:
+                await run_in_threadpool(rescore_all_soon)
         return response
 
     api = APIRouter(prefix="/api")

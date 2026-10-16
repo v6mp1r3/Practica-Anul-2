@@ -2,12 +2,13 @@
 // developed and demoed before the backend solver (CP-SAT + LNS) is ready.
 // Stage 1 builds a timetable greedily; stage 2 improves it with Large
 // Neighborhood Search (report, Algorithm 2). Locked lessons are never moved.
-import { DatasetIndex } from './indexes';
+import { DatasetIndex, shareTeacher, teacherIdsOf } from './indexes';
 import { createRng, type Rng } from './rng';
 import { placeSessions } from './sessions';
-import { scoreTimetable } from './score';
+import { scoreTimetable, weightsFor } from './score';
 import { paritiesOverlap, range, slotKey } from './slots';
-import type { Assignment, Dataset, Lesson, Room, Score } from './types';
+import type { Assignment, Dataset, GenerationRules, Lesson, Parity, Room, Score } from './types';
+import { halvesOf, take, tasksOf, weekExcess, weekNeed, type WeekNeed } from './weeks';
 
 export interface GenerateOptions {
   groupIds: string[];
@@ -27,6 +28,10 @@ export interface GenerateOptions {
    * that makes the timetable better.
    */
   example?: Lesson[];
+  /** Semester of the year (1 or 2) to generate for; only its subjects are scheduled and only its kept pairs stay booked. */
+  semester?: 1 | 2;
+  /** Comfort rules switched off for this run: strict instead of a mild preference. */
+  rules?: GenerationRules;
 }
 
 export interface GenerateResult {
@@ -48,7 +53,7 @@ class Occupancy {
   private keys(l: Lesson, a: Assignment) {
     const k = slotKey(l.day, l.slot);
     return {
-      teacher: `${a.teacherId}@${k}`,
+      teachers: teacherIdsOf(a).map((t) => `${t}@${k}`),
       room: `${l.roomId}@${k}`,
       groups: [...new Set(this.idx.cohorts(a.audience).map((c) => `${c.groupId}@${k}`))],
     };
@@ -68,7 +73,7 @@ class Occupancy {
   add(l: Lesson) {
     const a = this.idx.assignmentOf(l)!;
     const k = this.keys(l, a);
-    Occupancy.push(this.teacher, k.teacher, l);
+    k.teachers.forEach((t) => Occupancy.push(this.teacher, t, l));
     Occupancy.push(this.room, k.room, l);
     k.groups.forEach((g) => Occupancy.push(this.group, g, l));
   }
@@ -76,7 +81,7 @@ class Occupancy {
   remove(l: Lesson) {
     const a = this.idx.assignmentOf(l)!;
     const k = this.keys(l, a);
-    Occupancy.drop(this.teacher, k.teacher, l);
+    k.teachers.forEach((t) => Occupancy.drop(this.teacher, t, l));
     Occupancy.drop(this.room, k.room, l);
     k.groups.forEach((g) => Occupancy.drop(this.group, g, l));
   }
@@ -86,7 +91,7 @@ class Occupancy {
     const k = this.keys(l, a);
     const clash = (others: Lesson[] | undefined, extra?: (o: Lesson) => boolean) =>
       (others ?? []).some((o) => o.id !== l.id && paritiesOverlap(o.parity, l.parity) && (!extra || extra(o)));
-    if (clash(this.teacher.get(k.teacher)) || clash(this.room.get(k.room))) return false;
+    if (k.teachers.some((t) => clash(this.teacher.get(t))) || clash(this.room.get(k.room))) return false;
     return !k.groups.some((g) =>
       clash(this.group.get(g), (o) => this.idx.audiencesOverlap(this.idx.assignmentOf(o)!.audience, a.audience)),
     );
@@ -94,9 +99,35 @@ class Occupancy {
 }
 
 /** Assignments that belong to the selected groups. */
-export function scopeAssignments(ds: Dataset, groupIds: string[], idx = new DatasetIndex(ds)): Assignment[] {
+export function scopeAssignments(ds: Dataset, groupIds: string[], idx = new DatasetIndex(ds), semester?: 1 | 2): Assignment[] {
   const set = new Set(groupIds);
-  return ds.assignments.filter((a) => idx.cohorts(a.audience).some((c) => set.has(c.groupId)));
+  return ds.assignments.filter((a) => idx.cohorts(a.audience).some((c) => set.has(c.groupId)) && inSemester(idx, a, semester));
+}
+
+/** The semester of the year (1 = autumn, 2 = spring) the current term is in. */
+export const termSemester = (ds: Dataset): 1 | 2 => (ds.settings.semester.startsWith('Primăvara') ? 2 : 1);
+
+/** The semester a timetable is for: the one most of its pairs belong to (the term's when it has none yet or they tie). */
+export function timetableSemester(ds: Dataset, lessons: Lesson[], idx = new DatasetIndex(ds)): 1 | 2 {
+  let first = 0;
+  let second = 0;
+  for (const l of lessons) {
+    const a = idx.assignmentOf(l);
+    if (!a) continue;
+    if ((idx.subjects.get(a.subjectId)?.semester ?? 1) === 2) second++;
+    else first++;
+  }
+  return first === second ? termSemester(ds) : second > first ? 2 : 1;
+}
+
+/** The teaching loads a timetable answers for: those of its groups taught in its semester. */
+export const loadsOfTimetable = (ds: Dataset, lessons: Lesson[], groupIds: string[], idx = new DatasetIndex(ds)): Assignment[] =>
+  scopeAssignments(ds, groupIds, idx, timetableSemester(ds, lessons, idx));
+
+/** Is the load's subject taught in that semester of the year? A subject without one is in the 1st; any when none is asked for. */
+export function inSemester(idx: DatasetIndex, a: Assignment | undefined, semester?: 1 | 2): boolean {
+  if (!semester || !a) return true;
+  return (idx.subjects.get(a.subjectId)?.semester ?? 1) === semester;
 }
 
 let lessonCounter = 0;
@@ -164,15 +195,18 @@ class Builder {
       });
       if (sameSubject) c += 3;
     }
-    c += 3 * gapDelta(this.daySlots((l) => this.idx.assignmentOf(l)!.teacherId === a.teacherId, day));
+    for (const tid of teacherIdsOf(a)) c += 3 * gapDelta(this.daySlots((l) => teacherIdsOf(this.idx.assignmentOf(l)!).includes(tid), day));
     if (t?.preferred.includes(slotKey(day, slot))) c -= 1;
     return c + this.rng.next() * 1.2;
   }
 
-  /** Place one pair of `a`; returns false if no conflict-free spot exists. */
-  place(a: Assignment): boolean {
+  /**
+   * Place one pair of `a` in one of the given kinds of week (every week, odd, even);
+   * returns false if no conflict-free spot exists.
+   */
+  place(a: Assignment, weeks: Parity[] = ['weekly']): boolean {
     const { settings } = this.ds;
-    const teacher = this.idx.teachers.get(a.teacherId);
+    const unavailable = new Map(weeks.map((p) => [p, this.idx.teacherUnavailable(a, p)]));
     const size = this.idx.audienceSize(a.audience);
     const preferred = new Set(this.idx.preferredRooms(a).map((r) => r.id));
     const rooms = this.ds.rooms
@@ -184,13 +218,15 @@ class Builder {
     let bestCost = Infinity;
     for (const day of this.idx.allowedDays(a)) {
       for (const slot of range(settings.slots.length)) {
-        if (teacher?.unavailable.includes(slotKey(day, slot))) continue;
+        // the kinds of week the teachers are free then
+        const free = weeks.filter((p) => !unavailable.get(p)!.has(slotKey(day, slot)));
+        if (!free.length) continue;
         const cost = this.cost(a, day, slot);
         if (cost >= bestCost) continue;
-        for (const room of rooms) {
-          const l: Lesson = { id: newLessonId(), assignmentId: a.id, day, slot, roomId: room.id, parity: 'weekly' };
-          if (this.occ.fits(l, a)) {
-            best = l;
+        for (const parity of free) {
+          const room = rooms.find((r) => this.occ.fits({ id: '', assignmentId: a.id, day, slot, roomId: r.id, parity }, a));
+          if (room) {
+            best = { id: newLessonId(), assignmentId: a.id, day, slot, roomId: room.id, parity };
             bestCost = cost + (room.capacity - size) / 200;
             break;
           }
@@ -204,9 +240,8 @@ class Builder {
 
   /** Put a pair where the example has it: same day and pair, its room or another that fits; false if that clashes now. */
   adopt(ex: Lesson, a: Assignment): boolean {
-    const teacher = this.idx.teachers.get(a.teacherId);
     if (ex.slot >= this.ds.settings.slots.length || !this.idx.allowedDays(a).includes(ex.day)) return false;
-    if (teacher?.unavailable.includes(slotKey(ex.day, ex.slot))) return false;
+    if (this.idx.teacherUnavailable(a, ex.parity).has(slotKey(ex.day, ex.slot))) return false;
     const size = this.idx.audienceSize(a.audience);
     const ok = (r: Room) => r.capacity >= size && this.idx.roomFits(a, r) && this.idx.hasEquipment(a, r);
     const same = this.idx.rooms.get(ex.roomId);
@@ -225,7 +260,7 @@ class Builder {
   }
 
   /** Last resort: put it somewhere so the admin sees the conflict instead of a silent gap. */
-  forcePlace(a: Assignment) {
+  forcePlace(a: Assignment, parity: Parity = 'weekly') {
     const room = this.ds.rooms.find((r) => this.idx.roomFits(a, r)) ?? this.ds.rooms[0];
     this.add({
       id: newLessonId(),
@@ -236,35 +271,42 @@ class Builder {
       })(),
       slot: this.rng.int(this.ds.settings.slots.length),
       roomId: room.id,
-      parity: 'weekly',
+      parity,
     });
   }
 }
 
 /** Hardest first: big audiences, labs (few rooms), teachers with little availability. */
 function difficulty(a: Assignment, idx: DatasetIndex): number {
-  const t = idx.teachers.get(a.teacherId);
-  return idx.audienceSize(a.audience) / 10 + (a.type === 'lab' ? 4 : 0) + (t?.unavailable.length ?? 0) / 3 + a.equipment.length * 2;
+  return idx.audienceSize(a.audience) / 10 + (a.type === 'lab' ? 4 : 0) + idx.teacherUnavailable(a).size / 3 + a.equipment.length * 2;
 }
 
 function construct(ds: Dataset, idx: DatasetIndex, scoped: Assignment[], fixed: Lesson[], rng: Rng, example: Lesson[] = []): Builder {
   const b = new Builder(ds, idx, rng);
   fixed.forEach((l) => b.add(l));
-  const already = new Map<string, number>();
-  fixed.forEach((l) => already.set(l.assignmentId, (already.get(l.assignmentId) ?? 0) + 1));
+  // what each load still needs in odd and in even weeks
+  const left = new Map<string, WeekNeed>(
+    scoped.map((a) => [
+      a.id,
+      weekNeed(
+        a.pairsPerWeek,
+        fixed.filter((l) => l.assignmentId === a.id && !l.date),
+      ),
+    ]),
+  );
   // the example's pairs first, where they were
   const byId = new Map(scoped.map((a) => [a.id, a]));
   for (const ex of example) {
     const a = byId.get(ex.assignmentId);
-    if (!a || ex.date || (already.get(a.id) ?? 0) >= a.pairsPerWeek) continue;
-    if (b.adopt(ex, a)) already.set(a.id, (already.get(a.id) ?? 0) + 1);
+    const rest = a && !ex.date ? take(left.get(a.id)!, ex.parity) : null;
+    if (a && rest && b.adopt(ex, a)) left.set(a.id, rest);
   }
 
   const queue = rng
     .shuffle(scoped)
     .sort((x, y) => difficulty(y, idx) - difficulty(x, idx))
-    .flatMap((a) => range(Math.max(0, a.pairsPerWeek - (already.get(a.id) ?? 0))).map(() => a));
-  for (const a of queue) if (!b.place(a)) b.forcePlace(a);
+    .flatMap((a) => tasksOf(left.get(a.id)!).map((weeks) => ({ a, weeks })));
+  for (const { a, weeks } of queue) if (!b.place(a, weeks)) b.forcePlace(a, weeks[0]);
   return b;
 }
 
@@ -277,7 +319,16 @@ const better = (x: Score, y: Score) => x.hard < y.hard || (x.hard === y.hard && 
  * One LNS step: free k lessons chosen by a domain strategy, re-insert them
  * greedily, keep the result if it is not worse.
  */
-function lnsStep(ds: Dataset, idx: DatasetIndex, current: Lesson[], currentScore: Score, k: number, rng: Rng, keep: Set<string>) {
+function lnsStep(
+  ds: Dataset,
+  idx: DatasetIndex,
+  current: Lesson[],
+  currentScore: Score,
+  k: number,
+  rng: Rng,
+  keep: Set<string>,
+  weights: ReturnType<typeof weightsFor>,
+) {
   const movable = current.filter((l) => !l.locked && !keep.has(l.id) && !l.date);
   if (!movable.length) return null;
   const strategy = rng.pick(['random', 'byDay', 'byTeacher', 'byGroup'] as const);
@@ -285,7 +336,7 @@ function lnsStep(ds: Dataset, idx: DatasetIndex, current: Lesson[], currentScore
   const seedA = idx.assignmentOf(seed)!;
   let pool = movable;
   if (strategy === 'byDay') pool = movable.filter((l) => l.day === seed.day);
-  if (strategy === 'byTeacher') pool = movable.filter((l) => idx.assignmentOf(l)!.teacherId === seedA.teacherId);
+  if (strategy === 'byTeacher') pool = movable.filter((l) => shareTeacher(idx.assignmentOf(l)!, seedA));
   if (strategy === 'byGroup') {
     const g = idx.cohorts(seedA.audience)[0]?.groupId;
     pool = movable.filter((l) => idx.audienceTouchesGroup(idx.assignmentOf(l)!.audience, g));
@@ -299,10 +350,15 @@ function lnsStep(ds: Dataset, idx: DatasetIndex, current: Lesson[], currentScore
 
   const b = new Builder(ds, idx, rng);
   current.filter((l) => !destroyed.has(l.id)).forEach((l) => b.add(l));
-  const freed = current.filter((l) => destroyed.has(l.id)).map((l) => idx.assignmentOf(l)!);
-  for (const a of rng.shuffle(freed)) if (!b.place(a)) b.forcePlace(a);
+  // each freed pair goes back in its own kind of week; a half pair (0.5 per week) may switch between odd and even
+  const freed = current.filter((l) => destroyed.has(l.id));
+  for (const l of rng.shuffle(freed)) {
+    const a = idx.assignmentOf(l)!;
+    const weeks: Parity[] = l.parity !== 'weekly' && a.pairsPerWeek % 1 ? ['odd', 'even'] : [l.parity];
+    if (!b.place(a, weeks)) b.forcePlace(a, l.parity);
+  }
 
-  const score = scoreTimetable(ds, b.lessons, idx);
+  const score = scoreTimetable(ds, b.lessons, idx, weights);
   return better(score, currentScore) ? { lessons: b.lessons, score } : null;
 }
 
@@ -314,10 +370,11 @@ export async function generateTimetable(
 ): Promise<GenerateResult> {
   const idx = new DatasetIndex(ds);
   const rng = createRng(opts.seed);
-  const scoped = scopeAssignments(ds, opts.groupIds, idx);
+  const scoped = scopeAssignments(ds, opts.groupIds, idx, opts.semester);
   const scopedIds = new Set(scoped.map((a) => a.id));
   const fixed = (opts.fixed ?? []).filter((l) => scopedIds.has(l.assignmentId));
-  const keep = (opts.keep ?? []).filter((l) => !scopedIds.has(l.assignmentId));
+  // other groups' pairs stay booked, but only those of the semester being generated
+  const keep = (opts.keep ?? []).filter((l) => !scopedIds.has(l.assignmentId) && inSemester(idx, idx.assignmentOf(l), opts.semester));
   const keepIds = new Set(keep.map((l) => l.id));
   // Reduced attendance is placed on session dates afterwards; the weekly engine
   // handles full-time and dual groups
@@ -327,7 +384,8 @@ export async function generateTimetable(
   const scopedDs: Dataset = { ...ds, assignments: weekly };
 
   let lessons = construct(ds, idx, weekly, [...keep, ...weeklyFixed], rng, opts.example).lessons;
-  let score = scoreTimetable(scopedDs, lessons, idx);
+  const weights = weightsFor(opts.rules); // what the search minimises; the saved score uses the usual weights
+  let score = scoreTimetable(scopedDs, lessons, idx, weights);
   let k = 4;
   let stale = 0;
 
@@ -350,7 +408,7 @@ export async function generateTimetable(
   let awayNow = away(lessons);
 
   for (let i = 0; i < opts.iterations; i++) {
-    const next = lnsStep(scopedDs, idx, lessons, score, k, rng, keepIds);
+    const next = lnsStep(scopedDs, idx, lessons, score, k, rng, keepIds, weights);
     const awayNext = next ? away(next.lessons) : 0;
     if (
       next &&
@@ -377,4 +435,104 @@ export async function generateTimetable(
   score = scoreTimetable({ ...ds, assignments: scoped }, lessons, idx);
   onProgress?.(1, score);
   return { lessons, score, seed: opts.seed };
+}
+
+/** How a timetable differs from its teaching loads after the data changed (new loads, more or fewer pairs). */
+export interface LoadDrift {
+  /**
+   * Loads with fewer pairs placed than they need, and how many pairs per week are missing (0.5 = one pair
+   * in odd or in even weeks); `need` says which weeks, for a weekly load.
+   */
+  missing: { assignment: Assignment; count: number; need?: WeekNeed }[];
+  /** Loads with more pairs placed than they need, and how many are too many. */
+  extra: { assignment: Assignment; count: number }[];
+}
+
+export function loadDrift(ds: Dataset, lessons: Lesson[], groupIds: string[], idx = new DatasetIndex(ds)): LoadDrift {
+  const own = new Map<string, Lesson[]>();
+  for (const l of lessons) own.set(l.assignmentId, [...(own.get(l.assignmentId) ?? []), l]);
+  const out: LoadDrift = { missing: [], extra: [] };
+  for (const a of loadsOfTimetable(ds, lessons, groupIds, idx)) {
+    if (!idx.isReduced(a)) {
+      // odd and even weeks each need their pairs
+      const weekly = (own.get(a.id) ?? []).filter((l) => !l.date);
+      const need = weekNeed(a.pairsPerWeek, weekly);
+      if (halvesOf(need)) out.missing.push({ assignment: a, count: halvesOf(need) / 2, need });
+      const excess = weekExcess(a.pairsPerWeek, weekly);
+      if (excess) out.extra.push({ assignment: a, count: excess / 2 });
+      continue;
+    }
+    const need = idx.requiredPairs(a);
+    const have = own.get(a.id)?.length ?? 0;
+    if (have < need) out.missing.push({ assignment: a, count: Math.ceil(need - have) });
+    // 2 pairs for a load of 1.5 is not one too many: removing one would leave it short
+    if (have - need >= 1) out.extra.push({ assignment: a, count: Math.floor(have - need) });
+  }
+  return out;
+}
+
+/**
+ * Place only what the timetable lacks (a new teaching load, a load given more pairs), around the pairs it
+ * already has, which stay where they are. Pairs that fit nowhere without a clash are left out and counted.
+ */
+export function placeMissing(
+  ds: Dataset,
+  lessons: Lesson[],
+  groupIds: string[],
+  seed = Date.now(),
+): { lessons: Lesson[]; placed: number; unplaced: number } {
+  const idx = new DatasetIndex(ds);
+  const rng = createRng(seed);
+  const { missing } = loadDrift(ds, lessons, groupIds, idx);
+  const b = new Builder(ds, idx, rng);
+  // session pairs (on a date) keep their weekday and pair busy too: a new weekly pair would meet them some week
+  for (const l of lessons) if (idx.assignmentOf(l)) b.add(l);
+  let placed = 0;
+  let unplaced = 0;
+  const weekly = missing.filter((m) => !idx.isReduced(m.assignment));
+  for (const { assignment, need } of weekly.sort((x, y) => difficulty(y.assignment, idx) - difficulty(x.assignment, idx))) {
+    for (const weeks of tasksOf(need!)) {
+      // a weekly pair counts as one, an odd- or even-week pair as half
+      const n = weeks[0] === 'weekly' ? 1 : 0.5;
+      if (b.place(assignment, weeks)) placed += n;
+      else unplaced += n;
+    }
+  }
+  const added = b.lessons.filter((l) => !lessons.includes(l));
+  // reduced attendance: a load with no session pairs yet gets them on the session dates
+  const reduced = missing.filter((m) => idx.isReduced(m.assignment));
+  const fresh = reduced.filter((m) => !lessons.some((l) => l.assignmentId === m.assignment.id)).map((m) => m.assignment);
+  const sessions = fresh.length ? placeSessions(ds, idx, fresh, [...lessons, ...added], rng) : [];
+  placed += sessions.length;
+  unplaced += reduced.reduce((n, m) => n + m.count, 0) - sessions.length;
+  return { lessons: [...lessons, ...added, ...sessions], placed, unplaced };
+}
+
+/** Take out the pairs a load no longer needs (its pairs per week went down); locked pairs stay. */
+export function dropExtra(ds: Dataset, lessons: Lesson[], groupIds: string[]): { lessons: Lesson[]; removed: number } {
+  const { extra } = loadDrift(ds, lessons, groupIds);
+  const idx = new DatasetIndex(ds);
+  const gone = new Set<string>();
+  // the last ones of the week go first
+  const lastFirst = (x: Lesson, y: Lesson) => (y.date ?? '').localeCompare(x.date ?? '') || y.day - x.day || y.slot - x.slot;
+  for (const { assignment, count } of extra) {
+    const own = lessons.filter((l) => l.assignmentId === assignment.id && !l.locked).sort(lastFirst);
+    if (idx.isReduced(assignment)) {
+      own.slice(0, count).forEach((l) => gone.add(l.id));
+      continue;
+    }
+    // one pair at a time, as long as there are too many, never leaving a week short
+    let kept = lessons.filter((l) => l.assignmentId === assignment.id && !l.date);
+    for (;;) {
+      if (!weekExcess(assignment.pairsPerWeek, kept)) break;
+      const without = (l: Lesson) => kept.filter((x) => x !== l);
+      const pick =
+        own.find((l) => !gone.has(l.id) && !l.date && !halvesOf(weekNeed(assignment.pairsPerWeek, without(l)))) ??
+        own.find((l) => !gone.has(l.id) && !l.date);
+      if (!pick) break;
+      gone.add(pick.id);
+      kept = without(pick);
+    }
+  }
+  return { lessons: lessons.filter((l) => !gone.has(l.id)), removed: gone.size };
 }

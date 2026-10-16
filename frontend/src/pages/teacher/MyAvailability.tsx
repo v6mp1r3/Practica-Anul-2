@@ -4,6 +4,7 @@
 //  - every week: unavailable / preferred hours, used when the next timetable is generated
 // The administration sees every change (and gets a notification).
 import { useState } from 'react';
+import { teaches } from '../../domain/indexes';
 import { api } from '../../api';
 import { AvailabilityPicker, type AvailabilityValue } from '../../components/AvailabilityPicker';
 import { WeekAvailability } from '../../components/WeekAvailability';
@@ -30,12 +31,18 @@ export default function MyAvailability() {
 
   if (!teacher) return <Empty>{t('myAvail.noTeacher')}</Empty>;
 
-  const usualValue = usual ?? { unavailable: teacher.unavailable, preferred: teacher.preferred, consultation: teacher.consultation };
+  const usualValue = usual ?? {
+    unavailable: teacher.unavailable,
+    unavailableOdd: teacher.unavailableOdd,
+    unavailableEven: teacher.unavailableEven,
+    preferred: teacher.preferred,
+    consultation: teacher.consultation,
+  };
   const datedValue = dated ?? teacher.unavailableOn ?? [];
   const dirty = usual !== null || dated !== null;
 
   // the teacher's weekly pairs (either week): locked in the "every week" grid
-  const mine = (published?.lessons ?? []).filter((l) => !l.date && index.assignmentOf(l)?.teacherId === teacher.id);
+  const mine = (published?.lessons ?? []).filter((l) => !l.date && teaches(index.assignmentOf(l), teacher.id));
   const lessonAt = (d: number, s: number) => {
     const here = mine.filter((l) => l.day === d && l.slot === s);
     if (!here.length) return undefined;
@@ -62,6 +69,8 @@ export default function MyAvailability() {
       await api.updateAvailability(teacher.id, {
         // not over their own pairs (those were marked before the timetable gave them a class there)
         unavailable: usualValue.unavailable.filter((k) => !lessonAt(...parseSlotKey(k))),
+        unavailableOdd: (usualValue.unavailableOdd ?? []).filter((k) => !lessonAt(...parseSlotKey(k))),
+        unavailableEven: (usualValue.unavailableEven ?? []).filter((k) => !lessonAt(...parseSlotKey(k))),
         preferred: usualValue.preferred,
         unavailableOn: datedValue,
       });
